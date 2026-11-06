@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scorecard.Core\Scorecard.Core.csproj" />
+    <ProjectReference Include="..\..\src\Scorecard.Cli\Scorecard.Cli.csproj" />
   </ItemGroup>
 
 </Project>

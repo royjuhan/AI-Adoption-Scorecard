@@ -88,20 +88,94 @@ internal static class MetadataScanner
         "System.TimeProvider::get_System",
     ];
 
-    // 제네릭 CreateInstance<T>()는 new T()가 만든다. 이것은 허용한다(스펙 4.2 N5).
+    // N5 예외 1. 제네릭 CreateInstance<T>()는 new T()가 만든다. 이것은 허용한다(스펙 4.2 N5).
     private const string ActivatorCreateInstance = "System.Activator::CreateInstance";
+
+    // N5 예외 2. Type에는 인스턴스 GetType()도 있다(자기 타입을 돌려줄 뿐). 정적 Type.GetType(string...)만 금지한다.
+    private const string TypeGetType = "System.Type::GetType";
+
+    // N6 프레임워크 판정용. 런타임 폴더의 dll 이름을 한 번만 읽어 서수 집합에 담는다.
+    // File.Exists는 Windows에서 대소문자를 무시한다. 스펙 4.2 "서수 비교"를 OS와 무관하게 지키려고 집합으로 비교한다.
+    private static readonly Lazy<IReadOnlySet<string>> RuntimeAssemblyNames =
+        new(() => AssemblyNamesIn(RuntimeEnvironment.GetRuntimeDirectory()));
 
     // dll 하나를 검사한다. allowedAssemblies는 N6 허용 목록(제3자 어셈블리 이름).
     // 파일이 없거나 메타데이터가 없으면 예외를 던진다. 빈 통과를 막는다.
     public static IReadOnlyList<string> Scan(string dllPath, IEnumerable<string> allowedAssemblies)
     {
+        var allowed = new HashSet<string>(allowedAssemblies, StringComparer.Ordinal);
+
+        return Read(dllPath, md =>
+        {
+            var findings = new SortedSet<string>(StringComparer.Ordinal);
+            ScanAssemblyReferences(md, allowed, findings);
+            ScanTypeReferences(md, findings);
+            ScanMemberReferences(md, findings);
+            ScanPlatformInvoke(md, findings);
+            return findings.ToArray();
+        });
+    }
+
+    // dll의 MemberRef를 서명 머리와 함께 모두 돌려준다. 순서는 표 순서.
+    // 같은 이름이 서명만 달리 여럿일 수 있다. 문자열 결과로는 구분되지 않아 자기 검사가 이것을 본다.
+    internal static IReadOnlyList<MemberReferenceInfo> ReadMemberReferences(string dllPath) =>
+        Read(dllPath, md => MemberReferences(md).ToArray());
+
+    // 규칙 ID(N1~N6, D1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
+    public static IReadOnlyList<string> OfRules(IEnumerable<string> findings, params string[] rules) =>
+        findings.Where(f => rules.Any(r => f.StartsWith(r + " ", StringComparison.Ordinal))).ToArray();
+
+    // N5 판정. 순수 함수. key는 "부모 타입::멤버 이름", header는 그 MemberRef의 서명 머리.
+    // 예외는 둘이고 각각 그 이름에만 적용한다. Assembly·Module의 GetType(string)은 인스턴스여도 금지다.
+    internal static bool IsDeniedMember(string key, SignatureHeader header)
+    {
+        if (!DeniedMembers.Contains(key, StringComparer.Ordinal))
+        {
+            return false;
+        }
+
+        if (key == ActivatorCreateInstance && header.IsGeneric)
+        {
+            return false;
+        }
+
+        if (key == TypeGetType && header.IsInstance)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // N6 프레임워크 판정. 런타임 폴더에 이름이 서수로 같은 dll이 있는가(스펙 4.2 N6).
+    internal static bool IsFrameworkAssembly(string name) => RuntimeAssemblyNames.Value.Contains(name);
+
+    // 폴더 바로 아래 파일 중 이름이 ".dll"(서수)로 끝나는 것. 확장자를 뺀 이름을 서수 집합으로 돌려준다.
+    // 하위 폴더와 "x.dll"이라는 이름의 폴더는 넣지 않는다(File.Exists와 같은 범위).
+    internal static IReadOnlySet<string> AssemblyNamesIn(string directory)
+    {
+        const string Extension = ".dll";
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var path in Directory.EnumerateFiles(directory))
+        {
+            var file = Path.GetFileName(path);
+            if (file.EndsWith(Extension, StringComparison.Ordinal))
+            {
+                names.Add(file[..^Extension.Length]);
+            }
+        }
+
+        return names;
+    }
+
+    // 파일을 열어 메타데이터를 읽는다. 어셈블리는 로드하지 않는다(PEReader).
+    // 파일이 없거나 메타데이터가 없으면 예외를 던진다.
+    private static T Read<T>(string dllPath, Func<MetadataReader, T> read)
+    {
         if (!File.Exists(dllPath))
         {
             throw new FileNotFoundException($"검사할 dll이 없다: {dllPath}", dllPath);
         }
-
-        var allowed = new HashSet<string>(allowedAssemblies, StringComparer.Ordinal);
-        var findings = new SortedSet<string>(StringComparer.Ordinal);
 
         using var stream = File.OpenRead(dllPath);
         using var pe = new PEReader(stream);
@@ -110,25 +184,12 @@ internal static class MetadataScanner
             throw new InvalidOperationException($"메타데이터가 없는 파일이다: {dllPath}");
         }
 
-        var md = pe.GetMetadataReader();
-        ScanAssemblyReferences(md, allowed, findings);
-        ScanTypeReferences(md, findings);
-        ScanMemberReferences(md, findings);
-        ScanPlatformInvoke(md, findings);
-
-        return findings.ToArray();
+        return read(pe.GetMetadataReader());
     }
-
-    // 규칙 ID(N1~N6, D1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
-    public static IReadOnlyList<string> OfRules(IEnumerable<string> findings, params string[] rules) =>
-        findings.Where(f => rules.Any(r => f.StartsWith(r + " ", StringComparison.Ordinal))).ToArray();
 
     // N1, N2, N6.
     private static void ScanAssemblyReferences(MetadataReader md, HashSet<string> allowed, SortedSet<string> findings)
     {
-        // 프레임워크 판정: 지금 런타임 폴더에 같은 이름의 dll이 있는가(스펙 4.2 N6).
-        var runtimeDir = RuntimeEnvironment.GetRuntimeDirectory();
-
         foreach (var handle in md.AssemblyReferences)
         {
             var name = md.GetString(md.GetAssemblyReference(handle).Name);
@@ -143,8 +204,7 @@ internal static class MetadataScanner
                 findings.Add($"N2 asmref {name}");
             }
 
-            var framework = File.Exists(Path.Combine(runtimeDir, name + ".dll"));
-            if (!framework && !allowed.Contains(name))
+            if (!IsFrameworkAssembly(name) && !allowed.Contains(name))
             {
                 findings.Add($"N6 non-framework asmref {name}");
             }
@@ -179,21 +239,29 @@ internal static class MetadataScanner
     // N5, D1(멤버).
     private static void ScanMemberReferences(MetadataReader md, SortedSet<string> findings)
     {
+        foreach (var member in MemberReferences(md))
+        {
+            if (IsDeniedMember(member.Key, member.Header))
+            {
+                findings.Add($"N5 member {member.Key}");
+            }
+
+            if (DeterminismMembers.Contains(member.Key, StringComparer.Ordinal))
+            {
+                findings.Add($"D1 member {member.Key}");
+            }
+        }
+    }
+
+    // MemberRef마다 "부모 타입::멤버 이름"과 서명 머리(제네릭·인스턴스 여부)를 읽는다.
+    private static IEnumerable<MemberReferenceInfo> MemberReferences(MetadataReader md)
+    {
         foreach (var handle in md.MemberReferences)
         {
             var member = md.GetMemberReference(handle);
             var key = $"{ParentName(md, member.Parent)}::{md.GetString(member.Name)}";
-            var isGeneric = md.GetBlobReader(member.Signature).ReadSignatureHeader().IsGeneric;
-
-            if (DeniedMembers.Contains(key, StringComparer.Ordinal) && !(key == ActivatorCreateInstance && isGeneric))
-            {
-                findings.Add($"N5 member {key}");
-            }
-
-            if (DeterminismMembers.Contains(key, StringComparer.Ordinal))
-            {
-                findings.Add($"D1 member {key}");
-            }
+            var header = md.GetBlobReader(member.Signature).ReadSignatureHeader();
+            yield return new MemberReferenceInfo(key, header);
         }
     }
 
@@ -289,3 +357,6 @@ internal static class MetadataScanner
         }
     }
 }
+
+// MemberRef 하나. Key는 "부모 타입::멤버 이름", Header는 서명 머리(IsGeneric·IsInstance).
+internal readonly record struct MemberReferenceInfo(string Key, SignatureHeader Header);

@@ -1,3 +1,5 @@
+using System.Reflection.Metadata;
+
 namespace Scorecard.Tests.Guards;
 
 // T-002 G1: src/ 컴파일 결과에 네트워크·외부 프로세스·LLM·비결정 참조가 없다.
@@ -82,6 +84,94 @@ public class NetworkGuardTests
         var findings = Scan(TestsDll);
 
         Assert.DoesNotContain(findings, f => f.Contains(typeName, StringComparison.Ordinal));
+    }
+
+    // N5 예외가 실제 dll에서 갈리는지 본다. 카나리아에는 같은 이름의 MemberRef가 서명만 달리 둘 있다.
+    // 결과 문자열("N5 member ...")로는 둘이 구분되지 않는다. 그래서 MemberRef 단위로 본다.
+    // 예외 서명(인스턴스 GetType(), 제네릭 CreateInstance<T>())은 허용, 나머지(정적 문자열 오버로드)는 금지여야 한다.
+    [Theory]
+    [InlineData("System.Type::GetType", SignatureAttributes.Instance)]
+    [InlineData("System.Activator::CreateInstance", SignatureAttributes.Generic)]
+    public void Scanner_allows_only_exception_signature_of_canary_member(string key, SignatureAttributes exception)
+    {
+        var members = MetadataScanner.ReadMemberReferences(Path.Combine(AppContext.BaseDirectory, TestsDll))
+            .Where(m => m.Key == key)
+            .ToArray();
+        var allowed = members.Where(m => (m.Header.Attributes & exception) != 0).ToArray();
+        var denied = members.Where(m => (m.Header.Attributes & exception) == 0).ToArray();
+
+        // 카나리아가 두 서명을 모두 남겼는지 먼저 본다. 빈 통과를 막는다.
+        Assert.NotEmpty(allowed);
+        Assert.NotEmpty(denied);
+        Assert.All(allowed, m => Assert.False(MetadataScanner.IsDeniedMember(m.Key, m.Header), $"{m.Key} {m.Header}"));
+        Assert.All(denied, m => Assert.True(MetadataScanner.IsDeniedMember(m.Key, m.Header), $"{m.Key} {m.Header}"));
+        Assert.Contains($"N5 member {key}", Scan(TestsDll));
+    }
+
+    // N5 판정 순수 함수(스펙 4.2 N5). 예외는 둘이고 각각 그 이름에만 적용된다.
+    [Theory]
+    [InlineData("System.Activator::CreateInstance", SignatureAttributes.Generic, false)]
+    [InlineData("System.Activator::CreateInstance", SignatureAttributes.None, true)]
+    [InlineData("System.Activator::CreateInstance", SignatureAttributes.Instance, true)]
+    [InlineData("System.Type::GetType", SignatureAttributes.Instance, false)]
+    [InlineData("System.Type::GetType", SignatureAttributes.None, true)]
+    [InlineData("System.Type::GetType", SignatureAttributes.Generic, true)]
+    [InlineData("System.Reflection.Assembly::GetType", SignatureAttributes.Instance, true)]
+    [InlineData("System.Reflection.Module::GetType", SignatureAttributes.Instance, true)]
+    [InlineData("System.Object::GetType", SignatureAttributes.Instance, false)]
+    [InlineData("System.type::GetType", SignatureAttributes.None, false)]
+    public void IsDeniedMember_applies_N5_exceptions(string key, SignatureAttributes attributes, bool denied)
+    {
+        var header = new SignatureHeader(SignatureKind.Method, SignatureCallingConvention.Default, attributes);
+
+        Assert.Equal(denied, MetadataScanner.IsDeniedMember(key, header));
+    }
+
+    // 예외 표지가 없는 서명이면 목록의 모든 멤버가 금지다. 예외가 다른 이름을 삼키지 않는지 본다.
+    [Fact]
+    public void IsDeniedMember_denies_every_listed_member_without_exception_flags()
+    {
+        var header = new SignatureHeader(SignatureKind.Method, SignatureCallingConvention.Default, SignatureAttributes.None);
+
+        Assert.All(MetadataScanner.DeniedMembers, m => Assert.True(MetadataScanner.IsDeniedMember(m, header), m));
+    }
+
+    // N6 프레임워크 판정은 서수다(스펙 4.2). Windows File.Exists처럼 대소문자를 무시하면 안 된다.
+    [Theory]
+    [InlineData("System.Runtime", true)]
+    [InlineData("System.Reflection.Metadata", true)]
+    [InlineData("system.runtime", false)]
+    [InlineData("SYSTEM.RUNTIME", false)]
+    [InlineData("xunit.core", false)]
+    public void Framework_check_compares_runtime_dll_names_ordinally(string name, bool framework)
+    {
+        Assert.Equal(framework, MetadataScanner.IsFrameworkAssembly(name));
+    }
+
+    // 런타임 폴더 이름 집합을 만드는 규칙. 합성 폴더로 본다(ADR 0002).
+    // ".dll"로 서수 끝나는 바로 아래 파일만 든다. ".DLL" 파일, "x.dll" 폴더, 하위 폴더 파일은 빠진다.
+    [Fact]
+    public void Assembly_names_include_only_direct_files_ending_with_dll_ordinally()
+    {
+        var root = Directory.CreateTempSubdirectory("scorecard-n6-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root, "Fake.Sdk.dll"), []);
+            File.WriteAllBytes(Path.Combine(root, "Upper.DLL"), []);
+            File.WriteAllBytes(Path.Combine(root, "notes.txt"), []);
+            Directory.CreateDirectory(Path.Combine(root, "Folder.dll"));
+            Directory.CreateDirectory(Path.Combine(root, "sub"));
+            File.WriteAllBytes(Path.Combine(root, "sub", "Nested.dll"), []);
+
+            var names = MetadataScanner.AssemblyNamesIn(root);
+
+            Assert.Equal("Fake.Sdk", Assert.Single(names));
+            Assert.DoesNotContain("fake.sdk", names);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     // N6 허용 목록이 동작하는지 본다. 목록에 넣은 이름만 빠진다.

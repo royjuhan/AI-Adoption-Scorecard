@@ -89,10 +89,15 @@ internal static class ScannerCanary
     [DllImport("libc", EntryPoint = "getpid")]
     internal static extern int GetPid();
 
-    // 허용(오탐이 없어야 함, 스펙 4.1 V14): System.Runtime에 있는 System.Net 타입, Uri, 제네릭 new T().
+    // 허용(오탐이 없어야 함, 스펙 4.1 V14): System.Runtime에 있는 System.Net 타입, Uri, 제네릭 new T(), 인스턴스 Type.GetType().
     internal static string Allowed(string s) =>
         System.Net.WebUtility.HtmlEncode(s) + new Uri("file:///x").Scheme;
 
+    // new T()는 제네릭 Activator.CreateInstance<T>() MemberRef를 남긴다. 위 Reflect()의 비제네릭과 이름이 같다.
     internal static T Generic<T>()
         where T : new() => new T();
+
+    // 정적 형식이 Type인 식의 GetType()은 인스턴스 System.Type::GetType MemberRef를 남긴다.
+    // 위 Reflect()의 정적 Type.GetType(string)과 이름이 같고 서명만 다르다. 이것은 허용한다(N5 예외).
+    internal static Type InstanceGetType() => typeof(ScannerCanary).GetType();
 }

@@ -42,7 +42,7 @@
 
 ## 2. 입력
 
-- `<케이스 폴더>/case.yaml` 한 파일. 읽기만 한다(`File.ReadAllBytes`). 폴더의 다른 파일은 보지 않는다. 이름은 정확히 `case.yaml`이어야 한다: 폴더 항목 이름을 서수로 비교하고, `Case.YAML`처럼 대소문자만 다르면 모든 OS에서 "파일이 없다"(T-003 리뷰 판단 H1).
+- `<케이스 폴더>/case.yaml` 한 파일. 읽기만 한다(`File.ReadAllBytes`). 폴더의 다른 파일은 열지 않는다(이름 목록만 본다). 이름은 정확히 `case.yaml`이어야 한다: 폴더 항목 이름을 서수로 비교하고, `Case.YAML`처럼 대소문자만 다르면 모든 OS에서 "파일이 없다". 목록을 읽을 권한이 없는 폴더는 "파일을 읽을 수 없다"가 된다(T-003 리뷰 판단 H1, 추천안. 사람 답 대기).
 - 바이트 규칙은 4.8.
 
 ## 3. 출력
@@ -278,7 +278,7 @@ C의 구조(스파이크 코드 기준):
 | `file` | `case.yaml`이 없음 / 읽을 수 없음 | 없음 | `파일이 없다` / `파일을 읽을 수 없다: <예외 타입 이름>` |
 | `encoding` | 4.8 | 줄만 | `UTF-16이다. UTF-8로 저장한다` / `UTF-8이 아니다 (바이트 N)` |
 | `empty` | 문서가 없음(빈 파일, 주석만, 루트가 null) | 없음 | `내용이 없다` |
-| `syntax` | YamlDotNet `YamlException` | 예외의 시작 위치 | `YAML 문법 오류: <영어 메시지>` |
+| `syntax` | YamlDotNet `YamlException` / 다른 파서 예외(아래 글머리) | 예외의 시작 위치 / 다른 파서 예외는 위치 없음 | `YAML 문법 오류: <영어 메시지>` |
 | `depth` | 깊이 16 초과 | 그 노드 | `너무 깊다. 16단계까지 쓴다` |
 | `multi-document` | 문서 둘 이상 | 둘째 문서 시작 | `문서가 둘 이상이다. 하나만 쓴다` |
 | `alias` | 앵커·별칭 | 그 노드 | `앵커(&)는 쓰지 않는다` / `별칭(*)은 쓰지 않는다` |
@@ -388,6 +388,7 @@ public sealed record CaseThresholds(decimal? AccuracyMin, decimal? MissingMax, b
 
 | 상황 | 결과 | 근거 |
 | --- | --- | --- |
+| `ParseDirectory`에 빈 문자열·null | `ArgumentException`·`ArgumentNullException` 예외. 현재 폴더를 쓰지 않는다(4.10). 상대 경로(`.`)는 받는다 | T-003 리뷰 2회차 |
 | `case.yaml` 없음, 폴더 없음 | `case.yaml: file: 파일이 없다`. 절대 경로 없음 | [P:missing-file] |
 | 빈 파일, 주석만 | `case.yaml: empty: 내용이 없다` | [S3 empty, comment-only] |
 | 루트가 목록 | `case.yaml:1:1: type: 매핑이어야 한다` | [S3 root-list] |

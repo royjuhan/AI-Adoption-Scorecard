@@ -1,11 +1,11 @@
 # solution-skeleton (T-001 스펙)
 
-- 상태: 초안. 사람 승인 대기.
+- 상태: 승인됨 (2026-11-06, juhan). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
 - 작업 카드: `docs/tasks/T-001-solution-skeleton.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `d953e48` (리드 세션이 만든 골격)
 - 확인 환경: Linux ubuntu 24.04 x64, .NET SDK 10.0.114, VSTest 18.0.2
-- 스파이크: `spikes/T-001/run-spike.sh`, 결과 `spikes/T-001/logs/` (머지 대상 아님)
+- 스파이크: 리드 세션 로컬에서만 실행했고 저장소에 넣지 않는다(머지 대상 아님). 요약은 이 문서 9절.
 
 ## 0. 표기
 
@@ -68,7 +68,7 @@ Windows에서 실행 파일 이름이 `scorecard.exe`가 되는지: **미확인*
 
 - `ci.yml` 내용 [읽음]: 이름 `ci`, 트리거 `push`(main)와 `pull_request`, 잡 `build-test`, `ubuntu-latest`, `actions/checkout@v4`, `actions/setup-dotnet@v4`(`dotnet-version: 10.0.x`). 단계는 restore → `build --no-restore -c Release` → `test --no-build -c Release`.
 - 같은 세 단계를 로컬 새 clone에서 돌리면 모두 종료 코드 0 [C].
-- 통과 조건: T-001 PR의 체크 `ci / build-test`가 success.
+- 통과 조건: T-001 PR의 체크 `build-test (ubuntu-latest)`와 `build-test (windows-latest)`가 모두 success (승인 결정 6으로 matrix).
 - GitHub 현재 상태 [GH]: 저장소 public, 기본 브랜치 main, 등록된 워크플로 0개, 실행 0건, PR 0건.
 - `origin/main`(`58284b7`)에는 `.github/workflows/ci.yml`이 없다 [읽음: `git ls-tree origin/main`]. 작업 브랜치 push는 트리거(`push`는 main만)에 걸리지 않는다 [읽음]. 워크플로 0개의 원인이 이것인지는 **미확인**.
 - GitHub에서 실제로 녹색인지: **미확인**. PR을 열어야 확인된다. → 승인 질문 2.

@@ -1,6 +1,6 @@
 # case-schema (T-003 스펙)
 
-- 상태: 초안 (사람 승인 대기)
+- 상태: 승인됨 (2026-11-06, juhan "제안대로"). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
 - 작업 카드: `docs/tasks/T-003-case-schema.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
@@ -742,3 +742,22 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
     - 제안: 4.11 그대로. 샘플은 `TestData/guard/case-valid/`, `case-invalid/`. `guard/basic/`은 그대로 둔다.
 14. **Core 공개 API와 진행 순서.** 4.12의 이름·모양(열거는 문자열, 숫자는 `decimal`, 오류가 있으면 모델 없음). test-engineer 단계에서는 이 API가 없어 새 테스트가 컴파일되지 않는다(7.4).
     - 제안: 4.12 그대로. 컴파일 실패를 "실패하는 테스트"로 보고 같은 브랜치에서 core-dev가 구현한다. PR 본문에 적는다.
+
+## 사람 승인 결과 (2026-11-06, juhan: "제안대로")
+
+질문 1~14 모두 위에 적은 제안대로 승인됐다. 요약:
+
+1. 파서는 방식 C(YamlDotNet `Parser` 이벤트 + Core 스키마 검사). 정적 생성기 없음.
+2. YamlDotNet 18.1.0을 정확히 고정. N6 허용 목록에 `YamlDotNet`. PR 본문에 패키지·버전·라이선스·내부 G1 항목.
+3. G1 새 규칙 Y1(Core만): YamlDotNet 타입은 `YamlDotNet.Core`(하위 포함)만 참조. 카나리아·자기 검사 포함.
+4. 최상위 필드는 4.3 표 그대로.
+5. 파서가 3.2 기본값을 넣고 `IsDefault`로 표시. 기본값 표는 4.4에만. 테스트가 4.4 표를 읽어 대조.
+6. 값의 엄격도는 4.6 그대로.
+7. YAML 기능 제한은 4.7 그대로. 파일 크기 상한 없음.
+8. 인코딩은 4.8 그대로. CP949 자동 변환 없음.
+9. 오류 형식은 4.9 그대로. 코드·문구를 테스트가 문자열로 비교.
+10. inputs·compare는 4.5 그대로.
+11. thresholds는 읽기만, 없으면 null. 기본값은 판정 카드에서.
+12. G2 빈 출력 규칙을 넣는다(G2만). test-engineer가 `tests/Guards`에 더한다.
+13. G2·G3 등록은 4.11 그대로. 샘플 `TestData/guard/case-valid/`, `case-invalid/`.
+14. Core 공개 API는 4.12 그대로. test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.

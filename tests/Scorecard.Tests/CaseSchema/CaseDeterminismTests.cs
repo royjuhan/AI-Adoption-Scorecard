@@ -71,8 +71,8 @@ public class CaseDeterminismTests
         }
         finally
         {
-            Directory.Delete(a, recursive: true);
-            Directory.Delete(b, recursive: true);
+            CaseInput.TryDeleteDirectory(a);
+            CaseInput.TryDeleteDirectory(b);
         }
     }
 

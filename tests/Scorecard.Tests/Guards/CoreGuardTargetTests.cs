@@ -59,7 +59,11 @@ public class GuardTargetAdapterTests
         Assert.Equal(["case", "errors"], root.EnumerateObject().Select(p => p.Name));
         Assert.Equal(valid ? JsonValueKind.Object : JsonValueKind.Null, root.GetProperty("case").ValueKind);
         Assert.Equal(valid, root.GetProperty("errors").GetArrayLength() == 0);
-        Assert.DoesNotContain(workspace.Root, Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
+        // 출력에 작업 폴더 경로가 없다. JSON은 '\'를 '\\'로 쓰므로 Windows 전체 경로는 그대로 나오지 않는다.
+        // 그래서 임시 폴더 이름 조각(무작위 이름)도 찾는다(CaseDirectoryTests.AssertNoPath와 같은 방식).
+        var text = Encoding.UTF8.GetString(bytes);
+        Assert.DoesNotContain(workspace.Root, text, StringComparison.Ordinal);
+        Assert.DoesNotContain(Path.GetFileName(Path.TrimEndingDirectorySeparator(workspace.Root)), text, StringComparison.Ordinal);
     }
 
     // guard/basic은 T-002 가짜 대상의 바이트 샘플이라 그대로 둔다(스펙 4.11). 실제 대상은 쓰지 않는다.

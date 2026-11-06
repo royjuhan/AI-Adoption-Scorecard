@@ -62,4 +62,20 @@ internal static class CaseInput
 
     // 단계 하나짜리 문서의 첫 답(answers 아래 6줄째) 값 위치. "case.yaml:6:<열>".
     public static string AnswerPosition(string key) => $"case.yaml:6:{6 + key.Length + 2 + 1}";
+
+    // 테스트 임시 폴더를 지운다. 정리 실패는 판정과 무관하다(GuardWorkspace.Dispose와 같은 방식).
+    // Windows에서 백신·색인이 파일을 잠깐 잡으면 IOException·UnauthorizedAccessException이 난다. 남아도 다른 실행에 영향이 없다.
+    public static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
 }

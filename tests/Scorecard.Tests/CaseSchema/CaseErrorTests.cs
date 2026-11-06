@@ -293,7 +293,7 @@ public class CaseErrorTests
         }
         finally
         {
-            Directory.Delete(directory, recursive: true);
+            CaseInput.TryDeleteDirectory(directory);
         }
     }
 }

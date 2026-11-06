@@ -13,6 +13,17 @@ public class CaseDefaultsTests
 
     public static TheoryData<string> EnumKeys => new(DefaultRow.ReadAll().Where(r => r.IsEnum).Select(r => r.Key));
 
+    // 정수·숫자 행. 선택지·범위 칸이 범위다("1 이상", "0 이상 100 이하", "0 이상").
+    public static TheoryData<string> RangeKeys => new(DefaultRow.ReadAll().Where(r => r.IsNumeric).Select(r => r.Key));
+
+    // 상한이 있는 행. 칸에 "이하"가 있거나, 정수라서 int 최댓값이 상한인 행.
+    public static TheoryData<string> UpperBoundKeys =>
+        new(DefaultRow.ReadAll().Where(r => r.IsNumeric && (r.IsInteger || r.Bounds.Max is not null)).Select(r => r.Key));
+
+    // 상한이 없는 숫자 행.
+    public static TheoryData<string> UnboundedKeys =>
+        new(DefaultRow.ReadAll().Where(r => r.IsNumeric && !r.IsInteger && r.Bounds.Max is null).Select(r => r.Key));
+
     // 답 9개를 4.4 표 순서로 (키, 값 문자열, IsDefault)로 편다. 값은 InvariantCulture, null은 "null".
     internal static IReadOnlyList<(string Key, string Value, bool IsDefault)> AllAnswers(StepAnswers a) =>
     [
@@ -153,6 +164,49 @@ public class CaseDefaultsTests
         Assert.All(c.Steps, s => Assert.Equal(new Answer<string>("no", false), s.Answers.ExistingFeature));
     }
 
+    // 4.4 범위 칸의 경계(T-003 reviewer 비차단 2). 범위를 코드에 박지 않고 표에서 읽는다.
+    // 하한은 받고, 하한 아래는 range. 벗어나는 폭은 정수 1, 숫자 0.01이다.
+    [Theory]
+    [MemberData(nameof(RangeKeys))]
+    public void Range_lower_bound_is_accepted(string key)
+    {
+        AssertAccepted(key, Text(Row(key).Bounds.Min));
+    }
+
+    [Theory]
+    [MemberData(nameof(RangeKeys))]
+    public void Value_below_range_lower_bound_is_range_error(string key)
+    {
+        var row = Row(key);
+
+        AssertRangeError(row, Text(row.Bounds.Min - Step(row)));
+    }
+
+    // 상한은 받고, 상한 위는 range. 정수 칸에 상한이 없으면 int 최댓값이 상한이다(4.6 `2147483648` → range).
+    [Theory]
+    [MemberData(nameof(UpperBoundKeys))]
+    public void Range_upper_bound_is_accepted(string key)
+    {
+        AssertAccepted(key, Text(Upper(Row(key))));
+    }
+
+    [Theory]
+    [MemberData(nameof(UpperBoundKeys))]
+    public void Value_above_range_upper_bound_is_range_error(string key)
+    {
+        var row = Row(key);
+
+        AssertRangeError(row, Text(Upper(row) + Step(row)));
+    }
+
+    // 숫자 칸에 상한이 없으면 상한도 없다. 큰 값을 받는다.
+    [Theory]
+    [MemberData(nameof(UnboundedKeys))]
+    public void Number_without_upper_bound_accepts_large_value(string key)
+    {
+        AssertAccepted(key, "1000000000");
+    }
+
     // 4.4: 값이 잘못되면 오류다. 기본값으로 바꿔 넣고 통과시키지 않는다.
     [Theory]
     [InlineData("batch_size: ten")]
@@ -165,5 +219,34 @@ public class CaseDefaultsTests
 
         Assert.Single(result.Errors);
         Assert.Null(result.Case);
+    }
+
+    private static DefaultRow Row(string key) => DefaultRow.ReadAll().Single(r => r.Key == key);
+
+    private static decimal Step(DefaultRow row) => row.IsInteger ? 1m : 0.01m;
+
+    private static decimal Upper(DefaultRow row) => row.Bounds.Max ?? int.MaxValue;
+
+    private static string Text(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+
+    // range 문구의 범위. 숫자는 칸 그대로. 상한 없는 정수 칸은 int 최댓값을 붙인다(6.4 "1 이상 2147483647 이하").
+    private static string RangeText(DefaultRow row) =>
+        row.IsInteger && row.Bounds.Max is null
+            ? row.Choices + " " + int.MaxValue.ToString(CultureInfo.InvariantCulture) + " 이하"
+            : row.Choices;
+
+    // 값을 받고, 쓴 그대로 읽히고, 직접 쓴 값이라 IsDefault false.
+    private static void AssertAccepted(string key, string written)
+    {
+        var answers = AllAnswers(CaseInput.Valid(CaseInput.OneStepWithAnswers + $"      {key}: {written}\n").Steps[0].Answers);
+
+        Assert.Equal((key, written, false), answers.Single(a => a.Key == key));
+    }
+
+    private static void AssertRangeError(DefaultRow row, string written)
+    {
+        CaseInput.AssertErrors(
+            CaseInput.OneStepWithAnswers + $"      {row.Key}: {written}\n",
+            $"{CaseInput.AnswerPosition(row.Key)}: range steps[1].answers.{row.Key}: 범위 밖이다 ({RangeText(row)}): {written}");
     }
 }

@@ -140,6 +140,33 @@ internal sealed record DefaultRow(string Key, string Question, string Kind, stri
 
     public bool IsEnum => Kind == "열거";
 
+    public bool IsInteger => Kind == "정수";
+
+    // 정수·숫자 행. 이 행의 선택지·범위 칸은 범위다.
+    public bool IsNumeric => Kind is "정수" or "숫자";
+
     // 열거 선택지. "table / fixed_form" → ["table", "fixed_form"]. 열거가 아니면 빈 배열.
     public string[] ChoiceList => IsEnum ? Choices.Split(" / ").Select(s => s.Trim()).ToArray() : [];
+
+    // 정수·숫자 행의 범위 칸. "1 이상" → (1, null), "0 이상 100 이하" → (0, 100). 모양이 다르면 실패한다.
+    public (decimal Min, decimal? Max) Bounds
+    {
+        get
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(
+                Choices,
+                @"^(?<min>-?[0-9]+(\.[0-9]+)?) 이상( (?<max>-?[0-9]+(\.[0-9]+)?) 이하)?\z",
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+            if (!IsNumeric || !match.Success)
+            {
+                Assert.Fail($"4.4 표 '{Key}' 행의 범위 칸 '{Choices}'을 읽을 수 없다. 'N 이상' 또는 'N 이상 M 이하'여야 한다.");
+            }
+
+            var min = decimal.Parse(match.Groups["min"].Value, System.Globalization.CultureInfo.InvariantCulture);
+            var max = match.Groups["max"].Success
+                ? decimal.Parse(match.Groups["max"].Value, System.Globalization.CultureInfo.InvariantCulture)
+                : (decimal?)null;
+            return (min, max);
+        }
+    }
 }

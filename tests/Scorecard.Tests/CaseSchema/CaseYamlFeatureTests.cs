@@ -100,6 +100,60 @@ public class CaseYamlFeatureTests
             "case.yaml:3:23: depth steps" + string.Concat(Enumerable.Repeat("[1]", 15)) + ": " + DepthMessage);
     }
 
+    // 경로 비용(T-003 reviewer 비차단 1). 긴 명시 키(? )를 14단계 쌓고 그 밑에 넓은 흐름 목록을 둔다.
+    // 묵시 키는 1024자까지라서(YAML 1.2) 긴 키는 명시 키로 쓴다. 깊이는 15라서 depth 오류가 아니다.
+    // 오류는 루트의 알 수 없는 키 하나와 목록 끝 항목의 태그 하나뿐이다. 다른 스칼라 299,999개는 오류가 없다.
+    // 끝 항목의 태그는 목록을 끝까지 읽었는지, 깊은 경로가 맞는지 보려고 둔다.
+    // 경로 문자열을 노드마다 미리 만들면 일이 (경로 길이 약 14만 자 × 항목 30만 개)로 커진다. 입력은 약 1 MB다.
+    // 키 1천 자로는 증폭이 상한 안에 들어온다(1천 자 × 14단계 × 3만 개: 약 0.4초). 그래서 키를 1만 자, 항목을 30만 개로 키웠다.
+    // 참고(이 저장소 개발 컴퓨터, 2026-11-06): 경로를 노드마다 만드는 구현 약 36초, Parser 이벤트만 읽기 약 0.4초.
+    // 상한 10초는 정상 구현(1초 안팎)의 10배다. 시간은 테스트 쪽에서 잰다(테스트 dll은 G1 D1 대상이 아니다).
+    [Fact]
+    public async Task Long_explicit_keys_over_wide_list_do_not_multiply_path_cost()
+    {
+        const int Levels = 14;
+        const int KeyLength = 10_000;
+        const int Items = 300_000;
+        var limit = TimeSpan.FromSeconds(10);
+
+        // OneStep은 4줄이다. 단계 l(0부터)의 키는 5 + 2l줄, 목록은 5 + 2·14 = 33줄이다.
+        var yaml = new System.Text.StringBuilder(CaseInput.OneStep);
+        var keys = new List<string>();
+        for (var level = 0; level < Levels; level++)
+        {
+            var key = new string((char)('a' + level), KeyLength);
+            keys.Add(key);
+            yaml.Append(' ', 2 * level).Append("? ").Append(key).Append('\n');
+            yaml.Append(' ', 2 * level).Append(":\n");
+        }
+
+        // 목록 들여쓰기 28칸. '['가 29열, 항목 i(1부터)는 30 + 3(i - 1)열이다(항목 사이 ", ").
+        yaml.Append(' ', 2 * Levels).Append('[');
+        for (var i = 1; i < Items; i++)
+        {
+            yaml.Append("x, ");
+        }
+
+        yaml.Append("!t x]\n");
+        var bytes = CaseInput.Bytes(yaml.ToString());
+        var listLine = 5 + (2 * Levels);
+        var lastColumn = (2 * Levels) + 2 + (3 * (Items - 1));
+        var deepPath = string.Join(".", keys) + $"[{Items}]";
+
+        var parse = Task.Run(() => CaseInput.Parse(bytes));
+        var finished = await Task.WhenAny(parse, Task.Delay(limit)) == parse;
+        Assert.True(finished, $"입력 {bytes.Length}바이트를 {limit.TotalSeconds}초 안에 읽지 못했다. 경로 문자열을 노드마다 만드는지 본다.");
+        var result = await parse;
+
+        // 경로가 길어서 문자열 전체 비교 대신 길이와 일치 여부를 본다. 실패 출력이 수십만 자가 되지 않게 한다.
+        Assert.Null(result.Case);
+        Assert.Equal(
+            [(5, 3, "unknown-field", KeyLength, "알 수 없는 필드다"), (listLine, lastColumn, "tag", deepPath.Length, "태그(!)는 쓰지 않는다")],
+            result.Errors.Select(e => (e.Line, e.Column, e.Code, e.Path.Length, e.Message)));
+        Assert.True(result.Errors[0].Path == keys[0], "unknown-field 경로가 첫 키와 다르다.");
+        Assert.True(result.Errors[1].Path == deepPath, "tag 경로가 키 14개를 '.'로 이은 뒤 [300000]이 아니다.");
+    }
+
     // 블록 매핑 중첩도 같은 깊이 규칙이다. answers 아래에 매핑을 깊게 쌓는다.
     [Fact]
     public void Deep_block_mapping_is_depth_error()

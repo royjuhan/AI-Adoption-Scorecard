@@ -5,7 +5,7 @@
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `6eaec0e`
 - 확인 환경: Ubuntu 24.04.5 x64, ext4, root 계정(uid 0), .NET SDK 10.0.114, xUnit 2.9.3
-- 스파이크: `spikes/T-002/` (머지 대상 아님). 실행은 `spikes/T-002/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-002/summary.txt`.
+- 스파이크: `spikes/T-002/` (머지 대상 아님, main에는 없다). 파일은 커밋 `8bc8885`에서 볼 수 있다. 실행은 `spikes/T-002/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-002/summary.txt`. 이 문서의 `spikes/T-002/…` 경로는 모두 그 커밋 기준이다.
 
 ## 0. 표기
 

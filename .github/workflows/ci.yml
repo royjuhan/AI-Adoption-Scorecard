@@ -1,0 +1,18 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore AIAdoptionScorecard.sln
+      - run: dotnet build AIAdoptionScorecard.sln --no-restore -c Release
+      - run: dotnet test AIAdoptionScorecard.sln --no-build -c Release

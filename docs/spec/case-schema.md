@@ -114,7 +114,7 @@ C의 구조(스파이크 코드 기준):
 
 | 키 | 형식 | 필수 | 없을 때 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `name` | 문자열 | 예 | `required` | `^[a-z0-9]+(-[a-z0-9]+)*$`, 64자 이하 [P:case name]. 폴더 이름과 같은지는 보지 않는다(G2 작업 폴더 이름이 `input`이다) |
+| `name` | 문자열 | 예 | `required` | `^[a-z0-9]+(-[a-z0-9]+)*\z`, 64자 이하 [P:case name]. 폴더 이름과 같은지는 보지 않는다(G2 작업 폴더 이름이 `input`이다) |
 | `task` | 문자열 | 예 | `required` | 자유 서술. 저장만 |
 | `before` | 문자열 | 아니오 | null | 자유 서술. 저장만 |
 | `after` | 문자열 | 아니오 | null | 자유 서술. 저장만 |
@@ -184,7 +184,7 @@ C의 구조(스파이크 코드 기준):
 
 - `tolerance`와 `tolerance_pct`를 같이 쓰면 `conflict` [S3 type-errors].
 - 둘 다 없으면 허용한다. 뜻(정확 일치·텍스트 정규화)은 T-006에서 정한다.
-- `compare`에 항목이 있는데 `inputs` 키가 없으면 `required` 경로 `inputs`, 위치는 `compare` 값 [P:edge compare-without-inputs].
+- `compare`에 항목이 있는데 `inputs` 키가 없거나 값이 null이면 `required` 경로 `inputs`, 위치는 `compare` 값 [P:edge compare-without-inputs].
 
 `thresholds`:
 
@@ -203,8 +203,8 @@ C의 구조(스파이크 코드 기준):
 | --- | --- | --- |
 | 문자열 | 스칼라. 따옴표 여부 상관없음. null이면 값 없음 | 매핑·목록 → `type` |
 | 열거 | 문자열이 선택지와 서수로 같다(대소문자 구분). 따옴표 허용(`"yes"`) | `Weekly`, `Table` → `enum` |
-| 정수 | 따옴표 없는 `^-?(0\|[1-9][0-9]*)$`. `InvariantCulture`로 읽는다 | `010`, `+1`, `1e3`, `.5`, `1.`, `1.50`, `0x10`, `.inf`, `1_000`, `"10"`, `'10'` → `format`. `-0`, `2147483648` → `range` |
-| 숫자 | 따옴표 없는 `^-?(0\|[1-9][0-9]*)(\.[0-9]+)?$`. `decimal`, `InvariantCulture` | `1,5`, `010`, `+1`, `1e3`, `.5`, `1.`, `0x10`, `.inf`, `1_000`, `"10"` → `format`. 범위 밖 → `range` |
+| 정수 | 따옴표 없는 `^-?(0\|[1-9][0-9]*)\z`. `InvariantCulture`로 읽는다 | `010`, `+1`, `1e3`, `.5`, `1.`, `1.50`, `0x10`, `.inf`, `1_000`, `"10"`, `'10'` → `format`. `-0`, `2147483648` → `range` |
+| 숫자 | 따옴표 없는 `^-?(0\|[1-9][0-9]*)(\.[0-9]+)?\z`. `decimal`, `InvariantCulture` | `1,5`, `010`, `+1`, `1e3`, `.5`, `1.`, `0x10`, `.inf`, `1_000`, `"10"` → `format`. 범위 밖 → `range` |
 | 불리언 | 따옴표 없는 `true`, `false` | `True`, `TRUE`, `yes`, `on`, `"true"`, `1` → `format` |
 | null | 따옴표 없는 빈 값, `~`, `null`, `Null`, `NULL` (YAML 1.2 core 스키마) | `""`, `"null"`, `''`은 문자열 |
 
@@ -224,7 +224,7 @@ C의 구조(스파이크 코드 기준):
 | 태그 `!x`, `!!int` | `tag` | [S3 alias-tag] |
 | 같은 매핑에 같은 키 | `duplicate-key`, 둘째 키 위치. 첫 값을 쓴다 | [S3 duplicates] |
 | 키가 스칼라가 아님(`? [x]`) | `type` "키는 문자열이어야 한다", 그 키 위치 | [P:edge complex-key] |
-| 깊이 16 초과 | `depth`, 그 한 건만 내고 읽기를 멈춘다 | [P:deep-nesting] |
+| 깊이 16 초과 (루트 매핑이 1단계, 스칼라는 세지 않는다) | `depth`, 그 한 건만 내고 읽기를 멈춘다 | [P:deep-nesting] |
 
 - 별칭 폭탄(20단계 × 4배)은 펼치지 않고 오류 117건으로 끝난다 [P:alias-bomb].
 - 깊이: YamlDotNet `Parser`는 흐름 중첩(`[[[…]]]`)이 깊어질수록 깊이 비례보다 빨리 느려진다. 이벤트를 끝까지 읽는 데 깊이 1만 536ms, 2만 1,456ms, 3만 5,757ms [T]. 처음 40개 이벤트만 읽으면 깊이 10만·100만도 2ms 이하 [T]. 그래서 깊이를 넘으면 건너뛰지 않고(`SkipThisAndNestedEvents`) 바로 멈춘다. 이렇게 하면 깊이 10만 입력도 2초 안에 `depth` 1건으로 끝난다 [P:deep-nesting 100000].
@@ -617,7 +617,7 @@ case.yaml:10:13: duplicate compare[2].field: 비교 필드가 중복된다 (처�
 
 ### 7.1 위치와 샘플
 
-- 폴더 `tests/Scorecard.Tests/Cases/`, 네임스페이스 `Scorecard.Tests.Cases`. Trait `Spec` = `case-schema`(제안).
+- 폴더 `tests/Scorecard.Tests/CaseSchema/`, 네임스페이스 `Scorecard.Tests.CaseSchema`. Trait `Spec` = `case-schema`.
 - 카드의 합성 샘플 3종: `tests/Scorecard.Tests/TestData/case-schema/<이름>/case.yaml`. 정상(6.1), 필드 누락(6.3), 형식 오류(6.4). 스파이크 `samples/`에서 옮겨도 된다. 나머지 경우는 테스트 안 문자열로 충분하다.
 - 샘플은 UTF-8(BOM 없음), LF. T-002 테스트 `Sample_text_files_have_no_carriage_return`이 `TestData` 아래 텍스트 파일의 `\r`을 막는다 [읽음]. 그래서 BOM·CRLF·CR·UTF-16·CP949·잘못된 바이트 변형은 커밋하지 않고 테스트 코드에서 정상 샘플 바이트로 만든다(스파이크 `Probes.Encodings`와 같은 방법).
 - 기존 `TestData/.gitattributes`(`* -text`)가 새 샘플에도 적용된다 [읽음].

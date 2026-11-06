@@ -1,0 +1,4 @@
+name: sample-minimal
+task: 최소 합성 예시
+steps:
+  - name: 한 단계

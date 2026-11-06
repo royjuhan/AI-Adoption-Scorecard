@@ -1,0 +1,6 @@
+name: sample-multi
+task: 문서 둘
+steps:
+  - name: a
+---
+name: sample-multi-2

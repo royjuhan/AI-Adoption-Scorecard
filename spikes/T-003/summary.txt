@@ -1,0 +1,548 @@
+dotnet SDK: 10.0.114
+repo HEAD: abd34d0
+[s0-tool-build] rc=0 cmd: dotnet build CaseSpike/CaseSpike.csproj --artifacts-path <작업>/artifacts -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s1-nuspec] <license type="expression">MIT</license>
+[s1-nuspec] dependency groups: targetFramework="net10.0" targetFramework=".NETFramework4.7" targetFramework="net8.0" targetFramework=".NETStandard2.0" targetFramework=".NETStandard2.1" 
+[s1-nuspec] dependency 항목 수: 0
+[s1-lib] net10.0 net47 net8.0 netstandard2.0 netstandard2.1 
+[s1-yamldotnet-refs] rc=0 cmd: tool refs <패키지>//yamldotnet/18.1.0/lib/net10.0/YamlDotNet.dll
+    ASMREF System.Runtime 10.0.0.0
+    ASMREF System.Text.RegularExpressions 10.0.0.0
+    ASMREF System.Linq.Expressions 10.0.0.0
+    ASMREF System.Collections 10.0.0.0
+    ASMREF System.ComponentModel.TypeConverter 10.0.0.0
+    ASMREF System.ObjectModel 10.0.0.0
+    ASMREF System.Collections.Concurrent 10.0.0.0
+    ASMREF System.Runtime.Serialization.Primitives 10.0.0.0
+    ASMREF System.Linq 10.0.0.0
+    ASMREF System.Text.Encoding.Extensions 10.0.0.0
+    ASMREF System.Memory 10.0.0.0
+    ASMREF System.Threading 10.0.0.0
+[s1-yamldotnet-meta] rc=0 cmd: tool meta <패키지>//yamldotnet/18.1.0/lib/net10.0/YamlDotNet.dll
+    FIND D1 type System.Random
+    FIND N5 member System.Activator::CreateInstance
+    FIND N5 member System.Reflection.Assembly::GetType
+    FIND N5 member System.Type::GetType
+    FIND R1 member System.Reflection.MethodBase::Invoke
+    RESULT N1=0
+    RESULT N2=0
+    RESULT N3=0
+    RESULT N4=0
+    RESULT N5=3
+    RESULT N6=0
+    RESULT D1=1
+    RESULT R1=1
+[s1-yamldotnet-users] rc=0 cmd: tool users <패키지>//yamldotnet/18.1.0/lib/net10.0/YamlDotNet.dll
+    USER D1 System.Random::.ctor <- YamlDotNet.RepresentationModel
+    USER D1 System.Random::Next <- YamlDotNet.RepresentationModel
+    USER N5 System.Activator::CreateInstance <- YamlDotNet.Serialization.NodeDeserializers
+    USER N5 System.Activator::CreateInstance <- YamlDotNet.Serialization.ObjectFactories
+    USER N5 System.Activator::CreateInstance <- YamlDotNet.Serialization.ObjectGraphVisitors
+    USER N5 System.Activator::CreateInstance <- YamlDotNet.Serialization.Utilities
+    USER N5 System.Reflection.Assembly::GetType <- YamlDotNet.Helpers
+    USER N5 System.Type::GetType <- YamlDotNet.Serialization.Converters
+    USER N5 System.Type::GetType <- YamlDotNet.Serialization.NodeTypeResolvers
+    USER R1 System.Reflection.MethodBase::Invoke <- YamlDotNet.Helpers
+    USER R1 System.Reflection.MethodBase::Invoke <- YamlDotNet.Serialization.ObjectFactories
+    USER R1 System.Reflection.MethodBase::Invoke <- YamlDotNet.Serialization.TypeInspectors
+    USER R1 System.Reflection.MethodBase::Invoke <- YamlDotNet.Serialization.Utilities
+    RESULT users=13
+[clone base] HEAD=abd34d0
+[s2-base-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s2-base-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 153 ms - Scorecard.Tests.dll (net10.0)
+[clone A-reflection] HEAD=abd34d0
+[A-reflection-add-yaml] rc=0 cmd: dotnet add src/Scorecard.Core/Scorecard.Core.csproj package YamlDotNet --version 18.1.0
+[A-reflection-csproj] <PackageReference Include="YamlDotNet" Version="18.1.0" /> 
+[A-reflection-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[A-reflection-meta-core] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    FIND N6 non-framework asmref YamlDotNet
+    RESULT N1=0
+    RESULT N2=0
+    RESULT N3=0
+    RESULT N4=0
+    RESULT N5=0
+    RESULT N6=1
+    RESULT D1=0
+    RESULT R1=0
+[A-reflection-refs-core] rc=0 cmd: tool refs tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    ASMREF System.Runtime 10.0.0.0
+    ASMREF System.Collections 10.0.0.0
+    ASMREF YamlDotNet 18.0.0.0
+    TYPEREF YamlDotNet.Serialization.BuilderSkeleton`1
+    TYPEREF YamlDotNet.Serialization.DeserializerBuilder
+    TYPEREF YamlDotNet.Serialization.IDeserializer
+    TYPEREF YamlDotNet.Serialization.INamingConvention
+    TYPEREF YamlDotNet.Serialization.NamingConventions.UnderscoredNamingConvention
+[A-reflection-g1-before-allow] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    [xUnit.net 00:00:00.50]     Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [FAIL]
+      Failed Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [2 ms]
+       Scorecard.Core.dll에 금지 참조 1건:
+      N6 non-framework asmref YamlDotNet
+    Failed!  - Failed:     1, Passed:    41, Skipped:     0, Total:    42, Duration: 204 ms - Scorecard.Tests.dll (net10.0)
+[allow A-reflection] 18:    private static readonly string[] AllowedThirdPartyAssemblies = ["YamlDotNet"];
+[A-reflection-build-allow] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[A-reflection-g1-after-allow] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 154 ms - Scorecard.Tests.dll (net10.0)
+[clone B-static] HEAD=abd34d0
+[B-static-add-yaml] rc=0 cmd: dotnet add src/Scorecard.Core/Scorecard.Core.csproj package YamlDotNet --version 18.1.0
+[B-static-add-Vecc.YamlDotNet.Analyzers.StaticGenerator] rc=0 cmd: dotnet add src/Scorecard.Core/Scorecard.Core.csproj package Vecc.YamlDotNet.Analyzers.StaticGenerator --version 18.1.0
+[B-static-csproj] <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" /> <PackageReference Include="YamlDotNet" Version="18.1.0" /> 
+[B-static-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[B-static-meta-core] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    FIND N6 non-framework asmref YamlDotNet
+    RESULT N1=0
+    RESULT N2=0
+    RESULT N3=0
+    RESULT N4=0
+    RESULT N5=0
+    RESULT N6=1
+    RESULT D1=0
+    RESULT R1=0
+[B-static-refs-core] rc=0 cmd: tool refs tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    ASMREF System.Runtime 10.0.0.0
+    ASMREF YamlDotNet 18.0.0.0
+    ASMREF System.Collections 10.0.0.0
+    TYPEREF YamlDotNet.Core.ScalarStyle
+    TYPEREF YamlDotNet.Serialization.IDeserializer
+    TYPEREF YamlDotNet.Serialization.INamingConvention
+    TYPEREF YamlDotNet.Serialization.IObjectAccessor
+    TYPEREF YamlDotNet.Serialization.IObjectDescriptor
+    TYPEREF YamlDotNet.Serialization.IPropertyDescriptor
+    TYPEREF YamlDotNet.Serialization.ITypeInspector
+    TYPEREF YamlDotNet.Serialization.ITypeResolver
+    TYPEREF YamlDotNet.Serialization.NamingConventions.UnderscoredNamingConvention
+    TYPEREF YamlDotNet.Serialization.ObjectDescriptor
+    TYPEREF YamlDotNet.Serialization.ObjectFactories.StaticObjectFactory
+    TYPEREF YamlDotNet.Serialization.StaticBuilderSkeleton`1
+    TYPEREF YamlDotNet.Serialization.StaticContext
+    TYPEREF YamlDotNet.Serialization.StaticDeserializerBuilder
+    TYPEREF YamlDotNet.Serialization.TypeResolvers.StaticTypeResolver
+    TYPEREF YamlDotNet.Serialization.YamlSerializableAttribute
+    TYPEREF YamlDotNet.Serialization.YamlStaticContextAttribute
+[B-static-g1-before-allow] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    [xUnit.net 00:00:00.58]     Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [FAIL]
+      Failed Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [2 ms]
+       Scorecard.Core.dll에 금지 참조 1건:
+      N6 non-framework asmref YamlDotNet
+    Failed!  - Failed:     1, Passed:    41, Skipped:     0, Total:    42, Duration: 167 ms - Scorecard.Tests.dll (net10.0)
+[allow B-static] 18:    private static readonly string[] AllowedThirdPartyAssemblies = ["YamlDotNet"];
+[B-static-build-allow] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[B-static-g1-after-allow] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 118 ms - Scorecard.Tests.dll (net10.0)
+[clone C-events] HEAD=abd34d0
+[C-events-add-yaml] rc=0 cmd: dotnet add src/Scorecard.Core/Scorecard.Core.csproj package YamlDotNet --version 18.1.0
+[C-events-csproj] <PackageReference Include="YamlDotNet" Version="18.1.0" /> 
+[C-events-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[C-events-meta-core] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    FIND N6 non-framework asmref YamlDotNet
+    RESULT N1=0
+    RESULT N2=0
+    RESULT N3=0
+    RESULT N4=0
+    RESULT N5=0
+    RESULT N6=1
+    RESULT D1=0
+    RESULT R1=0
+[C-events-refs-core] rc=0 cmd: tool refs tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll
+    ASMREF System.Runtime 10.0.0.0
+    ASMREF System.Collections 10.0.0.0
+    ASMREF System.Text.Encoding.Extensions 10.0.0.0
+    ASMREF System.Text.RegularExpressions 10.0.0.0
+    ASMREF YamlDotNet 18.0.0.0
+    ASMREF System.Linq 10.0.0.0
+    ASMREF System.Memory 10.0.0.0
+    TYPEREF YamlDotNet.Core.AnchorName
+    TYPEREF YamlDotNet.Core.Events.AnchorAlias
+    TYPEREF YamlDotNet.Core.Events.DocumentEnd
+    TYPEREF YamlDotNet.Core.Events.DocumentStart
+    TYPEREF YamlDotNet.Core.Events.MappingEnd
+    TYPEREF YamlDotNet.Core.Events.MappingStart
+    TYPEREF YamlDotNet.Core.Events.NodeEvent
+    TYPEREF YamlDotNet.Core.Events.ParsingEvent
+    TYPEREF YamlDotNet.Core.Events.Scalar
+    TYPEREF YamlDotNet.Core.Events.SequenceEnd
+    TYPEREF YamlDotNet.Core.Events.SequenceStart
+    TYPEREF YamlDotNet.Core.Events.StreamEnd
+    TYPEREF YamlDotNet.Core.Events.StreamStart
+    TYPEREF YamlDotNet.Core.IParser
+    TYPEREF YamlDotNet.Core.Mark
+    TYPEREF YamlDotNet.Core.Parser
+    TYPEREF YamlDotNet.Core.ParserExtensions
+    TYPEREF YamlDotNet.Core.ScalarStyle
+    TYPEREF YamlDotNet.Core.TagName
+    TYPEREF YamlDotNet.Core.YamlException
+[C-events-g1-before-allow] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    [xUnit.net 00:00:00.40]     Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [FAIL]
+      Failed Scorecard.Tests.Guards.NetworkGuardTests.Core_has_no_network_process_or_unlisted_references [1 ms]
+       Scorecard.Core.dll에 금지 참조 1건:
+      N6 non-framework asmref YamlDotNet
+    Failed!  - Failed:     1, Passed:    41, Skipped:     0, Total:    42, Duration: 100 ms - Scorecard.Tests.dll (net10.0)
+[allow C-events] 18:    private static readonly string[] AllowedThirdPartyAssemblies = ["YamlDotNet"];
+[C-events-build-allow] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[C-events-g1-after-allow] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 113 ms - Scorecard.Tests.dll (net10.0)
+[C-events test-bin] Scorecard.Core.dll Scorecard.Core.pdb Scorecard.Tests.deps.json Scorecard.Tests.dll Scorecard.Tests.pdb Scorecard.Tests.runtimeconfig.json YamlDotNet.dll scorecard scorecard.deps.json scorecard.dll scorecard.pdb scorecard.runtimeconfig.json 
+[C-events-meta-cli] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/scorecard.dll
+    RESULT N1=0
+    RESULT N2=0
+    RESULT N3=0
+    RESULT N4=0
+    RESULT N5=0
+    RESULT N6=0
+    RESULT D1=0
+    RESULT R1=0
+[C-events-test-all] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:    77, Skipped:     0, Total:    77, Duration: 194 ms - Scorecard.Tests.dll (net10.0)
+[C-events-format] rc=0 cmd: dotnet format src/Scorecard.Core/Scorecard.Core.csproj --verify-no-changes
+[s3-parse-alias-tag] rc=0 cmd: tool parse samples/alias-tag <작업>/s3-alias-tag.json
+    ERR case.yaml:2:7: tag task: 태그(!)는 쓰지 않는다
+    ERR case.yaml:3:1: unknown-field base: 알 수 없는 필드다
+    ERR case.yaml:3:7: alias base: 앵커(&)는 쓰지 않는다
+    ERR case.yaml:6:14: alias steps[1].answers: 별칭(*)은 쓰지 않는다
+    ERR case.yaml:9:7: unknown-field steps[2].answers.<<: 알 수 없는 필드다
+    ERR case.yaml:9:11: alias steps[2].answers.<<: 별칭(*)은 쓰지 않는다
+    ERR case.yaml:10:19: tag steps[2].answers.batch_size: 태그(!)는 쓰지 않는다
+    SHA e14a5ce384c85307 valid=False errors=7
+[s3-parse-comment-only] rc=0 cmd: tool parse samples/comment-only <작업>/s3-comment-only.json
+    ERR case.yaml: empty: 내용이 없다
+    SHA 4d788195e77d97f7 valid=False errors=1
+[s3-parse-duplicates] rc=0 cmd: tool parse samples/duplicates <작업>/s3-duplicates.json
+    ERR case.yaml:3:1: duplicate-key name: 중복된 키다 (처음: 1줄)
+    ERR case.yaml:6:30: duplicate-key steps[1].answers.batch_size: 중복된 키다 (처음: 6줄)
+    ERR case.yaml:7:11: duplicate steps[2].name: 단계 이름이 중복된다 (처음: steps[1])
+    ERR case.yaml:10:13: duplicate compare[2].field: 비교 필드가 중복된다 (처음: compare[1])
+    SHA 84553eb3c926b82b valid=False errors=4
+[s3-parse-empty] rc=0 cmd: tool parse samples/empty <작업>/s3-empty.json
+    ERR case.yaml: empty: 내용이 없다
+    SHA 4d788195e77d97f7 valid=False errors=1
+[s3-parse-example-12-1] rc=0 cmd: tool parse samples/example-12-1 <작업>/s3-example-12-1.json
+    SHA 000f78f42e91d0d0 valid=True errors=0
+[s3-parse-missing-required] rc=0 cmd: tool parse samples/missing-required <작업>/s3-missing-required.json
+    ERR case.yaml:1:1: required name: 필수 필드가 없다
+    ERR case.yaml:3:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:11: required steps[2].name: 값이 비어 있다
+    ERR case.yaml:7:3: required inputs.key: 필수 필드가 없다
+    SHA 0beddf2d0f0d5663 valid=False errors=4
+[s3-parse-multi-doc] rc=0 cmd: tool parse samples/multi-doc <작업>/s3-multi-doc.json
+    ERR case.yaml:5:1: multi-document: 문서가 둘 이상이다. 하나만 쓴다
+    SHA 8e94f6b30621ecb6 valid=False errors=1
+[s3-parse-root-list] rc=0 cmd: tool parse samples<홈>-list <작업>/s3-root-list.json
+    ERR case.yaml:1:1: type: 매핑이어야 한다
+    SHA e821ff38e044500e valid=False errors=1
+[s3-parse-type-errors] rc=0 cmd: tool parse samples/type-errors <작업>/s3-type-errors.json
+    ERR case.yaml:1:7: format name: 소문자·숫자·'-'만, 64자까지 쓴다
+    ERR case.yaml:3:11: enum ai_usage: 선택지 밖의 값 'always'. 가능한 값: build-time, runtime, hybrid
+    ERR case.yaml:7:19: enum steps[1].answers.input_kind: 선택지 밖의 값 'Table'. 가능한 값: table, fixed_form, free_doc, image, conversation
+    ERR case.yaml:8:18: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:9:19: format steps[1].answers.batch_size: 정수가 아니다: ten
+    ERR case.yaml:10:23: range steps[1].answers.exception_rate: 범위 밖이다 (0 이상 100 이하): 120
+    ERR case.yaml:11:25: format steps[1].answers.minutes_per_item: 숫자가 아니다: 5 (따옴표 없이 쓴다)
+    ERR case.yaml:12:25: enum steps[1].answers.existing_feature: 선택지 밖의 값 'maybe'. 가능한 값: yes, no, unknown
+    ERR case.yaml:15:19: range steps[2].answers.batch_size: 범위 밖이다 (1 이상 2147483647 이하): 0
+    ERR case.yaml:16:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:17:22: type steps[2].answers.current_actor: 스칼라 값이어야 한다
+    ERR case.yaml:18:5: type steps[3]: 매핑이어야 한다
+    ERR case.yaml:20:5: conflict compare[1]: tolerance와 tolerance_pct 중 하나만 쓴다
+    ERR case.yaml:21:27: range compare[2].tolerance: 범위 밖이다 (0 이상): -1
+    ERR case.yaml:23:14: format inputs.reference: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:24:14: format inputs.candidate: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:27:17: range thresholds.accuracy_min: 범위 밖이다 (0 이상 100 이하): 101
+    ERR case.yaml:28:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 3dd347f8755725ba valid=False errors=18
+[s3-parse-unknown-fields] rc=0 cmd: tool parse samples/unknown-fields <작업>/s3-unknown-fields.json
+    ERR case.yaml:3:1: unknown-field owner: 알 수 없는 필드다
+    ERR case.yaml:6:5: unknown-field steps[1].note: 알 수 없는 필드다
+    ERR case.yaml:8:7: unknown-field steps[1].answers.frequncy: 알 수 없는 필드다
+    SHA f312301cb9daacc9 valid=False errors=3
+[s3-parse-valid-full] rc=0 cmd: tool parse samples/valid-full <작업>/s3-valid-full.json
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s3-parse-valid-minimal] rc=0 cmd: tool parse samples/valid-minimal <작업>/s3-valid-minimal.json
+    SHA b20ddbc73f82cf9b valid=True errors=0
+[s3-parse-yaml-syntax] rc=0 cmd: tool parse samples/yaml-syntax <작업>/s3-yaml-syntax.json
+    ERR case.yaml:5:1: syntax: YAML 문법 오류: While parsing a flow mapping, did not find expected ',' or '}'.
+    SHA 1b78ee76037d7e53 valid=False errors=1
+[s3-parse-guard-case-valid] rc=0 cmd: tool parse tests-variant/guard/case-valid <작업>/s3-guard-case-valid.json
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s3-parse-guard-case-invalid] rc=0 cmd: tool parse tests-variant/guard/case-invalid <작업>/s3-guard-case-invalid.json
+    ERR case.yaml:2:1: required name: 필수 필드가 없다
+    ERR case.yaml:4:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:26: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:4:46: format steps[1].answers.batch_size: 정수가 아니다: 2.5
+    ERR case.yaml:7:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:8:7: unknown-field steps[2].answers.frequncy: 알 수 없는 필드다
+    ERR case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 8a9f5aac32105508 valid=False errors=7
+[s4-valid-full-run1] rc=0 cmd: tool parse samples/valid-full <작업>/s4-valid-full-1.json
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s4-valid-full-run2] rc=0 cmd: tool parse samples/valid-full <작업>/s4-valid-full-2.json
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s4-valid-full-de] rc=0 cmd: tool parse samples/valid-full <작업>/s4-valid-full-de.json --culture de-DE
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s4-valid-full-moved] rc=0 cmd: tool parse copy-elsewhere/deeper/valid-full <작업>/s4-valid-full-moved.json
+    SHA cc6903a57a8c3fdc valid=True errors=0
+[s4-valid-full] sha256: cc6903a57a8c3fdc 
+[s4-type-errors-run1] rc=0 cmd: tool parse samples/type-errors <작업>/s4-type-errors-1.json
+    ERR case.yaml:1:7: format name: 소문자·숫자·'-'만, 64자까지 쓴다
+    ERR case.yaml:3:11: enum ai_usage: 선택지 밖의 값 'always'. 가능한 값: build-time, runtime, hybrid
+    ERR case.yaml:7:19: enum steps[1].answers.input_kind: 선택지 밖의 값 'Table'. 가능한 값: table, fixed_form, free_doc, image, conversation
+    ERR case.yaml:8:18: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:9:19: format steps[1].answers.batch_size: 정수가 아니다: ten
+    ERR case.yaml:10:23: range steps[1].answers.exception_rate: 범위 밖이다 (0 이상 100 이하): 120
+    ERR case.yaml:11:25: format steps[1].answers.minutes_per_item: 숫자가 아니다: 5 (따옴표 없이 쓴다)
+    ERR case.yaml:12:25: enum steps[1].answers.existing_feature: 선택지 밖의 값 'maybe'. 가능한 값: yes, no, unknown
+    ERR case.yaml:15:19: range steps[2].answers.batch_size: 범위 밖이다 (1 이상 2147483647 이하): 0
+    ERR case.yaml:16:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:17:22: type steps[2].answers.current_actor: 스칼라 값이어야 한다
+    ERR case.yaml:18:5: type steps[3]: 매핑이어야 한다
+    ERR case.yaml:20:5: conflict compare[1]: tolerance와 tolerance_pct 중 하나만 쓴다
+    ERR case.yaml:21:27: range compare[2].tolerance: 범위 밖이다 (0 이상): -1
+    ERR case.yaml:23:14: format inputs.reference: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:24:14: format inputs.candidate: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:27:17: range thresholds.accuracy_min: 범위 밖이다 (0 이상 100 이하): 101
+    ERR case.yaml:28:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 3dd347f8755725ba valid=False errors=18
+[s4-type-errors-run2] rc=0 cmd: tool parse samples/type-errors <작업>/s4-type-errors-2.json
+    ERR case.yaml:1:7: format name: 소문자·숫자·'-'만, 64자까지 쓴다
+    ERR case.yaml:3:11: enum ai_usage: 선택지 밖의 값 'always'. 가능한 값: build-time, runtime, hybrid
+    ERR case.yaml:7:19: enum steps[1].answers.input_kind: 선택지 밖의 값 'Table'. 가능한 값: table, fixed_form, free_doc, image, conversation
+    ERR case.yaml:8:18: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:9:19: format steps[1].answers.batch_size: 정수가 아니다: ten
+    ERR case.yaml:10:23: range steps[1].answers.exception_rate: 범위 밖이다 (0 이상 100 이하): 120
+    ERR case.yaml:11:25: format steps[1].answers.minutes_per_item: 숫자가 아니다: 5 (따옴표 없이 쓴다)
+    ERR case.yaml:12:25: enum steps[1].answers.existing_feature: 선택지 밖의 값 'maybe'. 가능한 값: yes, no, unknown
+    ERR case.yaml:15:19: range steps[2].answers.batch_size: 범위 밖이다 (1 이상 2147483647 이하): 0
+    ERR case.yaml:16:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:17:22: type steps[2].answers.current_actor: 스칼라 값이어야 한다
+    ERR case.yaml:18:5: type steps[3]: 매핑이어야 한다
+    ERR case.yaml:20:5: conflict compare[1]: tolerance와 tolerance_pct 중 하나만 쓴다
+    ERR case.yaml:21:27: range compare[2].tolerance: 범위 밖이다 (0 이상): -1
+    ERR case.yaml:23:14: format inputs.reference: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:24:14: format inputs.candidate: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:27:17: range thresholds.accuracy_min: 범위 밖이다 (0 이상 100 이하): 101
+    ERR case.yaml:28:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 3dd347f8755725ba valid=False errors=18
+[s4-type-errors-de] rc=0 cmd: tool parse samples/type-errors <작업>/s4-type-errors-de.json --culture de-DE
+    ERR case.yaml:1:7: format name: 소문자·숫자·'-'만, 64자까지 쓴다
+    ERR case.yaml:3:11: enum ai_usage: 선택지 밖의 값 'always'. 가능한 값: build-time, runtime, hybrid
+    ERR case.yaml:7:19: enum steps[1].answers.input_kind: 선택지 밖의 값 'Table'. 가능한 값: table, fixed_form, free_doc, image, conversation
+    ERR case.yaml:8:18: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:9:19: format steps[1].answers.batch_size: 정수가 아니다: ten
+    ERR case.yaml:10:23: range steps[1].answers.exception_rate: 범위 밖이다 (0 이상 100 이하): 120
+    ERR case.yaml:11:25: format steps[1].answers.minutes_per_item: 숫자가 아니다: 5 (따옴표 없이 쓴다)
+    ERR case.yaml:12:25: enum steps[1].answers.existing_feature: 선택지 밖의 값 'maybe'. 가능한 값: yes, no, unknown
+    ERR case.yaml:15:19: range steps[2].answers.batch_size: 범위 밖이다 (1 이상 2147483647 이하): 0
+    ERR case.yaml:16:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:17:22: type steps[2].answers.current_actor: 스칼라 값이어야 한다
+    ERR case.yaml:18:5: type steps[3]: 매핑이어야 한다
+    ERR case.yaml:20:5: conflict compare[1]: tolerance와 tolerance_pct 중 하나만 쓴다
+    ERR case.yaml:21:27: range compare[2].tolerance: 범위 밖이다 (0 이상): -1
+    ERR case.yaml:23:14: format inputs.reference: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:24:14: format inputs.candidate: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:27:17: range thresholds.accuracy_min: 범위 밖이다 (0 이상 100 이하): 101
+    ERR case.yaml:28:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 3dd347f8755725ba valid=False errors=18
+[s4-type-errors-moved] rc=0 cmd: tool parse copy-elsewhere/deeper/type-errors <작업>/s4-type-errors-moved.json
+    ERR case.yaml:1:7: format name: 소문자·숫자·'-'만, 64자까지 쓴다
+    ERR case.yaml:3:11: enum ai_usage: 선택지 밖의 값 'always'. 가능한 값: build-time, runtime, hybrid
+    ERR case.yaml:7:19: enum steps[1].answers.input_kind: 선택지 밖의 값 'Table'. 가능한 값: table, fixed_form, free_doc, image, conversation
+    ERR case.yaml:8:18: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    ERR case.yaml:9:19: format steps[1].answers.batch_size: 정수가 아니다: ten
+    ERR case.yaml:10:23: range steps[1].answers.exception_rate: 범위 밖이다 (0 이상 100 이하): 120
+    ERR case.yaml:11:25: format steps[1].answers.minutes_per_item: 숫자가 아니다: 5 (따옴표 없이 쓴다)
+    ERR case.yaml:12:25: enum steps[1].answers.existing_feature: 선택지 밖의 값 'maybe'. 가능한 값: yes, no, unknown
+    ERR case.yaml:15:19: range steps[2].answers.batch_size: 범위 밖이다 (1 이상 2147483647 이하): 0
+    ERR case.yaml:16:23: format steps[2].answers.exception_rate: 숫자가 아니다: 1,5
+    ERR case.yaml:17:22: type steps[2].answers.current_actor: 스칼라 값이어야 한다
+    ERR case.yaml:18:5: type steps[3]: 매핑이어야 한다
+    ERR case.yaml:20:5: conflict compare[1]: tolerance와 tolerance_pct 중 하나만 쓴다
+    ERR case.yaml:21:27: range compare[2].tolerance: 범위 밖이다 (0 이상): -1
+    ERR case.yaml:23:14: format inputs.reference: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:24:14: format inputs.candidate: 케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\' 없음)
+    ERR case.yaml:27:17: range thresholds.accuracy_min: 범위 밖이다 (0 이상 100 이하): 101
+    ERR case.yaml:28:19: format thresholds.time_must_drop: true 또는 false로 쓴다: yes
+    SHA 3dd347f8755725ba valid=False errors=18
+[s4-type-errors] sha256: 3dd347f8755725ba 
+[s4-missing-required-run1] rc=0 cmd: tool parse samples/missing-required <작업>/s4-missing-required-1.json
+    ERR case.yaml:1:1: required name: 필수 필드가 없다
+    ERR case.yaml:3:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:11: required steps[2].name: 값이 비어 있다
+    ERR case.yaml:7:3: required inputs.key: 필수 필드가 없다
+    SHA 0beddf2d0f0d5663 valid=False errors=4
+[s4-missing-required-run2] rc=0 cmd: tool parse samples/missing-required <작업>/s4-missing-required-2.json
+    ERR case.yaml:1:1: required name: 필수 필드가 없다
+    ERR case.yaml:3:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:11: required steps[2].name: 값이 비어 있다
+    ERR case.yaml:7:3: required inputs.key: 필수 필드가 없다
+    SHA 0beddf2d0f0d5663 valid=False errors=4
+[s4-missing-required-de] rc=0 cmd: tool parse samples/missing-required <작업>/s4-missing-required-de.json --culture de-DE
+    ERR case.yaml:1:1: required name: 필수 필드가 없다
+    ERR case.yaml:3:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:11: required steps[2].name: 값이 비어 있다
+    ERR case.yaml:7:3: required inputs.key: 필수 필드가 없다
+    SHA 0beddf2d0f0d5663 valid=False errors=4
+[s4-missing-required-moved] rc=0 cmd: tool parse copy-elsewhere/deeper/missing-required <작업>/s4-missing-required-moved.json
+    ERR case.yaml:1:1: required name: 필수 필드가 없다
+    ERR case.yaml:3:5: required steps[1].name: 필수 필드가 없다
+    ERR case.yaml:4:11: required steps[2].name: 값이 비어 있다
+    ERR case.yaml:7:3: required inputs.key: 필수 필드가 없다
+    SHA 0beddf2d0f0d5663 valid=False errors=4
+[s4-missing-required] sha256: 0beddf2d0f0d5663 
+[s4-probes] rc=0 cmd: tool probe samples
+    PROBE encoding lf: valid sha=cc6903a57a8c3fdc same-as-lf=True
+    PROBE encoding bom: valid sha=cc6903a57a8c3fdc same-as-lf=True
+    PROBE encoding crlf: valid sha=cc6903a57a8c3fdc same-as-lf=True
+    PROBE encoding cr: valid sha=cc6903a57a8c3fdc same-as-lf=True
+    PROBE encoding bom-crlf: valid sha=cc6903a57a8c3fdc same-as-lf=True
+    PROBE encoding utf16le-bom: errors=1 first=[case.yaml:1: encoding: UTF-16이다. UTF-8로 저장한다] sha=617eab285b1d6c29
+    PROBE encoding utf16be-bom: errors=1 first=[case.yaml:1: encoding: UTF-16이다. UTF-8로 저장한다] sha=617eab285b1d6c29
+    PROBE encoding utf16le-nobom: errors=1 first=[case.yaml:1: encoding: UTF-8이 아니다 (바이트 5)] sha=7a134e700db403c6
+    PROBE encoding cp949-line3: errors=1 first=[case.yaml:3: encoding: UTF-8이 아니다 (바이트 70)] sha=b00591a948bfecb1
+    PROBE encoding bom-then-bad: errors=1 first=[case.yaml:2: encoding: UTF-8이 아니다 (바이트 17)] sha=e22f0985ae55a2ed
+    PROBE encoding double-bom: errors=1 first=[case.yaml:2:5: syntax: YAML 문법 오류: While scanning a multiline plain scalar, found invalid mapping.] sha=e7e69a9ccfe3e904
+    PROBE encoding nul-in-value: errors=1 first=[case.yaml:2:9: syntax: YAML 문법 오류: While parsing a block mapping, did not find expected key.] sha=af6812822c21b532
+    PROBE encoding utf16le-ascii-nobom: errors=1 first=[case.yaml:1:3: syntax: YAML 문법 오류: While parsing a block mapping, did not find expected key.] sha=22a858cc6a87537a
+    PROBE encoding utf32be-bom: errors=1 first=[case.yaml:1: encoding: UTF-8이 아니다 (바이트 2)] sha=f9de5efae3792aee
+    PROBE streamreader utf16le-bom: no-exception decoded-as=utf-16 text-ok=True
+    PROBE utf8.getstring bom: first-char=U+FEFF
+    PROBE yamlstream bom-char key-first: first-key-starts-with-U+FEFF=True
+    PROBE yamlstream bom-char comment-first: SemanticErrorException at 2:5 msg=While scanning a multiline plain scalar, found invalid mapping.
+    PROBE block-scalar lf: task=첫 줄\n둘째 줄\n
+    PROBE block-scalar crlf: task=첫 줄\n둘째 줄\n
+    PROBE block-scalar cr: task=첫 줄\n둘째 줄\n
+    PROBE determinism valid: distinct=1 runs=6 (invariant×2, de-DE, tr-TR, ko-KR, ar-SA)
+    PROBE determinism invalid: distinct=1 runs=6 (invariant×2, de-DE, tr-TR, ko-KR, ar-SA)
+    PROBE column: case.yaml:4:38: enum steps[1].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    PROBE column: case.yaml:5:39: enum steps[2].answers.frequency: 선택지 밖의 값 'Weekly'. 가능한 값: daily, weekly, monthly, rare
+    PROBE deep-nesting 20: errors=1 first=[case.yaml:3:23: depth steps[1][1][1][1][1][1][1][1][1][1][1][1][1][1][1]: 너무 깊다. 16단계까지 쓴다] sha=2140a42c0ae82d6b under-2s=True
+    PROBE deep-nesting 100000: errors=1 first=[case.yaml:3:23: depth steps[1][1][1][1][1][1][1][1][1][1][1][1][1][1][1]: 너무 깊다. 16단계까지 쓴다] sha=2140a42c0ae82d6b under-2s=True
+    PROBE alias-bomb: errors=117 codes=required,unknown-field,alias
+    PROBE nfc-nfd step names: valid=True names=1|2 (UTF-16 길이)
+    PROBE missing-file: [case.yaml: file: 파일이 없다] contains-abs-path=False
+    PROBE yes-no plain/quoted: yes/no yes/no
+    PROBE integer batch_size: [10]=10 [010]=format [-0]=range [+1]=format [1e3]=format [.5]=format [1.]=format [1.50]=format [0x10]=format [.inf]=format [1_000]=format ["10"]=format ['10']=format [2147483648]=range
+    PROBE number exception_rate: [10]=10 [010]=format [-0]=0 [+1]=format [1e3]=format [.5]=format [1.]=format [1.50]=1.50 [0x10]=format [.inf]=format [1_000]=format ["10"]=format ['10']=format [2147483648]=range
+    PROBE boolean time_must_drop: [true]=True [false]=False [True]=format [TRUE]=format [yes]=format [on]=format ["true"]=format [1]=format
+    PROBE null rule_expressible: [~]=partial/default=True [null]=partial/default=True [NULL]=partial/default=True []=partial/default=True [""]=enum ["null"]=enum ['']=enum
+    PROBE case name: [a]=ok [a-1]=ok [A]=format [a_b]=format [a--b]=format [-a]=format [가]=format [64자]=ok [65자]=format
+    PROBE step name: ["  "]=case.yaml:4:11: required steps[1].name: 값이 비어 있다 [" 공백 "]=' 공백 ' [~]=case.yaml:4:11: required steps[1].name: 값이 비어 있다
+    PROBE edge complex-key: case.yaml:5:3: type: 키는 문자열이어야 한다
+    PROBE edge compare-without-inputs: case.yaml:6:3: required inputs: compare가 있으면 inputs가 있어야 한다
+    PROBE edge empty-steps: case.yaml:3:8: required steps: 단계가 1개 이상 있어야 한다
+    PROBE edge steps-mapping: case.yaml:4:3: type steps: 목록이어야 한다
+    PROBE edge tab-indent-root: case.yaml:1:1: syntax: YAML 문법 오류: While scanning a mapping, found invalid tab as indentation.
+    PROBE edge tab-indent-nested: case.yaml:1:1: syntax: YAML 문법 오류: While scanning a mapping, found invalid tab as indentation.
+    PROBE yamlstream duplicate: YamlException at 3:1 msg=Duplicate key a
+    PROBE A missing-name: no exception name=<null> time_must_drop=<null>
+    PROBE A unknown-key: YamlException at 2:1 msg=Property 'owner' not found on type 'ReflectionCase'. inner=
+    PROBE A bad-int: YamlException at 4:27 msg=Exception during deserialization inner=FormatException
+    PROBE A yes-into-bool: no exception name=a time_must_drop=True
+    PROBE A empty: no exception name=<null> time_must_drop=<null>
+[s4-timing] rc=0 cmd: tool timing
+    TIMING flow-depth=10000 bytes=20004 all-events ms=536
+    TIMING flow-depth=20000 bytes=40004 all-events ms=1456
+    TIMING flow-depth=30000 bytes=60004 all-events ms=5757
+    TIMING flow-depth=100000 first-40-events ms=1
+    TIMING flow-depth=1000000 first-40-events ms=2
+    TIMING flat-steps=1000 bytes=209913 all-events ms=25
+    TIMING flat-steps=10000 bytes=2108913 all-events ms=227
+[s5-apply-patch] rc=0 cmd: git apply --verbose <저장소>/spikes/T-003/patches/empty-output.patch
+[s5-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s5-g2-g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3 --logger console;verbosity=normal
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Sample_text_files_have_no_carriage_return [14 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Good_target_leaves_workspace_unchanged [17 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-touch-mtime", expected: "G3 변경(수정 시각): input/case.yaml") [6 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-delete", expected: "G3 삭제: input/notes.md") [2 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-append", expected: "G3 변경(크기, SHA-256, 수정 시각): input/case.yaml") [2 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "write-sibling", expected: "G3 추가: sibling.txt") [2 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-temp-file", expected: "G3 변경(수정 시각): input") [2 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-rewrite-same", expected: "G3 변경(수정 시각): input/case.yaml") [2 ms]
+      Passed Scorecard.Tests.Guards.ImmutabilityGuardTests.Fake_target_change_is_reported(fake: "input-new-file", expected: "G3 추가: input/extra.tmp") [2 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_without_output_is_reported(fake: "empty-file") [15 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_without_output_is_reported(fake: "no-output") [3 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.German_culture_uses_comma_decimal_separator [< 1 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_differs_only_in_expected_runs(fake: "guid", expectedRuns: "R2 R3 R4") [17 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_differs_only_in_expected_runs(fake: "culture-format", expectedRuns: "R4") [5 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_differs_only_in_expected_runs(fake: "abs-path", expectedRuns: "R3") [5 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Fake_target_differs_only_in_expected_runs(fake: "clock-utcnow", expectedRuns: "R2 R3 R4") [6 ms]
+      Passed Scorecard.Tests.Guards.DeterminismGuardTests.Good_target_has_no_differences [6 ms]
+      Passed Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-invalid") [129 ms]
+      Passed Scorecard.Tests.Guards.CoreImmutabilitySpikeTests.Core_target_leaves_input_unchanged(name: "case-parser-valid") [18 ms]
+      Passed Scorecard.Tests.Guards.CoreImmutabilitySpikeTests.Core_target_leaves_input_unchanged(name: "case-parser-invalid") [2 ms]
+      Passed Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-valid") [18 ms]
+[s5-test-all] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:    83, Skipped:     0, Total:    83, Duration: 283 ms - Scorecard.Tests.dll (net10.0)
+[s6-adapter] 36:        _ = (
+[s6-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release
+        0 Warning(s)
+        0 Error(s)
+[s6-g2-g3] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3
+    [xUnit.net 00:00:00.42]     Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-invalid") [FAIL]
+      Failed Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-invalid") [120 ms]
+       Assert.Empty() Failure: Collection was not empty
+    Collection: ["G2 R1 기준: 출력 파일 없음"]
+    [xUnit.net 00:00:00.44]     Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-valid") [FAIL]
+      Failed Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-valid") [17 ms]
+    Failed!  - Failed:     2, Passed:    19, Skipped:     0, Total:    21, Duration: 152 ms - Scorecard.Tests.dll (net10.0)
+[s7-core] 44:        return Parse(bytes, Path.GetFullPath(Path.Combine(caseDirectory, FileName)));
+[s7-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release
+        0 Warning(s)
+        0 Error(s)
+[s7-g2-g3] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3
+    [xUnit.net 00:00:00.49]     Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-invalid") [FAIL]
+      Failed Scorecard.Tests.Guards.CoreDeterminismSpikeTests.Core_target_is_deterministic(name: "case-parser-invalid") [158 ms]
+       Assert.Empty() Failure: Collection was not empty
+    Collection: ["G2 R3 다른 경로: out/parse-result.json SHA-256 다름"]
+    Failed!  - Failed:     1, Passed:    20, Skipped:     0, Total:    21, Duration: 191 ms - Scorecard.Tests.dll (net10.0)
+[s8-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s8-refs-tests] rc=0 cmd: tool refs tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Tests.dll
+    ASMREF System.Runtime 10.0.0.0
+    ASMREF Microsoft.VisualStudio.TestPlatform.ObjectModel 15.0.0.0
+    ASMREF System.Text.RegularExpressions 10.0.0.0
+    ASMREF xunit.core 2.9.3.0
+    ASMREF System.Xml.XDocument 10.0.0.0
+    ASMREF System.Text.Json 10.0.0.0
+    ASMREF Scorecard.Core 1.0.0.0
+    ASMREF System.Text.Encoding.Extensions 10.0.0.0
+    ASMREF System.Collections 10.0.0.0
+    ASMREF System.Linq 10.0.0.0
+    ASMREF System.Reflection.Metadata 10.0.0.0
+    ASMREF xunit.assert 2.9.3.0
+    ASMREF System.Text.Encodings.Web 10.0.0.0
+    ASMREF System.Security.Cryptography 10.0.0.0
+    ASMREF System.Memory 10.0.0.0
+    ASMREF System.Net.Http 10.0.0.0
+    ASMREF System.Net.Sockets 10.0.0.0
+    ASMREF System.Net.WebClient 10.0.0.0
+    ASMREF System.Net.WebSockets.Client 10.0.0.0
+    ASMREF System.Net.Mail 10.0.0.0
+    ASMREF System.Net.Ping 10.0.0.0
+    ASMREF System.Net.Quic 10.0.0.0
+    ASMREF System.Net.Security 10.0.0.0
+    ASMREF System.Diagnostics.Process 10.0.0.0
+    ASMREF System.Runtime.Loader 10.0.0.0
+    ASMREF System.Runtime.InteropServices 10.0.0.0
+    ASMREF YamlDotNet 18.0.0.0
+    TYPEREF YamlDotNet.RepresentationModel.YamlStream
+    TYPEREF YamlDotNet.Serialization.DeserializerBuilder
+끝.

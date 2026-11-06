@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- T-003 스파이크 도구. 머지 대상 아님. 산출물은 run-spike.sh가 작업 폴더(artifacts-path 옵션)로 보낸다. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CaseSpike</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- G1 검사기는 tests의 것을 그대로 컴파일해 쓴다(읽기만). -->
+    <Compile Include="../../../tests/Scorecard.Tests/Guards/MetadataScanner.cs" Link="Shared/MetadataScanner.cs" />
+    <!-- 후보 파서 C. Core clone에 넣는 파일과 같다. -->
+    <Compile Include="../core/C-events/*.cs" Link="Candidate/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

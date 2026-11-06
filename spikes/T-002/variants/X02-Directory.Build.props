@@ -1,7 +1,0 @@
-<Project>
-  <!-- X02: 빌드 시 금지 API 분석기(RS0030). src/Scorecard.Core/에 넣는다(스크래치 clone만). -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.0.0" PrivateAssets="all" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
-  </ItemGroup>
-</Project>

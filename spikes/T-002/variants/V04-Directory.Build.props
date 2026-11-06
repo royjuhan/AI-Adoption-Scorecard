@@ -1,6 +1,0 @@
-<Project>
-  <!-- V04: 프로젝트 파일 쪽 전역 using 별칭. .cs만 보는 텍스트 검색은 이 파일을 보지 않는다. -->
-  <ItemGroup>
-    <Using Include="System.Net.Http.HttpClient" Alias="Web" />
-  </ItemGroup>
-</Project>

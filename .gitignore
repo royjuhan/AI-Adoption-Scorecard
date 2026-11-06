@@ -1,0 +1,18 @@
+# 비공개 실제 케이스 — 절대 커밋하지 않는다
+cases/
+
+# Claude Code 작업 폴더
+.claude/worktrees/
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# 스파이크 산출물
+spikes/**/bin/
+spikes/**/obj/
+
+# 노트북
+notebooks/**/.ipynb_checkpoints/

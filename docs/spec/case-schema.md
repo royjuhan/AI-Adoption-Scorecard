@@ -5,7 +5,7 @@
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
 - 확인 환경: Ubuntu 24.04.5 LTS x64, .NET SDK 10.0.114, YamlDotNet 18.1.0, xUnit 2.9.3
-- 스파이크: `spikes/T-003/` (머지 대상 아님. 머지 전에 빠진다. 이 문서의 `spikes/T-003/…` 경로는 스펙 초안을 커밋한 시점 기준이다). 실행은 `spikes/T-003/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-003/summary.txt`. 이 문서의 오류 줄은 스파이크 후보 파서(`spikes/T-003/core/C-events/`)가 실제로 낸 문자열이다.
+- 스파이크: `spikes/T-003/` (머지 대상 아님. 머지 전에 빠진다. 이 문서의 `spikes/T-003/…` 경로는 스펙 초안 커밋 `c52cd56` 기준이다. main에는 없다). 실행은 `spikes/T-003/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-003/summary.txt`. 이 문서의 오류 줄은 스파이크 후보 파서(`spikes/T-003/core/C-events/`)가 실제로 낸 문자열이다.
 
 ## 0. 표기
 

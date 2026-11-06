@@ -1,9 +1,0 @@
-name: sample-unknown
-task: 알 수 없는 필드 합성 예시
-owner: 합성
-steps:
-  - name: 첫 단계
-    note: 메모
-    answers:
-      frequncy: weekly
-      batch_size: 5

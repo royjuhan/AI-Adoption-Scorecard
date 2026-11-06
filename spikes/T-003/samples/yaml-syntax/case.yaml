@@ -1,4 +1,0 @@
-name: sample-syntax
-task: 문법 오류
-steps: [
-  {name: a

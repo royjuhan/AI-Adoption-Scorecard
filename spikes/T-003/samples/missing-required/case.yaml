@@ -1,8 +1,0 @@
-task: 필수 필드가 빠진 합성 예시
-steps:
-  - answers: {input_kind: table}
-  - name: ""
-  - name: 둘째 단계
-inputs:
-  reference: reference/*.csv
-  candidate: candidate/*.csv

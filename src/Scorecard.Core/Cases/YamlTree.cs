@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
@@ -192,9 +190,14 @@ internal static class YamlTree
         public string NodePath { get; } = nodePath;
     }
 
-    // 오류 경로. 부모를 가리키는 불변 조각이다. 노드마다 문자열을 만들지 않는다.
+    // 오류 경로. 부모를 가리키는 조각이다. 노드마다 문자열을 만들지 않는다.
     // 노드마다 만들면 경로 길이 × 노드 수만큼 든다(긴 키 아래의 넓은 목록).
-    // 사슬 길이는 깊이를 넘지 않는다(MaxDepth). ToString의 재귀도 그만큼이다.
+    // 문자열은 처음 부를 때 한 번 만들어 저장하고 다시 쓴다(T-003 reviewer 2회차 N1).
+    // 같은 경로의 오류가 많아도 문자열은 하나다(긴 키 아래 별칭 키 여러 개).
+    // 사슬 길이는 깊이를 넘지 않는다(MaxDepth). ToString이 거슬러 올라가는 거리도 그만큼이다.
+    // 스레드 안전은 따지지 않는다. Root 밖의 조각은 Read 한 번 안에서만 만들고 쓴다.
+    // Read는 부를 때마다 새 Parser를 만들고 한 스레드에서 끝까지 읽는다. 조각은 Read 밖으로 나가지 않는다.
+    // 여러 Read가 함께 쓰는 Root는 생성자에서 빈 문자열을 넣어 둔다. 그 뒤로 바뀌지 않는다.
     private sealed class ErrorPath
     {
         public static readonly ErrorPath Root = new(null, null, 0);
@@ -205,11 +208,15 @@ internal static class YamlTree
         private readonly string? key;
         private readonly int number;
 
+        // 만든 경로 문자열. null이면 아직 만들지 않았다.
+        private string? text;
+
         private ErrorPath(ErrorPath? parent, string? key, int number)
         {
             this.parent = parent;
             this.key = key;
             this.number = number;
+            text = parent is null ? string.Empty : null;
         }
 
         public ErrorPath Child(string childKey) => new(this, childKey, 0);
@@ -217,39 +224,53 @@ internal static class YamlTree
         public ErrorPath Item(int itemNumber) => new(this, null, itemNumber);
 
         // 뿌리부터 ChildPath·ItemPath를 차례로 붙인 것과 같은 문자열이다.
-        public override string ToString()
+        public override string ToString() => text ??= Build();
+
+        // 문자열이 저장된 가장 가까운 조상부터 조각을 모아 한 번에 잇는다. Root는 늘 저장돼 있다.
+        // 결과는 딱 맞는 크기로 한 번만 만든다. 거쳐 간 조상의 문자열은 만들지도 저장하지도 않는다.
+        // 조상마다 저장하면 깊은 사슬 끝의 오류 하나가 조상 수만큼 긴 문자열을 더 만든다(긴 키 아래 서로 다른 깊은 사슬).
+        private string Build()
         {
-            if (parent is null)
+            var chain = new Stack<ErrorPath>();
+            var known = this;
+            while (known.text is null)
             {
-                return string.Empty;
+                chain.Push(known);
+                known = known.parent!;
             }
 
-            var text = new StringBuilder();
-            AppendTo(text);
-            return text.ToString();
-        }
-
-        private void AppendTo(StringBuilder text)
-        {
-            if (parent is null)
+            var pieces = new List<string>((2 * chain.Count) + 1);
+            if (known.text.Length > 0)
             {
-                return;
+                pieces.Add(known.text);
             }
 
-            parent.AppendTo(text);
-            if (key is null)
+            // Stack은 나중에 넣은 것(뿌리 쪽)부터 내준다.
+            // ChildPath·ItemPath와 같은 규칙이다. 항목은 "[번호]", 키는 앞이 비면 '.' 없이 키만.
+            var length = known.text.Length;
+            foreach (var step in chain)
             {
-                text.Append(CultureInfo.InvariantCulture, $"[{number}]");
-            }
-            else
-            {
-                if (text.Length > 0)
+                if (step.key is null)
                 {
-                    text.Append('.');
+                    var item = ItemPath(string.Empty, step.number);
+                    pieces.Add(item);
+                    length += item.Length;
                 }
+                else
+                {
+                    if (length > 0)
+                    {
+                        pieces.Add(".");
+                        length++;
+                    }
 
-                text.Append(key);
+                    pieces.Add(step.key);
+                    length += step.key.Length;
+                }
             }
+
+            // 배열판 Concat은 길이를 먼저 더해 한 번만 할당한다. 조각이 하나면 그 문자열을 그대로 돌려준다.
+            return string.Concat(pieces.ToArray());
         }
     }
 

@@ -215,3 +215,18 @@ tests/Scorecard.Tests/Scorecard.Tests.csproj
 8. **테스트 0개를 오류로 보는 설정.** `TreatNoTestsAsError=true`면 테스트 발견이 깨졌을 때 CI가 빨강이 된다 [D]. 지금 켜면 수용 기준 2와 충돌한다. 첫 테스트가 들어오는 시점(질문 1이 (a)면 T-001, (b)면 T-002)에 `ci.yml`에 켜는가?
 9. **LICENSE 저작권자.** `Copyright (c) 2026 royjuhan`이 맞는 이름·연도인가?
 10. **(T-001 범위 밖, 지시문 내부 충돌)** 지시문 6절 test-engineer는 "샘플 자료를 `cases/<case>/`에 만든다"인데 `cases/`는 gitignore라 커밋되지 않고 CI에도 없다. T-002 전에 test-engineer 샘플 위치(예: `examples/` 또는 `tests/` 안)를 정해 주겠는가?
+
+## 사람 승인 결과 (2026-11-06, juhan: "제안대로")
+
+리드 세션이 질문마다 제안한 답을 사람이 그대로 승인했다.
+
+1. (a). test-engineer가 T-001에서 R4·R5·R6 구조 검사 테스트를 넣는다. 골격이 이미 있어 처음부터 통과하는 것은 "실패 테스트 먼저"의 예외로 인정하고, PR 본문에 적는다.
+2. T-001 PR의 첫 `ci` 실행 결과로 판정한다. 실패가 아닌 annotation 경고는 별도 카드로 넘긴다.
+3. (a). `ci.yml` build 단계에 `-warnaserror`를 붙인다.
+4. 루트 파일과 `.github/`는 리드 세션이 고친다.
+5. `.gitignore`를 `/cases/`로 바꾼다. 수용 기준 5는 `/cases/` 줄로 충족한다.
+6. (c). `ci.yml`에 `windows-latest`를 추가하고, G0에서 사람이 Windows PC로도 확인한다.
+7. `global.json`으로 고정한다. `sdk.version` 10.0.100, `rollForward` latestFeature.
+8. 첫 테스트가 들어오는 T-001에서 `ci.yml` test 단계에 `TreatNoTestsAsError=true`를 켠다.
+9. `Copyright (c) 2026 royjuhan` 그대로 둔다.
+10. test-engineer의 샘플은 `tests/Scorecard.Tests/TestData/`에 합성 데이터로 둔다. 공개 골든 예제는 계속 `examples/`. 지시문 6절과 다른 결정이므로 ADR로 남긴다(docs/decisions/0002-test-samples-location.md).

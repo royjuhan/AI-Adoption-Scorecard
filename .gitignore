@@ -1,5 +1,5 @@
 # 비공개 실제 케이스 — 절대 커밋하지 않는다
-cases/
+/cases/
 
 # Claude Code 작업 폴더
 .claude/worktrees/

@@ -1,0 +1,496 @@
+dotnet SDK: 10.0.114
+repo HEAD: 6eaec0e
+uid: 0
+[s0-tool-build] rc=0 cmd: dotnet build GuardSpike/GuardSpike.csproj --artifacts-path <작업>/artifacts
+    <저장소>/spikes/T-002/GuardSpike/Canary.cs(41,69): warning CA1416: This call site is reachable on all platforms. 'Type.GetTypeFromCLSID(Guid)' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [<저장소>/spikes/T-002/GuardSpike/GuardSpike.csproj]
+    <저장소>/spikes/T-002/GuardSpike/Canary.cs(41,38): warning CA1416: This call site is reachable on all platforms. 'Type.GetTypeFromProgID(string)' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [<저장소>/spikes/T-002/GuardSpike/GuardSpike.csproj]
+        2 Warning(s)
+        0 Error(s)
+[clone base] HEAD=6eaec0e
+[s1-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+    test bin Scorecard*: CoverletSourceRootsMapping_Scorecard.Tests Scorecard.Core.dll Scorecard.Core.pdb Scorecard.Tests.deps.json Scorecard.Tests.dll Scorecard.Tests.pdb Scorecard.Tests.runtimeconfig.json 
+[s1-meta-core-srcbin] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=11 memberrefs=10 findings=0
+[s1-meta-core-testbin] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=11 memberrefs=10 findings=0
+[s1-meta-cli] rc=0 cmd: tool meta src/Scorecard.Cli/bin/Release/net10.0/scorecard.dll
+    RESULT scorecard.dll asmrefs=2 typerefs=15 memberrefs=14 findings=0
+[s1-text] rc=0 cmd: tool text src --project-files
+    RESULT files=3 findings=0
+[clone V01-using-new] HEAD=6eaec0e
+[V01-using-new-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V01-using-new-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V01-using-new-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V01-using-new-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V01-using-new.cs:1 HttpClient | // V01: 평범한 사용. using + new HttpClient(). 수용 기준 2의 "일부러 HttpClient를 넣는다"와 같은 모양.
+    FIND Scorecard.Core/V01-using-new.cs:8 HttpClient | public static object Make() => new HttpClient();
+    RESULT files=2 findings=2
+[V01-using-new-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V01-using-new.cs:1 HttpClient | // V01: 평범한 사용. using + new HttpClient(). 수용 기준 2의 "일부러 HttpClient를 넣는다"와 같은 모양.
+    FIND Scorecard.Core/V01-using-new.cs:8 HttpClient | public static object Make() => new HttpClient();
+    RESULT files=4 findings=2
+[clone V02-fully-qualified] HEAD=6eaec0e
+[V02-fully-qualified-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V02-fully-qualified-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V02-fully-qualified-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V02-fully-qualified-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V02-fully-qualified.cs:6 HttpClient | public static object Make() => new System.Net.Http.HttpClient();
+    RESULT files=2 findings=1
+[V02-fully-qualified-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V02-fully-qualified.cs:6 HttpClient | public static object Make() => new System.Net.Http.HttpClient();
+    RESULT files=4 findings=1
+[clone V03-using-alias] HEAD=6eaec0e
+[V03-using-alias-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V03-using-alias-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V03-using-alias-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V03-using-alias-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V03-using-alias.cs:2 HttpClient | using Web = System.Net.Http.HttpClient;
+    RESULT files=2 findings=1
+[V03-using-alias-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V03-using-alias.cs:2 HttpClient | using Web = System.Net.Http.HttpClient;
+    RESULT files=4 findings=1
+[clone V05-comment-only] HEAD=6eaec0e
+[V05-comment-only-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V05-comment-only-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V05-comment-only-Release-meta] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=13 memberrefs=11 findings=0
+[V05-comment-only-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V05-comment-only.cs:2 HttpClient | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 Socket | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 WebClient | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 Process.Start | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    RESULT files=2 findings=4
+[V05-comment-only-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V05-comment-only.cs:2 HttpClient | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 Socket | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 WebClient | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    FIND Scorecard.Core/V05-comment-only.cs:2 Process.Start | // 네트워크 금지: HttpClient, Socket, WebClient, Process.Start 를 쓰지 않는다.
+    RESULT files=4 findings=4
+[clone V06-string-only] HEAD=6eaec0e
+[V06-string-only-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V06-string-only-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V06-string-only-Release-meta] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=14 memberrefs=12 findings=0
+[V06-string-only-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V06-string-only.cs:6 HttpClient | public static string Rule() => "Core는 HttpClient·Socket을 쓰지 않는다.";
+    RESULT files=2 findings=1
+[V06-string-only-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V06-string-only.cs:6 HttpClient | public static string Rule() => "Core는 HttpClient·Socket을 쓰지 않는다.";
+    RESULT files=4 findings=1
+[clone V07-reflection-concat] HEAD=6eaec0e
+[V07-reflection-concat-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V07-reflection-concat-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V07-reflection-concat-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N5 member System.Activator::CreateInstance
+    FIND N5 member System.Type::GetType
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=16 memberrefs=14 findings=2
+[V07-reflection-concat-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V07-reflection-concat-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V08-process-instance] HEAD=6eaec0e
+[V08-process-instance-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V08-process-instance-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V08-process-instance-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N2 asmref System.Diagnostics.Process
+    FIND N3 type System.Diagnostics.Process
+    FIND N3 type System.Diagnostics.ProcessStartInfo
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=15 findings=3
+[V08-process-instance-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V08-process-instance.cs:1 Process.Start | // V08: Process.Start(...) 정적 호출 대신 인스턴스의 Start(). "Process.Start" 문자열이 없다.
+    RESULT files=2 findings=1
+[V08-process-instance-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V08-process-instance.cs:1 Process.Start | // V08: Process.Start(...) 정적 호출 대신 인스턴스의 Start(). "Process.Start" 문자열이 없다.
+    RESULT files=4 findings=1
+[clone V09-tcpclient] HEAD=6eaec0e
+[V09-tcpclient-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V09-tcpclient-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V09-tcpclient-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Sockets
+    FIND N3 namespace System.Net.Sockets.TcpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=2
+[V09-tcpclient-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V09-tcpclient-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V10-pinvoke] HEAD=6eaec0e
+[V10-pinvoke-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V10-pinvoke-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V10-pinvoke-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N4 moduleref libc
+    FIND N4 pinvoke Open -> libc!socket
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=13 memberrefs=11 findings=2
+[V10-pinvoke-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V10-pinvoke-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V11-if-never] HEAD=6eaec0e
+[V11-if-never-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V11-if-never-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V11-if-never-Release-meta] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=14 memberrefs=12 findings=0
+[V11-if-never-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V11-if-never.cs:1 HttpClient | // V11: 정의되지 않은 기호의 #if 안에만 HttpClient. 컴파일되지 않는 코드.
+    FIND Scorecard.Core/V11-if-never.cs:9 HttpClient | return new System.Net.Http.HttpClient();
+    RESULT files=2 findings=2
+[V11-if-never-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V11-if-never.cs:1 HttpClient | // V11: 정의되지 않은 기호의 #if 안에만 HttpClient. 컴파일되지 않는 코드.
+    FIND Scorecard.Core/V11-if-never.cs:9 HttpClient | return new System.Net.Http.HttpClient();
+    RESULT files=4 findings=2
+[clone V14-allowed] HEAD=6eaec0e
+[V14-allowed-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V14-allowed-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V14-allowed-Release-meta] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=5 typerefs=26 memberrefs=23 findings=0
+[V14-allowed-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V14-allowed-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V16-clock-random] HEAD=6eaec0e
+[V16-clock-random-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V16-clock-random-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V16-clock-random-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND D1 member System.DateTime::get_Now
+    FIND D1 member System.Guid::NewGuid
+    FIND D1 type System.Random
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=18 memberrefs=19 findings=3
+[V16-clock-random-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V16-clock-random-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V17-webclient] HEAD=6eaec0e
+[V17-webclient-Release-build-warnaserror] rc=1 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+    <작업>/V17-webclient/src/Scorecard.Core/V17-webclient.cs(6,36): error SYSLIB0014: 'WebClient.WebClient()' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' (https://aka.ms/dotnet-warnings/SYSLIB0014) [<작업>/V17-webclient/src/Scorecard.Core/Scorecard.Core.csproj]
+        0 Warning(s)
+        1 Error(s)
+[V17-webclient-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V17-webclient-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.WebClient
+    FIND N3 type System.Net.WebClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=2
+[V17-webclient-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V17-webclient.cs:1 WebClient | // V17: WebClient. 사용 중단(obsolete) 경고 SYSLIB0014가 나는지 본다.
+    FIND Scorecard.Core/V17-webclient.cs:6 WebClient | public static object Make() => new System.Net.WebClient();
+    RESULT files=2 findings=2
+[V17-webclient-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V17-webclient.cs:1 WebClient | // V17: WebClient. 사용 중단(obsolete) 경고 SYSLIB0014가 나는지 본다.
+    FIND Scorecard.Core/V17-webclient.cs:6 WebClient | public static object Make() => new System.Net.WebClient();
+    RESULT files=4 findings=2
+[clone V18-libraryimport] HEAD=6eaec0e
+[V18-libraryimport-Release-build-warnaserror] rc=1 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+    CSC : error SYSLIB1062: LibraryImportAttribute requires unsafe code. Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>'. (https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1062) [<작업>/V18-libraryimport/src/Scorecard.Core/Scorecard.Core.csproj]
+    <작업>/V18-libraryimport/src/Scorecard.Core/V18-libraryimport.cs(6,29): error CS0227: Unsafe code may only appear if compiling with /unsafe [<작업>/V18-libraryimport/src/Scorecard.Core/Scorecard.Core.csproj]
+        0 Warning(s)
+        2 Error(s)
+[V18-libraryimport-Release-build] rc=1 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+    CSC : error SYSLIB1062: LibraryImportAttribute requires unsafe code. Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>'. (https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1062) [<작업>/V18-libraryimport/src/Scorecard.Core/Scorecard.Core.csproj]
+    <작업>/V18-libraryimport/src/Scorecard.Core/V18-libraryimport.cs(6,29): error CS0227: Unsafe code may only appear if compiling with /unsafe [<작업>/V18-libraryimport/src/Scorecard.Core/Scorecard.Core.csproj]
+        0 Warning(s)
+        2 Error(s)
+[V18-libraryimport-Release-meta] rc=2 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT error=파일 없음 Scorecard.Core.dll
+[V18-libraryimport-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V18-libraryimport-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[clone V04-props-alias] HEAD=6eaec0e
+[V04-props-alias-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V04-props-alias-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V04-props-alias-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V04-props-alias-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V04-props-alias-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/Directory.Build.props:4 HttpClient | <Using Include="System.Net.Http.HttpClient" Alias="Web" />
+    RESULT files=5 findings=1
+[clone V12-if-debug] HEAD=6eaec0e
+[V12-if-debug-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V12-if-debug-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V12-if-debug-Release-meta] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=14 memberrefs=12 findings=0
+[V12-if-debug-Debug-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Debug --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V12-if-debug-Debug-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Debug
+        0 Warning(s)
+        0 Error(s)
+[V12-if-debug-Debug-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Debug/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V12-if-debug-text-cs] rc=1 cmd: tool text src
+    FIND Scorecard.Core/V12-if-debug.cs:1 HttpClient | // V12: #if DEBUG 안에만 HttpClient. Debug 빌드에만 들어간다.
+    FIND Scorecard.Core/V12-if-debug.cs:9 HttpClient | return new System.Net.Http.HttpClient();
+    RESULT files=2 findings=2
+[V12-if-debug-text-projfiles] rc=1 cmd: tool text src --project-files
+    FIND Scorecard.Core/V12-if-debug.cs:1 HttpClient | // V12: #if DEBUG 안에만 HttpClient. Debug 빌드에만 들어간다.
+    FIND Scorecard.Core/V12-if-debug.cs:9 HttpClient | return new System.Net.Http.HttpClient();
+    RESULT files=4 findings=2
+[clone V13-vendor] HEAD=6eaec0e
+[V13-add-ref] rc=0 cmd: dotnet add src/Scorecard.Core/Scorecard.Core.csproj reference vendor/FakeLlm/FakeLlm.csproj
+[V13-vendor-Release-build-warnaserror] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release --no-incremental -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V13-vendor-Release-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release
+        0 Warning(s)
+        0 Error(s)
+[V13-vendor-Release-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N6 non-framework asmref FakeLlm
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=14 findings=1
+[V13-vendor-meta-allowlisted] rc=0 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core --allow FakeLlm
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=14 findings=0
+[V13-vendor-text-cs] rc=0 cmd: tool text src
+    RESULT files=2 findings=0
+[V13-vendor-text-projfiles] rc=0 cmd: tool text src --project-files
+    RESULT files=4 findings=0
+[V01-tests-build] rc=0 cmd: dotnet build tests/Scorecard.Tests/Scorecard.Tests.csproj -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[V01-meta-testbin] rc=1 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+[V01-tests-run] rc=0 cmd: dotnet test tests/Scorecard.Tests/Scorecard.Tests.csproj --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 96 ms - Scorecard.Tests.dll (net10.0)
+[clone cliref] HEAD=6eaec0e
+[s3-add-ref] rc=0 cmd: dotnet add tests/Scorecard.Tests/Scorecard.Tests.csproj reference src/Scorecard.Cli/Scorecard.Cli.csproj
+[s3-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+    test bin Scorecard*/scorecard*: CoverletSourceRootsMapping_Scorecard.Tests Scorecard.Core.dll Scorecard.Core.pdb Scorecard.Tests.deps.json Scorecard.Tests.dll Scorecard.Tests.pdb Scorecard.Tests.runtimeconfig.json scorecard scorecard.deps.json scorecard.dll scorecard.pdb scorecard.runtimeconfig.json 
+[s3-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 88 ms - Scorecard.Tests.dll (net10.0)
+[s3-meta-cli-testbin] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/scorecard.dll
+    RESULT scorecard.dll asmrefs=2 typerefs=15 memberrefs=14 findings=0
+[s3-v15-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s3-v15-meta-cli-testbin] rc=1 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/scorecard.dll
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT scorecard.dll asmrefs=3 typerefs=17 memberrefs=16 findings=3
+[clone xunit] HEAD=6eaec0e
+[s4-build] rc=0 cmd: dotnet build tests/Scorecard.Tests/Scorecard.Tests.csproj -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s4-test-filter] rc=1 cmd: dotnet test tests/Scorecard.Tests/Scorecard.Tests.csproj --no-build -c Release --filter FullyQualifiedName~SpikeEmptyTheory
+    [xUnit.net 00:00:00.24]     Scorecard.Tests.SpikeEmptyTheory.Runs_for_each_target [FAIL]
+       System.InvalidOperationException : No data found for Scorecard.Tests.SpikeEmptyTheory.Runs_for_each_target
+    Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 2 ms - Scorecard.Tests.dll (net10.0)
+[s4-test-all] rc=1 cmd: dotnet test tests/Scorecard.Tests/Scorecard.Tests.csproj --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    [xUnit.net 00:00:00.31]     Scorecard.Tests.SpikeEmptyTheory.Runs_for_each_target [FAIL]
+       System.InvalidOperationException : No data found for Scorecard.Tests.SpikeEmptyTheory.Runs_for_each_target
+    Failed!  - Failed:     1, Passed:    20, Skipped:     0, Total:    21, Duration: 86 ms - Scorecard.Tests.dll (net10.0)
+[clone testcanary] HEAD=6eaec0e
+[s4b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s4b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 107 ms - Scorecard.Tests.dll (net10.0)
+[s4b-meta-testsdll] rc=1 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Tests.dll --core
+    FIND D1 member System.DateTime::get_Now
+    FIND N1 asmref System.Net.Http
+    FIND N1 asmref System.Net.Sockets
+    FIND N1 asmref System.Net.WebClient
+    FIND N2 asmref System.Diagnostics.Process
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 namespace System.Net.Sockets.ProtocolType
+    FIND N3 namespace System.Net.Sockets.Socket
+    FIND N3 namespace System.Net.Sockets.SocketType
+    FIND N3 type System.Diagnostics.Process
+    FIND N3 type System.Net.Http.HttpClient
+    FIND N3 type System.Net.Sockets.Socket
+    FIND N3 type System.Net.WebClient
+    FIND N4 moduleref libc
+    FIND N4 pinvoke GetPid -> libc!getpid
+    FIND N6 non-framework asmref Microsoft.VisualStudio.TestPlatform.ObjectModel
+    FIND N6 non-framework asmref xunit.assert
+    FIND N6 non-framework asmref xunit.core
+    RESULT Scorecard.Tests.dll asmrefs=13 typerefs=85 memberrefs=150 findings=18
+[s4b-meta-core] rc=0 cmd: tool meta tests/Scorecard.Tests/bin/Release/net10.0/Scorecard.Core.dll --core
+    RESULT Scorecard.Core.dll asmrefs=1 typerefs=11 memberrefs=10 findings=0
+[s5-canary] rc=1 cmd: tool meta <작업>/artifacts/bin/GuardSpike/debug/GuardSpike.dll --core
+    FIND D1 member System.DateTime::get_Now
+    FIND D1 member System.DateTime::get_Today
+    FIND D1 member System.DateTime::get_UtcNow
+    FIND D1 member System.DateTimeOffset::get_Now
+    FIND D1 member System.DateTimeOffset::get_UtcNow
+    FIND D1 member System.Environment::GetEnvironmentVariable
+    FIND D1 member System.Environment::GetEnvironmentVariables
+    FIND D1 member System.Environment::get_MachineName
+    FIND D1 member System.Environment::get_TickCount
+    FIND D1 member System.Environment::get_TickCount64
+    FIND D1 member System.Environment::get_UserName
+    FIND D1 member System.Guid::CreateVersion7
+    FIND D1 member System.Guid::NewGuid
+    FIND D1 member System.TimeProvider::get_System
+    FIND D1 type System.Diagnostics.Stopwatch
+    FIND D1 type System.Random
+    FIND D1 type System.Security.Cryptography.RandomNumberGenerator
+    FIND N1 asmref System.Net.Http
+    FIND N1 asmref System.Net.Sockets
+    FIND N1 asmref System.Net.WebClient
+    FIND N2 asmref System.Diagnostics.Process
+    FIND N2 asmref System.Runtime.Loader
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 namespace System.Net.Sockets.ProtocolType
+    FIND N3 namespace System.Net.Sockets.Socket
+    FIND N3 namespace System.Net.Sockets.SocketType
+    FIND N3 namespace System.Net.Sockets.TcpClient
+    FIND N3 namespace System.Runtime.Loader.AssemblyLoadContext
+    FIND N3 type System.Diagnostics.Process
+    FIND N3 type System.Diagnostics.ProcessStartInfo
+    FIND N3 type System.Net.Http.HttpClient
+    FIND N3 type System.Net.Sockets.Socket
+    FIND N3 type System.Net.WebClient
+    FIND N3 type System.Runtime.InteropServices.NativeLibrary
+    FIND N4 moduleref libc
+    FIND N4 pinvoke GetParentPid -> libc!getppid
+    FIND N4 pinvoke GetPid -> libc!getpid
+    FIND N5 member System.Activator::CreateInstance
+    FIND N5 member System.AppDomain::Load
+    FIND N5 member System.Reflection.Assembly::GetType
+    FIND N5 member System.Reflection.Assembly::Load
+    FIND N5 member System.Reflection.Assembly::LoadFile
+    FIND N5 member System.Reflection.Assembly::LoadFrom
+    FIND N5 member System.Reflection.Assembly::UnsafeLoadFrom
+    FIND N5 member System.Reflection.Module::GetType
+    FIND N5 member System.Runtime.InteropServices.Marshal::GetDelegateForFunctionPointer
+    FIND N5 member System.Type::GetType
+    FIND N5 member System.Type::GetTypeFromCLSID
+    FIND N5 member System.Type::GetTypeFromProgID
+    RESULT GuardSpike.dll asmrefs=15 typerefs=156 memberrefs=320 findings=49
+[s6-guard] rc=0 cmd: tool guard <작업>/guard
+    CULTURE [invariant] 1.5.ToString()=1.5 Parse("1.5")=1.5 date=11/06/2026 00:00:00
+    CULTURE [ko-KR] 1.5.ToString()=1.5 Parse("1.5")=1.5 date=2026. 11. 6. 오전 12:00:00
+    CULTURE [de-DE] 1.5.ToString()=1,5 Parse("1.5")=15 date=06.11.2026 00:00:00
+    CULTURE [en-US] 1.5.ToString()=1.5 Parse("1.5")=1.5 date=11/6/2026 12:00:00 AM
+    CULTURE current= ui=
+    GUARD good                 I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=ok   D-culture=ok  
+    GUARD culture-format       I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=ok   D-culture=FAIL
+    GUARD clock-today          I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=ok   D-culture=ok  
+    GUARD clock-utcnow         I-hash=ok   I-full=ok   I-mtime=ok   D-same=FAIL D-move=FAIL D-culture=FAIL
+    GUARD guid                 I-hash=ok   I-full=ok   I-mtime=ok   D-same=FAIL D-move=FAIL D-culture=FAIL
+    GUARD abs-path             I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=FAIL D-culture=ok  
+    GUARD enum-order           I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=ok   D-culture=ok  
+    GUARD string-hashcode      I-hash=ok   I-full=ok   I-mtime=ok   D-same=ok   D-move=ok   D-culture=ok  
+    GUARD input-rewrite-same   I-hash=ok   I-full=ok   I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+    GUARD input-append         I-hash=FAIL I-full=FAIL I-mtime=FAIL D-same=FAIL D-move=ok   D-culture=FAIL
+    GUARD input-new-file       I-hash=ok   I-full=FAIL I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+    GUARD input-temp-file      I-hash=ok   I-full=ok   I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+    GUARD input-delete         I-hash=FAIL I-full=FAIL I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+    GUARD input-touch-mtime    I-hash=ok   I-full=ok   I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+    GUARD write-sibling        I-hash=ok   I-full=FAIL I-mtime=FAIL D-same=ok   D-move=ok   D-culture=ok  
+[s7-hash-1] rc=0 cmd: tool hash abc
+    HASH abc first=-1325124903 again=-1325124903
+[s7-hash-2] rc=0 cmd: tool hash abc
+    HASH abc first=-788725577 again=-788725577
+[s8-enumorder] rc=0 cmd: tool enumorder <작업>/enumorder
+    ENUM small-cab n=3 sorted=False asCreated=False first5=b.txt,c.txt,a.txt
+    ENUM small-abc n=3 sorted=False asCreated=False first5=b.txt,c.txt,a.txt
+    ENUM many-asc n=200 sorted=False asCreated=False first5=f076.txt,f198.txt,f057.txt,f124.txt,f044.txt
+    ENUM many-desc n=200 sorted=False asCreated=False first5=f076.txt,f198.txt,f057.txt,f124.txt,f044.txt
+[s8-readonly] rc=0 cmd: tool readonly <작업>/readonly
+    READONLY attrs=ReadOnly mode=OtherRead, GroupRead, UserRead append=write-succeeded content=ab
+[s9-sha-src] rc=0 cmd: tool sha crlf-src/tests/Scorecard.Tests/TestData/guard/sample.csv crlf-src/tests/Scorecard.Tests/TestData/guard/blob.bin
+    SHA f15cb68acde27e775b7ef91acc66c70e65fa7717020a15ef9010d51d947ac521 size=15 crlf-src/tests/Scorecard.Tests/TestData/guard/sample.csv
+    SHA 8f34dd00656da925387aa6f12d5962af95ad40da243c6ce0d849b3648e10315a size=5 crlf-src/tests/Scorecard.Tests/TestData/guard/blob.bin
+[s9-sha-autocrlf] rc=0 cmd: tool sha crlf-c1/tests/Scorecard.Tests/TestData/guard/sample.csv crlf-c1/tests/Scorecard.Tests/TestData/guard/blob.bin
+    SHA 02b529a09c4e50e22266b2931f447b8dfd1ac5370fbd64e321ded56a6691d560 size=17 crlf-c1/tests/Scorecard.Tests/TestData/guard/sample.csv
+    SHA 8f34dd00656da925387aa6f12d5962af95ad40da243c6ce0d849b3648e10315a size=5 crlf-c1/tests/Scorecard.Tests/TestData/guard/blob.bin
+[s9-sha-autocrlf-gitattributes] rc=0 cmd: tool sha crlf-c2/tests/Scorecard.Tests/TestData/guard/sample.csv crlf-c2/tests/Scorecard.Tests/TestData/guard/blob.bin
+    SHA f15cb68acde27e775b7ef91acc66c70e65fa7717020a15ef9010d51d947ac521 size=15 crlf-c2/tests/Scorecard.Tests/TestData/guard/sample.csv
+    SHA 8f34dd00656da925387aa6f12d5962af95ad40da243c6ce0d849b3648e10315a size=5 crlf-c2/tests/Scorecard.Tests/TestData/guard/blob.bin
+[clone analyzer] HEAD=6eaec0e
+[s10-analyzer-v01-build] rc=1 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release -warnaserror
+    <작업>/analyzer/src/Scorecard.Core/V01-using-new.cs(8,36): error RS0030: The symbol 'HttpClient' is banned in this project: 네트워크 금지 (절대 원칙 1) (https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/Microsoft.CodeAnalysis.BannedApiAnalyzers/BannedApiAnalyzers.Help.md) [<작업>/analyzer/src/Scorecard.Core/Scorecard.Core.csproj]
+        0 Warning(s)
+        1 Error(s)
+[clone analyzer-pragma] HEAD=6eaec0e
+[s10-analyzer-pragma-build] rc=0 cmd: dotnet build src/Scorecard.Core/Scorecard.Core.csproj -c Release -warnaserror
+        0 Warning(s)
+        0 Error(s)
+[s10-analyzer-pragma-meta] rc=1 cmd: tool meta src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll --core
+    FIND N1 asmref System.Net.Http
+    FIND N3 namespace System.Net.Http.HttpClient
+    FIND N3 type System.Net.Http.HttpClient
+    RESULT Scorecard.Core.dll asmrefs=2 typerefs=15 memberrefs=13 findings=3
+끝

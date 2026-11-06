@@ -1,0 +1,3 @@
+T:System.Net.Http.HttpClient;네트워크 금지 (절대 원칙 1)
+T:System.Net.Sockets.Socket;네트워크 금지 (절대 원칙 1)
+T:System.Diagnostics.Process;외부 프로세스 금지 (절대 원칙 1)

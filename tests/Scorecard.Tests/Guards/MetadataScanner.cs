@@ -45,6 +45,7 @@ internal static class MetadataScanner
     ];
 
     // N5: 문자열로 타입·어셈블리를 찾거나 만드는 멤버. "부모 타입::멤버 이름".
+    // 정적 멤버는 하위 타입 이름으로 불러도 선언 타입이 남는다(AssemblyBuilder.LoadWithPartialName → Assembly).
     internal static readonly string[] DeniedMembers =
     [
         "System.Type::GetType",
@@ -54,10 +55,18 @@ internal static class MetadataScanner
         "System.Reflection.Assembly::LoadFrom",
         "System.Reflection.Assembly::LoadFile",
         "System.Reflection.Assembly::UnsafeLoadFrom",
+        "System.Reflection.Assembly::LoadWithPartialName",
         "System.Reflection.Assembly::GetType",
         "System.Reflection.Module::GetType",
         "System.AppDomain::Load",
+        "System.AppDomain::CreateInstance",
+        "System.AppDomain::CreateInstanceAndUnwrap",
+        "System.AppDomain::CreateInstanceFrom",
+        "System.AppDomain::CreateInstanceFromAndUnwrap",
+        "System.AppDomain::ExecuteAssembly",
+        "System.AppDomain::ExecuteAssemblyByName",
         ActivatorCreateInstance,
+        "System.Activator::CreateInstanceFrom",
         "System.Runtime.InteropServices.Marshal::GetDelegateForFunctionPointer",
     ];
 
@@ -85,7 +94,24 @@ internal static class MetadataScanner
         "System.Environment::get_UserName",
         "System.Environment::GetEnvironmentVariable",
         "System.Environment::GetEnvironmentVariables",
+        "System.Environment::ExpandEnvironmentVariables",
+        "System.Environment::get_CurrentDirectory",
+        "System.Environment::get_ProcessId",
+        "System.IO.Path::GetRandomFileName",
+        "System.IO.Path::GetTempFileName",
+        "System.TimeZoneInfo::get_Local",
         "System.TimeProvider::get_System",
+    ];
+
+    // R1: 리플렉션으로 메서드·생성자·멤버를 부르는 멤버. Core에만 적용한다(적용은 테스트가 고른다).
+    // 하위 타입으로 불러도 선언 타입이 남는다. MethodInfo·DynamicMethod.Invoke → MethodBase::Invoke,
+    // TypeInfo·TypeDelegator·TypeBuilder.InvokeMember → Type::InvokeMember. 인터페이스로 부르면 IReflect가 남는다.
+    internal static readonly string[] ReflectionInvokeMembers =
+    [
+        "System.Reflection.MethodBase::Invoke",
+        "System.Reflection.ConstructorInfo::Invoke",
+        "System.Type::InvokeMember",
+        "System.Reflection.IReflect::InvokeMember",
     ];
 
     // N5 예외 1. 제네릭 CreateInstance<T>()는 new T()가 만든다. 이것은 허용한다(스펙 4.2 N5).
@@ -121,7 +147,7 @@ internal static class MetadataScanner
     internal static IReadOnlyList<MemberReferenceInfo> ReadMemberReferences(string dllPath) =>
         Read(dllPath, md => MemberReferences(md).ToArray());
 
-    // 규칙 ID(N1~N6, D1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
+    // 규칙 ID(N1~N6, D1, R1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
     public static IReadOnlyList<string> OfRules(IEnumerable<string> findings, params string[] rules) =>
         findings.Where(f => rules.Any(r => f.StartsWith(r + " ", StringComparison.Ordinal))).ToArray();
 
@@ -236,7 +262,7 @@ internal static class MetadataScanner
         }
     }
 
-    // N5, D1(멤버).
+    // N5, D1(멤버), R1.
     private static void ScanMemberReferences(MetadataReader md, SortedSet<string> findings)
     {
         foreach (var member in MemberReferences(md))
@@ -249,6 +275,11 @@ internal static class MetadataScanner
             if (DeterminismMembers.Contains(member.Key, StringComparer.Ordinal))
             {
                 findings.Add($"D1 member {member.Key}");
+            }
+
+            if (ReflectionInvokeMembers.Contains(member.Key, StringComparer.Ordinal))
+            {
+                findings.Add($"R1 member {member.Key}");
             }
         }
     }

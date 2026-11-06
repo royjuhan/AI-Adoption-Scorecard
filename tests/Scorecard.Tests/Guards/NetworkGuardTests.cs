@@ -17,7 +17,7 @@ public class NetworkGuardTests
     // 지금은 비어 있다(승인 결정 3). 패키지를 처음 쓰는 카드에서 test-engineer가 더하고 PR 본문에 적는다.
     private static readonly string[] AllowedThirdPartyAssemblies = [];
 
-    // Core·Cli 공통 규칙. D1은 Core에만 적용한다(승인 결정 5).
+    // Core·Cli 공통 규칙. D1(승인 결정 5)과 R1은 Core에만 적용한다.
     private static readonly string[] NetworkRules = ["N1", "N2", "N3", "N4", "N5", "N6"];
 
     [Theory]
@@ -49,6 +49,13 @@ public class NetworkGuardTests
         AssertNoFindings(CoreDll, "D1");
     }
 
+    // R1: 판정 로직이 리플렉션으로 임의 메서드를 부르지 않는다. 목록 밖 경로로 N5·D1을 돌아가는 것을 막는다.
+    [Fact]
+    public void Core_has_no_reflection_invoke_references()
+    {
+        AssertNoFindings(CoreDll, "R1");
+    }
+
     // 자기 검사(스펙 4.3). 같은 검사기로 Scorecard.Tests.dll의 ScannerCanary를 잡는지 본다.
     // 검사기가 망가져 늘 0건을 내는 경우를 막는다. 기대 항목이 모두 있는지만 본다.
     [Theory]
@@ -59,6 +66,7 @@ public class NetworkGuardTests
     [InlineData("N5")]
     [InlineData("N6")]
     [InlineData("D1")]
+    [InlineData("R1")]
     public void Scanner_catches_canary_for_rule(string rule)
     {
         var findings = Scan(TestsDll);
@@ -84,6 +92,35 @@ public class NetworkGuardTests
         var findings = Scan(TestsDll);
 
         Assert.DoesNotContain(findings, f => f.Contains(typeName, StringComparison.Ordinal));
+    }
+
+    // 금지 멤버와 이름이 가까운 허용 멤버는 잡지 않는다. 카나리아의 AllowedNearDenied()가 참조한다.
+    // 키가 실제로 dll에 있는지 먼저 본다. 빈 통과를 막는다.
+    [Theory]
+    [InlineData("System.Func`1::Invoke")]
+    [InlineData("System.TimeZoneInfo::get_Utc")]
+    [InlineData("System.IO.Path::GetFileName")]
+    public void Scanner_ignores_allowed_member_next_to_denied_name(string key)
+    {
+        var keys = MetadataScanner.ReadMemberReferences(Path.Combine(AppContext.BaseDirectory, TestsDll)).Select(m => m.Key);
+
+        Assert.Contains(key, keys);
+        Assert.DoesNotContain(Scan(TestsDll), f => f.EndsWith(" member " + key, StringComparison.Ordinal));
+    }
+
+    // 하위 타입 이름으로 부른 금지 멤버(스펙 4.2 N5·R1). 카나리아는 일부러 하위 타입으로 부른다.
+    // 메타데이터에 하위 타입 키가 남으면 목록이 놓친다. 하위 타입 키는 없고, 선언 타입 키가 잡히는지 본다.
+    // 컴파일러가 바뀌어 이 테스트가 실패하면 하위 타입 키를 목록에 더한다.
+    [Theory]
+    [InlineData("System.Reflection.MethodInfo::Invoke", "System.Reflection.MethodBase::Invoke")]
+    [InlineData("System.Reflection.TypeInfo::InvokeMember", "System.Type::InvokeMember")]
+    [InlineData("System.Reflection.Emit.AssemblyBuilder::LoadWithPartialName", "System.Reflection.Assembly::LoadWithPartialName")]
+    public void Subclass_call_leaves_declaring_type_key(string subclassKey, string declaringKey)
+    {
+        var keys = MetadataScanner.ReadMemberReferences(Path.Combine(AppContext.BaseDirectory, TestsDll)).Select(m => m.Key);
+
+        Assert.DoesNotContain(subclassKey, keys);
+        Assert.Contains(Scan(TestsDll), f => f.EndsWith(" member " + declaringKey, StringComparison.Ordinal));
     }
 
     // N5 예외가 실제 dll에서 갈리는지 본다. 카나리아에는 같은 이름의 MemberRef가 서명만 달리 둘 있다.
@@ -200,7 +237,7 @@ public class NetworkGuardTests
         }
     }
 
-    // 카나리아에서 나와야 하는 항목. 목록형 규칙(N2·N3·N5·D1)은 검사기 목록에서 만든다.
+    // 카나리아에서 나와야 하는 항목. 목록형 규칙(N2·N3·N5·D1·R1)은 검사기 목록에서 만든다.
     // 그래서 목록에 이름을 더하고 카나리아에 참조를 더하지 않으면 이 테스트가 실패한다.
     private static IEnumerable<Expected> ExpectedCanaryFindings(string rule) => rule switch
     {
@@ -231,6 +268,7 @@ public class NetworkGuardTests
         ],
         "D1" => MetadataScanner.DeterminismTypes.Select(t => new Expected($"D1 type {t}"))
             .Concat(MetadataScanner.DeterminismMembers.Select(m => new Expected($"D1 member {m}"))),
+        "R1" => MetadataScanner.ReflectionInvokeMembers.Select(m => new Expected($"R1 member {m}")),
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, "알 수 없는 규칙"),
     };
 

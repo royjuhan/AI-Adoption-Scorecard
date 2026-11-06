@@ -12,7 +12,7 @@
 - `[읽음]`: 커밋된 파일을 읽어서 확인한 사실.
 - `[S0]`~`[S10]`: 스파이크 단계. `[V01]`~`[V18]`: S2·S3의 변형. 목록은 9절.
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
-- 검사 이름: **G1** 네트워크 금지, **G2** 결정론, **G3** 원본 불변. G1의 규칙 ID는 N1~N6, D1.
+- 검사 이름: **G1** 네트워크 금지, **G2** 결정론, **G3** 원본 불변. G1의 규칙 ID는 N1~N6, D1, R1(Core 전용 리플렉션 호출, T-002 리뷰 보강).
 
 ## 1. 범위
 
@@ -83,7 +83,7 @@ xUnit 테스트 결과. 실패 메시지는 규칙 ID와 찾은 참조를 한 �
 
 - 테스트가 도는 구성의 빌드만 본다. `#if DEBUG` 안 코드는 Release 검사에서 보이지 않는다 [V12]. CI는 Release, 로컬 `dotnet test` 기본값은 Debug다 [읽음 ci.yml]. 배포도 Release다(지시문 4절). 다른 `DefineConstants`로 publish하면 그 빌드는 검사 밖이다(**미확인**, 실험 안 함).
 - 제3자 어셈블리 내부는 보지 않는다. N6 허용 목록에 사람이 확인한 것만 넣는다.
-- 리플렉션 우회는 N5 목록의 멤버만 잡는다. 허용된 제3자 라이브러리를 거치는 우회 등 목록 밖 경로는 못 잡는다. reviewer 검사는 그대로 둔다.
+- 리플렉션 우회는 N5·R1 목록의 멤버만 잡는다. `DynamicInvoke`, `MethodInvoker`, `dynamic`, 식 트리 `Compile`, 허용된 제3자 라이브러리를 거치는 우회 등 목록 밖 경로는 못 잡는다. `XmlReader.Create(url)`처럼 프레임워크 내부에서 네트워크를 쓰는 API와 Windows UNC 경로도 못 잡는다. reviewer 검사는 그대로 둔다.
 - `string.GetHashCode()`는 메타데이터에 `System.Object::GetHashCode`로 남는다 [S5]. 문자열 해시만 골라 막을 수 없다.
 
 ### 4.2 G1 규칙
@@ -92,7 +92,7 @@ xUnit 테스트 결과. 실패 메시지는 규칙 ID와 찾은 참조를 한 �
 
 | 어셈블리 | 위치 | 규칙 |
 | --- | --- | --- |
-| `Scorecard.Core.dll` | 테스트 출력 폴더 | N1~N6, D1 |
+| `Scorecard.Core.dll` | 테스트 출력 폴더 | N1~N6, D1, R1 |
 | `scorecard.dll` | 테스트 출력 폴더 (Cli 참조 필요, 승인 질문 4) | N1~N6 |
 
 - 파일이 없으면 실패로 본다. 빈 통과를 막는다.
@@ -106,9 +106,10 @@ xUnit 테스트 결과. 실패 메시지는 규칙 ID와 찾은 참조를 한 �
 | N2 | AssemblyRef | `System.Diagnostics.Process`, `System.Runtime.Loader` | [V08][S5] |
 | N3 | TypeRef | 타입 `System.Net.Http.HttpClient`, `System.Net.Sockets.Socket`, `System.Net.WebClient`, `System.Diagnostics.Process`, `System.Diagnostics.ProcessStartInfo`, `System.Runtime.InteropServices.NativeLibrary`. 네임스페이스(같거나 하위) `System.Net.Http`, `System.Net.Sockets`, `System.Net.WebSockets`, `System.Net.Mail`, `System.Net.NetworkInformation`, `System.Net.Quic`, `System.Net.Security`, `System.Runtime.Loader` | 타입 6개와 `System.Net.Http`·`System.Net.Sockets`·`System.Runtime.Loader` 네임스페이스는 [S5]. 나머지 네임스페이스 5개는 **미확인**(카나리아에 없음) |
 | N4 | MethodDef, ModuleRef | P/Invoke 메서드(`PinvokeImpl` 플래그)가 있거나 ModuleRef가 1개 이상 | `DllImport` [V10][S5], `LibraryImport` [S5] |
-| N5 | MemberRef | `System.Type::GetType`(정적만, 인스턴스 `GetType()` 제외), `::GetTypeFromProgID`, `::GetTypeFromCLSID`, `System.Reflection.Assembly::Load`, `::LoadFrom`, `::LoadFile`, `::UnsafeLoadFrom`, `::GetType`, `System.Reflection.Module::GetType`, `System.AppDomain::Load`, `System.Activator::CreateInstance`(제네릭 제외), `System.Runtime.InteropServices.Marshal::GetDelegateForFunctionPointer` | 전부 [S5]. 제네릭 `CreateInstance<T>`(`new T()`)는 걸리지 않는다 [V14] |
+| N5 | MemberRef | `System.Type::GetType`(정적만, 인스턴스 `GetType()` 제외), `::GetTypeFromProgID`, `::GetTypeFromCLSID`, `System.Reflection.Assembly::Load`, `::LoadFrom`, `::LoadFile`, `::UnsafeLoadFrom`, `::LoadWithPartialName`, `::GetType`, `System.Reflection.Module::GetType`, `System.AppDomain::Load`, `::CreateInstance`, `::CreateInstanceAndUnwrap`, `::CreateInstanceFrom`, `::CreateInstanceFromAndUnwrap`, `::ExecuteAssembly`, `::ExecuteAssemblyByName`, `System.Activator::CreateInstance`(제네릭 제외), `::CreateInstanceFrom`, `System.Runtime.InteropServices.Marshal::GetDelegateForFunctionPointer` | 기존 항목은 [S5]. 추가 8개는 카나리아 자기 검사로 확인(T-002 리뷰 보강). 제네릭 `CreateInstance<T>`(`new T()`)는 걸리지 않는다 [V14]. 정적 멤버는 하위 타입 이름으로 불러도 선언 타입 키가 남는다 |
 | N6 | AssemblyRef | 런타임 폴더(`RuntimeEnvironment.GetRuntimeDirectory()`)에 같은 이름의 dll이 없으면 허용 목록에 있어야 한다. 허용 목록은 지금 비어 있다 | [V13] |
-| D1 | TypeRef, MemberRef (Core만) | 타입 `System.Random`, `System.Security.Cryptography.RandomNumberGenerator`, `System.Diagnostics.Stopwatch`. 멤버 `System.DateTime::get_Now`, `::get_UtcNow`, `::get_Today`, `System.DateTimeOffset::get_Now`, `::get_UtcNow`, `System.Guid::NewGuid`, `::CreateVersion7`, `System.Environment::get_TickCount`, `::get_TickCount64`, `::get_MachineName`, `::get_UserName`, `::GetEnvironmentVariable`, `::GetEnvironmentVariables`, `System.TimeProvider::get_System` | 전부 [S5], Core 빌드에서 [V16] |
+| D1 | TypeRef, MemberRef (Core만) | 타입 `System.Random`, `System.Security.Cryptography.RandomNumberGenerator`, `System.Diagnostics.Stopwatch`. 멤버 `System.DateTime::get_Now`, `::get_UtcNow`, `::get_Today`, `System.DateTimeOffset::get_Now`, `::get_UtcNow`, `System.Guid::NewGuid`, `::CreateVersion7`, `System.Environment::get_TickCount`, `::get_TickCount64`, `::get_MachineName`, `::get_UserName`, `::GetEnvironmentVariable`, `::GetEnvironmentVariables`, `System.TimeProvider::get_System`, `System.Environment::ExpandEnvironmentVariables`, `::get_CurrentDirectory`, `::get_ProcessId`, `System.IO.Path::GetRandomFileName`, `::GetTempFileName`, `System.TimeZoneInfo::get_Local` | 전부 [S5], Core 빌드에서 [V16]. 추가 6개는 카나리아 자기 검사로 확인(T-002 리뷰 보강) |
+| R1 | MemberRef (Core만) | `System.Reflection.MethodBase::Invoke`, `System.Reflection.ConstructorInfo::Invoke`, `System.Type::InvokeMember`, `System.Reflection.IReflect::InvokeMember` | 카나리아 자기 검사(T-002 리뷰 보강). `MethodInfo`·`DynamicMethod` 등의 `Invoke`는 `MethodBase::Invoke`로 남는다. 대리자 호출(`Func<T>::Invoke`)은 걸리지 않는다 |
 
 - N6의 프레임워크 판정: `System.Runtime`, `System.Console`, `System.Linq`, `System.Security.Cryptography`, `System.Text.Json`, `System.Text.RegularExpressions`, `System.Reflection.Metadata`는 프레임워크로 판정됐다 [S1][V14][S4b]. 가짜 SDK `FakeLlm`과 `xunit.core`는 아니었다 [V13][S4b]. Windows 런타임 폴더에서 같은 결과인지는 **미확인**.
 - LLM API는 이름 목록을 두지 않는다. 직접 HTTP 호출은 N1·N3가, SDK 패키지는 N6가 잡는다 [V01][V13]. SDK가 허용 목록에 들어가면 못 잡는다. 그래서 허용 목록 추가는 사람이 확인한다. → 승인 질문 3.

@@ -51,7 +51,24 @@ internal static class ScannerCanary
         + System.Reflection.Assembly.LoadFile("x").FullName
         + System.Reflection.Assembly.UnsafeLoadFrom("x").FullName;
 
+    // 정적 멤버를 하위 타입 이름으로 부른다. 메타데이터에는 선언 타입 Assembly가 남는다.
+#pragma warning disable CS0618 // LoadWithPartialName은 사용 중단 경고(CS0618)가 난다. 카나리아에서만 끈다.
+    internal static object? PartialName() => System.Reflection.Emit.AssemblyBuilder.LoadWithPartialName("x");
+#pragma warning restore CS0618
+
+    internal static object? CreateFrom() => Activator.CreateInstanceFrom("x", "y");
+
     internal static object DomainLoad() => AppDomain.CurrentDomain.Load("x");
+
+    internal static object?[] DomainCreate() =>
+    [
+        AppDomain.CurrentDomain.CreateInstance("x", "y"),
+        AppDomain.CurrentDomain.CreateInstanceAndUnwrap("x", "y"),
+        AppDomain.CurrentDomain.CreateInstanceFrom("x", "y"),
+        AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap("x", "y"),
+        AppDomain.CurrentDomain.ExecuteAssembly("x"),
+        AppDomain.CurrentDomain.ExecuteAssemblyByName("x"),
+    ];
 
     internal static Delegate FunctionPointer(IntPtr p) => Marshal.GetDelegateForFunctionPointer(p, typeof(Action));
 
@@ -85,6 +102,26 @@ internal static class ScannerCanary
         System.Diagnostics.Stopwatch.StartNew().Elapsed.ToString()
         + TimeProvider.System.GetUtcNow().Ticks;
 
+    internal static string HostState() =>
+        Environment.ExpandEnvironmentVariables("%x%")
+        + Environment.CurrentDirectory
+        + Environment.ProcessId
+        + Path.GetRandomFileName()
+        + Path.GetTempFileName()
+        + TimeZoneInfo.Local.Id;
+
+    // R1: 리플렉션 호출. 일부러 하위 타입·인터페이스로 부른다. 메타데이터에 남는 키가 목록과 같은지 본다.
+    // MethodInfo.Invoke → MethodBase::Invoke, TypeInfo.InvokeMember → Type::InvokeMember, IReflect는 그대로 남는다.
+    internal static object? Invoke(
+        System.Reflection.MethodInfo method,
+        System.Reflection.ConstructorInfo constructor,
+        System.Reflection.TypeInfo type,
+        System.Reflection.IReflect reflect) =>
+        method.Invoke(null, null)
+        ?? constructor.Invoke(null)
+        ?? type.InvokeMember("x", System.Reflection.BindingFlags.Default, null, null, null)
+        ?? reflect.InvokeMember("x", System.Reflection.BindingFlags.Default, null, null, null, null, null, null);
+
     // N4: P/Invoke. LibraryImport는 AllowUnsafeBlocks가 필요해 쓰지 않는다(스펙 4.3).
     [DllImport("libc", EntryPoint = "getpid")]
     internal static extern int GetPid();
@@ -92,6 +129,11 @@ internal static class ScannerCanary
     // 허용(오탐이 없어야 함, 스펙 4.1 V14): System.Runtime에 있는 System.Net 타입, Uri, 제네릭 new T(), 인스턴스 Type.GetType().
     internal static string Allowed(string s) =>
         System.Net.WebUtility.HtmlEncode(s) + new Uri("file:///x").Scheme;
+
+    // 허용(오탐이 없어야 함): 금지 멤버와 이름이 가까운 멤버.
+    // 대리자 호출 Func<T>.Invoke(R1 Invoke와 이름이 같다), TimeZoneInfo.Utc(D1 Local 옆), Path.GetFileName(D1 Path 옆).
+    internal static string AllowedNearDenied(Func<string> f) =>
+        f() + TimeZoneInfo.Utc.Id + Path.GetFileName("x");
 
     // new T()는 제네릭 Activator.CreateInstance<T>() MemberRef를 남긴다. 위 Reflect()의 비제네릭과 이름이 같다.
     internal static T Generic<T>()

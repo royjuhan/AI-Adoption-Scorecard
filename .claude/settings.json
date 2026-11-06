@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "jq -r '.tool_input.file_path' | grep -E '\\.cs$' | xargs -r -I{} dotnet format AIAdoptionScorecard.sln --include {} --no-restore" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "dotnet test --nologo -v q >/dev/null 2>&1 || { echo 'dotnet test failed' >&2; exit 2; }" }
+        ]
+      }
+    ]
+  }
+}

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Scorecard.Tests.Guards;
 
-// G2·G3 도우미 자기 검사용 가짜 대상. docs/spec/guard-tests.md 4.6.
+// G2·G3 도우미 자기 검사용 가짜 대상. docs/spec/guard-tests.md 4.6, docs/spec/case-schema.md 4.11.
 // good은 G2·G3를 모두 통과해야 하고, 나머지는 해당 검사에서 차이가 나야 한다.
 // clock-today, string-hashcode, enum-order는 넣지 않는다. 도우미가 못 잡는 것을
 // "통과해야 한다"로 굳히지 않기 위해서다. 한계는 스펙 4.5에 있다.
@@ -40,6 +40,14 @@ internal static class FakeTargets
             AppendLine(o, Path.GetFullPath(i));
         }),
         new("culture-format", Sample, CultureFormat),
+
+        // G2 위반: 출력이 없거나 0바이트뿐이다(T-003 스펙 4.11 빈 출력 규칙).
+        new("no-output", Sample, (i, o) => Directory.CreateDirectory(o)),
+        new("empty-file", Sample, (i, o) =>
+        {
+            Directory.CreateDirectory(o);
+            File.WriteAllBytes(Path.Combine(o, SummaryFile), []);
+        }),
 
         // G3 위반: 입력·작업 폴더를 건드린다.
         new("input-append", Sample, (i, o) =>

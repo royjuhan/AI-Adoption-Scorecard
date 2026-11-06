@@ -5,7 +5,8 @@ namespace Scorecard.Tests.Guards;
 // T-002 G3: 처리 전후로 입력이 그대로다.
 // (docs/spec/guard-tests.md 4.5~4.7, 승인 결정 7·8·10)
 // 작업 폴더 전체(출력 폴더 제외)의 목록·크기·SHA-256·수정 시각을 비교한다. 카드 문구보다 엄격하다.
-// 지금 Core에 처리 기능이 없다. 그래서 가짜 대상으로 도우미(GuardChecks.Immutability)의 탐지력만 본다.
+// 이 파일은 가짜 대상으로 도우미(GuardChecks.Immutability)의 탐지력을 본다.
+// 실제 Core 대상(GuardTargets)은 CoreGuardTargetTests에서 Assert.Empty로 검사한다(T-003).
 [Trait("Rule", "G3")]
 public class ImmutabilityGuardTests
 {

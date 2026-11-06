@@ -122,6 +122,19 @@ internal static class ScannerCanary
         ?? type.InvokeMember("x", System.Reflection.BindingFlags.Default, null, null, null)
         ?? reflect.InvokeMember("x", System.Reflection.BindingFlags.Default, null, null, null, null, null, null);
 
+    // Y1: YamlDotNet.Core 밖의 YamlDotNet 타입. 리플렉션 역직렬화(Serialization)와 표현 모델(RepresentationModel).
+    // 테스트 프로젝트가 YamlDotNet을 직접 참조해서 쓸 수 있다(T-003 스펙 4.2, S8).
+    internal static object[] YamlOutsideCore() =>
+    [
+        new YamlDotNet.Serialization.DeserializerBuilder(),
+        new YamlDotNet.RepresentationModel.YamlStream(),
+    ];
+
+    // 허용(Y1 오탐이 없어야 함): YamlDotNet.Core와 그 하위(Events). Core 파서가 쓰는 범위다.
+    internal static object YamlCore(TextReader reader) => new YamlDotNet.Core.Parser(reader);
+
+    internal static Type YamlCoreEvents() => typeof(YamlDotNet.Core.Events.Scalar);
+
     // N4: P/Invoke. LibraryImport는 AllowUnsafeBlocks가 필요해 쓰지 않는다(스펙 4.3).
     [DllImport("libc", EntryPoint = "getpid")]
     internal static extern int GetPid();

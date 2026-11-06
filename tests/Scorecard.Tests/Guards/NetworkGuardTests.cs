@@ -3,7 +3,7 @@ using System.Reflection.Metadata;
 namespace Scorecard.Tests.Guards;
 
 // T-002 G1: src/ 컴파일 결과에 네트워크·외부 프로세스·LLM·비결정 참조가 없다.
-// (docs/spec/guard-tests.md 4.1~4.3, 승인 결정 1~6)
+// (docs/spec/guard-tests.md 4.1~4.3, 승인 결정 1~6. N6 허용 목록·Y1은 docs/spec/case-schema.md 4.2, T-003 승인 결정 2·3)
 // 텍스트가 아니라 테스트 출력 폴더의 dll 메타데이터를 본다. 그래서 테스트가 도는 구성(CI는 Release)만 검사한다.
 // 외부 프로세스는 부르지 않는다. 파일만 읽는다.
 [Trait("Rule", "G1")]
@@ -13,11 +13,12 @@ public class NetworkGuardTests
     private const string CliDll = "scorecard.dll";
     private const string TestsDll = "Scorecard.Tests.dll";
 
-    // N6 허용 목록. 런타임 폴더에 없는 제3자 어셈블리 중 사람이 확인한 이름만 넣는다.
-    // 지금은 비어 있다(승인 결정 3). 패키지를 처음 쓰는 카드에서 test-engineer가 더하고 PR 본문에 적는다.
-    private static readonly string[] AllowedThirdPartyAssemblies = [];
+    // N6 허용 목록. 런타임 폴더에 없는 제3자 어셈블리 중 사람이 확인한 이름만 넣는다(T-002 승인 결정 3).
+    // YamlDotNet: T-003 승인 결정 2. 패키지 18.1.0(정확히 고정), MIT, 의존 패키지 0개.
+    // YamlDotNet.dll 안의 N5·D1·R1 항목은 G1 밖이다. Core가 쓰는 범위는 Y1이 묶는다.
+    private static readonly string[] AllowedThirdPartyAssemblies = ["YamlDotNet"];
 
-    // Core·Cli 공통 규칙. D1(승인 결정 5)과 R1은 Core에만 적용한다.
+    // Core·Cli 공통 규칙. D1(승인 결정 5)과 R1, Y1(T-003 승인 결정 3)은 Core에만 적용한다.
     private static readonly string[] NetworkRules = ["N1", "N2", "N3", "N4", "N5", "N6"];
 
     [Theory]
@@ -56,6 +57,14 @@ public class NetworkGuardTests
         AssertNoFindings(CoreDll, "R1");
     }
 
+    // Y1: Core는 YamlDotNet 타입 중 YamlDotNet.Core(하위 포함)만 참조한다.
+    // 허용 목록이 YamlDotNet을 N6 밖에 두므로, 리플렉션 역직렬화(Serialization) 같은 다른 범위는 이 규칙이 막는다.
+    [Fact]
+    public void Core_uses_only_YamlDotNet_Core_namespaces()
+    {
+        AssertNoFindings(CoreDll, "Y1");
+    }
+
     // 자기 검사(스펙 4.3). 같은 검사기로 Scorecard.Tests.dll의 ScannerCanary를 잡는지 본다.
     // 검사기가 망가져 늘 0건을 내는 경우를 막는다. 기대 항목이 모두 있는지만 본다.
     [Theory]
@@ -67,6 +76,7 @@ public class NetworkGuardTests
     [InlineData("N6")]
     [InlineData("D1")]
     [InlineData("R1")]
+    [InlineData("Y1")]
     public void Scanner_catches_canary_for_rule(string rule)
     {
         var findings = Scan(TestsDll);
@@ -92,6 +102,47 @@ public class NetworkGuardTests
         var findings = Scan(TestsDll);
 
         Assert.DoesNotContain(findings, f => f.Contains(typeName, StringComparison.Ordinal));
+    }
+
+    // Y1 허용 범위(YamlDotNet.Core와 하위)는 잡지 않는다. 카나리아의 YamlCore()·YamlCoreEvents()가 참조한다.
+    // TypeRef가 실제로 dll에 있는지 먼저 본다. 빈 통과를 막는다.
+    [Theory]
+    [InlineData("YamlDotNet.Core.Parser")]
+    [InlineData("YamlDotNet.Core.Events.Scalar")]
+    public void Scanner_ignores_yaml_core_types(string typeName)
+    {
+        Assert.Contains(typeName, MetadataScanner.ReadTypeReferences(Path.Combine(AppContext.BaseDirectory, TestsDll)));
+        Assert.DoesNotContain("Y1 type " + typeName, Scan(TestsDll));
+    }
+
+    // Y1 판정 순수 함수. 경계: 이름 접두어가 같아도 '.' 경계가 아니면 다른 네임스페이스다. 서수 비교.
+    [Theory]
+    [InlineData("YamlDotNet", true)]
+    [InlineData("YamlDotNet.Serialization", true)]
+    [InlineData("YamlDotNet.Serialization.NamingConventions", true)]
+    [InlineData("YamlDotNet.RepresentationModel", true)]
+    [InlineData("YamlDotNet.Helpers", true)]
+    [InlineData("YamlDotNet.CoreX", true)]
+    [InlineData("YamlDotNet.Core", false)]
+    [InlineData("YamlDotNet.Core.Events", false)]
+    [InlineData("YamlDotNetX", false)]
+    [InlineData("yamldotnet.Serialization", false)]
+    [InlineData("Scorecard.Core.Cases", false)]
+    [InlineData("", false)]
+    public void IsDeniedYamlNamespace_allows_only_core_namespaces(string ns, bool denied)
+    {
+        Assert.Equal(denied, MetadataScanner.IsDeniedYamlNamespace(ns));
+    }
+
+    // 허용 목록의 "YamlDotNet"이 실제 어셈블리 이름과 서수로 같은지 본다. 철자가 틀리면 목록이 아무것도 빼지 못한다.
+    // Scorecard.Tests.dll은 카나리아 때문에 YamlDotNet을 참조한다.
+    [Fact]
+    public void Allow_list_entry_matches_real_YamlDotNet_assembly_name()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, TestsDll);
+
+        Assert.Contains("N6 non-framework asmref YamlDotNet", MetadataScanner.Scan(path, []));
+        Assert.DoesNotContain("N6 non-framework asmref YamlDotNet", Scan(TestsDll));
     }
 
     // 금지 멤버와 이름이 가까운 허용 멤버는 잡지 않는다. 카나리아의 AllowedNearDenied()가 참조한다.
@@ -269,6 +320,11 @@ public class NetworkGuardTests
         "D1" => MetadataScanner.DeterminismTypes.Select(t => new Expected($"D1 type {t}"))
             .Concat(MetadataScanner.DeterminismMembers.Select(m => new Expected($"D1 member {m}"))),
         "R1" => MetadataScanner.ReflectionInvokeMembers.Select(m => new Expected($"R1 member {m}")),
+        "Y1" =>
+        [
+            new("Y1 type YamlDotNet.Serialization.DeserializerBuilder"),
+            new("Y1 type YamlDotNet.RepresentationModel.YamlStream"),
+        ],
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, "알 수 없는 규칙"),
     };
 

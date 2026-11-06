@@ -13,13 +13,19 @@ public static class CaseParser
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     // <caseDirectory>/case.yaml을 읽는다. 오류의 Source는 "case.yaml"이다. 폴더의 다른 파일은 보지 않는다.
+    // 이름이 정확히 case.yaml인 항목이 있을 때만 연다(사람 판단 H1). 빈 문자열은 현재 폴더가 되므로 받지 않는다(4.10).
     public static CaseParseResult ParseDirectory(string caseDirectory)
     {
-        ArgumentNullException.ThrowIfNull(caseDirectory);
+        ArgumentException.ThrowIfNullOrEmpty(caseDirectory);
 
         byte[] content;
         try
         {
+            if (!HasExactFileName(caseDirectory))
+            {
+                return FileError("파일이 없다");
+            }
+
             content = File.ReadAllBytes(Path.Combine(caseDirectory, FileName));
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
@@ -49,6 +55,13 @@ public static class CaseParser
             ? new CaseParseResult(definition, [])
             : new CaseParseResult(null, errors.Sorted());
     }
+
+    // 폴더의 이름 목록에 case.yaml과 서수로 같은 항목(파일·폴더)이 있는가. 열거 순서와 상관없다.
+    // 대소문자를 무시하는 파일 시스템(Windows·macOS 기본)은 이름을 바로 열면 Case.YAML도 연다. OS마다 결과가 달라지지 않게 한다.
+    // 폴더가 없으면 열거가 DirectoryNotFoundException을 던진다. 부르는 쪽이 "파일이 없다"로 바꾼다.
+    private static bool HasExactFileName(string caseDirectory) =>
+        Directory.EnumerateFileSystemEntries(caseDirectory)
+            .Any(entry => string.Equals(Path.GetFileName(entry), FileName, StringComparison.Ordinal));
 
     private static CaseParseResult FileError(string message) =>
         new(null, [new CaseError(FileName, 0, 0, ErrorCode.File, string.Empty, message)]);

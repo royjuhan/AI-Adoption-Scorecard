@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
@@ -33,7 +35,7 @@ internal static class YamlTree
     // 문서 하나를 읽는다. 문서가 없거나 문법 오류·깊이 초과면 그 한 건만 남기고 null을 돌려준다.
     public static YamlNode? Read(string text, ErrorSink errors)
     {
-        var parser = new Parser(new StringReader(text));
+        var parser = new GuardedParser(new Parser(new StringReader(text)));
         try
         {
             parser.Consume<StreamStart>();
@@ -44,7 +46,7 @@ internal static class YamlTree
             }
 
             parser.Consume<DocumentStart>();
-            var root = ReadNode(parser, errors, depth: 1, path: string.Empty);
+            var root = ReadNode(parser, errors, depth: 1, ErrorPath.Root);
             parser.Consume<DocumentEnd>();
             if (root is YamlScalar { IsNull: true })
             {
@@ -72,6 +74,12 @@ internal static class YamlTree
             errors.Fatal(line, column, ErrorCode.Syntax, string.Empty, "YAML 문법 오류: " + ex.Message);
             return null;
         }
+        catch (ParserFaultException ex)
+        {
+            // YamlException이 아닌 파서 예외. 위치가 없다. Message는 무엇이 담길지 몰라 쓰지 않고 타입 이름만 쓴다.
+            errors.Fatal(0, 0, ErrorCode.Syntax, string.Empty, "YAML 문법 오류: 파서가 읽지 못했다: " + ex.FaultTypeName);
+            return null;
+        }
         catch (DepthExceededException ex)
         {
             errors.Fatal(ex.Line, ex.Column, ErrorCode.Depth, ex.NodePath, FormattableString.Invariant($"너무 깊다. {MaxDepth}단계까지 쓴다"));
@@ -80,12 +88,13 @@ internal static class YamlTree
     }
 
     // path는 오류에 쓰는 일반 경로다. 매핑은 "a.b", 목록 항목은 "a[1]"(1부터).
-    private static YamlNode ReadNode(IParser parser, ErrorSink errors, int depth, string path)
+    // 문자열은 오류를 적을 때만 만든다(ErrorPath).
+    private static YamlNode ReadNode(IParser parser, ErrorSink errors, int depth, ErrorPath path)
     {
         if (parser.TryConsume<AnchorAlias>(out var alias))
         {
             var (aliasLine, aliasColumn) = Position(alias.Start);
-            errors.Add(aliasLine, aliasColumn, ErrorCode.Alias, path, "별칭(*)은 쓰지 않는다");
+            errors.Add(aliasLine, aliasColumn, ErrorCode.Alias, path.ToString(), "별칭(*)은 쓰지 않는다");
             return new YamlAlias(aliasLine, aliasColumn);
         }
 
@@ -97,19 +106,19 @@ internal static class YamlTree
             // 앵커가 있는 노드도 계속 검사한다. 별칭만 더 보지 않는다.
             if (!node.Anchor.IsEmpty)
             {
-                errors.Add(line, column, ErrorCode.Alias, path, "앵커(&)는 쓰지 않는다");
+                errors.Add(line, column, ErrorCode.Alias, path.ToString(), "앵커(&)는 쓰지 않는다");
             }
 
             if (!node.Tag.IsEmpty)
             {
-                errors.Add(line, column, ErrorCode.Tag, path, "태그(!)는 쓰지 않는다");
+                errors.Add(line, column, ErrorCode.Tag, path.ToString(), "태그(!)는 쓰지 않는다");
             }
         }
 
         // 넘으면 바로 멈춘다. 건너뛰기(SkipThisAndNestedEvents)는 깊은 흐름 중첩에서 아주 느리다(스펙 4.7).
         if (depth > MaxDepth && current is not Scalar)
         {
-            throw new DepthExceededException(line, column, path);
+            throw new DepthExceededException(line, column, path.ToString());
         }
 
         if (parser.TryConsume<Scalar>(out var scalar))
@@ -122,7 +131,7 @@ internal static class YamlTree
             var items = new List<YamlNode>();
             while (!parser.TryConsume<SequenceEnd>(out _))
             {
-                items.Add(ReadNode(parser, errors, depth + 1, ItemPath(path, items.Count + 1)));
+                items.Add(ReadNode(parser, errors, depth + 1, path.Item(items.Count + 1)));
             }
 
             return new YamlSequence(line, column, items);
@@ -134,13 +143,13 @@ internal static class YamlTree
         while (!parser.TryConsume<MappingEnd>(out _))
         {
             var key = ReadNode(parser, errors, depth + 1, path);
-            var childPath = key is YamlScalar named ? ChildPath(path, named.Value) : path;
+            var childPath = key is YamlScalar named ? path.Child(named.Value) : path;
             var value = ReadNode(parser, errors, depth + 1, childPath);
             if (key is not YamlScalar scalarKey)
             {
                 if (key is not YamlAlias)
                 {
-                    errors.Add(key.Line, key.Column, ErrorCode.Type, path, "키는 문자열이어야 한다");
+                    errors.Add(key.Line, key.Column, ErrorCode.Type, path.ToString(), "키는 문자열이어야 한다");
                 }
 
                 continue;
@@ -153,7 +162,7 @@ internal static class YamlTree
                     scalarKey.Line,
                     scalarKey.Column,
                     ErrorCode.DuplicateKey,
-                    childPath,
+                    childPath.ToString(),
                     FormattableString.Invariant($"중복된 키다 (처음: {firstLine}줄)"));
                 continue;
             }
@@ -165,6 +174,7 @@ internal static class YamlTree
         return new YamlMapping(line, column, entries);
     }
 
+    // 경로 문자열 규칙. ErrorPath.ToString()도 같은 규칙이다(앞이 비면 '.' 없이 키만).
     public static string ChildPath(string path, string key) => path.Length == 0 ? key : path + "." + key;
 
     public static string ItemPath(string path, int number) => FormattableString.Invariant($"{path}[{number}]");
@@ -180,5 +190,107 @@ internal static class YamlTree
         public int Column { get; } = column;
 
         public string NodePath { get; } = nodePath;
+    }
+
+    // 오류 경로. 부모를 가리키는 불변 조각이다. 노드마다 문자열을 만들지 않는다.
+    // 노드마다 만들면 경로 길이 × 노드 수만큼 든다(긴 키 아래의 넓은 목록).
+    // 사슬 길이는 깊이를 넘지 않는다(MaxDepth). ToString의 재귀도 그만큼이다.
+    private sealed class ErrorPath
+    {
+        public static readonly ErrorPath Root = new(null, null, 0);
+
+        private readonly ErrorPath? parent;
+
+        // 매핑 키. null이면 목록 항목이고 number가 번호(1부터)다.
+        private readonly string? key;
+        private readonly int number;
+
+        private ErrorPath(ErrorPath? parent, string? key, int number)
+        {
+            this.parent = parent;
+            this.key = key;
+            this.number = number;
+        }
+
+        public ErrorPath Child(string childKey) => new(this, childKey, 0);
+
+        public ErrorPath Item(int itemNumber) => new(this, null, itemNumber);
+
+        // 뿌리부터 ChildPath·ItemPath를 차례로 붙인 것과 같은 문자열이다.
+        public override string ToString()
+        {
+            if (parent is null)
+            {
+                return string.Empty;
+            }
+
+            var text = new StringBuilder();
+            AppendTo(text);
+            return text.ToString();
+        }
+
+        private void AppendTo(StringBuilder text)
+        {
+            if (parent is null)
+            {
+                return;
+            }
+
+            parent.AppendTo(text);
+            if (key is null)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"[{number}]");
+            }
+            else
+            {
+                if (text.Length > 0)
+                {
+                    text.Append('.');
+                }
+
+                text.Append(key);
+            }
+        }
+    }
+
+    // YamlException이 아닌 파서 예외를 감싼다. Read가 syntax 한 건으로 바꾼다. 이 파일 밖으로 나가지 않는다.
+    private sealed class ParserFaultException(Exception fault) : Exception(null, fault)
+    {
+        public string FaultTypeName { get; } = fault.GetType().Name;
+    }
+
+    // 이벤트 읽기(MoveNext·Current)만 감싼다. 거기서 난 YamlException 밖의 예외를 ParserFaultException으로 바꾼다.
+    // 우리 코드에서 난 예외(버그)는 감싸지 않고 그대로 나간다.
+    // 메모리 부족은 입력이 아니라 실행 환경 탓이라 바꾸지 않는다. 바꾸면 같은 입력이 컴퓨터마다 다른 결과가 된다.
+    private sealed class GuardedParser(IParser inner) : IParser
+    {
+        public ParsingEvent? Current
+        {
+            get
+            {
+                try
+                {
+                    return inner.Current;
+                }
+                catch (Exception ex) when (IsFault(ex))
+                {
+                    throw new ParserFaultException(ex);
+                }
+            }
+        }
+
+        public bool MoveNext()
+        {
+            try
+            {
+                return inner.MoveNext();
+            }
+            catch (Exception ex) when (IsFault(ex))
+            {
+                throw new ParserFaultException(ex);
+            }
+        }
+
+        private static bool IsFault(Exception ex) => ex is not (YamlException or OutOfMemoryException);
     }
 }

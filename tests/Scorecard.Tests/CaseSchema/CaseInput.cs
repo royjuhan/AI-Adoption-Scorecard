@@ -32,6 +32,16 @@ internal static class CaseInput
 
     public static CaseParseResult Parse(byte[] bytes) => CaseParser.Parse(bytes, CaseParser.FileName);
 
+    // 같은 스레드에서 동기로 읽고, 그동안 이 스레드가 할당한 바이트 수를 함께 돌려준다.
+    // 할당량은 컴퓨터 속도와 무관하다. 스레드 단위라서 병렬로 도는 다른 테스트의 할당이 섞이지 않는다.
+    // Task.Run 안에서 불러도 된다. Parse가 동기라서 처음부터 끝까지 한 스레드에서 돈다.
+    public static (CaseParseResult Result, long AllocatedBytes) ParseCountingAllocations(byte[] bytes)
+    {
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var result = Parse(bytes);
+        return (result, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
     // 오류 줄(ToString) 목록.
     public static string[] Lines(CaseParseResult result) => result.Errors.Select(e => e.ToString()).ToArray();
 

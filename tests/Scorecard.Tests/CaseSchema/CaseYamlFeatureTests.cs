@@ -108,12 +108,17 @@ public class CaseYamlFeatureTests
     // 키 1천 자로는 증폭이 상한 안에 들어온다(1천 자 × 14단계 × 3만 개: 약 0.4초). 그래서 키를 1만 자, 항목을 30만 개로 키웠다.
     // 참고(이 저장소 개발 컴퓨터, 2026-11-06): 경로를 노드마다 만드는 구현 약 36초, Parser 이벤트만 읽기 약 0.4초.
     // 상한 10초는 정상 구현(1초 안팎)의 10배다. 시간은 테스트 쪽에서 잰다(테스트 dll은 G1 D1 대상이 아니다).
+    // 할당 상한도 둔다(T-003 reviewer 2회차 비차단 N2). 빠른 컴퓨터에서는 노드마다 경로를 만들어도 10초 안에 끝날 수 있다.
+    // 할당량은 컴퓨터 속도와 무관하다. Task.Run 안에서 같은 스레드로 동기로 읽으며 잰다. 시간 상한은 그대로 둔다.
+    // 참고(이 저장소 개발 컴퓨터, 2026-11-06): 지금 구현 약 137 MB. 노드마다 경로를 만드는 구현은
+    // 항목 3만 개에서 이미 약 17 GB였다(30만 개면 약 170 GB). 상한 1 GiB는 지금 구현의 약 7.8배다.
     [Fact]
     public async Task Long_explicit_keys_over_wide_list_do_not_multiply_path_cost()
     {
         const int Levels = 14;
         const int KeyLength = 10_000;
         const int Items = 300_000;
+        const long AllocationLimit = 1L << 30;
         var limit = TimeSpan.FromSeconds(10);
 
         // OneStep은 4줄이다. 단계 l(0부터)의 키는 5 + 2l줄, 목록은 5 + 2·14 = 33줄이다.
@@ -140,10 +145,10 @@ public class CaseYamlFeatureTests
         var lastColumn = (2 * Levels) + 2 + (3 * (Items - 1));
         var deepPath = string.Join(".", keys) + $"[{Items}]";
 
-        var parse = Task.Run(() => CaseInput.Parse(bytes));
+        var parse = Task.Run(() => CaseInput.ParseCountingAllocations(bytes));
         var finished = await Task.WhenAny(parse, Task.Delay(limit)) == parse;
         Assert.True(finished, $"입력 {bytes.Length}바이트를 {limit.TotalSeconds}초 안에 읽지 못했다. 경로 문자열을 노드마다 만드는지 본다.");
-        var result = await parse;
+        var (result, allocated) = await parse;
 
         // 경로가 길어서 문자열 전체 비교 대신 길이와 일치 여부를 본다. 실패 출력이 수십만 자가 되지 않게 한다.
         Assert.Null(result.Case);
@@ -152,6 +157,59 @@ public class CaseYamlFeatureTests
             result.Errors.Select(e => (e.Line, e.Column, e.Code, e.Path.Length, e.Message)));
         Assert.True(result.Errors[0].Path == keys[0], "unknown-field 경로가 첫 키와 다르다.");
         Assert.True(result.Errors[1].Path == deepPath, "tag 경로가 키 14개를 '.'로 이은 뒤 [300000]이 아니다.");
+        Assert.True(
+            allocated <= AllocationLimit,
+            $"입력 {bytes.Length}바이트를 읽으며 {allocated}바이트를 할당했다(상한 {AllocationLimit}바이트). 경로 문자열을 노드마다 만드는지 본다.");
+    }
+
+    // 같은 경로의 오류가 많을 때 경로 문자열 비용(T-003 reviewer 2회차 비차단 N1).
+    // 긴 명시 키 하나 아래 매핑에 별칭 키(*a : 1)를 많이 둔다. 별칭 키의 오류 경로는 그 매핑의 경로, 곧 긴 키다.
+    // 키 자리 오류의 경로가 부모 매핑 경로인 것은 Non_scalar_key_is_type_error와 같다. 별칭 키는 alias만 내고 type은 내지 않는다.
+    // 별칭은 앵커 없이 써도 Parser가 읽는다. 그 자리는 더 검사하지 않으므로(4.7) 값 1은 오류가 없다.
+    // 오류마다 경로 문자열을 새로 만들면 (키 길이 × 오류 수)만큼 쓴다. 결과가 그 문자열을 모두 쥐어서 GC로 줄지 않는다.
+    // 할당량은 컴퓨터 속도와 무관하다. 깊이 3이라 멈출 걱정이 없어 시간 보호 없이 같은 스레드에서 동기로 읽는다.
+    // 참고(이 저장소 개발 컴퓨터, 2026-11-06, 키 20만 자 × 별칭 2,500개, 입력 약 220 KB):
+    //   오류마다 StringBuilder로 경로를 만드는 지금 구현 약 2.0 GB(결과가 쥐는 경로 문자열만 약 1.0 GB, 최대 작업 집합 약 1.4 GB),
+    //   경로 문자열을 노드마다 한 번만 만드는 구현 약 4 MB.
+    // 상한 256 MiB: 오류마다 딱 맞는 크기로 한 번만 만들어도(약 1.0 GB) 약 4배 넘는다. 1 GiB로 두면 그 구현이 통과한다.
+    // 입력 크기는 지금 구현이 상한을 넘되 테스트 호스트가 메모리 부족으로 죽지 않게(수 GB 이내) 잡았다.
+    [Fact]
+    public void Many_errors_under_one_long_key_do_not_multiply_path_cost()
+    {
+        const int KeyLength = 200_000;
+        const int Aliases = 2_500;
+        const long AllocationLimit = 256L << 20;
+
+        // OneStep은 4줄이다. 키는 5줄 3열, ':'는 6줄, 별칭 키 i(1부터)는 6 + i줄 3열이다.
+        var key = new string('k', KeyLength);
+        var yaml = new System.Text.StringBuilder(CaseInput.OneStep).Append("? ").Append(key).Append("\n:\n");
+        for (var i = 0; i < Aliases; i++)
+        {
+            yaml.Append("  *a : 1\n");
+        }
+
+        var bytes = CaseInput.Bytes(yaml.ToString());
+
+        var (result, allocated) = CaseInput.ParseCountingAllocations(bytes);
+
+        // 오류는 루트의 알 수 없는 키 하나와 별칭 키마다 하나다. 경로가 길어서 길이와 일치 여부를 본다.
+        Assert.Null(result.Case);
+        Assert.Equal(1 + Aliases, result.Errors.Count);
+        Assert.Equal(
+            Enumerable.Range(1, Aliases)
+                .Select(i => (6 + i, 3, "alias", KeyLength, "별칭(*)은 쓰지 않는다"))
+                .Prepend((5, 3, "unknown-field", KeyLength, "알 수 없는 필드다")),
+            result.Errors.Select(e => (e.Line, e.Column, e.Code, e.Path.Length, e.Message)));
+        Assert.True(result.Errors.All(e => e.Path == key), "오류 경로가 모두 긴 키와 같지는 않다.");
+        Assert.True(
+            result.Errors[0].ToString() == $"case.yaml:5:3: unknown-field {key}: 알 수 없는 필드다",
+            "첫 오류 줄이 'case.yaml:5:3: unknown-field <키>: 알 수 없는 필드다'가 아니다.");
+        Assert.True(
+            result.Errors[1].ToString() == $"case.yaml:7:3: alias {key}: 별칭(*)은 쓰지 않는다",
+            "둘째 오류 줄이 'case.yaml:7:3: alias <키>: 별칭(*)은 쓰지 않는다'가 아니다.");
+        Assert.True(
+            allocated <= AllocationLimit,
+            $"입력 {bytes.Length}바이트를 읽으며 {allocated}바이트를 할당했다(상한 {AllocationLimit}바이트). 같은 경로의 오류마다 경로 문자열을 새로 만드는지 본다.");
     }
 
     // 블록 매핑 중첩도 같은 깊이 규칙이다. answers 아래에 매핑을 깊게 쌓는다.

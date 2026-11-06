@@ -73,6 +73,25 @@ public sealed class CaseDirectoryTests : IDisposable
         AssertNoPath(result, root);
     }
 
+    // 빈 문자열은 현재 폴더가 되므로 받지 않는다(4.10, 5절). null과는 예외 타입이 다르다.
+    // Assert.Throws는 타입을 정확히 비교한다. 하위 타입인 ArgumentNullException은 ArgumentException 검사를 통과하지 않는다.
+    // 상대 경로(".")를 받는지는 현재 폴더에 따라 결과가 달라서 보지 않는다.
+    [Fact]
+    public void Empty_directory_argument_throws_argument_exception()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => CaseParser.ParseDirectory(string.Empty));
+
+        Assert.Equal("caseDirectory", ex.ParamName);
+    }
+
+    [Fact]
+    public void Null_directory_argument_throws_argument_null_exception()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => CaseParser.ParseDirectory(null!));
+
+        Assert.Equal("caseDirectory", ex.ParamName);
+    }
+
     [Fact]
     public void Directory_and_bytes_give_same_result()
     {

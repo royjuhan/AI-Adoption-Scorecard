@@ -213,6 +213,26 @@ public class CaseErrorTests
         CaseInput.AssertErrors(yaml, "case.yaml:1:1: syntax: YAML 문법 오류: While scanning a mapping, found invalid tab as indentation.");
     }
 
+    // 4.9 syntax의 다른 형태: 파서가 YamlException이 아닌 예외를 내면 위치 없이(0:0) syntax 한 건이다.
+    // 예외 메시지는 쓰지 않고 타입 이름만 쓴다. 예외가 Parse 밖으로 나가지 않는다.
+    // 다른 검사도 하지 않는다(x는 알 수 없는 필드, name·task·steps가 없지만 내지 않는다).
+    [Fact]
+    public void Parser_fault_other_than_yaml_exception_is_single_syntax_error_without_position()
+    {
+        CaseParseResult? result = null;
+
+        var thrown = Record.Exception(() => result = CaseInput.Parse(SpecSamples.ParserFault));
+
+        Assert.Null(thrown);
+        Assert.NotNull(result);
+        CaseInput.AssertErrors(result, SpecSamples.ParserFaultError);
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("syntax", error.Code);
+        Assert.Equal(0, error.Line);
+        Assert.Equal(0, error.Column);
+        Assert.Equal(string.Empty, error.Path);
+    }
+
     // 4.9: Message는 한국어, syntax는 YamlDotNet 영어 메시지를 "YAML 문법 오류: " 뒤에 붙인다.
     [Fact]
     public void Syntax_message_has_korean_prefix()

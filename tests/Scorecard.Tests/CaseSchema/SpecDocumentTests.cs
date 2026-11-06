@@ -147,5 +147,24 @@ public class SpecDocumentTests
         }
     }
 
+    // 4.9 모으기·순서의 syntax 다른 형태 글머리. 문구 틀의 <예외 타입 이름>에 글머리 예시의 타입 이름을 넣고,
+    // 위치 없음(0:0)·경로 없음의 ToString 규칙("case.yaml: syntax: ")을 앞에 붙이면 SpecSamples의 오류 줄이다.
+    [Fact]
+    public void Parser_fault_error_matches_spec_bullet()
+    {
+        const string placeholder = "<예외 타입 이름>";
+        var bullet = SpecDocument.Line(SpecDocument.CaseSchemaPath, "- `syntax`의 다른 형태");
+        var spans = SpecDocument.CodeSpans(bullet);
+        var template = Assert.Single(spans, s => s.EndsWith(": " + placeholder, StringComparison.Ordinal));
+
+        Assert.Contains("위치 없이(0:0)", bullet, StringComparison.Ordinal);
+        Assert.Contains("U+2028", bullet, StringComparison.Ordinal);
+        Assert.Contains('\u2028', SpecSamples.ParserFault);
+        Assert.Contains(SpecSamples.ParserFaultTypeName, spans);
+        Assert.Equal(
+            SpecSamples.ParserFaultError,
+            "case.yaml: syntax: " + template.Replace(placeholder, SpecSamples.ParserFaultTypeName, StringComparison.Ordinal));
+    }
+
     private static string SampleFile(string sample) => RepoRoot.Combine($"tests/Scorecard.Tests/TestData/{sample}/case.yaml");
 }

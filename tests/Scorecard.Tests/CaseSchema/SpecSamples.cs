@@ -45,6 +45,16 @@ internal static class SpecSamples
         "  - {field: x}\n" +
         "inputs: {reference: r/*.csv, candidate: c/*.csv, key: k}\n";
 
+    // 4.9 모으기·순서의 syntax 다른 형태. 흐름 목록의 plain 스칼라 안 U+2028.
+    // YamlDotNet 18.1.0은 이 입력에서 YamlException이 아닌 InvalidOperationException을 낸다.
+    public const string ParserFault = "x: [a\u2028b]\n";
+
+    // 위 입력의 예외 타입 이름. 스펙 글머리의 예시와 같다.
+    public const string ParserFaultTypeName = "InvalidOperationException";
+
+    // 위 입력의 오류 줄. 위치가 없어서(0:0) Source 뒤에 줄·열이 없다. 경로도 없다.
+    public const string ParserFaultError = "case.yaml: syntax: YAML 문법 오류: 파서가 읽지 못했다: " + ParserFaultTypeName;
+
     // 6.3 필드 누락의 오류 4건.
     public static readonly string[] MissingRequiredErrors =
     [

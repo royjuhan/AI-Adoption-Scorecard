@@ -96,6 +96,32 @@ internal static class SpecDocument
     public static string[] BlockLines(string block) =>
         block.Split('\n').Where(l => l.Length > 0).ToArray();
 
+    // 앞 공백을 뺀 머리가 prefix인 줄 하나. 없거나 둘 이상이면 실패한다. 어느 줄인지 모호해지기 때문이다.
+    public static string Line(string relativePath, string prefix)
+    {
+        var matches = File.ReadAllLines(RepoRoot.Combine(relativePath))
+            .Where(l => l.TrimStart().StartsWith(prefix, StringComparison.Ordinal))
+            .ToArray();
+        if (matches.Length != 1)
+        {
+            Assert.Fail($"{relativePath}에서 '{prefix}'로 시작하는 줄이 {matches.Length}번 나온다.");
+        }
+
+        return matches[0];
+    }
+
+    // 줄 안의 `코드` 조각을 차례로. 백틱 짝이 맞지 않으면 실패한다.
+    public static string[] CodeSpans(string line)
+    {
+        var parts = line.Split('`');
+        if (parts.Length % 2 == 0)
+        {
+            Assert.Fail($"백틱 짝이 맞지 않는다: {line}");
+        }
+
+        return parts.Where((_, i) => i % 2 == 1).ToArray();
+    }
+
     // 마크다운 칸의 `코드` 표시를 뗀다.
     public static string Unquote(string cell) => cell.Trim().Trim('`');
 

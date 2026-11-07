@@ -68,13 +68,15 @@ public class GuardTargetAdapterTests
 
     // guard/basic은 T-002 가짜 대상의 바이트 샘플이라 그대로 둔다(스펙 4.11). 실제 대상은 쓰지 않는다.
     // T-004(classification.md 4.10, 승인 결정 12): 같은 샘플을 쓰는 대상이 늘어도 뜻이 같도록 중복을 빼고 비교한다.
-    // T-006(metrics.md 4.10, 승인 질문 18): 새 샘플(compare-invalid)이 늘어도 뜻이 같도록
-    // "basic이 없다 + case-valid가 있다 + 샘플 폴더가 있다"로 본다.
+    // 실제 대상이 쓰는 샘플은 정확히 이 목록이다(ADR 0005 원문 4, T-010). 샘플을 더하거나 빼면
+    // 이 목록도 같이 고쳐야 한다. 그래서 목록이 줄면 regression-guard가 잡는다.
+    // basic이 없다 + case-valid가 있다 + 샘플 폴더가 있다(T-006 승인 질문 18)도 그대로 본다.
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
         var samples = GuardTargets.All.Select(t => t.Sample).Distinct().Order(StringComparer.Ordinal).ToArray();
 
+        Assert.Equal(["case-invalid", "case-valid", "compare-invalid"], samples);
         Assert.DoesNotContain("basic", samples);
         Assert.Contains("case-valid", samples);
         Assert.All(samples, s => Assert.True(Directory.Exists(GuardWorkspace.SamplePath(s)), $"샘플 폴더가 없다: {s}"));

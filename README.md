@@ -11,7 +11,7 @@ A tool that checks whether a company's AI adoption actually worked, and finds th
 1. You describe a job. The tool asks fixed questions and splits it into steps.
 2. Each step gets an owner: ① existing feature, ② rule-based software, ③ AI at run time, ④ human. Each choice comes with a reason.
 3. If AI is already in use, it measures three things: is it accurate, did time drop, was AI needed.
-4. It writes a scorecard (Excel + PDF) and, if you say yes, a build-request bundle.
+4. It writes a scorecard (one HTML page) and, if you say yes, a build-request bundle.
 
 ## Install
 

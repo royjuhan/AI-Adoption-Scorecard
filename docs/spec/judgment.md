@@ -4,7 +4,7 @@
 - 작업 카드: `docs/tasks/T-011-judgment.md`. 판정 카드는 T-010에서 T-011로 번호가 바뀌었다(ADR 0005 결정 1).
 - 출발점: 지시문 3.4 판정 문장·3.5 4구역·6구역·12절 표 [읽음], `metrics.md` 3.1(`CsvRow`)·4.8 권고·11절·승인 질문 16 [읽음], `case-schema.md` 4.5(`thresholds`)·승인 질문 11 [읽음], `synthetic-examples.md` 4.7 [읽음], `signoff-final.md` [읽음], ADR 0004 결정 2·6과 expected 변경 규칙 [읽음], `src/Scorecard.Core/Comparison/` [읽음].
 - 작성: prototyper, 2026-11-07
-- 확인 대상 커밋: `66fcfef`(main `f2dace2` + 판정 카드. 그때 번호는 T-010). `src/`·`tests/`·`examples/`는 `f2dace2`와 같다. T-010(자동 진행 준비)의 작업 트리 변경은 clone에 없다. 스파이크는 이 커밋을 clone하고 작업 트리의 이 문서·`spikes/T-011/`을 복사해 돌렸다(`summary.txt`의 `repo HEAD` 줄).
+- 확인 대상 커밋: `bf2568e`. `src/`·`tests/`·`examples/`는 `7cd767b`(T-010 커밋. ADR 0005, `CoreGuardTargetTests` 정확한 목록 비교, 판정 카드 T-011)와 같다. `src/`·`examples/`는 main `f2dace2`와도 같다. 스파이크는 이 커밋을 clone하고 작업 트리의 이 문서·`spikes/T-011/`을 복사해 돌렸다(`summary.txt`의 `repo HEAD` 줄).
 - 확인 환경: Ubuntu 24.04 x64, .NET SDK 10.0.114, YamlDotNet 18.1.0, xUnit 2.9.3. 독립 구현 대조에만 Python 3.13.
 - 스파이크: `spikes/T-011/` (머지 대상 아님. 머지 전에 빠진다). 실행은 `spikes/T-011/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-011/summary.txt`. 이 문서의 JSON 블록, SHA-256, 문장은 스파이크 후보(`spikes/T-011/core/Judgment/`)가 실제로 낸 것이다.
 
@@ -272,7 +272,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 | 안 | 유형 열 | `case.yaml`·파서 | 예제 파일 | 기존 테스트 | 예제 판정 |
 | --- | --- | --- | --- | --- | --- |
-| M-A | `inputs.group`(새 선택 키)에 적은 열 하나 | 바뀐다(`CaseInputs`, `CaseReader`, `CompareEngine`이 열 확인) | table-compare·signoff-final `case.yaml`에 한 줄. `synthetic-examples.md` 7.2·7.5 블록·SHA-256 줄, `signoff-final.md` 파일 표가 같이 바뀐다 | 고쳐야 하는 것이 있다 [T11:S7c] | 적으면 M-B와 같다. 적지 않으면 table-compare가 통과(12절과 다름) |
+| M-A | `inputs.group`(새 선택 키)에 적은 열 하나 | 바뀐다(`CaseInputs`, `CaseReader`, `CompareEngine`이 열 확인) | table-compare·signoff-final `case.yaml`에 한 줄. `synthetic-examples.md` 7.2·7.5 블록·SHA-256 줄, `signoff-final.md` 파일 표가 같이 바뀐다 | 2건 실패(`CaseYamlTests.Case_data_keys_match_spec_table` × 2) [T11:S7c] | 적으면 M-B와 같다. 적지 않으면 table-compare가 통과(12절과 다름) |
 | M-B (추천) | 기준 머리 행의 열 가운데 키 열·`compare` 필드가 아닌 열 전부 | 그대로 | 그대로 | 그대로 [T11:S2] | 12절과 같다(7절) |
 | M-C | M-A + 키가 없으면 M-B | M-A와 같다 | 그대로 | M-A와 같다 | M-B와 같다 |
 
@@ -301,10 +301,12 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 - F1을 추천한다. 원문 "에만"에 가장 가깝고, 새 숫자가 `focus_min` 하나다. F3은 지시문에 없는 비율을 만든다. signoff-final은 정확도 미달로 어느 정의든 보류라 판정이 같다.
 
-M-A 영향 [T11:S7c]: 측정값은 스파이크 뒤 채운다.
+M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확인과 예제 `case.yaml` 두 줄을 넣고 전체 테스트):
 
-- 예제 `case.yaml` 2개, `synthetic-examples.md` 7.2·7.5 블록과 SHA-256 줄, `signoff-final.md` 파일 표 1행이 바뀐다. expected 8개(`classification.json`·`metrics.json` × 4)는 바이트 그대로다.
-- 통과하지 않는 기존 테스트: S7c 결과.
+- 바뀌는 파일: 예제 `case.yaml` 2개(table-compare `451a22ac…` → `e99d669a…`, 1,640 → 1,661바이트. signoff-final `a12835ea…` → `e11e7b68…`, 2,595 → 2,616바이트), `synthetic-examples.md` 7.2·7.5 블록과 SHA-256 줄, `signoff-final.md` 파일 표 1행. 스키마 문서(`case-schema.md` 4.5 `inputs` 표)도 고쳐야 한다.
+- expected 8개(`classification.json`·`metrics.json` × 4)는 바이트 그대로다(골든 테스트 통과).
+- 통과하지 않는 기존 테스트 2건: `CaseYamlTests.Case_data_keys_match_spec_table`(table-compare, signoff-final). 이 테스트는 `synthetic-examples.md` 4.8 표의 `inputs` 칸(세 값)으로 `CaseInputs`를 만들어 비교한다. 표와 테스트의 읽는 법을 같이 고쳐야 한다(테스트 변경. 약화는 아님). 나머지 1,280건은 통과했다.
+- 예제 `case.yaml` 변경은 regression-guard의 expected 규칙 밖이지만 공개 예제의 바이트를 바꾼다. M-B는 이 변경이 모두 없다.
 - → 질문 5.
 
 ### 4.9 "설명 안 되는 불일치"
@@ -352,7 +354,7 @@ M-A 영향 [T11:S7c]: 측정값은 스파이크 뒤 채운다.
 
 - 추천 O-B. 기존 expected 바이트를 바꾸지 않는다(ADR 0005 regression-guard가 막는 "기존 expected 수정"이 없다). `compare`(대조) = metrics.json, `judge`(판정) = judgment.json으로 내부 명령과 파일이 하나씩 맞는다(ADR 0004 규칙 5).
 - 판정이 대조와 따로 바뀌어도 metrics.json을 건드리지 않는다. 판정 규칙을 고치는 카드는 judgment.json만 바꾼다.
-- expected 영향: 새 파일 `examples/*/expected/judgment.json` 4개 추가. 기존 파일 수정·삭제 없음 [T11:S7]. 기존 테스트 `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/judgment.json`을 더한다(계획에 새 파일을 더하는 변경. 테스트 수는 그대로) [T11:S7a·S7b].
+- expected 영향: 새 파일 `examples/*/expected/judgment.json` 4개 추가. 기존 파일 수정·삭제 없음 [T11:S7 examples]. 새 파일을 넣으면 기존 테스트 `Example_folder_has_exactly_the_planned_files`가 4건 실패한다 [T11:S7a]. 목록에 `expected/judgment.json`을 더하면 통과한다(계획에 새 파일을 더하는 변경. 테스트 수는 그대로 1,284) [T11:S7b].
 - 지시문 5절 문구(리드가 고친다, 제안): "`classification.json`(단계별 분류·근거 키), `metrics.json`(정확도·누락률 등), `judgment.json`(판정·근거 문장·다음 할 일), `report-outline.json`(평가서 섹션별 핵심 값)". "이 세 파일"은 "이 파일들"로.
 - oracle(ADR 0005, `tools/oracle/`): judgment.json은 이 문서 4절의 표와 글만으로 같은 바이트를 낼 수 있게 썼다. Python 독립 구현(`spikes/T-011/xcheck/judge.py`)이 예제 4종에서 같은 바이트를 냈다 [T11:S3 xcheck]. oracle에 옮길 때는 새 모듈(예: `tools/oracle/judgment.py`)로 더하고, 대조는 oracle의 `compare`를 쓴다. 유형 열(4.8 규칙 1)을 정하려면 기준 파일마다 머리 행이 필요하다. oracle은 prototyper가 스펙만 보고 고친다(ADR 0005 결정 9).
 - → 질문 7, 8.
@@ -361,7 +363,8 @@ M-A 영향 [T11:S7c]: 측정값은 스파이크 뒤 채운다.
 
 - `Judge`는 순수 함수다. 난수·시각·환경 변수·현재 폴더·파일을 쓰지 않는다. 비교는 서수, 숫자는 decimal·`InvariantCulture`. `Dictionary`·`HashSet`은 찾기에만 쓰고 출력 순서는 표 순서·열 이름 서수다.
 - 입력(`CaseDefinition`, `CompareMetrics`)을 바꾸지 않는다. 판정 전후 metrics.json 바이트가 같다 [T11:P:determinism].
-- G1: 후보 4파일을 Core에 넣고 Release `-warnaserror` 빌드, `dotnet format --verify-no-changes`, 전체 테스트(G1 포함)가 통과했다 [T11:S2]. 쓰는 프레임워크 어셈블리는 `MetricsJson`과 같다(`System.Text.Json`, `System.Text.Encodings.Web`).
+- 기준선(`bf2568e` clone): Release `-warnaserror` 빌드, 전체 테스트 1,282개 통과 [T11:S1].
+- G1: 후보 4파일을 Core에 넣고 Release `-warnaserror` 빌드, `dotnet format --verify-no-changes`, 전체 테스트 1,282개(G1 포함)가 통과했다. 테스트 이름 차이 0 [T11:S2]. 쓰는 프레임워크 어셈블리는 `MetricsJson`과 같다(`System.Text.Json`, `System.Text.Encodings.Web`).
 - G2·G3 등록(제안):
 
 | 이름 | 샘플(`TestData/guard/…`) | 어댑터 |
@@ -369,9 +372,9 @@ M-A 영향 [T11:S7c]: 측정값은 스파이크 뒤 채운다.
 | `judge-case-valid` | `case-valid` (기존. 바꾸지 않는다) | `CaseParser.ParseDirectory` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null) → 출력 폴더의 `judgment.json` 한 파일 |
 
 - 표본 판정: 보류 `ACCURACY`(66.7% < 90), 시간 `not_measured`, 몰림 `off`(유형 열 없음), 다음 할 일 셋 [T11:S3 judge-case-valid]. 숫자가 문장에 들어가므로 문화권(R4)을 본다.
-- 새 샘플이 없다. 샘플 목록(중복 뺀 것)이 `case-invalid`, `case-valid`, `compare-invalid` 그대로라 `Real_targets_use_case_samples_not_basic`(T-010이 정확한 목록 비교로 되돌림)을 고치지 않는다 [T11:S5].
+- 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 샘플 목록(중복 뺀 것)이 `case-invalid`, `case-valid`, `compare-invalid` 그대로라 `Real_targets_use_case_samples_not_basic`(T-010이 정확한 목록 비교로 되돌림)을 고치지 않고 통과한다.
 - 판정 오류 표본은 없다. 판정에는 입력 오류가 없다(대조 오류는 `compare-invalid`가 본다. 인자 예외는 5절).
-- 음성 대조 [T11:S6]: (a) 문장 숫자를 `CultureInfo.CurrentCulture`로 쓰면 G1은 통과하고 G2 R4가 잡아야 한다. (b) 판정 안에서 `DateTime.Now`를 읽으면 G1(D1)이 잡아야 한다. 결과는 S6.
+- 음성 대조 [T11:S6]: (a) 문장 숫자를 `CultureInfo.CurrentCulture`로 쓰면 빌드·G1은 통과하고 G2가 `G2 R4 문화권: out/judgment.json SHA-256 다름`으로 잡는다(`Core_target_is_deterministic(judge-case-valid)` 1건 실패). (b) 판정 안에서 `DateTime.Now`를 읽으면 G1(D1)이 잡는다(`Core_has_no_clock_random_or_environment_references` 1건 실패).
 
 ### 4.13 Core 공개 API (제안)
 

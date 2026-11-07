@@ -16,3 +16,6 @@ spikes/**/obj/
 
 # 노트북
 notebooks/**/.ipynb_checkpoints/
+
+# Python
+__pycache__/

@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Scorecard.Core.Judgment;
 
-// T-010 스파이크 후보(머지 대상 아님). 판정의 값·문장을 이 파일 한 곳에 둔다(docs/spec/judgment.md 4.10).
+// T-011 스파이크 후보(머지 대상 아님). 판정의 값·문장을 이 파일 한 곳에 둔다(docs/spec/judgment.md 4.10).
 // 원본은 스펙 4.2 기본값 표, 4.3 판정 표, 4.4 확인 표, 4.5 숫자 표, 4.6 읽은 문턱 표, 4.7 다음 할 일 표다.
 // 실행 중에 스펙 문서를 읽지 않는다. 숫자는 InvariantCulture로 쓴다.
 internal static class JudgmentRules
@@ -37,7 +37,7 @@ internal static class JudgmentRules
     public const string TodoAddCompare = "add_compare";
     public const string TodoMeasureTime = "measure_time";
     public const string TodoReviewMismatches = "review_mismatches";
-    public const string TodoSetGroup = "set_group";
+    public const string TodoAddTypeColumn = "add_type_column";
     public const string TodoConfirmThresholds = "confirm_thresholds";
 
     // 기본값 표시. classification.md 4.6과 같은 글자.
@@ -101,16 +101,14 @@ internal static class JudgmentRules
 
     public static string FocusFew(int bad) => Inv($"불일치가 {bad}건이라 몰림을 보지 않는다.");
 
-    public static string FocusOff(int bad) => Inv($"유형 열(case.yaml inputs.group)이 없어 불일치 {bad}건이 한 유형에 몰렸는지 보지 않았다.");
+    public static string FocusOff(int bad) => Inv($"기준 자료에 키·대조 열 밖의 열이 없어 불일치 {bad}건이 한 유형에 몰렸는지 볼 수 없다.");
 
-    public static string FocusOneValue(string group) => Inv($"기준 자료의 {group} 값이 하나뿐이라 몰림을 볼 수 없다.");
+    public static string FocusOneValue(string columns) => Inv($"키·대조 열 밖의 열({columns})이 기준 자료에서 모두 값이 하나뿐이라 몰림을 볼 수 없다.");
 
     public static string FocusFound(int bad, string group, string value, int rowsIn, int rowsOut) =>
         Inv($"불일치 {bad}건이 모두 {group} = {value}인 행이다({value} {rowsIn}행 중 {bad}행, 다른 값 {rowsOut}행 중 0행).");
 
-    public static string FocusSpread(int bad, string group, string counts) => Inv($"불일치 {bad}건이 {group}의 여러 값에 있다({counts}).");
-
-    public static string FocusCount(string value, int count) => Inv($"{value} {count}건");
+    public static string FocusSpread(int bad, string columns) => Inv($"불일치 {bad}건이 한 값에 몰린 열이 없다(본 열: {columns}).");
 
     // 4.7 다음 할 일 문구.
     public const string AddDataText = "기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.";
@@ -119,7 +117,7 @@ internal static class JudgmentRules
 
     public static string ReviewMismatchesText(int bad) => Inv($"불일치 {bad}건을 보고 설명이 되는지 적는다.");
 
-    public const string SetGroupText = "불일치가 한 유형에 몰렸는지 보려면 유형 열 이름을 case.yaml inputs.group에 적는다.";
+    public const string AddTypeColumnText = "불일치가 한 유형에 몰렸는지 보려면 기준 자료에 유형 열(키·대조 열 밖의 열)을 더한다.";
 
     public static string ConfirmThresholdsText(string defaults) => Inv($"문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.");
 

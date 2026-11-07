@@ -4,7 +4,7 @@ using R = Scorecard.Core.Judgment.JudgmentRules;
 
 namespace Scorecard.Core.Judgment;
 
-// T-010 스파이크 후보(머지 대상 아님). 대조 결과와 thresholds로 판정을 낸다. docs/spec/judgment.md 4절.
+// T-011 스파이크 후보(머지 대상 아님). 대조 결과와 thresholds로 판정을 낸다. docs/spec/judgment.md 4절.
 // 순수 함수다. 파일·시각·환경 변수·난수를 쓰지 않는다. 비교는 서수, 숫자는 decimal·InvariantCulture.
 // 문턱 비교는 셈(counts)으로 한다. 표시용 퍼센트(accuracy_pct 등)로 비교하지 않는다(metrics.md 4.8 권고).
 public static class JudgmentEngine
@@ -77,7 +77,7 @@ public static class JudgmentEngine
         var (timeResult, timeReason, total) = Time(thresholds.TimeMustDrop, times);
         var time = new JudgmentCheck(RuleTime, timeResult, Mark(timeReason, R.KeyTimeMustDrop));
 
-        var focus = Focus(definition.Inputs?.Group, metrics, bad, out var focusValue);
+        var focus = Focus(definition, metrics, bad, out var focusColumn, out var focusValue);
 
         // 4.3 판정 표(순서대로, 처음 걸리는 곳에서 멈춘다).
         string verdict, rule, reason;
@@ -100,7 +100,7 @@ public static class JudgmentEngine
         }
         else if (focus.Result == R.Found)
         {
-            (verdict, rule, reason) = (VerdictConditional, RuleFocus, Mark(R.ConditionalFocus(bad.Length, Show(definition.Inputs!.Group!), focusValue!), R.KeyAccuracyMin, R.KeyMissingMax, R.KeyTimeMustDrop));
+            (verdict, rule, reason) = (VerdictConditional, RuleFocus, Mark(R.ConditionalFocus(bad.Length, focusColumn!, focusValue!), R.KeyAccuracyMin, R.KeyMissingMax, R.KeyTimeMustDrop));
         }
         else
         {
@@ -121,7 +121,7 @@ public static class JudgmentEngine
 
         if (focus.Result == R.Off)
         {
-            todo.Add(new JudgmentTodo(R.TodoSetGroup, R.SetGroupText));
+            todo.Add(new JudgmentTodo(R.TodoAddTypeColumn, R.AddTypeColumnText));
         }
 
         AddConfirmThresholds(todo, thresholds, defaults);
@@ -234,54 +234,89 @@ public static class JudgmentEngine
             : (R.NotMet, R.TimeNotMet(times.ProcessMinutes, times.ReviewMinutes, total, times.BeforeMinutes), total);
     }
 
-    // 4.4 FOCUS. 불일치(값 불일치 + 누락)의 기준 행 유형 값을 본다. 추가 행은 보지 않는다.
-    private static JudgmentCheck Focus(string? group, CompareMetrics metrics, CompareItem[] bad, out string? value)
+    // 4.4 FOCUS(안 M-B). 유형 열 = 기준 머리 행의 열 중 키 열·compare 필드가 아닌 열(4.8).
+    // 불일치(값 불일치 + 누락)의 기준 행 값을 본다. 추가 행은 보지 않는다. 열은 이름 서수 순으로 보고 처음 found인 열을 쓴다.
+    private static JudgmentCheck Focus(CaseDefinition definition, CompareMetrics metrics, CompareItem[] bad, out string? column, out string? value)
     {
+        column = null;
         value = null;
         if (bad.Length < R.FocusMinimum)
         {
             return new JudgmentCheck(RuleFocus, R.Few, R.FocusFew(bad.Length));
         }
 
-        if (group is null)
+        var rows = metrics.Items.Where(i => i.Reference is not null).Select(i => i.Reference!).ToArray();
+        var columns = TypeColumns(definition, rows);
+        if (columns.Length == 0)
         {
             return new JudgmentCheck(RuleFocus, R.Off, R.FocusOff(bad.Length));
         }
 
-        var all = metrics.Items.Where(i => i.Reference is not null).Select(i => GroupValue(i.Reference!, group)).ToArray();
-        var shownGroup = Show(group);
-        if (all.Distinct(StringComparer.Ordinal).Count() == 1)
+        var seen = new List<string>();
+        foreach (var c in columns)
         {
-            return new JudgmentCheck(RuleFocus, R.OneValue, R.FocusOneValue(shownGroup));
-        }
-
-        var badValues = bad.Select(i => GroupValue(i.Reference!, group)).ToArray();
-        var distinct = badValues.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
-        if (distinct.Length == 1)
-        {
-            var rowsIn = all.Count(v => string.Equals(v, distinct[0], StringComparison.Ordinal));
-            value = Show(distinct[0]);
-            return new JudgmentCheck(RuleFocus, R.Found, R.FocusFound(bad.Length, shownGroup, value, rowsIn, all.Length - rowsIn));
-        }
-
-        var counts = string.Join(", ", distinct.Select(v => R.FocusCount(Show(v), badValues.Count(b => string.Equals(b, v, StringComparison.Ordinal)))));
-        return new JudgmentCheck(RuleFocus, R.Spread, R.FocusSpread(bad.Length, shownGroup, counts));
-    }
-
-    private static string GroupValue(CsvRow row, string group)
-    {
-        var index = -1;
-        for (var i = 0; i < row.Header.Count; i++)
-        {
-            if (string.Equals(row.Header[i], group, StringComparison.Ordinal))
+            var all = rows.Select(r => Cell(r, c)).ToArray();
+            if (all.Distinct(StringComparer.Ordinal).Count() == 1)
             {
-                index = i;
-                break;
+                continue;
+            }
+
+            seen.Add(c);
+            var badValues = bad.Select(i => Cell(i.Reference!, c)).Distinct(StringComparer.Ordinal).ToArray();
+            if (badValues.Length == 1)
+            {
+                var rowsIn = all.Count(v => string.Equals(v, badValues[0], StringComparison.Ordinal));
+                column = Show(c);
+                value = Show(badValues[0]);
+                return new JudgmentCheck(RuleFocus, R.Found, R.FocusFound(bad.Length, column, value, rowsIn, all.Length - rowsIn));
             }
         }
 
-        return index < 0 ? throw new ArgumentException($"기준 행에 유형 열이 없다: {group}") : row.Cells[index];
+        return seen.Count == 0
+            ? new JudgmentCheck(RuleFocus, R.OneValue, R.FocusOneValue(ShowColumns(columns)))
+            : new JudgmentCheck(RuleFocus, R.Spread, R.FocusSpread(bad.Length, ShowColumns(seen)));
     }
+
+    // 모든 기준 행의 머리 행에 꼭 한 번 있는 이름 가운데 키 열·compare 필드·빈 이름이 아닌 것. 이름 서수 순.
+    private static string[] TypeColumns(CaseDefinition definition, CsvRow[] rows)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal) { definition.Inputs!.Key };
+        foreach (var field in definition.Compare)
+        {
+            used.Add(field.Field);
+        }
+
+        HashSet<string>? common = null;
+        foreach (var header in rows.Select(r => r.Header).Distinct(ReferenceEqualityComparer.Instance).Cast<IReadOnlyList<string>>())
+        {
+            var once = header.GroupBy(h => h, StringComparer.Ordinal).Where(g => g.Count() == 1).Select(g => g.Key);
+            if (common is null)
+            {
+                common = once.ToHashSet(StringComparer.Ordinal);
+            }
+            else
+            {
+                common.IntersectWith(once);
+            }
+        }
+
+        return (common ?? []).Where(c => c.Length > 0 && !used.Contains(c)).Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static string Cell(CsvRow row, string column)
+    {
+        for (var i = 0; i < row.Header.Count; i++)
+        {
+            if (string.Equals(row.Header[i], column, StringComparison.Ordinal))
+            {
+                return row.Cells[i];
+            }
+        }
+
+        throw new InvalidOperationException("유형 열은 모든 기준 행에 있다.");
+    }
+
+    private static string ShowColumns(IEnumerable<string> columns) => string.Join(", ", columns.Select(Show));
 
     // 문장 안의 값. 빈 칸은 "(빈 칸)". 제어 문자는 \uXXXX, 64자 넘으면 자른다(metrics.md 4.7과 같다).
     private static string Show(string value) => value.Length == 0 ? R.EmptyValue : CompareRules.Show(value);

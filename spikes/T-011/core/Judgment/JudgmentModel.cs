@@ -1,6 +1,6 @@
 namespace Scorecard.Core.Judgment;
 
-// T-010 스파이크 후보(머지 대상 아님). docs/spec/judgment.md 3.1·4.11.
+// T-011 스파이크 후보(머지 대상 아님). docs/spec/judgment.md 3.1·4.11.
 
 // 건당 시간(분). 적용 전(사람이 하던 시간), 처리(투입부터 결과 완성까지), 검토(사람이 결과를 확인·수정한 시간).
 // 값은 M2 measure가 만든다. 이 카드에서는 테스트만 넣는다. 없으면 Judge에 null을 준다(시간을 재지 않음).

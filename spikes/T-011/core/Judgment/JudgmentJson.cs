@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Scorecard.Core.Judgment;
 
-// T-010 스파이크 후보(머지 대상 아님). judgment.json 바이트. docs/spec/judgment.md 3.2·3.3.
+// T-011 스파이크 후보(머지 대상 아님). judgment.json 바이트. docs/spec/judgment.md 3.2·3.3.
 // 바이트 규칙은 classification.md 3.3과 같다: Utf8JsonWriter, 들여쓰기 2칸, "\n", UnsafeRelaxedJsonEscaping, UTF-8(BOM 없음), 끝에 "\n".
 // 최상위 키 순서: schema_version → case → verdict → rule → reason → thresholds → defaults → checks → todo.
 public static class JudgmentJson

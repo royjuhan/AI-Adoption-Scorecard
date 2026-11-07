@@ -1,6 +1,6 @@
-// T-010 스파이크 도구(머지 대상 아님). 후보 Core(Scorecard.Core.Judgment + inputs.group)의 공개 API만 쓴다.
+// T-011 스파이크 도구(머지 대상 아님). 후보 Core(Scorecard.Core.Judgment)의 공개 API만 쓴다.
 // 명령:
-//   judge <케이스폴더> <출력 judgment.json> [auto]   예제 판정. auto면 안 M-B(유형 열을 자동으로 찾음)를 흉내 낸다.
+//   judge <케이스폴더> <출력 judgment.json>         예제 판정.
 //   spec <judgment.md>                              스펙 표를 읽어 후보와 대조(S8). 표마다 PROBE spec 줄.
 //   probe                                           표 밖 실험(PROBE 줄).
 //   culture <케이스폴더>...                          문화권 7종에서 judgment.json SHA-256.
@@ -15,7 +15,7 @@ using Scorecard.Core.Judgment;
 
 return args[0] switch
 {
-    "judge" => Tool.JudgeCase(args[1], args[2], args.Length > 3 && args[3] == "auto"),
+    "judge" => Tool.JudgeCase(args[1], args[2]),
     "spec" => Tool.Spec(args[1]),
     "probe" => Tool.Probe(),
     "culture" => Tool.Culture(args[1..]),
@@ -28,7 +28,7 @@ internal static class Tool
     private static int diffs;
 
     // ---------- judge ----------
-    public static int JudgeCase(string caseDir, string output, bool auto)
+    public static int JudgeCase(string caseDir, string output)
     {
         var parsed = CaseParser.ParseDirectory(caseDir);
         if (parsed.Case is not { } definition)
@@ -52,34 +52,12 @@ internal static class Tool
             return 2;
         }
 
-        var autoNote = "-";
-        if (auto && definition.Inputs is { } inputs && metrics.Status == CompareEngine.StatusMeasured)
-        {
-            // 안 M-B: 기준 머리 행에서 키·compare 필드가 아닌 열을 머리 행 순서로 보고, 처음 FOCUS found가 되는 열을 쓴다.
-            var header = metrics.Items.First(i => i.Reference is not null).Reference!.Header;
-            var used = definition.Compare.Select(c => c.Field).Append(inputs.Key).ToHashSet(StringComparer.Ordinal);
-            autoNote = "none";
-            var candidates = header.Where(h => !used.Contains(h)).ToArray();
-            foreach (var column in candidates)
-            {
-                var withGroup = definition with { Inputs = inputs with { Group = column } };
-                if (JudgmentEngine.Judge(withGroup, metrics).Checks.Single(c => c.Rule == JudgmentEngine.RuleFocus).Result == "found")
-                {
-                    definition = withGroup;
-                    autoNote = column;
-                    break;
-                }
-            }
-
-            autoNote += $" scanned={string.Join("|", candidates)}";
-        }
-
         var result = JudgmentEngine.Judge(definition, metrics);
         var bytes = JudgmentJson.Render(result);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
         File.WriteAllBytes(output, bytes);
         Console.WriteLine(
-            $"RESULT {result.Case} verdict={result.Verdict} rule={result.Rule} group={definition.Inputs?.Group ?? "-"} auto={autoNote} " +
+            $"RESULT {result.Case} verdict={result.Verdict} rule={result.Rule} " +
             $"checks={string.Join(",", result.Checks.Select(c => $"{c.Rule}:{c.Result}"))} todo={string.Join(",", result.Todo.Select(t => t.Key))} " +
             $"defaults={string.Join(",", result.Defaults)} sha256={Convert.ToHexStringLower(SHA256.HashData(bytes))} bytes={bytes.Length}");
         Console.WriteLine($"RESULT {result.Case} reason={result.Reason}");
@@ -122,9 +100,9 @@ internal static class Tool
     }
 
     // ---------- 장면 만들기 ----------
-    // 기준 자료: id, grp, v. groups[i]가 i번째 행의 유형 값. mismatch 행은 결과 v=2, missing 행은 결과에 없다.
+    // 기준 자료: id, grp, v(HasType이 false면 id, v). groups[i]가 i번째 행의 유형 값. mismatch 행은 결과 v=2, missing 행은 결과에 없다.
     internal sealed record Scn(
-        string[] Groups, int[] Mismatch, int[] Missing, bool GroupSet,
+        string[] Groups, int[] Mismatch, int[] Missing, bool HasType,
         decimal? AccMin, decimal? MissMax, bool? Tmd, JudgmentTimes? Times, string[]? Unexplained,
         string[]? ExtraGroups = null);
 
@@ -137,7 +115,7 @@ internal static class Tool
         var y = new StringBuilder("name: probe\ntask: t\nsteps:\n  - name: s\n");
         if (inputs)
         {
-            y.Append("inputs: {reference: reference/a.csv, candidate: candidate/a.csv, key: id").Append(s.GroupSet ? ", group: grp" : string.Empty).Append("}\n");
+            y.Append("inputs: {reference: reference/a.csv, candidate: candidate/a.csv, key: id}\n");
         }
 
         if (compare)
@@ -171,20 +149,22 @@ internal static class Tool
     internal static (CaseDefinition Def, CompareMetrics Metrics) Build(Scn s, bool inputs = true, bool compare = true)
     {
         var definition = Definition(s, inputs, compare);
-        var reference = new StringBuilder("id,grp,v\n");
-        var candidate = new StringBuilder("id,grp,v\n");
+        var header = s.HasType ? "id,grp,v\n" : "id,v\n";
+        string G(string g) => s.HasType ? g + "," : string.Empty;
+        var reference = new StringBuilder(header);
+        var candidate = new StringBuilder(header);
         for (var i = 0; i < s.Groups.Length; i++)
         {
-            reference.Append(Key(i)).Append(',').Append(s.Groups[i]).Append(",1\n");
+            reference.Append(Key(i)).Append(',').Append(G(s.Groups[i])).Append("1\n");
             if (!s.Missing.Contains(i))
             {
-                candidate.Append(Key(i)).Append(',').Append(s.Groups[i]).Append(s.Mismatch.Contains(i) ? ",2\n" : ",1\n");
+                candidate.Append(Key(i)).Append(',').Append(G(s.Groups[i])).Append(s.Mismatch.Contains(i) ? "2\n" : "1\n");
             }
         }
 
         for (var j = 0; j < (s.ExtraGroups?.Length ?? 0); j++)
         {
-            candidate.Append($"x{j:D3},").Append(s.ExtraGroups![j]).Append(",1\n");
+            candidate.Append($"x{j:D3},").Append(G(s.ExtraGroups![j])).Append("1\n");
         }
 
         var result = CompareEngine.Compare(definition, new CompareSources(
@@ -244,6 +224,7 @@ internal static class Tool
         SpecBoundary(lines);
         SpecTime(lines);
         SpecFocus(lines);
+        SpecFocusColumns(lines);
         SpecUnexplained(lines);
         SpecPriority(lines);
         Console.WriteLine($"PROBE spec total-diff={diffs}");
@@ -286,7 +267,7 @@ internal static class Tool
             ["value"] = distinct.Length == 1 ? Show(distinct[0]) : "-",
             ["rows_in"] = distinct.Length == 1 ? s.Groups.Count(g => g == distinct[0]).ToString(CultureInfo.InvariantCulture) : "-",
             ["rows_out"] = distinct.Length == 1 ? s.Groups.Count(g => g != distinct[0]).ToString(CultureInfo.InvariantCulture) : "-",
-            ["counts"] = string.Join(", ", distinct.Select(d => $"{Show(d)} {badGroups.Count(g => g == d)}건")),
+            ["columns"] = "grp",
         };
         if (s.Times is { } t)
         {
@@ -527,7 +508,7 @@ internal static class Tool
                     s = Combo("met", "met", "not_reviewed", "off", "spread");
                     (j, m) = RunM(s);
                     break;
-                case "set_group":
+                case "add_type_column":
                     s = Combo("met", "met", "not_reviewed", "off", "off");
                     (j, m) = RunM(s);
                     break;
@@ -615,7 +596,7 @@ internal static class Tool
 
     private static void SpecFocus(string[] lines)
     {
-        var rows = Table(lines, "| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | inputs.group | FOCUS |");
+        var rows = Table(lines, "| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | 유형 열 | FOCUS |");
         foreach (var c in rows)
         {
             var groups = Groups(c[0]);
@@ -638,6 +619,44 @@ internal static class Tool
         }
 
         Console.WriteLine($"PROBE spec focus rows={rows.Count}");
+    }
+
+    // 여러 유형 열. "p=aaabbb"는 열 p의 행 1~6 값(글자 하나가 한 행, "_"는 빈 칸). 불일치 행은 1부터.
+    private static void SpecFocusColumns(string[] lines)
+    {
+        var rows = Table(lines, "| 열 값(행 1~6) | 불일치 행 | FOCUS | 걸린 열 | 본 열 |");
+        foreach (var c in rows)
+        {
+            var columns = c[0].Split(',').Select(U).Select(t => (Name: t.Split('=')[0], Values: t.Split('=')[1].Select(ch => ch == '_' ? string.Empty : ch.ToString()).ToArray())).ToArray();
+            var bad = U(c[1]).Split(',').Select(x => int.Parse(x, CultureInfo.InvariantCulture) - 1).ToArray();
+            var header = "id," + string.Concat(columns.Select(x => x.Name + ",")) + "v\n";
+            var reference = new StringBuilder(header);
+            var candidate = new StringBuilder("id,v\n");
+            for (var i = 0; i < 6; i++)
+            {
+                reference.Append(Key(i)).Append(',').Append(string.Concat(columns.Select(x => x.Values[i] + ","))).Append("1\n");
+                if (Array.IndexOf(bad, i) is var k && k >= 0 && k % 2 == 1)
+                {
+                    continue; // 홀수 번째 불일치는 누락
+                }
+
+                candidate.Append(Key(i)).Append(bad.Contains(i) ? ",2\n" : ",1\n");
+            }
+
+            var definition = Definition(new Scn([], [], [], false, 0m, 100m, false, null, null));
+            var metrics = CompareEngine.Compare(definition, new CompareSources(
+                [new SourceFile("reference/a.csv", Utf8.GetBytes(reference.ToString()))],
+                [new SourceFile("candidate/a.csv", Utf8.GetBytes(candidate.ToString()))])).Metrics!;
+            var focus = JudgmentEngine.Judge(definition, metrics).Checks.Single(x => x.Rule == "FOCUS");
+            var id = string.Join(" / ", c.Take(2));
+            Expect("focus-columns", id, "FOCUS", U(c[2]), focus.Result);
+            var hit = Regex.Match(focus.Reason, @"모두 (.+) = (.+)인 행이다\(");
+            Expect("focus-columns", id, "hit", U(c[3]), hit.Success ? $"{hit.Groups[1].Value} = {hit.Groups[2].Value}" : "—");
+            var seen = Regex.Match(focus.Reason, @"(?:본 열: |밖의 열\()([^)]*)\)");
+            Expect("focus-columns", id, "seen", U(c[4]), seen.Success ? seen.Groups[1].Value : "—");
+        }
+
+        Console.WriteLine($"PROBE spec focus-columns rows={rows.Count}");
     }
 
     private static void SpecUnexplained(string[] lines)
@@ -686,7 +705,6 @@ internal static class Tool
         Throws("args negative-time", () => JudgmentEngine.Judge(d, m, new JudgmentTimes(-1m, 0m, 0m)));
         Throws("args unexplained-not-bad", () => JudgmentEngine.Judge(d, m, null, [Key(9)]));
         Throws("args unexplained-dup", () => JudgmentEngine.Judge(d, m, null, [Key(0), Key(0)]));
-        Throws("args group-not-in-rows", () => JudgmentEngine.Judge(d with { Inputs = d.Inputs! with { Group = "zzz" } }, m));
         Throws("args null", () => JudgmentEngine.Judge(null!, m));
 
         // 추가 행(결과에만 있는 키)은 몰림을 보지 않는다.
@@ -720,34 +738,42 @@ internal static class Tool
         var a2 = JudgmentJson.Render(JudgmentEngine.Judge(d, m));
         Console.WriteLine($"PROBE determinism same-bytes={a1.AsSpan().SequenceEqual(a2)} metrics-unchanged={before.AsSpan().SequenceEqual(MetricsJson.Render(m))}");
 
-        // 파서(inputs.group).
-        foreach (var (name, line) in new[]
+        // 여러 기준 파일: 한 파일에만 있는 열은 유형 열이 아니다. 파일 순서와 상관없다.
+        var def2 = CaseParser.Parse(Utf8.GetBytes("name: a\ntask: t\nsteps:\n  - name: s\ninputs: {reference: reference/*.csv, candidate: candidate/a.csv, key: id}\ncompare:\n  - {field: v, tolerance: 0}\n"), "case.yaml").Case!;
+        var refA = Utf8.GetBytes("id,p,q,v\nk1,a,x,1\nk2,b,x,1\nk3,a,y,1\n");
+        var refB = Utf8.GetBytes("id,v,p\nk4,1,b\nk5,1,b\n");
+        var cand = Utf8.GetBytes("id,v\nk1,2\nk3,1\nk4,1\nk5,1\n");
+        foreach (var (name, files) in new[]
         {
-            ("group", "{reference: r/a.csv, candidate: c/a.csv, key: id, group: kind}"),
-            ("group-null", "{reference: r/a.csv, candidate: c/a.csv, key: id, group: ~}"),
-            ("group-empty", "{reference: r/a.csv, candidate: c/a.csv, key: id, group: \"\"}"),
-            ("group-space", "{reference: r/a.csv, candidate: c/a.csv, key: id, group: \"  \"}"),
-            ("group-list", "{reference: r/a.csv, candidate: c/a.csv, key: id, group: [a]}"),
-            ("group-only", "{group: kind}"),
-            ("other-key", "{reference: r/a.csv, candidate: c/a.csv, key: id, groups: kind}"),
+            ("files-ab", new[] { new SourceFile("reference/a.csv", refA), new SourceFile("reference/b.csv", refB) }),
+            ("files-ba", new[] { new SourceFile("reference/b.csv", refB), new SourceFile("reference/a.csv", refA) }),
+            ("file-a-only", new[] { new SourceFile("reference/a.csv", refA) }),
         })
         {
-            var parsed = CaseParser.Parse(Utf8.GetBytes($"name: a\ntask: t\nsteps:\n  - name: s\ninputs: {line}\n"), "case.yaml");
-            Console.WriteLine($"PROBE parser {name} group={(parsed.Case?.Inputs?.Group ?? "null")} errors={string.Join(" | ", parsed.Errors)}");
+            var mm = CompareEngine.Compare(def2, new CompareSources(files, [new SourceFile("candidate/a.csv", cand)])).Metrics!;
+            var jj = JudgmentEngine.Judge(def2, mm);
+            Console.WriteLine($"PROBE focus multi-file {name} focus={jj.Checks[4].Result} reason={jj.Checks[4].Reason} sha256={Convert.ToHexStringLower(SHA256.HashData(JudgmentJson.Render(jj)))}");
         }
 
-        // 대조: group 열이 기준 머리 행에 없으면 column 오류. 결과 머리 행에는 없어도 된다.
-        var def = CaseParser.Parse(Utf8.GetBytes("name: a\ntask: t\nsteps:\n  - name: s\ninputs: {reference: reference/a.csv, candidate: candidate/a.csv, key: id, group: kind}\ncompare:\n  - {field: v}\n"), "case.yaml").Case!;
-        foreach (var (name, reference, candidate) in new[]
+        // 머리 행에 같은 이름이 둘(쓰지 않는 열 중복은 대조 오류가 아니다) → 그 열은 유형 열이 아니다. 빈 이름 열도 아니다.
+        foreach (var (name, header, rowsText) in new[]
         {
-            ("ref-missing-group", "id,v\nk1,a\n", "id,kind,v\nk1,x,a\n"),
-            ("cand-missing-group", "id,kind,v\nk1,x,a\n", "id,v\nk1,a\n"),
-            ("ref-dup-group", "id,kind,v,kind\nk1,x,a,y\n", "id,v\nk1,a\n"),
+            ("dup-column", "id,p,p,v", "k1,a,a,2|k2,a,a,2|k3,b,b,1"),
+            ("empty-name", "id,,v", "k1,a,2|k2,a,2|k3,b,1"),
+            ("dup-and-q", "id,p,p,q,v", "k1,a,a,x,2|k2,a,a,x,2|k3,b,b,y,1"),
         })
         {
-            var r = CompareEngine.Compare(def, new CompareSources([new SourceFile("reference/a.csv", Utf8.GetBytes(reference))], [new SourceFile("candidate/a.csv", Utf8.GetBytes(candidate))]));
-            Console.WriteLine($"PROBE compare {name} valid={r.IsValid} errors={string.Join(" | ", r.Errors)}");
+            var reference = Utf8.GetBytes(header + "\n" + rowsText.Replace('|', '\n') + "\n");
+            var candidateBytes = Utf8.GetBytes("id,v\nk1,1\nk2,1\nk3,1\n");
+            var d3 = Definition(new Scn([], [], [], false, 0m, 100m, false, null, null));
+            var mm = CompareEngine.Compare(d3, new CompareSources([new SourceFile("reference/a.csv", reference)], [new SourceFile("candidate/a.csv", candidateBytes)])).Metrics!;
+            var jj = JudgmentEngine.Judge(d3, mm);
+            Console.WriteLine($"PROBE focus {name} focus={jj.Checks[4].Result} reason={jj.Checks[4].Reason}");
         }
+
+        // 기준 자료의 값이 결과 자료와 달라도(유형 열은 결과에 없어도) 기준 값으로 본다.
+        var refOnly = Run(new Scn(["a", "a", "b", "b"], [0, 1], [], true, 0m, 100m, false, null, null));
+        Console.WriteLine($"PROBE focus reference-values verdict={refOnly.Verdict} reason={refOnly.Reason}");
 
         return 0;
     }

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# T-010 스파이크 교차 확인(머지 대상 아님). judgment.md의 글(4절 규칙)과 표(4.2·4.3·4.4·4.5·4.7)만 보고 짰다. C# 코드를 쓰지 않는다.
+# T-011 스파이크 교차 확인(머지 대상 아님). judgment.md의 글(4절 규칙)과 표(4.2·4.3·4.4·4.5·4.7)만 보고 짰다. C# 코드를 쓰지 않는다.
 # 대조 부분은 T-006 Python 독립 구현(compare.py, metrics.md 3·4절만 보고 짠 것)을 가져와 기준 행의 칸을 남기게 고쳤다.
 # 공개 예제 모양(따옴표 없음, 짧은 case.yaml)과 G2 표본 case-valid만 다룬다. 시간·사람 입력은 없다(None).
+# 유형 열(4.8 안 M-B)은 기준 파일마다 머리 행을 따로 보고 정한다.
 # 사용: judge.py <judgment.md> <케이스폴더> <출력파일>
 # 표준 라이브러리만 쓴다. 네트워크 없음.
 import csv
@@ -41,9 +42,9 @@ def read_case(path):
     text = Path(path).read_text(encoding='utf-8')
     name = re.search(r'^name: (.+)$', text, re.M).group(1).strip()
     inputs = None
-    m = re.search(r'^inputs:\n  reference: (.+)\n  candidate: (.+)\n  key: (.+)\n(?:  group: (.+)\n)?', text, re.M)
+    m = re.search(r'^inputs:\n  reference: (.+)\n  candidate: (.+)\n  key: (.+)\n', text, re.M)
     if m:
-        inputs = (m.group(1).strip(), m.group(2).strip(), m.group(3).strip(), m.group(4).strip() if m.group(4) else None)
+        inputs = (m.group(1).strip(), m.group(2).strip(), m.group(3).strip())
     compare = []
     for f in re.finditer(r'^  - \{field: ([a-z_]+)(?:, (tolerance|tolerance_pct): ([0-9.]+))?\}$', text, re.M):
         compare.append((f.group(1), f.group(2), f.group(3)))
@@ -74,12 +75,14 @@ def number(s):
     return Decimal(s)
 
 
-def rows(case_dir, paths, key):
+def rows(case_dir, paths, key, headers=None):
     out = []
     for path in paths:
         text = (Path(case_dir) / path).read_bytes().decode('utf-8-sig')
         records = [r for r in csv.reader(io.StringIO(text, newline='')) if any(norm(c) for c in r)]
         header = [norm(c) for c in records[0]]
+        if headers is not None:
+            headers.append(header)
         for r in records[1:]:
             cells = [norm(c) for c in r]
             out.append((cells[header.index(key)], dict(zip(header, cells))))
@@ -106,8 +109,9 @@ def pct(part, whole):
 
 
 def compare_case(case_dir, inputs, compare):
-    ref_pat, cand_pat, key, _ = inputs
-    ref = rows(case_dir, files(case_dir, ref_pat), key)
+    ref_pat, cand_pat, key = inputs
+    headers = []
+    ref = rows(case_dir, files(case_dir, ref_pat), key, headers)
     cand = {k: cells for k, cells in rows(case_dir, files(case_dir, cand_pat), key)}
     status = []  # (key, 상태, 기준 칸)
     for k, cells in ref:
@@ -116,7 +120,14 @@ def compare_case(case_dir, inputs, compare):
             continue
         results = [cell_judge(kind, tol, cells[f], cand[k][f]) for f, kind, tol in compare]
         status.append((k, 'mismatch' if any(r not in (None, 'within') for r in results) else 'match', cells))
-    return status
+    # 유형 열: 모든 기준 파일 머리 행에 꼭 한 번 있고, 키·compare 필드·빈 이름이 아닌 열. 이름 서수(코드 단위) 순.
+    used = {key} | {f for f, _, _ in compare}
+    common = None
+    for h in headers:
+        once = {c for c in h if h.count(c) == 1}
+        common = once if common is None else common & once
+    types = sorted((c for c in common if c and c not in used), key=lambda c: c.encode('utf-16-be'))
+    return status, types
 
 
 # ---------- 판정(judgment.md 4절) ----------
@@ -181,7 +192,7 @@ def main(doc, case_dir, out):
         body = {'verdict': verdict, 'rule': 'NOT_VERIFIED', 'reason': u(template), 'checks': [],
                 'todo': [{'key': k, 'text': confirm() if k == 'confirm_thresholds' else u(todo_t[k])} for k in todo]}
     else:
-        status = compare_case(case_dir, inputs, compare)
+        status, types = compare_case(case_dir, inputs, compare)
         n = len(status)
         match = sum(1 for s in status if s[1] == 'match')
         missing = sum(1 for s in status if s[1] == 'missing')
@@ -198,26 +209,30 @@ def main(doc, case_dir, out):
         results['MISSING'] = 'met' if missing * 100 <= miss_max * n else 'not_met'
         results['UNEXPLAINED'] = 'none' if not bad else 'not_reviewed'  # 사람 입력 없음
         results['TIME'] = 'not_measured' if must_drop else 'off'  # 시간 입력 없음
-        group = inputs[3]
+        show = lambda x: x if x else '(빈 칸)'
         if len(bad) < focus_min:
             results['FOCUS'] = 'few'
-        elif group is None:
+        elif not types:
             results['FOCUS'] = 'off'
         else:
-            values = [s[2][group] for s in status]
-            badv = [s[2][group] for s in bad]
-            show = lambda x: x if x else '(빈 칸)'
-            v['group'] = group
-            if len(set(values)) == 1:
-                results['FOCUS'] = 'one_value'
-            elif len(set(badv)) == 1:
-                results['FOCUS'] = 'found'
-                v['value'] = show(badv[0])
-                v['rows_in'] = str(values.count(badv[0]))
-                v['rows_out'] = str(len(values) - values.count(badv[0]))
+            seen = []
+            for col in types:
+                values = [s[2][col] for s in status]
+                if len(set(values)) == 1:
+                    continue
+                seen.append(col)
+                badv = {s[2][col] for s in bad}
+                if len(badv) == 1:
+                    (val,) = badv
+                    results['FOCUS'] = 'found'
+                    v['group'] = show(col)
+                    v['value'] = show(val)
+                    v['rows_in'] = str(values.count(val))
+                    v['rows_out'] = str(len(values) - values.count(val))
+                    break
             else:
-                results['FOCUS'] = 'spread'
-                v['counts'] = ', '.join(f'{show(x)} {badv.count(x)}건' for x in sorted(set(badv)))
+                results['FOCUS'] = 'spread' if seen else 'one_value'
+                v['columns'] = ', '.join(show(c) for c in (seen if seen else types))
         owner = {'ACCURACY': ['accuracy_min'], 'MISSING': ['missing_max'], 'TIME': ['time_must_drop'], 'UNEXPLAINED': [], 'FOCUS': []}
         checks = [{'rule': r, 'result': results[r], 'reason': mark(fill(ct[(r, results[r])], v), owner[r])}
                   for r in ['ACCURACY', 'MISSING', 'UNEXPLAINED', 'TIME', 'FOCUS']]
@@ -238,7 +253,7 @@ def main(doc, case_dir, out):
         if results['UNEXPLAINED'] == 'not_reviewed':
             todo.append('review_mismatches')
         if results['FOCUS'] == 'off':
-            todo.append('set_group')
+            todo.append('add_type_column')
         if defaults:
             todo.append('confirm_thresholds')
         todo.sort(key=todo_order.index)

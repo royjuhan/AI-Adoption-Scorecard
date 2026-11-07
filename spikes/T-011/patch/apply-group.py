@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# T-010 스파이크(머지 대상 아님). clone의 Core에 안 M-A(case.yaml inputs.group)를 넣는다. judgment.md 4.8.
+# T-011 스파이크(머지 대상 아님). clone의 Core에 안 M-A(case.yaml inputs.group)를 넣는다. judgment.md 4.8.
 # 1) CaseModel.cs: CaseInputs에 선택 위치 매개변수 Group(기본 null). 기존 3인자 생성은 그대로 컴파일된다.
 # 2) CaseReader.cs: inputs 키 목록에 group. 있으면 비어 있지 않은 문자열(빈 값은 required). 없거나 null이면 null.
 # 3) CompareEngine.cs: group이 있으면 기준 파일 머리 행에 그 열이 있어야 한다(column·duplicate-column, metrics.md 4.7과 같은 규칙).
@@ -23,7 +23,7 @@ def patch(rel, pairs):
 
 patch('src/Scorecard.Core/Cases/CaseModel.cs', [(
     'public sealed record CaseInputs(string Reference, string Candidate, string Key);',
-    '// Group(T-010 후보): 불일치 몰림을 볼 유형 열 이름(선택). 없으면 null.\n'
+    '// Group(T-011 후보): 불일치 몰림을 볼 유형 열 이름(선택). 없으면 null.\n'
     'public sealed record CaseInputs(string Reference, string Candidate, string Key, string? Group = null);',
 )])
 
@@ -36,7 +36,7 @@ patch('src/Scorecard.Core/Cases/CaseReader.cs', [
      '        var group = OptionalName(inputFields, "group", "inputs.group");\n'
      '        return reference is null || candidate is null || key is null ? null : new CaseInputs(reference, candidate, key, group);'),
     ('    private string? OptionalString(Dictionary<string, YamlNode> fields, string key, string path) =>',
-     '    // 선택 이름(T-010 후보). 없거나 null이면 null. 있으면 비어 있지 않아야 한다(공백뿐도 required).\n'
+     '    // 선택 이름(T-011 후보). 없거나 null이면 null. 있으면 비어 있지 않아야 한다(공백뿐도 required).\n'
      '    private string? OptionalName(Dictionary<string, YamlNode> fields, string key, string path)\n'
      '    {\n'
      '        if (!TryGetPresent(fields, key, out var node))\n'

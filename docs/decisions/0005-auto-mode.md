@@ -80,4 +80,7 @@
 
 - mutation 점수 비교는 바뀐 파일에서만 한다. 바뀌지 않은 파일의 테스트를 지우면 점수가 그대로일 수 있다. 그래서 테스트 수 감소는 mutation 증거가 있어도 STATUS.md에 적는다.
 - oracle과 엔진이 같은 스펙을 같은 방식으로 잘못 읽으면 둘 다 틀린 바이트를 낸다. 독립 구현은 이것을 줄일 뿐 없애지 못한다.
+- GitHub `pull_request`는 PR 쪽 `ci.yml`을 돌린다. PR이 `ci.yml`을 고치면(예: 가드 단계에 `|| true`) 가드가 실패해도 잡이 녹색이 된다. 대책(T-010 리뷰 B5): 리드가 머지 전에 main 쪽 도구로 `tools/ci/lead_check`를 직접 돌린다. `.github/`·`tools/`·`.config/`·`.claude/`·`CLAUDE.md`·지시문·기존 ADR을 바꾼 PR은 이 카드를 본 적 없는 reviewer가 diff 전문을 본다.
+- PR 코드가 도는 잡(test-run, mutation)의 결과 파일은 PR 코드가 꾸밀 수 있다. 가드 잡 자체는 PR 코드를 돌리지 않는다(T-010 리뷰 B4).
+- 이름·수가 같은 테스트 완화, 스펙을 어기는 동작 변경과 거기에 맞춘 테스트 수정은 어떤 잡도 못 본다. reviewer만 본다.
 - auto-merge 뒤의 잘못은 juhan이 STATUS.md를 읽을 때 드러난다. 그래서 STATUS.md는 머지마다 갱신한다.

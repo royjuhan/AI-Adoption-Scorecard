@@ -4,6 +4,7 @@ using Scorecard.Core.Cases;
 using Scorecard.Core.Synthetic;
 using Scorecard.Tests.CaseSchema;
 using Scorecard.Tests.Classification;
+using Scorecard.Tests.Guards;
 
 namespace Scorecard.Tests.Synthetic;
 
@@ -15,6 +16,13 @@ public partial class StructureTests
 {
     // 4.5 상수: 정수 값 불일치 폭 20. 소수 값 불일치는 허용 오차의 2배 이상, 허용오차 안 차이는 절반 이하.
     private const int IntegerMismatchSpread = 20;
+
+    // 4.5 상수: 소수 값 불일치 배수 2·3·4(÷100), 허용오차 안 차이 n = 1~4(÷1000).
+    private static readonly int[] DecimalMismatchFactors = [2, 3, 4];
+    private static readonly int[] WithinTenths = [1, 2, 3, 4];
+
+    // N1 시드 루프에 쓰는 G2 고정 계획(4.11)의 이름. 예제 이름과 겹치지 않는다.
+    private const string GuardPlan = "guard:synthetic-case-valid";
 
     // 3.1 Planted 표(값, 어디). 시드 2000개를 볼 때 문서를 한 번만 읽는다.
     private static readonly Lazy<(string Value, string Where)[]> PlantedTable = new(() =>
@@ -132,6 +140,69 @@ public partial class StructureTests
         }
 
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+    }
+
+    // 리뷰 1회차 N1, 4.5의 4·5: 소수 값 불일치·허용오차 안 값도 열 범위(4.4) 안이다. 벗어나면 부호를 뒤집는다.
+    // 시드 0~1999. 예제 table-compare와 G2 고정 계획(4.11, 시드만 바꿈). 범위·식은 AssertPlantedRows(AssertDecimalPlanted)가 본다.
+    // 빈 통과 방지: 한쪽 부호로는 가장 작은 배수로도 범위를 벗어나는 기준 값(부호를 뒤집어야 하는 행)이 실제로 나와야 한다.
+    // 이 행 수는 기준 값과 고른 행으로만 정해진다(뒤집기 전에 뽑는다). 계획의 시드(골든 8, G2 7)에는 이런 행이 없어야 한다(바이트가 그대로).
+    [Theory]
+    [InlineData("table-compare")]
+    [InlineData(GuardPlan)]
+    public void Decimal_planted_values_stay_in_column_range_for_every_seed_below_2000(string which)
+    {
+        var (definition, plan) = which == GuardPlan
+            ? (CaseInput.Valid(CaseParser.ParseDirectory(GuardWorkspace.SamplePath(GuardTargets.Get("synthetic-case-valid").Sample))), GuardTargets.SyntheticGuardPlan)
+            : (SyntheticInput.CaseOf(which), SyntheticSpec.Plan(which));
+        var compare = definition.Compare.ToDictionary(f => f.Field, StringComparer.Ordinal);
+        var wrong = new List<string>();
+        var flips = new Dictionary<string, int>(StringComparer.Ordinal) { ["값 불일치"] = 0, ["허용오차 안 차이"] = 0 };
+
+        for (ulong seed = 0; seed < 2000; seed++)
+        {
+            try
+            {
+                var tables = SyntheticGenerator.Generate(definition, plan with { Seed = seed });
+                var reference = tables.Reference.ToDictionary(r => r.Key, StringComparer.Ordinal);
+                foreach (var row in tables.Candidate.Where(r => r.Planted.Contains(':', StringComparison.Ordinal)))
+                {
+                    var mismatch = row.Planted.StartsWith(SyntheticGenerator.PlantedMismatchPrefix, StringComparison.Ordinal);
+                    var name = row.Planted[(row.Planted.IndexOf(':', StringComparison.Ordinal) + 1)..];
+                    var i = plan.Columns.Select((c, n) => (c, n)).Single(x => x.c.Name == name).n;
+                    var column = plan.Columns[i];
+                    if (column.Kind != SyntheticColumn.KindDecimal)
+                    {
+                        continue;
+                    }
+
+                    var r = SyntheticInput.Number(reference[row.Key].Values[i]);
+                    var (k, divisor) = mismatch ? (DecimalMismatchFactors.Min(), 100m) : (WithinTenths.Min(), 1000m);
+                    var formula = Formula(r, compare[name].TolerancePct!.Value, column.Scale, [k], divisor);
+                    if (formula.Any(v => v < column.Min || v > column.Max))
+                    {
+                        flips[mismatch ? "값 불일치" : "허용오차 안 차이"]++;
+                        if (seed == plan.Seed)
+                        {
+                            wrong.Add($"시드 {seed}(계획의 시드): {row.Key}는 부호를 뒤집어야 한다. 4.5 리뷰 1회차 변경으로 골든 바이트가 바뀐다.");
+                        }
+                    }
+                }
+
+                AssertPlantedRows(definition, plan with { Seed = seed }, tables);
+            }
+            catch (Exception ex) when (ex is ArgumentException or Xunit.Sdk.XunitException)
+            {
+                wrong.Add($"시드 {seed}: {ex.Message}");
+            }
+
+            if (wrong.Count > 10)
+            {
+                break;
+            }
+        }
+
+        Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+        Assert.All(flips, f => Assert.True(f.Value > 0, $"{which}: 시드 0~1999에 부호를 뒤집어야 하는 {f.Key} 행이 없다. 이 테스트가 범위 끝을 보지 못한다."));
     }
 
     // 카드 수용 기준 3·지시문 12절 "검증 자료" 칸: table-compare 30건/30건·불일치 3·누락 1·정확도 90%·누락률 3.3%,
@@ -394,6 +465,7 @@ public partial class StructureTests
                     var (r, c, p) = (SyntheticInput.Number(before), SyntheticInput.Number(after), field.TolerancePct!.Value);
                     var halfUnit = 0.5m / Pow10(column.Scale);
                     Assert.True(Math.Abs(c - r) >= (2 * p * Math.Abs(r) / 100m) - halfUnit, $"{key}: 값 불일치 {before} → {after}가 허용 오차 {p}%의 2배보다 작다.");
+                    AssertDecimalPlanted(key, "값 불일치", column, r, c, Formula(r, p, column.Scale, DecimalMismatchFactors, 100m));
                     break;
                 }
 
@@ -409,7 +481,23 @@ public partial class StructureTests
         Assert.Equal(SyntheticColumn.KindDecimal, column.Kind);
         var (r, c, p) = (SyntheticInput.Number(before), SyntheticInput.Number(after), field.TolerancePct!.Value);
         Assert.True(c != r && Math.Abs(c - r) * 200m <= p * Math.Abs(r), $"{key}: 허용오차 안 차이 {before} → {after}가 0이거나 허용 오차 {p}%의 절반을 넘는다.");
+        AssertDecimalPlanted(key, "허용오차 안 차이", column, r, c, Formula(r, p, column.Scale, WithinTenths, 1000m));
     }
+
+    // 리뷰 1회차 N1, 4.5의 4·5: 소수로 심은 값은 열 범위(4.4) 안이다(정수는 AssertMismatch가 본다).
+    // 값은 4.5 식의 부호 둘 × 배수 중 하나다. 범위를 벗어나면 부호를 뒤집을 뿐, 범위 끝으로 자르거나 식을 바꾸지 않는다.
+    private static void AssertDecimalPlanted(string key, string what, SyntheticColumn column, decimal r, decimal c, decimal[] formula)
+    {
+        Assert.True(c >= column.Min && c <= column.Max, $"{key}: {what} {Show(r, column)} → {Show(c, column)}가 열 {column.Name} 범위 {column.Min} ~ {column.Max} 밖이다.");
+        Assert.True(formula.Contains(c), $"{key}: {what} {Show(r, column)} → {Show(c, column)}가 4.5 식의 값({string.Join(", ", formula.Select(f => Show(f, column)))})이 아니다.");
+    }
+
+    // 4.5의 4·5 식: 기준 × (1 ± p × k / divisor)를 자릿수로 반올림(0에서 먼 쪽). 부호 +·− × k 전부.
+    private static decimal[] Formula(decimal r, decimal p, int scale, int[] ks, decimal divisor) =>
+        [.. ks.SelectMany(k => new[] { 1, -1 }.Select(s => Math.Round(r * (1 + (s * p * k / divisor)), scale, MidpointRounding.AwayFromZero)))];
+
+    private static string Show(decimal value, SyntheticColumn column) =>
+        value.ToString("F" + column.Scale.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
     // "누락" → missing, "추가" → extra, "값 불일치 `열`" → mismatch:열, "허용오차 안 `열`" → within:열.
     private static string PlantedOf(string cell)

@@ -1,3 +1,4 @@
+using Scorecard.Core.Cases;
 using Scorecard.Core.Synthetic;
 using Scorecard.Tests.CaseSchema;
 
@@ -84,7 +85,101 @@ public class ValidationTests
         ],
     };
 
+    // 리뷰 1회차 B1·N2: 5절 표에 행이 없는 입력 검사. 4.3 칸 읽기, 4.4 열 종류, 4.6 맞추기, 3.3 칸 값, 4.3 "열마다 한 행", 4.5 "예외".
+    // 경우마다 그 조건 하나만 어긋나게 만든다. 다른 검사(몰림 행 수, 심을 행 수, 뽑기 폭 등)가 대신 걸리면 메시지 확인에서 실패한다.
+    // Expect: 메시지에 모두 있어야 할 필드·값. 파서가 막는 입력(compare 중복, tolerance·tolerance_pct 동시, CSV 규칙 밖 키 열 이름)은 모델을 직접 만든다.
+    // 짝(경계 바로 안쪽은 생성된다): Input_check_controls_generate.
+    private static readonly Dictionary<string, Check> InputChecks = new(StringComparer.Ordinal)
+    {
+        // B1. compare 필드는 한 번씩(4.6).
+        ["compare 필드 두 번(length)"] = new(() => SyntheticGenerator.Generate(WithCompare([.. CompareOf(), new CompareField("length", 0m, null)]), Plan()), ["length"]),
+
+        // B1. tolerance와 tolerance_pct는 하나만(4.6 표). 다른 종류 검사로 넘어가지 않는다(메시지에 tolerance_pct).
+        ["tolerance와 tolerance_pct 동시(mean_value)"] = new(
+            () => SyntheticGenerator.Generate(WithCompare([.. CompareOf().Select(f => f.Field == "mean_value" ? f with { Tolerance = 0m } : f)]), Plan()),
+            ["mean_value", "tolerance_pct"]),
+
+        // B1. 키 열 이름(inputs.key)도 머리 행 칸이다(3.3).
+        ["키 열 이름에 쉼표(log,id)"] = new(() => SyntheticGenerator.Generate(WithKey("log,id"), Plan()), ["log,id"]),
+        ["키 열 이름에 한글(로그번호)"] = new(() => SyntheticGenerator.Generate(WithKey("로그번호"), Plan()), ["로그번호"]),
+        ["키 열 이름 빈 값"] = new(() => SyntheticGenerator.Generate(WithKey(""), Plan()), []),
+
+        // B1. 뽑기 폭(최대 − 최소 + 1, 소수는 자릿수 단위)은 int 안(4.5의 1, NextBelow). 폭 = int.MaxValue부터 안 된다.
+        ["정수 뽑기 폭 int 초과(start_index 0 ~ 2147483647)"] = new(() => Generate(WithColumn(SyntheticColumn.Integer("start_index", 0, int.MaxValue))), ["start_index", "2147483647"]),
+        ["소수 뽑기 폭 int 초과(ratio 0.00 ~ 21474836.47)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0.00m, 21474836.47m, 2))), ["ratio", "21474836.47"]),
+
+        // B1. 소수 최소·최대의 자릿수는 Scale 이하(4.4 "소수 자릿수는 최소값의 자릿수").
+        ["소수 최소값 자릿수 > Scale(ratio 0.001)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0.001m, 1.00m, 2))), ["ratio", "0.001"]),
+        ["소수 최대값 자릿수 > Scale(ratio 1.005)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0.00m, 1.005m, 2))), ["ratio", "1.005"]),
+
+        // B1. 허용오차 안 차이 열은 건수가 0이어도 tolerance_pct가 있는 compare 필드다(4.3 칸 읽기).
+        ["허용오차 안 열이 정수 열, 건수 0(length)"] = new(() => Generate(Plan() with { WithinColumn = "length", Within = 0 }), ["length"]),
+        ["허용오차 안 열이 compare 밖, 건수 0(signal_type)"] = new(() => Generate(Plan() with { WithinColumn = "signal_type", Within = 0 }), ["signal_type"]),
+        ["허용오차 안 열이 없는 열, 건수 0(no_such_column)"] = new(() => Generate(Plan() with { WithinColumn = "no_such_column", Within = 0 }), ["no_such_column"]),
+
+        // B1. 몰림은 열과 값이 같이 있다(4.3 "`열` = `값`").
+        ["몰림 값만 있고 열이 없음(irregular)"] = new(() => Generate(Plan() with { FocusColumn = null, FocusValue = "irregular" }), ["irregular"]),
+
+        // N2. 몰림 열이 있으면 값도 있다. 누락·값 불일치 0행으로 몰림 행 수 검사가 대신 걸리지 않게 한다.
+        ["몰림 열만 있고 값이 없음(signal_type)"] = new(() => Generate(Plan() with { FocusValue = null, Missing = 0, MismatchColumns = [] }), ["signal_type"]),
+
+        // N2. 몰림 열은 계획 열이다.
+        ["몰림 열이 계획 열에 없음(no_such_column)"] = new(() => Generate(Plan() with { FocusColumn = "no_such_column" }), ["no_such_column"]),
+
+        // N2. 선택지는 2개 이상, 서로 다르다(4.4, 4.5의 4 "자기 자신은 나오지 않는다"). 몰림·값 불일치에 안 쓰는 열을 더해 본다.
+        ["선택지 1개(extra_label)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Choice("extra_label", "p"))), ["extra_label"]),
+        ["선택지 0개(extra_label)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Choice("extra_label"))), ["extra_label"]),
+        ["선택지 두 번(extra_label dup-x)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Choice("extra_label", "dup-x", "dup-x"))), ["extra_label", "dup-x"]),
+
+        // N2. 정수 범위: 최소·최대가 정수, 최소 ≤ 최대(4.4). 값 불일치를 심지 않는 열(start_index)로 본다.
+        ["정수 최소값이 정수 아님(start_index 0.5)"] = new(() => Generate(WithColumn(new SyntheticColumn("start_index", SyntheticColumn.KindInteger, 0.5m, 9000m, 0, []))), ["start_index", "0.5"]),
+        ["정수 최대값이 정수 아님(start_index 9000.5)"] = new(() => Generate(WithColumn(new SyntheticColumn("start_index", SyntheticColumn.KindInteger, 0m, 9000.5m, 0, []))), ["start_index", "9000.5"]),
+        ["정수 최소 > 최대(start_index 9000 ~ 0)"] = new(() => Generate(WithColumn(SyntheticColumn.Integer("start_index", 9000, 0))), ["start_index", "9000"]),
+
+        // N2. 소수: 최소 ≤ 최대, 자릿수 0 ~ 6.
+        ["소수 최소 > 최대(ratio 1.00 ~ 0.00)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 1.00m, 0.00m, 2))), ["ratio", "1.00"]),
+        ["소수 자릿수 7(ratio)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0m, 1m, 7))), ["ratio", "7"]),
+        ["소수 자릿수 -1(ratio)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0m, 1m, -1))), ["ratio", "-1"]),
+
+        // N2. 건수 하한(4.3 칸 읽기). 기준 건수 0은 심을 행도 0으로 둬 "심을 행 > 기준 건수"가 대신 걸리지 않게 한다.
+        ["기준 건수 0"] = new(() => Generate(Empty() with { Rows = 0 }), ["기준 건수", "0"]),
+        ["키 자릿수 0"] = new(() => Generate(Plan() with { KeyDigits = 0 }), ["키 자릿수", "0"]),
+        ["누락 -1"] = new(() => Generate(Plan() with { Missing = -1 }), ["누락", "-1"]),
+        ["추가 -1"] = new(() => Generate(Plan() with { Extra = -1 }), ["추가", "-1"]),
+        ["허용오차 안 차이 -1"] = new(() => Generate(Plan() with { Within = -1 }), ["허용오차 안 차이", "-1"]),
+
+        // N2. 심을 행(누락 + 값 불일치 + 허용오차 안 차이)은 기준 건수 이하. 몰림을 빼서 몰림 행 수 검사가 대신 걸리지 않게 한다.
+        ["심을 행 8 > 기준 건수 7"] = new(() => Generate(Plan() with { Rows = 7, Within = 5, FocusColumn = null, FocusValue = null }), ["기준 건수", "7"]),
+
+        // N2. 키 접두어와 열 이름도 CSV 칸 규칙(3.3)을 지킨다. 몰림·compare에 안 쓰는 열을 더해 본다.
+        ["키 접두어에 쉼표(l,g)"] = new(() => Generate(Plan() with { KeyPrefix = "l,g" }), ["l,g"]),
+        ["키 접두어에 한글(로그)"] = new(() => Generate(Plan() with { KeyPrefix = "로그" }), ["로그"]),
+        ["열 이름에 쉼표(ex,tra)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Choice("ex,tra", "p", "q"))), ["ex,tra"]),
+        ["열 이름에 한글(추가열)"] = new(() => Generate(WithExtraColumn(SyntheticColumn.Choice("추가열", "p", "q"))), ["추가열"]),
+
+        // N2. 값 불일치 열은 열마다 한 행(4.3 "열마다 한 행을 허용 오차 밖으로"). 같은 열을 두 번 적으면 안 된다.
+        ["값 불일치 열 두 번(length)"] = new(() => Generate(Plan() with { MismatchColumns = ["length", "length"] }), ["length"]),
+
+        // 4.5의 4·5 "예외". 범위 50.00 ~ 50.00이면 어느 부호로도 범위를 벗어난다(리뷰 1회차 N1: 소수도 범위를 지킨다).
+        ["소수 값 불일치가 뒤집어도 범위 밖(mean_value 50.00 ~ 50.00)"] = new(
+            () => Generate(Plan() with { Columns = Replace(Plan(), SyntheticColumn.Decimal("mean_value", 50.00m, 50.00m, 2)), MismatchColumns = ["mean_value"], WithinColumn = null, Within = 0 }),
+            ["mean_value"]),
+        ["소수 허용오차 안 값이 뒤집어도 범위 밖(mean_value 50.00 ~ 50.00)"] = new(
+            () => Generate(Plan() with { Columns = Replace(Plan(), SyntheticColumn.Decimal("mean_value", 50.00m, 50.00m, 2)), MismatchColumns = ["length"] }),
+            ["mean_value"]),
+
+        // 4.5의 4·5 "예외". 값이 작아(0.01 ~ 0.05) 반올림하면 기준과 같다: 값 불일치는 허용 오차 안, 허용오차 안 값은 기준과 같음.
+        ["소수 값 불일치가 허용 오차 안(mean_value 0.01 ~ 0.05)"] = new(
+            () => Generate(Plan() with { Columns = Replace(Plan(), SyntheticColumn.Decimal("mean_value", 0.01m, 0.05m, 2)), MismatchColumns = ["mean_value"], WithinColumn = null, Within = 0 }),
+            ["mean_value"]),
+        ["소수 허용오차 안 값이 기준과 같음(mean_value 0.01 ~ 0.05)"] = new(
+            () => Generate(Plan() with { Columns = Replace(Plan(), SyntheticColumn.Decimal("mean_value", 0.01m, 0.05m, 2)), MismatchColumns = ["length"] }),
+            ["mean_value"]),
+    };
+
     public static TheoryData<string> Situations => new(Cases.Keys);
+
+    public static TheoryData<string> InputCheckLabels => new(InputChecks.Keys);
 
     // 5절 표의 상황 = 이 파일의 경우. 결과 칸의 첫 `코드`가 예외 이름이다.
     [Fact]
@@ -138,6 +233,81 @@ public class ValidationTests
             if (expect is not null && !caught.Message.Contains(expect, StringComparison.Ordinal))
             {
                 wrong.Add($"{label}: 메시지에 '{expect}'가 없다: {caught.Message}");
+            }
+        }
+
+        Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+    }
+
+    // 리뷰 1회차 B1·N2(InputChecks): ArgumentException이고(ArgumentNullException·다른 예외 아님), 메시지는 한글이며, Expect가 모두 들어 있다.
+    // 생성기 안쪽(NextBelow, 목록 색인)에서 나는 ArgumentOutOfRangeException은 한글·필드가 없어 여기서 걸린다.
+    [Theory]
+    [MemberData(nameof(InputCheckLabels))]
+    public void Input_check_outside_error_table_throws(string label)
+    {
+        var (action, expect) = InputChecks[label];
+        var caught = Record.Exception(action);
+
+        Assert.True(caught is not null, $"{label}: 예외 없음");
+        Assert.True(caught is ArgumentException and not ArgumentNullException, $"{label}: ArgumentException이 아니라 {caught.GetType().Name}: {caught.Message}");
+        Assert.True(caught.Message.Any(ch => ch is >= '가' and <= '힣'), $"{label}: 메시지가 한글이 아니다: {caught.Message}");
+        var absent = expect.Where(e => !caught.Message.Contains(e, StringComparison.Ordinal)).ToArray();
+        Assert.True(absent.Length == 0, $"{label}: 메시지에 {string.Join(", ", absent.Select(e => $"'{e}'"))}가 없다: {caught.Message}");
+    }
+
+    // 위 InputChecks가 그 조건 때문에 실패한다는 것을 보이는 짝: 경계 바로 안쪽은 생성된다.
+    [Fact]
+    public void Input_check_controls_generate()
+    {
+        // 뽑기 폭 = int.MaxValue − 1까지는 된다(정수 0 ~ 2147483646, 소수 0.00 ~ 21474836.46).
+        Generate(WithColumn(SyntheticColumn.Integer("start_index", 0, int.MaxValue - 1)));
+        Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0.00m, 21474836.46m, 2)));
+
+        // 자릿수 0과 6, 최소 = 최대(값 불일치를 심지 않는 열).
+        Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0m, 1m, 0)));
+        Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 0.000001m, 1m, 6)));
+        Generate(WithExtraColumn(SyntheticColumn.Decimal("ratio", 5.00m, 5.00m, 2)));
+        Generate(WithColumn(SyntheticColumn.Integer("start_index", 7, 7)));
+
+        // 허용오차 안 열이 tolerance_pct 필드면 건수 0도 된다. 몰림 열·값이 둘 다 없어도 된다.
+        Generate(Plan() with { Within = 0 });
+        Generate(Plan() with { FocusColumn = null, FocusValue = null });
+
+        // 심을 행 = 기준 건수(1 + 2 + 4 = 7)는 된다. 심을 것이 없으면 기준 1건도 된다.
+        Assert.Equal(7, Generate(Plan() with { Rows = 7, Within = 4, FocusColumn = null, FocusValue = null }).Reference.Count);
+        Assert.Single(Generate(Empty() with { Rows = 1 }).Reference);
+
+        // 몰림 열만 있고 값이 없는 경우와 같은 계획(누락·값 불일치 0행)에 값을 주면 된다.
+        Generate(Plan() with { Missing = 0, MismatchColumns = [] });
+    }
+
+    // 리뷰 1회차 N3, 3.3 "칸 앞뒤 공백 없음": 앞뒤 공백이 있는 칸은 CheckCell·Render·Generate(선택지) 모두 ArgumentException.
+    // 가운데 공백("a b")은 된다(Positive_controls_generate).
+    [Theory]
+    [InlineData(" a")]
+    [InlineData("a ")]
+    [InlineData(" ")]
+    [InlineData(" a b ")]
+    public void Cell_with_leading_or_trailing_space_is_rejected(string value)
+    {
+        var actions = new (string Where, Action Action)[]
+        {
+            ("CheckCell", () => SyntheticCsv.CheckCell(value)),
+            ("Render", () => SyntheticCsv.Render(["k", "v"], [new SyntheticRow("k1", [value], SyntheticGenerator.PlantedNone)])),
+            ("Generate 선택지", () => Generate(WithExtraColumn(SyntheticColumn.Choice("extra_label", "p", value)))),
+        };
+        var wrong = new List<string>();
+
+        foreach (var (where, action) in actions)
+        {
+            var caught = Record.Exception(action);
+            if (caught is not ArgumentException || caught is ArgumentNullException)
+            {
+                wrong.Add($"{where} '{value}': ArgumentException이 아니다({caught?.GetType().Name ?? "예외 없음"})");
+            }
+            else if (!caught.Message.Any(ch => ch is >= '가' and <= '힣'))
+            {
+                wrong.Add($"{where} '{value}': 메시지가 한글이 아니다: {caught.Message}");
             }
         }
 
@@ -243,18 +413,44 @@ public class ValidationTests
         _ => SyntheticColumn.Choice(name, "a", "b", "c"),
     };
 
-    private static Scorecard.Core.Cases.CaseDefinition TableCompare() => SyntheticInput.CaseOf(Example);
+    private static CaseDefinition TableCompare() => SyntheticInput.CaseOf(Example);
 
     private static SyntheticPlan Plan() => SyntheticSpec.Plan(Example);
 
     private static SyntheticTables Generate(SyntheticPlan plan) => SyntheticGenerator.Generate(TableCompare(), plan);
 
+    // table-compare 계획에서 심기·몰림을 모두 뺀 것.
+    private static SyntheticPlan Empty() => Plan() with
+    {
+        MismatchColumns = [],
+        Missing = 0,
+        Extra = 0,
+        WithinColumn = null,
+        Within = 0,
+        FocusColumn = null,
+        FocusValue = null,
+    };
+
     // 같은 이름의 열을 바꾼다.
     private static SyntheticColumn[] Replace(SyntheticPlan plan, SyntheticColumn column) =>
         [.. plan.Columns.Select(c => c.Name == column.Name ? column : c)];
+
+    private static SyntheticPlan WithColumn(SyntheticColumn column) => Plan() with { Columns = Replace(Plan(), column) };
+
+    // 몰림·compare에 안 쓰는 열을 끝에 더한다(4.6 "계획 열은 compare에 없어도 된다").
+    private static SyntheticPlan WithExtraColumn(SyntheticColumn column) => Plan() with { Columns = [.. Plan().Columns, column] };
+
+    private static CompareField[] CompareOf() => [.. TableCompare().Compare];
+
+    // 파서를 거치지 않고 compare·inputs.key를 바꾼 table-compare 케이스.
+    private static CaseDefinition WithCompare(CompareField[] compare) => TableCompare() with { Compare = compare };
+
+    private static CaseDefinition WithKey(string key) => TableCompare() with { Inputs = TableCompare().Inputs! with { Key = key } };
 
     private static string Show(string value) =>
         value.Replace("\n", "\\n", StringComparison.Ordinal).Replace("\r", "\\r", StringComparison.Ordinal).Replace("\t", "\\t", StringComparison.Ordinal);
 
     private sealed record Case(string Label, Action Action, string? Expect);
+
+    private sealed record Check(Action Action, string[] Expect);
 }

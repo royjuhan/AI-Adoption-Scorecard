@@ -16,6 +16,7 @@
 5. 시작 전 main 통과 수는 1282다. 끝난 뒤 그 이상이고, 삭제·Skip된 테스트가 없다.
 6. dotnet test가 ubuntu·windows CI에서 녹색이다.
 7. oracle(`tools/oracle/`, prototyper만)이 판정도 낸다. oracle 잡이 `selftest.py`도 돌리고(ci-dev), `selftest.py`의 고정 파일 수(`len(base) == 8` 같은 것)를 없앤다(T-010 리뷰 사소 8).
+8. PR을 나눈다(T-010 3차 리뷰 6). oracle이 판정을 내는 변경(`tools/oracle/`)과 새 `expected/` 파일은 같은 PR에 두지 않는다(`oracle-and-expected` 규칙). 순서: (a) oracle 판정 + selftest CI PR → (b) 판정 엔진 + expected PR. (a)의 `ci.yml` 변경에는 새 ADR과 STATUS.md "원칙 변경" 행을 같이 둔다(`ci-changed` 규칙).
 
 ## 폴더 범위
 

@@ -29,3 +29,10 @@
 
 - oracle은 T-006 `spikes/T-006/xcheck/compare.py`(커밋 `befaa0a`)와 T-009 `spikes/T-009/xcheck/`(커밋 `a65f02e`)에서 출발한다.
 - 판정 카드는 T-011로 옮겼다.
+
+## 남은 일 (3차 리뷰 막지 않는 지적, 뒤 카드 ci-dev)
+
+- TRX 위조(n8): testrun이 한쪽마다 정해진 TRX 하나만 읽고(`trx_files != 1`이면 오류), base 결과 폴더를 head 실행 전에 지우고, lead_check가 test-run INFO 줄을 보인다.
+- lead_check head 단계 환경: `HOME`을 임시 폴더로, `PWD`·`OLDPWD`·`GH_TOKEN`·`GITHUB_TOKEN`·`SSH_AUTH_SOCK`를 뺀다.
+- ci-tamper에 ADR·STATUS 출구(또는 WARN + reviewer 확인).
+- guard `--job`에 oracle·mutation 결과를 더한다.

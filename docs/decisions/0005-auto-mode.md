@@ -61,9 +61,11 @@
    - ubuntu·windows `build-test`
    - `regression-guard`
    - `mutation`(Stryker.NET)
-   - `oracle`(`tools/oracle/`)
+   - `oracle`(`tools/oracle/`), `oracle-head`(PR이 `tools/oracle/`을 바꿀 때)
+   - `test-run`(base·head `dotnet test` 결과. `regression-guard`가 판정한다)
+   - 머지 전 리드가 main 쪽 도구로 돌리는 `tools/ci/lead_check.py`(PR의 `ci.yml`과 상관없다)
    - 각 잡의 규칙은 원문 1~3이다. 자세한 동작은 `tools/ci/README.md`에 적는다.
-6. **머지.** CI 잡이 모두 녹색이고 reviewer에게 막는 지적이 없으면 리드가 머지한다. 머지 방식은 지금처럼 merge commit이다(`expected migration:` 커밋이 남게 한다).
+6. **머지.** 다음이 모두 맞으면 리드가 머지한다. CI 잡이 모두 녹색이다. main 쪽 도구로 돌린 `tools/ci/lead_check.py`가 종료 0이다. lead_check가 민감한 경로(`.github/`·`tools/`·`.config/`·`.claude/`·`docs/decisions/`·`CLAUDE.md`·지시문·`global.json`)를 적었으면, 이 카드를 본 적 없는 reviewer가 diff 전문을 보고 막는 지적이 없다. reviewer에게 막는 지적이 없다. 머지 방식은 지금처럼 merge commit이다(`expected migration:` 커밋이 남게 한다).
 7. **게이트와 재검토.** 마일스톤 게이트(G1 등)에서 멈추지 않는다. [재검토]를 한 번 돌려 결과를 STATUS.md에 적고 계속한다. [재검토]의 조건과 절차는 원문 그대로다.
 8. **뒤집기.** juhan이 STATUS.md의 잠정 결정을 뒤집으면, 그 결정에 기대 머지된 커밋부터 되돌린다. 그래서 잠정 결정마다 그 결정이 들어간 PR 번호를 적는다.
 9. **oracle은 prototyper만 고친다.** oracle은 `src/`를 읽지 않고 스펙만 보고 짠다. 다른 에이전트는 `tools/oracle/`을 고치지 않는다. 에이전트 폴더 제한(CLAUDE.md)에 `tools/oracle/`을 prototyper 몫으로 더한다.
@@ -81,6 +83,9 @@
 - mutation 점수 비교는 바뀐 파일에서만 한다. 바뀌지 않은 파일의 테스트를 지우면 점수가 그대로일 수 있다. 그래서 테스트 수 감소는 mutation 증거가 있어도 STATUS.md에 적는다.
 - oracle과 엔진이 같은 스펙을 같은 방식으로 잘못 읽으면 둘 다 틀린 바이트를 낸다. 독립 구현은 이것을 줄일 뿐 없애지 못한다.
 - GitHub `pull_request`는 PR 쪽 `ci.yml`을 돌린다. PR이 `ci.yml`을 고치면(예: 가드 단계에 `|| true`) 가드가 실패해도 잡이 녹색이 된다. 대책(T-010 리뷰 B5): 리드가 머지 전에 main 쪽 도구로 `tools/ci/lead_check`를 직접 돌린다. `.github/`·`tools/`·`.config/`·`.claude/`·`CLAUDE.md`·지시문·기존 ADR을 바꾼 PR은 이 카드를 본 적 없는 reviewer가 diff 전문을 본다.
-- PR 코드가 도는 잡(test-run, mutation)의 결과 파일은 PR 코드가 꾸밀 수 있다. 가드 잡 자체는 PR 코드를 돌리지 않는다(T-010 리뷰 B4).
+- PR 코드가 도는 잡(test-run, mutation, oracle-head, build-test)의 결과 파일은 PR 코드가 꾸밀 수 있다. 가드 잡 자체는 PR 코드를 돌리지 않는다(T-010 리뷰 B4). 같은 단계 안의 위조(예: head 테스트가 base TRX를 head 결과 폴더에 복사)는 lead_check도 못 막는다(T-010 3차 리뷰 n8). 뒤 카드에서 보강한다(T-010 카드 남은 일).
+- lead_check도 PR 코드를 리드 컴퓨터에서 리드 환경 변수로 돌린다. 프로세스 그룹을 벗어난 프로세스는 남을 수 있다. 일회용 컨테이너에서 돌린다.
+- 서버(GitHub 브랜치 보호)가 강제하는 필수 체크는 `build-test` 둘뿐이다. 나머지 잡과 lead_check는 리드가 머지 전에 확인한다. juhan이 첫 PR 실행 뒤 필수 체크를 더할 수 있다.
+- 초안 ADR과 그 결정은 같은 PR에 둔다. 머지된 ADR을 고치면 `ci-changed`가 새 ADR을 요구한다.
 - 이름·수가 같은 테스트 완화, 스펙을 어기는 동작 변경과 거기에 맞춘 테스트 수정은 어떤 잡도 못 본다. reviewer만 본다.
 - auto-merge 뒤의 잘못은 juhan이 STATUS.md를 읽을 때 드러난다. 그래서 STATUS.md는 머지마다 갱신한다.

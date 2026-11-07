@@ -1,7 +1,7 @@
 # T-011 판정 (통과·조건부·보류·미검증)
 
 - 마일스톤: M1 (지시문 3.4, metrics.md 11절)
-- 상태: 스펙 작성 중 (prototyper)
+- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) oracle 판정 진행 중
 
 ## 목표
 
@@ -28,3 +28,20 @@
 - "몰림"에 쓸 열 이름은 `case.yaml`에 없다(metrics.md 승인 질문 16). 스키마에 키를 더할지 스펙 질문으로 묻는다.
 - 시간 지표(처리·검토 시간)는 내부 명령 `measure`(M2)의 몫이다. 이 카드에서 시간 입력을 어디서 받을지, 없으면 판정이 어떻게 되는지 정한다.
 - AI 과잉 후보는 분류 카드(T-004)에 이미 있다.
+
+## 잠정 결정 (ADR 0005 결정 3, 리드 채택 2026-11-07)
+
+판정 스펙(`docs/spec/judgment.md`) 승인 질문 1~12의 추천안을 채택했다.
+
+1. 판정 표와 우선순위: 미검증 → 정확도 미달 보류 → 누락률 초과 보류 → 설명 안 되는 불일치 보류 → 시간 조건부 → 몰림 조건부 → 통과. 문턱 비교는 셈.
+2. 정확도 충족·누락률 초과: 보류(`MISSING`).
+3. 문턱 기본값: 95·2·`true`(12.1 값). 기본값이면 표시 + `confirm_thresholds`.
+4. 시간: T1. `time_must_drop: true`이고 시간이 없으면 조건부 `TIME` + `measure_time`.
+5. 몰림: M-B + F1. 기준 머리 행의 키·`compare` 밖 열, 불일치 2건 이상이 모두 한 값이면 `found`. 스키마·예제 그대로.
+6. 설명 안 되는 불일치: U-B. `review`가 적은 키 목록만 받는다. 아직 안 봤으면 `not_reviewed` + `review_mismatches`.
+7. 결과를 담는 곳: O-B. 새 `judgment.json`, `judge --json` = 그 파일. 기존 expected 8개 그대로. 지시문 5절 목록에 `judgment.json`.
+8. 예제 4종 expected/judgment.json: judgment.md 7.2~7.5 블록을 정답으로 채택. 새 파일만 담은 `expected migration:` 커밋. `Example_folder_has_exactly_the_planned_files` 목록에 한 줄.
+9. signoff-final 판정: 보류 `ACCURACY`(80.0% < 95%). 누락률은 `not_met`으로 남긴다.
+10. Core API·진행 순서: judgment.md 4.13 그대로. 규칙은 `internal` `JudgmentRules.cs` 한 파일.
+11. G2·G3: `judge-case-valid`(샘플 `case-valid`). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 한 쌍을 더한다(축소 아님).
+12. 문장 틀·다음 할 일 문구: judgment.md 표 그대로.

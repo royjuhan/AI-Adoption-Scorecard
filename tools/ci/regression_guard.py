@@ -2,11 +2,20 @@
 """regression-guard: PR base 대비 회귀 신호를 막는다(ADR 0005 원문 1, 결정 5. T-010 수용 기준 1).
 
 막는 것(증거가 있으면 통과):
-  A. tests/ 아래 파일 삭제, Skip 추가, [Fact]·[Theory] 수 감소, guard 샘플 목록 축소
+  C. CI 도구 자체: .github/**, tools/ci/**, tools/oracle/**, .config/dotnet-tools.json 변경(ci-changed).
+     통과: 같은 PR이 docs/decisions/에 새 ADR 파일을 더하고 docs/STATUS.md "원칙 변경" 표에 그 ADR 행을 더한다.
+     base에 tools/ci/regression_guard.py가 없으면(부트스트랩, T-010) 적용하지 않는다.
+  A. tests/ 아래 파일 삭제, Skip 추가, [Fact]·[Theory] 수 감소, guard 샘플 목록 축소, 테스트 설정 파일 변경,
+     실행 결과(TRX)에서 base 통과 테스트가 head에서 빠짐·건너뜀 증가·전체 수 감소.
      증거: mutation.json에서 바뀐 src 파일마다 head 점수 >= base 점수, 비교한 파일이 하나 이상.
   B. examples/**/expected/** 의 base에 있던 파일 수정
-     증거: 그 파일을 바꾼 head 쪽 커밋 메시지가 모두 "expected migration:"으로 시작하고, oracle.json에서 match.
-     삭제는 oracle로 재현할 수 없으므로 늘 실패. 새 파일은 막지 않지만 oracle이 match여야 한다.
+     증거: 그 파일을 바꾼 커밋 메시지가 모두 "expected migration:"으로 시작하고, base oracle의 oracle.json에서 match.
+     삭제는 oracle로 재현할 수 없으므로 늘 실패. 새 파일은 커밋 메시지를 보지 않지만 base oracle이 match여야 한다.
+     tools/oracle/**과 기존 expected를 같은 PR에서 바꾸면 base oracle이 재현할 때만 통과(oracle-and-expected).
+     "expected migration:" 커밋은 examples/**/expected/**와 docs/spec/**만 바꾼다(migration-commit-scope).
+
+이 스크립트와 tools/oracle은 CI에서 base 커밋의 것을 돈다(.github/workflows/ci.yml). --require-base-tools면
+돌고 있는 이 폴더의 파일이 base 커밋의 tools/ci와 같은지 스스로 확인한다.
 
 자세한 규칙과 한계는 tools/ci/README.md.
 
@@ -19,7 +28,9 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from fractions import Fraction
 
@@ -28,9 +39,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cigit  # noqa: E402
 import csharp_scan  # noqa: E402
 
+TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 TESTS_PREFIX = "tests/"
 GUARD_SAMPLES_DIR = "tests/Scorecard.Tests/TestData/guard"
 EXPECTED_MESSAGE_PREFIX = "expected migration:"
+GUARD_SCRIPT = "tools/ci/regression_guard.py"
+ORACLE_DIR = "tools/oracle"
+ORACLE_CHECK = "tools/oracle/check.py"
+DECISIONS_DIR = "docs/decisions/"
+STATUS_FILE = "docs/STATUS.md"
+PRINCIPLE_SECTION = "원칙 변경"
+# ci-changed 대상. 접두사(폴더)와 정확한 경로.
+CI_PREFIXES = (".github/", "tools/ci/", "tools/oracle/")
+CI_FILES = (".config/dotnet-tools.json",)
+# expected migration 커밋이 바꿀 수 있는 곳(ADR 0004 expected 변경 규칙): expected 파일과 스펙.
+MIGRATION_ALLOWED_PREFIXES = ("docs/spec/",)
+MISSING_NAMES_SHOWN = 50
 
 
 @dataclass
@@ -56,6 +80,35 @@ class Result:
 def is_expected_path(path: str) -> bool:
     parts = path.split("/")
     return len(parts) >= 3 and parts[0] == "examples" and "expected" in parts[1:-1]
+
+
+def is_ci_path(path: str) -> bool:
+    return path.startswith(CI_PREFIXES) or path in CI_FILES
+
+
+def is_test_infra_path(path: str) -> bool:
+    """테스트가 어떻게 빌드·실행되는지 바꾸는 파일. 소스를 세는 검사가 보지 못하는 길이다."""
+    name = path.rsplit("/", 1)[-1]
+    return (
+        (path.startswith(TESTS_PREFIX) and name.endswith(".csproj"))
+        or name.startswith("Directory.Build.")
+        or name.endswith(".runsettings")
+        or name == "xunit.runner.json"
+    )
+
+
+def _project_dirs(repo: str, rev: str) -> list[str]:
+    """rev 트리에서 tests/ 아래 .csproj가 있는 폴더."""
+    return sorted({p.rsplit("/", 1)[0] for p in cigit.list_files(repo, rev, TESTS_PREFIX) if p.endswith(".csproj")})
+
+
+def _compiled(path: str, project_dirs: list[str]) -> bool:
+    """.csproj 폴더 아래(obj/·bin/ 제외) 파일만 빌드에 든다고 본다."""
+    for d in project_dirs:
+        if path.startswith(d + "/"):
+            rest = path[len(d) + 1:].split("/")
+            return not (rest[0] in ("obj", "bin"))
+    return False
 
 
 def _scan_tree(repo: str, rev: str) -> dict[str, csharp_scan.FileScan]:
@@ -87,6 +140,11 @@ def _load_json(path: str | None) -> tuple[dict | None, str | None]:
     return data, None
 
 
+def git_blob_id(content: bytes) -> str:
+    """git hash-object와 같은 blob SHA-1."""
+    return hashlib.sha1(b"blob %d\0" % len(content) + content).hexdigest()
+
+
 # ---------------------------------------------------------------- mutation 증거
 
 
@@ -115,6 +173,9 @@ def mutation_evidence(data: dict | None, load_error: str | None, rng: cigit.Rang
     status = data.get("status")
     if status == "not_applicable":
         return False, ["바뀐 src 파일이 없어 mutation 증거가 없다"]
+    if status == "timeout":
+        errors = "; ".join(str(e) for e in data.get("errors") or []) or "이유 없음"
+        return False, [f"mutation 측정이 시간 안에 끝나지 않았다(status=timeout). 증거가 아니다: {errors}"]
     if status != "measured":
         errors = "; ".join(str(e) for e in data.get("errors") or []) or "이유 없음"
         return False, [f"mutation 측정이 끝나지 않았다(status={status}): {errors}"]
@@ -165,14 +226,197 @@ def mutation_evidence(data: dict | None, load_error: str | None, rng: cigit.Rang
     return ok, reasons
 
 
+# ---------------------------------------------------------------- 도구 출처
+
+
+def check_tools_source(result: Result, repo: str, rng: cigit.Range, tools_dir: str, require_base: bool) -> None:
+    """돌고 있는 tools/ci 파일이 base 커밋의 것과 같은지. base에 guard가 없으면 부트스트랩."""
+    if cigit.blob_id(repo, rng.base, GUARD_SCRIPT) is None:
+        result.add("INFO", "tools-source", f"base에 {GUARD_SCRIPT}가 없다(부트스트랩). head의 tools/ci·tools/oracle로 돈다")
+        return
+    differ = []
+    for name in sorted(os.listdir(tools_dir)):
+        if not name.endswith(".py"):
+            continue
+        with open(os.path.join(tools_dir, name), "rb") as f:
+            mine = git_blob_id(f.read())
+        if cigit.blob_id(repo, rng.base, f"tools/ci/{name}") != mine:
+            differ.append(name)
+    if not differ:
+        result.add("INFO", "tools-source", f"tools/ci는 base {rng.base[:12]}의 것과 같다")
+    elif require_base:
+        result.add("FAIL", "tools-source", f"돌고 있는 tools/ci가 base의 것이 아니다: {', '.join(differ)}. CI는 base 커밋의 tools/ci를 돌려야 한다")
+    else:
+        result.add("WARN", "tools-source", f"돌고 있는 tools/ci가 base의 것과 다르다: {', '.join(differ)} (로컬 실행)")
+
+
+# ---------------------------------------------------------------- C. ci-changed
+
+
+def _principle_rows(text: str) -> list[str]:
+    """STATUS.md의 "## 원칙 변경" 절 표의 데이터 행(머리 행·구분 행 제외)."""
+    rows: list[str] = []
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            inside = line[3:].strip().startswith(PRINCIPLE_SECTION)
+            continue
+        if not inside or not line.lstrip().startswith("|"):
+            continue
+        cells = line.strip()
+        if set(cells.replace("|", "").strip()) <= set("-: "):
+            continue
+        rows.append(cells)
+    return rows[1:] if rows else []
+
+
+def check_ci_changed(result: Result, repo: str, rng: cigit.Range, changes: list[cigit.Change]) -> None:
+    ci_paths = sorted({c.path for c in changes if is_ci_path(c.path)} | {c.old_path for c in changes if c.old_path and is_ci_path(c.old_path)})
+    if not ci_paths:
+        result.add("PASS", "ci-changed", "CI 도구(.github/**, tools/ci/**, tools/oracle/**, .config/dotnet-tools.json) 변경 없음")
+        return
+    shown = ", ".join(ci_paths[:10]) + (f" 외 {len(ci_paths) - 10}개" if len(ci_paths) > 10 else "")
+    if cigit.blob_id(repo, rng.base, GUARD_SCRIPT) is None:
+        result.add("WARN", "ci-changed", f"부트스트랩: base에 {GUARD_SCRIPT}가 없어 적용하지 않는다. 바뀐 CI 도구: {shown}")
+        return
+    added_adrs = sorted(c.path for c in changes if c.status == "A" and c.path.startswith(DECISIONS_DIR) and c.path.endswith(".md"))
+    base_rows = _principle_rows((cigit.read_file(repo, rng.base, STATUS_FILE) or b"").decode("utf-8", "replace"))
+    head_rows = _principle_rows((cigit.read_file(repo, rng.head, STATUS_FILE) or b"").decode("utf-8", "replace"))
+    added_rows = list((Counter(head_rows) - Counter(base_rows)).elements())
+    problems = []
+    if not added_adrs:
+        problems.append(f"{DECISIONS_DIR}에 새 ADR 파일이 없다")
+    if not added_rows:
+        problems.append(f"{STATUS_FILE} \"{PRINCIPLE_SECTION}\" 표에 더한 행이 없다")
+    if added_adrs and added_rows:
+        numbers = [m.group(1) for p in added_adrs if (m := re.match(r"(\d+)-", p[len(DECISIONS_DIR):]))]
+        if numbers and not any(re.search(rf"(?<!\d){n}(?!\d)", row) for n in numbers for row in added_rows):
+            problems.append(f"\"{PRINCIPLE_SECTION}\" 표에 더한 행이 새 ADR 번호({', '.join(numbers)})를 적지 않았다")
+    if problems:
+        for p in problems:
+            result.add("FAIL", "ci-changed", f"CI 도구를 바꿨다({shown}): {p}")
+    else:
+        result.add("PASS", "ci-changed", f"CI 도구를 바꿨다({shown}). 새 ADR {', '.join(added_adrs)}, \"{PRINCIPLE_SECTION}\" 행 {len(added_rows)}개")
+
+
+# ---------------------------------------------------------------- A. test-run
+
+
+def _validate_testrun(data: dict | None, err: str | None, rng: cigit.Range) -> str | None:
+    if data is None:
+        return f"testrun.json을 쓸 수 없다({err})"
+    if data.get("base") != rng.base or data.get("head") != rng.head:
+        return f"testrun.json의 범위가 다르다: {str(data.get('base'))[:12]}..{str(data.get('head'))[:12]}, 이 잡은 {rng.base[:12]}..{rng.head[:12]}"
+    if data.get("status") != "measured":
+        return f"test-run이 끝나지 않았다(status={data.get('status')}): {'; '.join(str(e) for e in data.get('errors') or []) or '이유 없음'}"
+    sides = data.get("sides") or {}
+    for side in ("base", "head"):
+        entry = sides.get(side)
+        if not isinstance(entry, dict) or entry.get("status") != "ok":
+            return f"{side} test-run 결과가 없다"
+        for key in ("total", "passed", "skipped", "passed_names", "skipped_names"):
+            if key not in entry:
+                return f"{side} test-run 결과에 {key}가 없다"
+        if not isinstance(entry["passed_names"], list) or len(entry["passed_names"]) != entry["passed"]:
+            return f"{side} test-run 결과의 passed_names 수가 passed와 다르다"
+    return None
+
+
+def check_testrun(result: Result, triggers: list[Finding], testrun_path: str | None, rng: cigit.Range) -> None:
+    if testrun_path is None:
+        result.add("WARN", "test-run", "--testrun이 없어 실행 기반 검사를 하지 않았다(CI는 늘 준다)")
+        return
+    data, err = _load_json(testrun_path)
+    problem = _validate_testrun(data, err, rng)
+    if problem:
+        result.add("FAIL", "test-run", problem)
+        return
+    b, h = data["sides"]["base"], data["sides"]["head"]
+    result.add("INFO", "test-run", f"전체 {b['total']} -> {h['total']}, 통과 {b['passed']} -> {h['passed']}, 건너뜀 {b['skipped']} -> {h['skipped']}, 실패 {b.get('failed', 0)} -> {h.get('failed', 0)}")
+    deficit = Counter(b["passed_names"]) - Counter(h["passed_names"])
+    names = sorted(deficit)
+    for name in names[:MISSING_NAMES_SHOWN]:
+        times = f" (x{deficit[name]})" if deficit[name] > 1 else ""
+        triggers.append(Finding("FAIL", "test-run-missing", f"base에서 통과한 테스트가 head에서 통과하지 않는다: {name}{times}"))
+    if len(names) > MISSING_NAMES_SHOWN:
+        triggers.append(Finding("FAIL", "test-run-missing", f"그 밖에 {len(names) - MISSING_NAMES_SHOWN}개 이름(전체 {len(names)}개, 목록은 testrun.json)"))
+    if h["skipped"] > b["skipped"]:
+        new_skips = sorted((Counter(h["skipped_names"]) - Counter(b["skipped_names"])).elements())
+        triggers.append(Finding("FAIL", "test-run-skipped", f"건너뛴 테스트 {b['skipped']} -> {h['skipped']} ({'; '.join(new_skips[:10])})"))
+    if h["total"] < b["total"]:
+        triggers.append(Finding("FAIL", "test-run-total-decreased", f"돈 테스트 전체 수 {b['total']} -> {h['total']}"))
+
+
+# ---------------------------------------------------------------- B. oracle 출처
+
+
+def _oracle_provenance(repo: str, rng: cigit.Range, source_path: str | None) -> tuple[bool, str]:
+    """oracle.json이 base oracle(base에 없으면 head oracle)에서 나왔는지. (믿을 수 있나, 이유)"""
+    base_tree = cigit.git(repo, "rev-parse", "--verify", "--quiet", f"{rng.base}:{ORACLE_DIR}", check=False).strip() or None
+    base_has = cigit.blob_id(repo, rng.base, ORACLE_CHECK) is not None
+    if source_path is None:
+        if base_has:
+            return False, "oracle-source.json이 없어 base oracle의 결과인지 알 수 없다"
+        return True, "부트스트랩: base에 oracle이 없다. head oracle 결과를 쓴다(oracle-source.json 없음)"
+    data, err = _load_json(source_path)
+    if data is None:
+        return False, f"oracle-source.json을 쓸 수 없다({err})"
+    source, rev, tree = data.get("source"), data.get("rev"), data.get("tree")
+    if base_has:
+        if source != "base" or rev != rng.base or tree != base_tree:
+            return False, f"oracle.json이 base oracle에서 나오지 않았다(source={source}, rev={str(rev)[:12]}, tree={str(tree)[:12]}; base {rng.base[:12]} tree {str(base_tree)[:12]})"
+        return True, f"base oracle(base {rng.base[:12]}, tools/oracle {str(base_tree)[:12]})"
+    head_tree = cigit.git(repo, "rev-parse", "--verify", "--quiet", f"{rng.head}:{ORACLE_DIR}", check=False).strip() or None
+    if source != "head" or tree != head_tree:
+        return False, f"부트스트랩인데 oracle-source.json이 head oracle을 가리키지 않는다(source={source}, tree={str(tree)[:12]})"
+    return True, "부트스트랩: base에 oracle이 없어 head oracle을 썼다"
+
+
+# ---------------------------------------------------------------- B. migration 커밋 범위
+
+
+def _commit_paths(repo: str, commit: str) -> list[str]:
+    """커밋이 바꾼 파일. 병합 커밋은 모든 부모와 다른 파일만(commits_changing과 같은 뜻)."""
+    ps = cigit.parents(repo, commit)
+    if not ps:
+        return cigit.list_files(repo, commit, ".")
+    sets = []
+    for p in ps:
+        out = cigit.git(repo, "diff", "--name-only", "-z", "--no-renames", p, commit)
+        sets.append({x for x in out.split("\0") if x})
+    return sorted(set.intersection(*sets))
+
+
+def check_migration_commits(result: Result, repo: str, rng: cigit.Range) -> None:
+    for commit in cigit.commits_in_range(repo, rng.base, rng.head):
+        message = cigit.commit_message(repo, commit)
+        if not message.startswith(EXPECTED_MESSAGE_PREFIX):
+            continue
+        outside = [p for p in _commit_paths(repo, commit) if not (is_expected_path(p) or p.startswith(MIGRATION_ALLOWED_PREFIXES))]
+        subject = message.splitlines()[0][:60] if message.strip() else ""
+        if outside:
+            shown = ", ".join(outside[:10]) + (f" 외 {len(outside) - 10}개" if len(outside) > 10 else "")
+            result.add("FAIL", "migration-commit-scope", f"커밋 {commit[:12]} \"{subject}\"가 examples/**/expected/**·docs/spec/** 밖을 바꿨다: {shown}")
+        else:
+            result.add("PASS", "migration-commit-scope", f"커밋 {commit[:12]} \"{subject}\": expected·docs/spec만")
+
+
 # ---------------------------------------------------------------- 검사
 
 
 def check(repo: str, base: str | None, head: str, mutation_path: str | None, oracle_path: str | None,
-          mutation_job: str = "알 수 없음", oracle_job: str = "알 수 없음") -> Result:
+          mutation_job: str = "알 수 없음", oracle_job: str = "알 수 없음", *,
+          testrun_path: str | None = None, oracle_source_path: str | None = None,
+          require_base_tools: bool = False, tools_dir: str = TOOLS_DIR) -> Result:
     rng = cigit.resolve_range(repo, base, head)
     result = Result(rng)
     result.add("INFO", "range", f"{rng.note}, head {rng.head[:12]}")
+    check_tools_source(result, repo, rng, tools_dir, require_base_tools)
+
+    all_changes = cigit.diff_changes(repo, rng.base, rng.head, None, renames=False)
+
+    # C. CI 도구 변경
+    check_ci_changed(result, repo, rng, all_changes)
 
     triggers: list[Finding] = []
 
@@ -185,10 +429,14 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
         elif c.status == "R":
             result.add("INFO", "test-file-renamed", f"이름 변경(삭제로 보지 않는다): {c.old_path} -> {c.path}")
 
+    # A5. 테스트 빌드·실행 설정 파일 변경
+    for path in sorted({c.path for c in all_changes if is_test_infra_path(c.path)}):
+        triggers.append(Finding("FAIL", "test-infra-changed", f"테스트 빌드·실행 설정 파일이 바뀌었다: {path}"))
+
     base_scan = _scan_tree(repo, rng.base)
     head_scan = _scan_tree(repo, rng.head)
 
-    # A2. Skip 추가. 파일마다 종류별 수가 늘면 걸린다.
+    # A2. Skip 추가. 파일마다 종류별 수가 늘면 걸린다(프로젝트 밖 파일도 본다).
     for path in sorted(head_scan):
         base_path = renames.get(path, path)
         before = base_scan[base_path].skip_kinds() if base_path in base_scan else {}
@@ -199,15 +447,23 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
                 lines = [str(ln) for ln, k in head_scan[path].skips if k == kind][:5]
                 triggers.append(Finding("FAIL", "skip-added", f"Skip 추가: {path} {kind} +{added} (줄 {', '.join(lines)})"))
 
-    # A3. [Fact]·[Theory] 수 감소(tests/ 전체).
-    base_facts = sum(s.fact_count for s in base_scan.values())
-    head_facts = sum(s.fact_count for s in head_scan.values())
+    # A3. [Fact]·[Theory] 수 감소. .csproj 폴더 아래(빌드에 드는) 파일만 센다.
+    base_dirs_proj = _project_dirs(repo, rng.base)
+    head_dirs_proj = _project_dirs(repo, rng.head)
+    base_facts = sum(s.fact_count for p, s in base_scan.items() if _compiled(p, base_dirs_proj))
+    head_facts = sum(s.fact_count for p, s in head_scan.items() if _compiled(p, head_dirs_proj))
+    outside = sorted(p for p, s in head_scan.items() if s.fact_count and not _compiled(p, head_dirs_proj))
+    if outside:
+        result.add("INFO", "test-count-outside", "프로젝트(.csproj 폴더) 밖이라 세지 않은 파일: " + ", ".join(f"{p} ({head_scan[p].fact_count})" for p in outside[:10]))
     if head_facts < base_facts:
         reverse = {old: new for new, old in renames.items()}
         detail = []
         for bpath in sorted(base_scan):
+            if not _compiled(bpath, base_dirs_proj):
+                continue
             hpath = reverse.get(bpath, bpath)
-            delta = (head_scan[hpath].fact_count if hpath in head_scan else 0) - base_scan[bpath].fact_count
+            now = head_scan[hpath].fact_count if hpath in head_scan and _compiled(hpath, head_dirs_proj) else 0
+            delta = now - base_scan[bpath].fact_count
             if delta < 0:
                 detail.append(f"{bpath} {delta}")
         triggers.append(Finding("FAIL", "test-count-decreased", f"[Fact]·[Theory] {base_facts} -> {head_facts} ({'; '.join(detail[:10])})"))
@@ -231,6 +487,9 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
     else:
         result.add("INFO", "guard-samples", f"guard 샘플 폴더 {len(base_dirs)} -> {len(head_dirs)}")
 
+    # A6. 실행 기반: TRX에서 base 통과 이름 ⊆ head 통과 이름, 건너뜀·전체 수.
+    check_testrun(result, triggers, testrun_path, rng)
+
     # A 증거: mutation.
     if triggers:
         data, err = _load_json(mutation_path)
@@ -239,17 +498,22 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
             result.add("FAIL" if not ok else "WARN", t.rule, t.message + ("" if not ok else " — mutation 증거로 통과"))
         for r in reasons:
             result.add("PASS" if ok else "FAIL", "mutation-evidence", r)
-        if ok and any(t.rule in ("test-file-deleted", "test-count-decreased") for t in triggers):
+        if ok and any(t.rule in ("test-file-deleted", "test-count-decreased", "test-run-missing", "test-run-total-decreased") for t in triggers):
             result.add("WARN", "status-note", "테스트 삭제·수 감소는 증거가 있어도 docs/STATUS.md에 적는다(ADR 0005 남은 위험)")
     else:
-        result.add("PASS", "tests", "tests 삭제·Skip 추가·[Fact]/[Theory] 감소·guard 축소 없음")
+        result.add("PASS", "tests", "tests 삭제·Skip 추가·[Fact]/[Theory] 감소·guard 축소·테스트 설정 변경·실행 결과 축소 없음")
+
+    # B. expected migration 커밋 범위(ADR 0004 expected 변경 규칙)
+    check_migration_commits(result, repo, rng)
 
     # B. examples/**/expected/**
-    echanges = [c for c in cigit.diff_changes(repo, rng.base, rng.head, ["examples/"], renames=False) if is_expected_path(c.path)]
+    echanges = [c for c in all_changes if is_expected_path(c.path)]
     if not echanges:
         result.add("PASS", "expected", "examples/**/expected/** 변경 없음")
         return result
     oracle, oracle_err = _load_json(oracle_path)
+    trusted, provenance = _oracle_provenance(repo, rng, oracle_source_path)
+    result.add("INFO" if trusted else "FAIL", "oracle-source", provenance)
     oracle_files: dict[str, dict] = {}
     if oracle is not None:
         for entry in oracle.get("files") or []:
@@ -258,7 +522,9 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
                 oracle_files[p[2:] if p.startswith("./") else p] = entry
 
     def oracle_reason(path: str) -> str | None:
-        """oracle이 이 파일을 같은 바이트로 재현했으면 None, 아니면 이유."""
+        """base oracle이 이 파일을 같은 바이트로 재현했으면 None, 아니면 이유."""
+        if not trusted:
+            return f"oracle 결과를 증거로 쓸 수 없다: {provenance}"
         if oracle is None:
             return f"oracle.json을 쓸 수 없다({oracle_err}). oracle 잡 결과: {oracle_job}"
         entry = oracle_files.get(path)
@@ -269,9 +535,28 @@ def check(repo: str, base: str | None, head: str, mutation_path: str | None, ora
         content = cigit.read_file(repo, rng.head, path)
         actual = hashlib.sha256(content or b"").hexdigest()
         for key in ("expected_sha256", "oracle_sha256"):
-            if entry.get(key) is not None and entry.get(key) != actual:
-                return f"oracle.json의 {key}가 head 파일 SHA-256과 다르다({str(entry.get(key))[:12]} != {actual[:12]})"
+            if not isinstance(entry.get(key), str):
+                return f"oracle.json의 {key}가 없다(null). SHA-256 없이는 재현을 확인할 수 없다"
+            if entry[key] != actual:
+                return f"oracle.json의 {key}가 head 파일 SHA-256과 다르다({entry[key][:12]} != {actual[:12]})"
         return None
+
+    # oracle-and-expected: tools/oracle과 기존 expected를 같은 PR에서 바꾸면 base oracle이 재현해야 한다.
+    oracle_changed = any(c.path.startswith(ORACLE_DIR + "/") for c in all_changes)
+    existing = [c for c in echanges if c.status in ("M", "D", "T")]
+    if oracle_changed and existing:
+        base_has_oracle = cigit.blob_id(repo, rng.base, ORACLE_CHECK) is not None
+        for c in existing:
+            if not base_has_oracle:
+                why = "base에 oracle이 없어 base oracle로 재현할 수 없다"
+            elif c.status == "D":
+                why = "삭제한 파일은 재현할 수 없다"
+            else:
+                why = oracle_reason(c.path)
+            if why:
+                result.add("FAIL", "oracle-and-expected", f"{c.path}: tools/oracle과 기존 expected를 같은 PR에서 바꿨다. base oracle이 재현해야 한다: {why}")
+            else:
+                result.add("PASS", "oracle-and-expected", f"{c.path}: tools/oracle이 바뀌었지만 base oracle이 head expected를 재현했다")
 
     for c in echanges:
         if c.status == "D":
@@ -331,6 +616,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--head", default="HEAD")
     ap.add_argument("--mutation", help="mutation.json 경로")
     ap.add_argument("--oracle", help="oracle.json 경로")
+    ap.add_argument("--oracle-source", help="oracle-source.json 경로(oracle.json을 낸 oracle의 출처)")
+    ap.add_argument("--testrun", help="testrun.json 경로(tools/ci/testrun.py). 없으면 실행 기반 검사를 건너뛰고 WARN")
+    ap.add_argument("--require-base-tools", action="store_true", help="돌고 있는 tools/ci가 base 커밋의 것이 아니면 실패(CI)")
     ap.add_argument("--json-out", help="결과 JSON을 쓸 경로")
     ap.add_argument("--summary", default=os.environ.get("GITHUB_STEP_SUMMARY"), help="job summary(Markdown)를 덧붙일 경로")
     args = ap.parse_args(argv)
@@ -339,6 +627,9 @@ def main(argv: list[str] | None = None) -> int:
             args.repo, args.base, args.head, args.mutation, args.oracle,
             mutation_job=os.environ.get("MUTATION_RESULT", "알 수 없음"),
             oracle_job=os.environ.get("ORACLE_RESULT", "알 수 없음"),
+            testrun_path=args.testrun,
+            oracle_source_path=args.oracle_source,
+            require_base_tools=args.require_base_tools,
         )
     except cigit.GitError as e:
         print(f"regression-guard: 실행할 수 없다: {e}", file=sys.stderr)

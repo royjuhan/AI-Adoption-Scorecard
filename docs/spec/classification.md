@@ -58,6 +58,7 @@ Core가 바이트를 만든다(`ClassificationJson.Render`, 4.11). 모양:
 
 ```json
 {
+  "schema_version": 1,
   "case": "<케이스 이름>",
   "steps": [
     {
@@ -487,10 +488,11 @@ steps:
     answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no}
 ```
 
-`examples/table-compare/expected/classification.json` (SHA-256 `a2f0887b697f7d1cfe3af4548d42f117c071f911e91b66c3a8b4e819068fe03b`):
+`examples/table-compare/expected/classification.json` (SHA-256 `44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "table-compare",
   "steps": [
     {
@@ -605,10 +607,11 @@ steps:
     answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no}
 ```
 
-`examples/form-fill/expected/classification.json` (SHA-256 `b821763fd1528ba5940354a7f653e1e5dd77b0d9bab6ff1cb606678a6caa0b3c`):
+`examples/form-fill/expected/classification.json` (SHA-256 `b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "form-fill",
   "steps": [
     {
@@ -718,10 +721,11 @@ steps:
     answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no}
 ```
 
-`examples/mixed-exceptions/expected/classification.json` (SHA-256 `f291bcb88e978d8ed12ef5d4bb0c7430407c81abdcaeb48ffa201f9b4b9665f7`):
+`examples/mixed-exceptions/expected/classification.json` (SHA-256 `46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "mixed-exceptions",
   "steps": [
     {

@@ -1,7 +1,7 @@
 # T-012 판정 보강 (추가 행·결과 쪽 중복·안 본 불일치·몰림 열)
 
 - 마일스톤: M1 끝 [재검토] 결과(2026-11-07, STATUS.md 재검토 기록)
-- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) #14 머지. PR (b) 엔진·expected 진행 중
+- 상태: 끝. PR (a) #14, PR (b) #15 머지(2026-11-07)
 
 ## 목표
 
@@ -76,3 +76,9 @@ PR (a): `docs/spec/`, `tools/oracle/`, `docs/decisions/`, `docs/STATUS.md`, 이 
 - `JudgmentGoldenTests.Example_table_matches_expected_file`: 11.12 예제 표(칸 `inputs.group`, `검토 항목`)를 읽는다. `Instructions_section_12_verdicts_hold`: 지시문 12절 표를 직접 읽는다(옛 7.1 표가 11.17 문서 1에서 지워진다).
 - `JudgeGuardTargetTests.Sample_judgment_matches_spec`: G2 표본 판정의 todo 키와 UNEXPLAINED 문장이 11.3·11.5 틀이다. 판정·근거 키는 그대로다.
 - `ErrorCodeTests.Any_error_means_no_metrics`: 결과 쪽 오류를 키 중복에서 빈 키(`empty-key`)로 바꿨다. 결과 쪽 중복은 이제 오류가 아니라 `duplicate` 항목이다(잠정 결정 2). 뜻(오류 하나면 지표 없음)은 같다.
+
+## PR (b) 리뷰 지적 (#15, 막는 지적 없음) → 정리 카드로
+
+1. 잠정 결정 12의 "제자리로 옮기기"를 하지 않았다. 옛 T-011 표·글이 남아 새 규칙과 어긋난다: judgment.md 4.3·4.4·4.6·4.7 옛 표, 7.1 표의 `review_mismatches`, metrics.md 4.3·4.7의 결과 쪽 `duplicate-key`, case-schema.md 10.5. 테스트·oracle은 11절만 읽어 동작에는 영향이 없다. 정리 카드에서 옮기고 옛 표를 지운다.
+2. 몰림 셈에서 기준 행이 있는 `duplicate` 항목을 세지 않는 규칙(11.8 규칙 3)을 고정하는 테스트가 없다(변이 생존, JudgmentEngine.cs:287). 장면 하나를 더한다.
+3. 정의에 `Inputs`가 없는데 measured인 결과는 `off`다. 케이스 이름 불일치처럼 `ArgumentException`으로 막을지 정한다.

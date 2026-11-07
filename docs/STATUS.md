@@ -16,7 +16,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
-- 진행 중: T-012 판정 보강 PR (b)(PR (a) #14 머지).
+- 진행 중: 없음. 명령 틀(M2-1) 순서는 juhan 결정 카드를 기다린다.
 - 다음: T-011a 리뷰 지적 정리 PR(새 ADR 0008 필요) → `docs/cases-public/README.md` 4절(사례 답 20개, 잠재 빈 곳 14~25 스파이크, 빈 곳 카드 2 → 6 → …). M2는 빈 곳 6 뒤.
 - 보류: 없음.
 - 기록: `docs/cases-public/README.md`의 공개 고객 사례 회사 이름은 juhan 직접 지시(2026-11-07 15:19)로 이 파일에만 둔다. 회사 자료(2절 10)가 아니라 공개된 사례의 이름이다. `examples/`·테스트·스펙에는 넣지 않는다. 2절 8·10과 13절은 그대로다.
@@ -39,6 +39,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-011a 판정 oracle·selftest CI | #12 | 2026-11-07 | 1282 | 해당 없음(src 변경 없음) | ADR 0006. oracle selftest 848, 판정 블록 4개 일치 |
 | T-011b 판정 엔진·예제 4종 judgment.json | #13 | 2026-11-07 | 1558 | JudgmentEngine 86.87%, JudgmentJson 98.00%, JudgmentRules 88.89% | 자동 머지(CI 7개 녹색, lead_check 종료 0, 리뷰 2회차 막는 지적 없음). oracle 12 MATCH |
 | T-012a 판정 보강 스펙·oracle | #14 | 2026-11-07 | 1558 | 해당 없음(src 변경 없음) | ADR 0007. oracle selftest 1402, 12 MATCH. 새 reviewer 전체 diff 막는 지적 없음 |
+| T-012b 판정 보강 엔진·judgment.json v2 | #15 | 2026-11-07 | 1637 | JudgmentEngine 88.00%, JudgmentRules 90.32%, JudgmentJson 98.00%, CompareEngine 94.44%, CaseReader 94.42% | 자동 머지(CI 7개 녹색, lead_check 종료 0, 리뷰 막는 지적 없음). expected migration judgment.json 4개 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 
@@ -65,18 +66,18 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-07 | T-011 | 15 인자 확인 시점 | 음수 시간은 `time_must_drop`과 상관없이 예외. 사람 입력 키는 미검증에도 확인 | (b) |
 | 2026-11-07 | T-011 | 16 미검증 + 시간 입력 | `time_must_drop: true`면 `measure_time`. 받은 시간은 보지 않는다 | (b) |
 | 2026-11-07 | T-011 | 17 문턱 곱 넘침 | 예외 없이 부호대로 비교(파서를 거치면 생기지 않는다) | (b) |
-| 2026-11-07 | T-012 | 1 추가·중복 행 | 검토 항목에 넣는다. 정확도·누락률 셈은 그대로 | #14·(b) |
-| 2026-11-07 | T-012 | 2 결과 쪽 키 중복 | 대조 오류가 아니라 항목 `duplicate`. 기준 쪽 중복·빈 키는 오류 그대로 | #14·(b) |
-| 2026-11-07 | T-012 | 3 metrics.json | 새 속성 없음. schema_version 1, 예제 바이트 그대로 | #14·(b) |
-| 2026-11-07 | T-012 | 4 안 본 검토 항목 | 조건부 `UNEXPLAINED`(순서 7, FOCUS 뒤) | #14·(b) |
-| 2026-11-07 | T-012 | 5 사람 입력 | 검토 항목의 키. 그 밖의 키·중복은 `ArgumentException` | #14·(b) |
-| 2026-11-07 | T-012 | 6 몰림 | M-A. `inputs.group` 열 하나, 없으면 off + `add_group` | #14·(b) |
-| 2026-11-07 | T-012 | 7 `group` 검사 | 파서 `required`·`type`·`conflict`, 대조는 기준 파일마다 `column`·`duplicate-column` | #14·(b) |
-| 2026-11-07 | T-012 | 8 예제 `case.yaml` | table-compare `group: signal_type`, signoff-final `group: record_kind` | #14·(b) |
-| 2026-11-07 | T-012 | 9 할 일 키 | `review_items`, `add_group` | #14·(b) |
-| 2026-11-07 | T-012 | 10 judgment.json | schema_version 2 | #14·(b) |
-| 2026-11-07 | T-012 | 11 oracle 판 둘 | expected로 고른다. PR (b) 뒤 첫 oracle 변경에서 `judge_v1` 삭제(ADR 0007) | #14·(b) |
-| 2026-11-07 | T-012 | 12 PR (a) 스펙 | 옛 표를 두고 새 표는 judgment.md 11절에. 제자리로 옮기는 것은 PR (b) | #14·(b) |
+| 2026-11-07 | T-012 | 1 추가·중복 행 | 검토 항목에 넣는다. 정확도·누락률 셈은 그대로 | #14·#15 |
+| 2026-11-07 | T-012 | 2 결과 쪽 키 중복 | 대조 오류가 아니라 항목 `duplicate`. 기준 쪽 중복·빈 키는 오류 그대로 | #14·#15 |
+| 2026-11-07 | T-012 | 3 metrics.json | 새 속성 없음. schema_version 1, 예제 바이트 그대로 | #14·#15 |
+| 2026-11-07 | T-012 | 4 안 본 검토 항목 | 조건부 `UNEXPLAINED`(순서 7, FOCUS 뒤) | #14·#15 |
+| 2026-11-07 | T-012 | 5 사람 입력 | 검토 항목의 키. 그 밖의 키·중복은 `ArgumentException` | #14·#15 |
+| 2026-11-07 | T-012 | 6 몰림 | M-A. `inputs.group` 열 하나, 없으면 off + `add_group` | #14·#15 |
+| 2026-11-07 | T-012 | 7 `group` 검사 | 파서 `required`·`type`·`conflict`, 대조는 기준 파일마다 `column`·`duplicate-column` | #14·#15 |
+| 2026-11-07 | T-012 | 8 예제 `case.yaml` | table-compare `group: signal_type`, signoff-final `group: record_kind` | #14·#15 |
+| 2026-11-07 | T-012 | 9 할 일 키 | `review_items`, `add_group` | #14·#15 |
+| 2026-11-07 | T-012 | 10 judgment.json | schema_version 2 | #14·#15 |
+| 2026-11-07 | T-012 | 11 oracle 판 둘 | expected로 고른다. PR (b) 뒤 첫 oracle 변경에서 `judge_v1` 삭제(ADR 0007) | #14·#15 |
+| 2026-11-07 | T-012 | 12 PR (a) 스펙 | 옛 표를 두고 새 표는 judgment.md 11절에. 제자리로 옮기는 것은 PR (b) | #14·#15 |
 
 ## 재검토 기록 (ADR 0005 [재검토])
 
@@ -94,3 +95,4 @@ T-007 이전은 기록하지 않았다.
 | T-009 | 221,981 | 214,346 | — | 248,582 | — | 684,909 |
 | T-010 | 357,131(oracle) | — | — | 1,093,645 | ci-dev 842,196 | 2,292,972 |
 | T-011 | 1,057,064 | 550,764 | 472,966 | 924,065 | ci-dev 297,347 | 3,302,206 |
+| T-012 | 243,716 | 326,704 | 343,107 | 620,153 | M1 재검토 reviewer 328,907, 문서(sonnet) 156,839 | 2,019,426 |

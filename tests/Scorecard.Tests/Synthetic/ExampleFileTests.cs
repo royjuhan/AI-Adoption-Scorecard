@@ -77,7 +77,8 @@ public class ExampleFileTests
         var actual = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(root, f).Replace(Path.DirectorySeparatorChar, '/'))
             .Order(StringComparer.Ordinal);
-        var expected = SyntheticInput.ClassificationFiles.Concat(SyntheticSpec.FilesOf(example)).Append("expected/metrics.json").Order(StringComparer.Ordinal);
+        // T-011(judgment.md 4.11·7.1, 잠정 결정 8): 계획에 expected/judgment.json을 더한다. 네 예제 모두(미검증 모양 포함).
+        var expected = SyntheticInput.ClassificationFiles.Concat(SyntheticSpec.FilesOf(example)).Append("expected/metrics.json").Append("expected/judgment.json").Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, actual);
     }

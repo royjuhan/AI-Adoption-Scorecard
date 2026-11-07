@@ -53,3 +53,22 @@ PR (a): `tools/oracle/`, `.github/workflows/`, `tools/ci/`, `docs/decisions/`, `
   2. 시간 합이 decimal 범위를 넘을 때 문장의 `{total}`: 정하지 않는다(판정은 `not_met`). 뒤 카드.
   3. 미검증인데 시간이 들어온 경우의 `measure_time`: 정하지 않는다. M2 `measure` 카드에서 정한다.
 - 예제 4종으로 `check.py`가 보는 판정은 NOT_VERIFIED·ACCURACY·FOCUS·PASS뿐이다. MISSING·UNEXPLAINED·TIME과 기본값 표시는 테스트(합성)로 본다.
+
+## T-011a 리뷰의 막지 않는 지적 (PR #12 뒤)
+
+- PR (b)에서 고친다(prototyper, docs/spec): judgment.md 375·813·819·874의 "`Real_targets_use_case_samples_not_basic`을 고치지 않는다"를 "쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다"로. judgment.md 3.3 근거 표기를 `classification.md 3.3 [P:escape]`로. PR (b)에 judgment.json 이모지 이스케이프 C# 테스트 하나.
+- PR (b) 뒤 정리 PR로 미룬다(oracle 변경과 expected를 같은 PR에 두지 않는다. 지시문·ci.yml은 새 ADR이 필요하다): oracle README 130줄 이모지 글, selftest `EXAMPLE_NAMES` 고정 목록, ci.yml 313·tools/ci README 160 "단위 테스트가 대조한다" 문구, 지시문 5절 목록에 `judgment.json`.
+
+## 잠정 결정 (구현 중, 리드 채택 2026-11-07)
+
+13. 시간 합 넘침 문장 `{total}`: 예외 없이 `not_met`. 글자는 정확한 합(BigInteger, 큰 쪽 소수 자릿수).
+14. 머리 행만 있는 기준 파일: 엔진은 기준 행의 `CsvRow` 머리 행만 본다(교집합에 안 든다). 테스트·예제 밖. 뒤 카드에서 `CompareMetrics`에 파일별 머리 행.
+15. 인자 확인 시점: 음수 시간은 `time_must_drop`과 상관없이 예외. 사람 입력 키는 미검증에도 확인.
+16. 미검증 + 시간 입력: `time_must_drop: true`면 `measure_time`. 받은 시간은 보지 않는다.
+17. 문턱 곱 넘침: 예외 없이 부호대로 비교(파서를 거치면 생기지 않는다).
+
+## 남은 일 (PR #13 뒤)
+
+- TIME 확인의 `process + review < before`는 decimal 덧셈이라 29자리 가까운 값에서 반올림될 수 있다. 실제 분 단위 값에서는 생기지 않는다. M2 `measure` 카드에서 정확한 셈으로 맞춘다.
+- 값 표시 64자 자르기가 서로게이트 쌍을 반으로 자를 수 있다(기존 `CompareRules.Show`). 정리 카드.
+- 잠정 결정 14(머리 행만 있는 기준 파일): `CompareMetrics`에 파일별 머리 행을 더해 oracle·스펙과 맞춘다.

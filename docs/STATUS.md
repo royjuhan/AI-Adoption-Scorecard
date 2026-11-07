@@ -35,6 +35,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-008 human_signoff·inferred | #9 | 2026-11-07 | 1196 | — | expected 그대로 |
 | T-009 예제 signoff-final | #10 | 2026-11-07 | 1282 | — | expected 2개 추가, 정확도 80.0 |
 | T-010 자동 진행 준비 | #11 | 2026-11-07 | 1282 | 해당 없음(src 변경 없음) | juhan 승인 머지. CI 잡 7개, lead_check, tools/ci 단위 테스트 143개 |
+| T-011a 판정 oracle·selftest CI | #12 | 2026-11-07 | 1282 | 해당 없음(src 변경 없음) | ADR 0006. oracle selftest 848, 판정 블록 4개 일치 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 
@@ -56,6 +57,11 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-07 | T-011 | 10 Core API·진행 순서 | judgment.md 4.13 그대로. 규칙은 `internal` `JudgmentRules.cs` 한 파일 | #12 (a)·(b) |
 | 2026-11-07 | T-011 | 11 G2·G3 | `judge-case-valid`(샘플 `case-valid`). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 한 쌍을 더한다(축소 아님) | #12 (a)·(b) |
 | 2026-11-07 | T-011 | 12 문장 틀·다음 할 일 문구 | judgment.md 표 그대로 | #12 (a)·(b) |
+| 2026-11-07 | T-011 | 13 시간 합 넘침 문장 `{total}` | 예외 없이 `not_met`. 글자는 정확한 합(BigInteger, 큰 쪽 소수 자릿수) | (b) |
+| 2026-11-07 | T-011 | 14 머리 행만 있는 기준 파일 | 엔진은 기준 행의 `CsvRow` 머리 행만 본다(교집합에 안 든다). 테스트·예제 밖. 뒤 카드에서 `CompareMetrics`에 파일별 머리 행 | (b) |
+| 2026-11-07 | T-011 | 15 인자 확인 시점 | 음수 시간은 `time_must_drop`과 상관없이 예외. 사람 입력 키는 미검증에도 확인 | (b) |
+| 2026-11-07 | T-011 | 16 미검증 + 시간 입력 | `time_must_drop: true`면 `measure_time`. 받은 시간은 보지 않는다 | (b) |
+| 2026-11-07 | T-011 | 17 문턱 곱 넘침 | 예외 없이 부호대로 비교(파서를 거치면 생기지 않는다) | (b) |
 
 ## 재검토 기록 (ADR 0005 [재검토])
 

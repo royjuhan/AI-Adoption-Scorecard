@@ -109,7 +109,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 - `schema_version`은 `WriteNumber(int)`로 `1`. 문턱 숫자는 `decimal` 그대로 `WriteNumber(decimal)`. 자릿수가 남는다: `85`, `1.0`, `66.6`, `0.0` [T11:P:decimals].
 - 문장 안의 숫자도 `decimal`을 `InvariantCulture`로 쓴 글자다. 퍼센트는 대조 결과 값(`metrics.md` 4.8, 늘 소수 한 자리)을 그대로 쓴다. 문턱은 `case.yaml` 글자 그대로다(`85`는 `85`, `90.0`은 `90.0`).
-- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`, 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다 [T11:P:escape]. T-011a에서 고쳤다: 이전 글이 글자 그대로라고 적었지만 classification.md 3.3 표와 `UnsafeRelaxedJsonEscaping` 동작은 서로게이트 쌍이다(oracle 확인).
+- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`다 [T11:P:escape]. 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다(`classification.md` 3.3 [P:escape]). T-011a에서 고쳤다: 이전 글은 글자 그대로라고 적었다.
 - 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [T11:S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [T11:S3 culture]. Python 독립 구현이 예제 4종과 G2 표본에서 같은 바이트를 냈다 [T11:S3 xcheck].
 
 ### 3.4 명령과 AI용 입구 (ADR 0004 적용)
@@ -199,6 +199,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 | `FOCUS` | `spread` | 그 밖 | `불일치 {bad}건이 한 값에 몰린 열이 없다(본 열: {columns}).` |
 
 - 셈은 정수와 decimal이다. 나눗셈을 쓰지 않는다. `reference`는 0이 아니다(기준 행이 0이면 대조가 `no-rows` 오류다, `metrics.md` 4.7).
+- 문턱 비교는 decimal 반올림 없이 정확히 한다(곱이 29자리를 넘어도). 예: `accuracy_min`의 소수 자릿수가 길어 `accuracy_min × reference`가 유효 숫자 29자리를 넘어도 반올림한 곱으로 비교하지 않는다. 곱 넘침은 5절.
 - 시간 합 `process + review`가 decimal 범위를 넘으면 `not_met`이다. 예외가 새지 않는다 [T11:P:time overflow].
 - 시간은 `time_must_drop`이 `false`면 받아도 보지 않는다(`off`).
 
@@ -289,6 +290,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 5. 열마다: 기준 행 값이 하나뿐이면 건너뛴다. 불일치 행의 값이 모두 같으면 그 열에서 `found`. 처음 `found`인 열에서 멈춘다.
 6. `found`인 열이 없으면, 건너뛰지 않은 열이 있으면 `spread`, 모두 건너뛰었으면 `one_value`.
 
+- 규칙 1의 엔진 해석(카드 잠정 결정 14): 엔진은 기준 행의 `CsvRow` 머리 행만 본다. 그래서 유형 열은 "기준 행이 있는 기준 파일의 머리 행" 교집합이다. 머리 행만 있는 기준 파일은 교집합에 들지 않는다. 유형 열이 늘 수만 있어 판정은 규칙 1 글과 같거나 더 엄하다. oracle은 규칙 1 글대로 모든 기준 파일을 본다. 그래서 머리 행만 있는 기준 파일이 있는 장면에서 두 구현이 다르다(그 파일 머리 행에 없거나 두 번 있는 열이 있을 때). 테스트·예제는 이 장면을 쓰지 않는다. 뒤 카드에서 `CompareMetrics`에 파일별 머리 행을 더해 맞춘다.
 - "에만"은 불일치가 모두 한 값이고, 그 값이 아닌 기준 행이 있다(값이 하나뿐인 열은 건너뜀)는 뜻으로 읽었다. 그 값의 행이 모두 불일치일 필요는 없다(table-compare: `irregular` 12행 중 3행).
 
 몰림 정의(안):
@@ -372,7 +374,7 @@ M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확
 | `judge-case-valid` | `case-valid` (기존. 바꾸지 않는다) | `CaseParser.ParseDirectory` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null) → 출력 폴더의 `judgment.json` 한 파일 |
 
 - 표본 판정: 보류 `ACCURACY`(66.7% < 90), 시간 `not_measured`, 몰림 `off`(유형 열 없음), 다음 할 일 셋 [T11:S3 judge-case-valid]. 숫자가 문장에 들어가므로 문화권(R4)을 본다.
-- 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 샘플 목록(중복 뺀 것)이 `case-invalid`, `case-valid`, `compare-invalid` 그대로라 `Real_targets_use_case_samples_not_basic`(T-010이 정확한 목록 비교로 되돌림)을 고치지 않고 통과한다.
+- 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 기준선 `bf2568e`의 `Real_targets_use_case_samples_not_basic`은 샘플 목록(중복 뺀 것)만 봐서, 고치지 않고 통과했다. 그 뒤 T-010 리뷰(`9ae47a2`)가 이 테스트에 `이름=샘플` 쌍의 정확한 목록 비교를 더했다 [읽음 `CoreGuardTargetTests.cs`]. 그래서 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록 `case-invalid`, `case-valid`, `compare-invalid`는 그대로다.
 - 판정 오류 표본은 없다. 판정에는 입력 오류가 없다(대조 오류는 `compare-invalid`가 본다. 인자 예외는 5절).
 - 음성 대조 [T11:S6]: (a) 문장 숫자를 `CultureInfo.CurrentCulture`로 쓰면 빌드·G1은 통과하고 G2가 `G2 R4 문화권: out/judgment.json SHA-256 다름`으로 잡는다(`Core_target_is_deterministic(judge-case-valid)` 1건 실패). (b) 판정 안에서 `DateTime.Now`를 읽으면 G1(D1)이 잡는다(`Core_has_no_clock_random_or_environment_references` 1건 실패).
 
@@ -438,6 +440,8 @@ public sealed record JudgmentResult(
 | 유형 열 값이 빈 칸 | `(빈 칸)`으로 보인다. 빈 칸끼리 같은 값 | 6.3 |
 | 머리 행이 다른 기준 파일 여럿 | 모든 파일에 꼭 한 번 있는 열만 유형 열 | [T11:P:focus multi-file] |
 | 불일치는 있는데 추가 행만 다른 유형 | 추가 행은 보지 않는다 | [T11:P:focus extra-rows-ignored] |
+
+- 문턱 곱 넘침(카드 잠정 결정 17): 4.4 조건의 곱이 decimal 범위를 넘어도 예외 없이 부호대로 비교한다. `case.yaml`을 파서로 읽으면 생기지 않는다(문턱 0 이상 100 이하, `case-schema.md` 4.5. 셈은 `int`).
 
 ## 6. 예시
 
@@ -810,13 +814,13 @@ public sealed record JudgmentResult(
 | 스펙 블록 = 예제 파일 | 7.2~7.5 블록, SHA-256 줄, 파일이 같다 | 1, 4 |
 | 결정론 | de-DE·tr-TR로 바꿔도 같은 바이트(`try/finally`). 같은 입력 두 번. 입력 metrics.json 바이트 그대로 | — |
 | 예외(5절) | 인자 예외 4종 | — |
-| G2·G3 | `GuardTargets`에 `judge-case-valid`(4.12). 샘플 목록 테스트는 그대로 | — |
+| G2·G3 | `GuardTargets`에 `judge-case-valid`(4.12). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록은 그대로 | — |
 | 예제 폴더 파일 | `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/judgment.json` 추가 | 1 |
 
 - 표 이름(머리 행)이 이 문서에 정확히 한 번 나와야 한다. `SpecDocument.Table`이 그렇게 검사한다 [읽음]. `| 속성 | 형식 | 뜻 |`와 G2 표 머리 행은 `metrics.md`와 같은 글자다. 문서마다 한 번이라 괜찮다.
 - 실패 테스트 먼저: test-engineer 단계에서는 `Scorecard.Core.Judgment`가 없어 새 테스트가 컴파일되지 않는다. T-003 승인 결정 14와 같이 이 상태를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
 - 골든 테스트는 `examples/` 파일이 있어야 돈다. 파일이 없으면 실패해야 한다(빈 통과 금지).
-- 기존 테스트는 지우거나 완화하지 않는다. 고치는 것은 `Example_folder_has_exactly_the_planned_files` 목록 한 줄뿐이다(계획에 파일을 더함).
+- 기존 테스트는 지우거나 완화하지 않는다. 고치는 것은 둘이다. `Example_folder_has_exactly_the_planned_files` 목록에 `expected/judgment.json` 한 줄(계획에 파일을 더함), `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍(대상을 더함). 둘 다 축소가 아니다.
 
 ## 9. 미확인 목록
 
@@ -870,8 +874,8 @@ ADR 0005 결정 3: T-010 뒤 카드의 승인 질문은 juhan에게 묻지 않�
    - 추천: 보류 `ACCURACY`(80.0% < 95%). 누락률 5.0% > 2%도 `not_met`으로 남는다.
 10. **Core 공개 API와 진행 순서(4.13).** ADR 0004 기준: 리드.
     - 추천: 4.13 그대로. 규칙은 `internal` `JudgmentRules.cs` 한 파일. 기존 Core 파일은 바꾸지 않는다. test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 본다(T-003 승인 결정 14).
-11. **G2·G3 등록(4.12).** ADR 0004 기준: 리드(기존 테스트를 바꾸지 않는다).
-    - 추천: `judge-case-valid`(샘플 `case-valid`). 새 샘플이 없어 샘플 목록 테스트를 고치지 않는다. 판정 오류 표본은 두지 않는다.
+11. **G2·G3 등록(4.12).** ADR 0004 기준: 리드(기존 테스트를 지우거나 완화하지 않는다).
+    - 추천: `judge-case-valid`(샘플 `case-valid`). 새 샘플이 없어 샘플 목록은 그대로다. `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 판정 오류 표본은 두지 않는다.
 12. **문장 틀과 다음 할 일 문구(4.3·4.4·4.7).** ADR 0004 기준: 리드.
     - 추천: 표 그대로. 미검증의 "무엇을 재면 되는지"는 `add_data`·`add_compare`·`measure_time` 문구로 적는다. 문구를 바꾸면 이 표와 expected를 같이 고치고 oracle이 같은 바이트를 내야 한다.
 

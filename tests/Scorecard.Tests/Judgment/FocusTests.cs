@@ -172,6 +172,27 @@ public partial class FocusTests
             focus.Reason);
     }
 
+    // 4.8 규칙 3·5: 몰린 값은 불일치 행의 값이다. 첫 기준 행의 값이 아니다(T-011b 리뷰 B1).
+    // 기준 k1·k2는 grp = a, k3·k4는 b. 결과에서 k3는 값 불일치, k4는 누락이다. 불일치 둘이 모두 b라 found(grp = b).
+    // 첫 기준 행 k1은 a이고 일치다. 다른 장면은 불일치 행이 앞에 있어 이 차이를 보지 못한다.
+    [Fact]
+    public void Found_value_comes_from_mismatch_rows_not_first_reference_row()
+    {
+        var definition = CompareInput.Case(FocusCase);
+        SourceFile[] reference = [CompareInput.Source("reference/a.csv", "id,grp,v\nk1,a,1\nk2,a,1\nk3,b,1\nk4,b,1\n")];
+        SourceFile[] candidate = [CompareInput.Source("candidate/a.csv", "id,v\nk1,1\nk2,1\nk3,2\n")];
+
+        var judged = JudgmentEngine.Judge(definition, CompareInput.Measured(CompareInput.Run(definition, reference, candidate)));
+        var focus = JudgmentInput.CheckOf(judged, JudgmentSpec.Focus);
+
+        // 4.5 값: 불일치 2, 몰린 열 grp, 값 b, b인 기준 행 2, 나머지 기준 행 2.
+        var slots = new Dictionary<string, string> { ["bad"] = "2", ["group"] = "grp", ["value"] = "b", ["rows_in"] = "2", ["rows_out"] = "2" };
+        Assert.Equal(JudgmentInput.Found, focus.Result);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Focus, JudgmentInput.Found).Template, slots), focus.Reason);
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleFocus), (judged.Verdict, judged.Rule));
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindVerdict(JudgmentSpec.Focus, JudgmentInput.Found).Template, slots), judged.Reason);
+    }
+
     // 4.8 규칙 1: 빈 이름 열은 유형 열이 아니다. 빈 이름 열의 값이 불일치 행에서 모두 같아도 유형 열이 없어 off다.
     [Fact]
     public void Empty_column_name_is_not_a_type_column()

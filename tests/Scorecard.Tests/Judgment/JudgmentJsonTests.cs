@@ -143,7 +143,7 @@ public class JudgmentJsonTests
         }
     }
 
-    // 3.3 이스케이프(classification.md 3.3 [P:escape]과 같다): 유형 값의 큰따옴표는 \", 이모지(U+1F600)는 😀(서로게이트 쌍).
+    // 3.3 이스케이프(classification.md 3.3 [P:escape]과 같다): 유형 값의 큰따옴표는 \", 이모지(U+1F600)는 \uD83D\uDE00(서로게이트 쌍).
     // 한글·<>&'+`는 그대로. 메모리 문장에는 글자 그대로 있다(5절: 문장에는 CompareRules.Show 표시, JSON은 3.3 이스케이프).
     [Fact]
     public void Type_value_with_quote_and_emoji_is_escaped_in_json()

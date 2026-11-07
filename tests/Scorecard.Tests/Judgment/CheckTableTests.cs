@@ -100,6 +100,44 @@ public class CheckTableTests
         Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Missing, c[8]).Template, slots), JudgmentInput.CheckOf(judged, JudgmentSpec.Missing).Reason);
     }
 
+    // 4.4 조건은 정확한 셈 비교다(4.1 4 "셈 비교", T-011b 리뷰 N1). decimal 곱이 반올림되어 같아져도 결과가 바뀌면 안 된다.
+    // 정확도: 2 × 100 = 200 < 66.666666666666666666666666667 × 3 = 200.000000000000000000000000001 → not_met, 보류.
+    //   decimal 곱은 소수 26자리로 반올림되어 200이 된다. 그대로 비교하면 met(통과)이 나온다.
+    // 누락률: 1 × 100 = 100 > 33.333333333333333333333333333 × 3 = 99.999999999999999999999999999 → not_met, 보류.
+    //   decimal 곱은 100으로 반올림된다.
+    // 반대쪽(…666, …334)은 정확한 셈으로도 met이다. 고친 엔진이 너무 엄하게 되지 않는지 본다.
+    [Theory]
+    [InlineData(3, 2, 0, "66.666666666666666666666666667", "100", "not_met", "met", "hold", "ACCURACY")]
+    [InlineData(3, 2, 0, "66.666666666666666666666666666", "100", "met", "met", "pass", "PASS")]
+    [InlineData(3, 2, 1, "0", "33.333333333333333333333333333", "met", "not_met", "hold", "MISSING")]
+    [InlineData(3, 2, 1, "0", "33.333333333333333333333333334", "met", "met", "pass", "PASS")]
+    public void Threshold_comparison_is_exact_beyond_decimal_precision(
+        int reference, int match, int missing, string accuracyMin, string missingMax,
+        string accuracy, string missingResult, string verdict, string rule)
+    {
+        var scene = new JudgmentScene(
+            Columns: [],
+            Rows: JudgmentInput.Rows(reference, mismatch: reference - match - missing, missing: missing),
+            Extras: [],
+            AccuracyMin: accuracyMin,
+            MissingMax: missingMax,
+            TimeMustDrop: "false");
+
+        var judged = scene.Judge();
+        var slots = scene.Slots();
+
+        // 문턱은 case.yaml 글자 그대로 들어간다(자릿수 유지).
+        Assert.Equal(accuracyMin, JudgmentInput.Text(judged.Thresholds.AccuracyMin));
+        Assert.Equal(missingMax, JudgmentInput.Text(judged.Thresholds.MissingMax));
+        Assert.Equal(accuracy, JudgmentInput.CheckOf(judged, JudgmentSpec.Accuracy).Result);
+        Assert.Equal(missingResult, JudgmentInput.CheckOf(judged, JudgmentSpec.Missing).Result);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Accuracy, accuracy).Template, slots), JudgmentInput.CheckOf(judged, JudgmentSpec.Accuracy).Reason);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Missing, missingResult).Template, slots), JudgmentInput.CheckOf(judged, JudgmentSpec.Missing).Reason);
+        Assert.Equal((verdict, rule), (judged.Verdict, judged.Rule));
+        var verdictRow = rule == JudgmentSpec.PassRule ? JudgmentSpec.FindVerdict(rule, null) : JudgmentSpec.FindVerdict(rule, JudgmentInput.NotMet);
+        Assert.Equal(JudgmentSpec.Fill(verdictRow.Template, slots), judged.Reason);
+    }
+
     // 6.1 표가 경계 양쪽을 모두 쓴다: 표시 퍼센트가 문턱과 같아 보이는데 not_met인 행이 ACCURACY·MISSING 모두에 있다.
     [Fact]
     public void Boundary_table_has_display_equal_but_not_met_rows()

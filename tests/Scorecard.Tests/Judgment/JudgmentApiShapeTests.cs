@@ -172,6 +172,44 @@ public partial class JudgmentApiShapeTests
         Assert.Throws<ArgumentOutOfRangeException>(() => JudgmentEngine.Judge(definition, metrics, times));
     }
 
+    // 잠정 결정 15: 음수 시간은 time_must_drop과 상관없이 예외다. time_must_drop: false라 시간을 보지 않는 장면에서도 그렇다.
+    [Theory]
+    [InlineData("-1", "6", "3")]
+    [InlineData("10", "-0.5", "3")]
+    [InlineData("10", "6", "-0.0001")]
+    public void Negative_time_throws_even_when_time_must_drop_is_false(string before, string process, string review)
+    {
+        var scene = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Spread);
+        var definition = scene.Definition;
+        var metrics = scene.Metrics();
+        var times = new JudgmentTimes(JudgmentSpec.Decimal(before), JudgmentSpec.Decimal(process), JudgmentSpec.Decimal(review));
+        Assert.False(definition.Thresholds.TimeMustDrop);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => JudgmentEngine.Judge(definition, metrics, times));
+
+        // 0 이상이면 예외가 없고 시간은 보지 않는다(빈 통과 방지).
+        var fine = new JudgmentTimes(10m, 6m, 3m);
+        Assert.Equal(JudgmentInput.Off, JudgmentInput.CheckOf(JudgmentEngine.Judge(definition, metrics, fine), JudgmentSpec.Time).Result);
+    }
+
+    // 잠정 결정 15: 사람 입력 키는 미검증에도 확인한다. 미검증 대조에는 불일치 항목이 없어 키가 하나라도 있으면 ArgumentException.
+    // no_inputs·no_compare_fields 둘 다. 키 하나, 같은 키 둘.
+    [Fact]
+    public void Unexplained_keys_are_checked_even_when_not_verified()
+    {
+        foreach (var definition in new[] { JudgmentInput.NoInputsCase(), JudgmentInput.NoCompareCase() })
+        {
+            var metrics = JudgmentInput.NotVerifiedMetrics(definition);
+            Assert.Equal(CompareEngine.StatusNotVerified, metrics.Status);
+
+            Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, ["k0001"]));
+            Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, ["k0001", "k0001"]));
+
+            // 사람 입력이 없으면(null) 예외 없이 미검증이다(빈 통과 방지).
+            Assert.Equal(JudgmentEngine.VerdictNotVerified, JudgmentEngine.Judge(definition, metrics).Verdict);
+        }
+    }
+
     // 5절·4.9: 사람 입력 키가 불일치 항목(값 불일치·누락)의 키가 아니거나 중복이면 ArgumentException.
     // 일치 항목의 키, 추가 행의 키, 없는 키, 중복 키. 불일치가 없는 장면에 키를 넣어도 그렇다.
     [Fact]

@@ -1,4 +1,5 @@
 using Scorecard.Core.Judgment;
+using Scorecard.Tests.Comparison;
 
 namespace Scorecard.Tests.Judgment;
 
@@ -65,7 +66,7 @@ public class TimeTests
     }
 
     // 4.4 셋째 글머리·5절: 시간 합이 decimal 범위를 넘으면 not_met(예외가 새지 않는다). 판정은 조건부 TIME.
-    // 그때 문장의 {total} 모양은 스펙이 정하지 않았다(카드 "PR (b)에 넘기는 것" 2). 문장은 보지 않는다.
+    // 그때 문장의 {total}은 잠정 결정 13이 정했다. 아래 Time_sum_overflow_sentence_has_exact_total이 본다.
     [Fact]
     public void Time_sum_overflow_is_not_met()
     {
@@ -75,6 +76,29 @@ public class TimeTests
 
         Assert.Equal(JudgmentInput.NotMet, JudgmentInput.CheckOf(judged, JudgmentSpec.Time).Result);
         Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleTime), (judged.Verdict, judged.Rule));
+    }
+
+    // 잠정 결정 13: 합이 넘쳐도 예외 없이 not_met이고, 문장의 {total}은 정확한 합 글자다(소수 자릿수는 큰 쪽).
+    // 처리 79228162514264337593543950335(decimal 최댓값) + 검토 1.50 = 79228162514264337593543950336.50(손 계산).
+    // 확인 문장(4.4 TIME not_met)과 판정 문장(4.3 TIME not_met) 둘 다 본다. JSON도 예외 없이 만든다.
+    [Fact]
+    public void Time_sum_overflow_sentence_has_exact_total()
+    {
+        const string max = "79228162514264337593543950335";
+        const string review = "1.50";
+        const string total = "79228162514264337593543950336.50";
+        var scene = AllMatch("true", new JudgmentTimes(JudgmentSpec.Decimal(max), JudgmentSpec.Decimal(max), JudgmentSpec.Decimal(review)));
+        Assert.Equal(decimal.MaxValue, JudgmentSpec.Decimal(max));
+
+        var judged = scene.Judge();
+        var time = JudgmentInput.CheckOf(judged, JudgmentSpec.Time);
+        var slots = new Dictionary<string, string> { ["before"] = max, ["process"] = max, ["review"] = review, ["total"] = total };
+
+        Assert.Equal(JudgmentInput.NotMet, time.Result);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Time, JudgmentInput.NotMet).Template, slots), time.Reason);
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleTime), (judged.Verdict, judged.Rule));
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindVerdict(JudgmentSpec.Time, JudgmentInput.NotMet).Template, slots), judged.Reason);
+        Assert.Contains(total, CompareInput.Text(JudgmentJson.Render(judged)), StringComparison.Ordinal);
     }
 
     // 4.10·4.7: time_must_drop이 true이고 시간이 없으면 다음 할 일 measure_time. 시간이 있으면 없다. false면 없다.

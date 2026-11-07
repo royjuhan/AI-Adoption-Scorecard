@@ -219,9 +219,19 @@ class Row:
     file: str
     line: int
     cells: dict  # compare 필드 → 칸(정규화 뒤)
+    header: tuple = ()  # 그 파일의 머리 행 칸 전부(정규화 뒤). 3.1 CsvRow.Header
+    values: tuple = ()  # 그 행의 칸 전부(정규화 뒤, compare에 없는 열 포함). 3.1 CsvRow.Cells
 
 
-def read_side(case_dir: Path, files: list, key: str, fields: list) -> list:
+@dataclass(frozen=True)
+class CompareRun:
+    """대조 결과 본문(metrics.json의 compare)과 판정이 쓰는 메모리 결과(3.1). 미검증이면 행·머리 행이 없다."""
+    body: dict
+    reference_rows: list  # Row, 기준 파일 경로 서수 → 줄 순서
+    reference_headers: list  # (파일, 머리 행 칸 tuple), 기준 파일 경로 서수 순
+
+
+def read_side(case_dir: Path, files: list, key: str, fields: list, headers: list | None = None) -> list:
     rows = []
     first = {}  # 키 → (파일, 줄)
     for rel in files:
@@ -230,6 +240,8 @@ def read_side(case_dir: Path, files: list, key: str, fields: list) -> list:
         except OSError as e:
             raise OracleError(f'{rel}: 파일을 읽을 수 없다: {type(e).__name__} (file 오류 입력, 범위 밖)') from None
         _header_line, header, data_rows = read_table(data, rel)
+        if headers is not None:
+            headers.append((rel, tuple(header)))
         index = {}
         for name in [key] + [f.field for f in fields]:
             if name in index:
@@ -247,7 +259,8 @@ def read_side(case_dir: Path, files: list, key: str, fields: list) -> list:
             if k in first:
                 raise OracleError(f'{rel}:{r.line}: 키가 중복된다: {k} (duplicate-key 오류 입력, 범위 밖)')
             first[k] = (rel, r.line)
-            rows.append(Row(k, rel, r.line, {f.field: r.cells[index[f.field]] for f in fields}))
+            rows.append(Row(k, rel, r.line, {f.field: r.cells[index[f.field]] for f in fields},
+                            tuple(header), tuple(r.cells)))
     return rows
 
 
@@ -268,10 +281,14 @@ def _not_verified(reason: str) -> dict:
 
 
 def compare_body(case_dir: Path, case: Case) -> dict:
+    return compare_run(case_dir, case).body
+
+
+def compare_run(case_dir: Path, case: Case) -> CompareRun:
     if case.inputs is None:
-        return _not_verified(REASON_NO_INPUTS)  # 파일을 읽지 않는다.
+        return CompareRun(_not_verified(REASON_NO_INPUTS), [], [])  # 파일을 읽지 않는다.
     if not case.compare:
-        return _not_verified(REASON_NO_COMPARE_FIELDS)
+        return CompareRun(_not_verified(REASON_NO_COMPARE_FIELDS), [], [])
     if not case_dir.is_dir():
         raise OracleError('케이스 폴더가 없다 (file 오류 입력, 범위 밖)')
     inputs, fields = case.inputs, case.compare
@@ -280,7 +297,8 @@ def compare_body(case_dir: Path, case: Case) -> dict:
     overlap = set(ref_files) & set(cand_files)
     if overlap:
         raise OracleError(f'같은 파일이 기준·결과 양쪽에 나온다: {sorted(overlap, key=ordinal_key)[0]} (overlap 오류 입력, 범위 밖)')
-    ref = read_side(case_dir, ref_files, inputs.key, fields)
+    ref_headers = []
+    ref = read_side(case_dir, ref_files, inputs.key, fields, ref_headers)
     cand = read_side(case_dir, cand_files, inputs.key, fields)
     for r in ref:
         for f in fields:
@@ -340,7 +358,7 @@ def compare_body(case_dir: Path, case: Case) -> dict:
     } for f in fields]
     if match + mismatch + missing != len(ref) or match + mismatch + extra != len(cand):
         raise OracleError('셈이 맞지 않는다(oracle 내부 오류)')  # 3.2 counts.reference·candidate 정의.
-    return {
+    return CompareRun({
         'status': STATUS_MEASURED, 'reason': None, 'key': inputs.key,
         'reference_files': ref_files, 'candidate_files': cand_files,
         'counts': {'reference': len(ref), 'candidate': len(cand), 'match': match, 'mismatch': mismatch,
@@ -349,7 +367,7 @@ def compare_body(case_dir: Path, case: Case) -> dict:
         'missing_rate_pct': percent(missing, len(ref)),
         'fields': field_list,
         'items': items,
-    }
+    }, ref, ref_headers)
 
 
 def _case_yaml(case_dir: Path) -> bytes:

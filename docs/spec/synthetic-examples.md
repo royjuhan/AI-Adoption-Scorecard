@@ -1,4 +1,4 @@
-# synthetic-examples (T-005 스펙 초안)
+# synthetic-examples (T-005 스펙)
 
 - 상태: 승인됨(2026-11-07, 질문 9 외 제안대로. 9는 테스트로 진행하고 원칙 문구는 사람 답 대기). 7절 예제 파일도 제안대로 확정. 승인 결과는 문서 끝.
 - 작업 카드: `docs/tasks/T-005-synthetic-examples.md`

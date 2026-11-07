@@ -1,5 +1,6 @@
 using Scorecard.Core.Cases;
 using Scorecard.Core.Classification;
+using Scorecard.Core.Synthetic;
 using Scorecard.Tests.CaseSchema;
 
 namespace Scorecard.Tests.Guards;
@@ -11,6 +12,9 @@ namespace Scorecard.Tests.Guards;
 // T-004 분류(classification.md 4.10, 승인 결정 12): 정상 표본만 등록한다. 오류 표본은 분류할 것이 없다.
 // 분류 어댑터는 CaseParser.ParseDirectory → StepClassifier.Classify → ClassificationJson.Render 결과를
 // 출력 폴더의 classification.json 한 파일로 쓴다.
+// T-005 합성 생성기(synthetic-examples.md 4.11, 승인 결정 11): 정상 표본 case.yaml의 inputs.key·compare를 스키마로 쓴다.
+// 어댑터는 CaseParser.ParseDirectory → SyntheticGenerator.Generate(아래 고정 계획) → SyntheticCsv.Render 결과를
+// 출력 폴더의 reference/rows.csv, candidate/rows.csv로 쓴다.
 // 새 Core 처리 기능을 만들면 이 목록에 더한다.
 internal static class GuardTargets
 {
@@ -21,7 +25,27 @@ internal static class GuardTargets
         new("case-parser-valid", "case-valid", ParseCaseToJson),
         new("case-parser-invalid", "case-invalid", ParseCaseToJson),
         new("classifier-case-valid", "case-valid", ClassifyCaseToJson),
+        new("synthetic-case-valid", "case-valid", GenerateSyntheticCsv),
     ];
+
+    // 4.11 고정 계획: 시드 7, rows.csv, 키 r 2자리, 12행. 열 start 정수 0~999, mean 소수 10.00~99.99, label 선택 a·b·c.
+    // 값 불일치 start·mean·label, 누락 1, 추가 1, 허용오차 안 차이 mean 2, 몰림 없음, 섞기.
+    // case-valid의 inputs.key(row_id)와 compare(start 0, mean 1.0%, label)에 맞췄다. 세 열 종류와 심기 다섯 가지를 모두 쓴다.
+    public static readonly SyntheticPlan SyntheticGuardPlan = new(
+        Seed: 7,
+        FileName: "rows.csv",
+        KeyPrefix: "r",
+        KeyDigits: 2,
+        Rows: 12,
+        Columns: [SyntheticColumn.Integer("start", 0, 999), SyntheticColumn.Decimal("mean", 10m, 99.99m, 2), SyntheticColumn.Choice("label", "a", "b", "c")],
+        MismatchColumns: ["start", "mean", "label"],
+        Missing: 1,
+        Extra: 1,
+        WithinColumn: "mean",
+        Within: 2,
+        FocusColumn: null,
+        FocusValue: null,
+        ShuffleCandidate: true);
 
     public static TheoryData<string> Names => new(All.Select(t => t.Name));
 
@@ -41,5 +65,17 @@ internal static class GuardTargets
         var definition = parsed.Case ?? throw new InvalidOperationException("분류 대상 표본이 파싱되지 않는다.");
         Directory.CreateDirectory(output);
         File.WriteAllBytes(Path.Combine(output, ClassificationJson.FileName), ClassificationJson.Render(StepClassifier.Classify(definition)));
+    }
+
+    // 정상 표본만 쓴다. 파싱 오류면 생성할 것이 없으므로 예외를 던진다(G2·G3가 차이로 적는다).
+    private static void GenerateSyntheticCsv(string input, string output)
+    {
+        var definition = CaseParser.ParseDirectory(input).Case ?? throw new InvalidOperationException("생성 대상 표본이 파싱되지 않는다.");
+        var tables = SyntheticGenerator.Generate(definition, SyntheticGuardPlan);
+        foreach (var (folder, rows) in new[] { (SyntheticCsv.ReferenceFolder, tables.Reference), (SyntheticCsv.CandidateFolder, tables.Candidate) })
+        {
+            Directory.CreateDirectory(Path.Combine(output, folder));
+            File.WriteAllBytes(Path.Combine(output, folder, tables.FileName), SyntheticCsv.Render(tables.Header, rows));
+        }
     }
 }

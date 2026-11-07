@@ -111,7 +111,7 @@ Core가 바이트를 만든다(`ClassificationJson.Render`, 4.11). 모양:
 | NFD 한글(U+1100 U+1161) | 그대로(정규화 안 함) |
 
 - 같은 입력이면 같은 바이트다. 확인: 프로세스 두 번, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [S3 det-cmp], 문화권 6종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH) [P:culture].
-- 숫자는 근거 문장 안의 `batch_size` 하나뿐이다. `InvariantCulture`로 쓴다. 건수 1234567을 넣은 결과도 문화권 6종에서 SHA-256이 같았다 [P:culture].
+- 숫자는 첫 키 `schema_version`(정수 1, T-007·ADR 0004)과 근거 문장 안의 `batch_size`뿐이다. `InvariantCulture`로 쓴다. 건수 1234567을 넣은 결과도 문화권 6종에서 SHA-256이 같았다 [P:culture].
 - → 승인 질문 10.
 
 ## 4. 규칙
@@ -454,7 +454,7 @@ T-003의 합성 사본 `tests/Scorecard.Tests/TestData/case-schema/example-12-1/
 1. 이 절의 `answers.yaml`·`expected/classification.json` 블록은 prototyper 초안이다. `expected` 블록은 스파이크 후보가 초안 `answers.yaml`에서 실제로 낸 바이트다 [S3].
 2. 사람이 이 문서를 승인할 때 블록 내용을 확정한다(고칠 곳은 승인 답에 적는다). 고치면 prototyper가 스파이크를 다시 돌려 블록을 맞춘다.
 3. 승인 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/answers.yaml`, `examples/<예제>/expected/classification.json`으로 옮긴다. 테스트가 블록과 파일이 같은지 본다(T-003 `SpecDocumentTests` 방식). 카드 폴더 범위에 `examples/`가 있다 [읽음 카드]. CLAUDE.md 에이전트 폴더 제한에는 `examples/`가 없다 [읽음]. → 승인 질문 14.
-4. `examples/.gitattributes`(`* -text`)를 같이 넣는다. 없으면 `core.autocrlf=true` clone에서 `expected/classification.json`이 2,619바이트에서 2,712바이트로, `answers.yaml`이 1,083바이트에서 1,095바이트로 바뀐다. 있으면 그대로다 [S7]. 골든 테스트가 바이트를 비교하므로 필요하다. T-002 승인 결정 10은 이 결정을 T-005로 미뤘다 [읽음]. 예제 파일을 처음 넣는 카드가 T-004가 됐다. → 승인 질문 11.
+4. `examples/.gitattributes`(`* -text`)를 같이 넣는다. 없으면 `core.autocrlf=true` clone에서 `expected/classification.json`이 2,619바이트에서 2,712바이트로(T-004 당시. T-007 뒤 table-compare는 2,642바이트), `answers.yaml`이 1,083바이트에서 1,095바이트로 바뀐다. 있으면 그대로다 [S7]. 골든 테스트가 바이트를 비교하므로 필요하다. T-002 승인 결정 10은 이 결정을 T-005로 미뤘다 [읽음]. 예제 파일을 처음 넣는 카드가 T-004가 됐다. → 승인 질문 11.
 5. `examples/`의 다른 파일(`case.yaml`, `intake.md`, `reference/`, `candidate/`)은 T-005가 만든다. T-005의 `case.yaml` 단계·답은 이 `answers.yaml`과 같아야 한다(T-005에서 테스트).
 6. 지시문 2절 10 "examples/는 합성 생성기로만 만든다"는 자료(`reference/`, `candidate/`)에 대한 것으로 본다. `answers.yaml`은 사람이 답한 질문지이고 `expected/`는 사람이 확정한 정답이다(지시문 12절) → 승인 질문 14.
 

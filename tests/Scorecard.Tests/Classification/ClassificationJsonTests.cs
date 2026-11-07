@@ -57,7 +57,7 @@ public class ClassificationJsonTests
 
     public static TheoryData<string> SchemaVersionOutputLabels => new(SchemaVersionOutputs.Select(o => o.Label));
 
-    // \uc774\uc2a4\ucf00\uc774\ud504 \ud45c\uc758 \ub2e8\uacc4 \uc774\ub984\ub9cc.
+    // 이스케이프 표의 단계 이름만.
     public static TheoryData<string> EscapeNames => new(Escapes.Select(row => (string)row[0]!));
 
     [Fact]

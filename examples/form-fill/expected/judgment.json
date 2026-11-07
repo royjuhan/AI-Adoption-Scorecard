@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "form-fill",
   "verdict": "pass",
   "rule": "PASS",
@@ -24,7 +24,7 @@
     {
       "rule": "UNEXPLAINED",
       "result": "none",
-      "reason": "불일치가 없다."
+      "reason": "검토할 항목(불일치·추가 행·중복 행)이 없다."
     },
     {
       "rule": "TIME",

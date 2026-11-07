@@ -619,11 +619,11 @@ public sealed record JudgmentResult(
 
 ### 7.2 table-compare
 
-`examples/table-compare/expected/judgment.json` (SHA-256 `1c32a9c92311e43d19a01633a171240b3b4fa215adcafe7f4d470dc45b4f5c57`):
+`examples/table-compare/expected/judgment.json` (SHA-256 `b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "table-compare",
   "verdict": "conditional",
   "rule": "FOCUS",
@@ -648,7 +648,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "not_reviewed",
-      "reason": "불일치 3건이 설명되는지 사람이 아직 보지 않았다."
+      "reason": "검토할 항목 4건(불일치 3건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
     },
     {
       "rule": "TIME",
@@ -663,8 +663,8 @@ public sealed record JudgmentResult(
   ],
   "todo": [
     {
-      "key": "review_mismatches",
-      "text": "불일치 3건을 보고 설명이 되는지 적는다."
+      "key": "review_items",
+      "text": "검토할 항목 4건(불일치 3건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     }
   ]
 }
@@ -672,11 +672,11 @@ public sealed record JudgmentResult(
 
 ### 7.3 form-fill
 
-`examples/form-fill/expected/judgment.json` (SHA-256 `08cb0cac5df480e2611d2d92dbfca31cc2ebd6f3fcb9430d98d35343b74a0186`):
+`examples/form-fill/expected/judgment.json` (SHA-256 `06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "form-fill",
   "verdict": "pass",
   "rule": "PASS",
@@ -701,7 +701,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "none",
-      "reason": "불일치가 없다."
+      "reason": "검토할 항목(불일치·추가 행·중복 행)이 없다."
     },
     {
       "rule": "TIME",
@@ -722,11 +722,11 @@ public sealed record JudgmentResult(
 
 - `inputs`·`thresholds`가 없다. 문턱 셋이 기본값이다. 판정 문장은 문턱을 읽지 않아 표시가 없고, `defaults`와 `confirm_thresholds`에 남는다. `time_must_drop` 기본값이 `true`라 `measure_time`이 나온다.
 
-`examples/mixed-exceptions/expected/judgment.json` (SHA-256 `85e5da47de436644228ca4f1d75ac086891d1739a34c93f441bee71afdc9df11`):
+`examples/mixed-exceptions/expected/judgment.json` (SHA-256 `12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "mixed-exceptions",
   "verdict": "not_verified",
   "rule": "NOT_VERIFIED",
@@ -765,11 +765,11 @@ public sealed record JudgmentResult(
 
 ### 7.5 signoff-final
 
-`examples/signoff-final/expected/judgment.json` (SHA-256 `84da5aa2d9aaa6ead84c767235495d96189636987bb78ac24b62ddeda607871b`):
+`examples/signoff-final/expected/judgment.json` (SHA-256 `4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "signoff-final",
   "verdict": "hold",
   "rule": "ACCURACY",
@@ -794,7 +794,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "not_reviewed",
-      "reason": "불일치 4건이 설명되는지 사람이 아직 보지 않았다."
+      "reason": "검토할 항목 5건(불일치 4건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
     },
     {
       "rule": "TIME",
@@ -804,13 +804,13 @@ public sealed record JudgmentResult(
     {
       "rule": "FOCUS",
       "result": "spread",
-      "reason": "불일치 4건이 한 값에 몰린 열이 없다(본 열: record_kind)."
+      "reason": "불일치 4건이 record_kind 열의 한 값에 몰리지 않았다."
     }
   ],
   "todo": [
     {
-      "key": "review_mismatches",
-      "text": "불일치 4건을 보고 설명이 되는지 적는다."
+      "key": "review_items",
+      "text": "검토할 항목 5건(불일치 4건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     }
   ]
 }

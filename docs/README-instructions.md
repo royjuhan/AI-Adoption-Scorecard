@@ -458,5 +458,5 @@ thresholds:
 4. `dotnet new sln` 과 세 프로젝트를 만들고 `dotnet build`, `dotnet test`가 통과하는지 확인한다.
 5. 11절의 T-001 카드를 `docs/tasks/T-001-solution-skeleton.md`로 쓰고, prototyper에게 넘긴다.
 6. prototyper가 "사람 승인 필요"를 적으면 멈추고 사람에게 보고한다. 승인 없이는 test-engineer를 부르지 않는다. T-010 뒤에는 추천안을 채택하고 `docs/STATUS.md`에 적은 뒤 계속한다(ADR 0005).
-7. T-001이 PR까지 가면 사람에게 머지를 요청하고, 머지되면 걸린 시간과 토큰 비용을 `docs/decisions/0001-first-week.md`에 적는다.
-8. T-002부터 같은 흐름을 반복한다. 동시에 여는 카드는 2개까지. T-005에서 예제 3종의 `expected/`는 반드시 사람이 확정한 뒤 커밋한다.
+7. T-001이 PR까지 가면 사람에게 머지를 요청하고, 머지되면 걸린 시간과 토큰 비용을 `docs/decisions/0001-first-week.md`에 적는다. T-010 뒤에는 CI 잡이 모두 녹색이고 reviewer에게 막는 지적이 없으면 리드가 머지하고 `docs/STATUS.md`를 갱신한다(ADR 0005).
+8. T-002부터 같은 흐름을 반복한다. 동시에 여는 카드는 2개까지. T-005에서 예제 3종의 `expected/`는 반드시 사람이 확정한 뒤 커밋한다. T-010 뒤에는 사람 머지 요청 대신 7의 리드 머지를 쓴다(ADR 0005).

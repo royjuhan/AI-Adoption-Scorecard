@@ -74,6 +74,19 @@ public class GuardTargetAdapterTests
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
+        // 대상 이름 → 샘플 쌍을 정확히 고정한다. 대상 하나를 빼도 이 테스트가 실패한다(T-010 리뷰 사소 7).
+        var pairs = GuardTargets.All.Select(t => $"{t.Name}={t.Sample}").ToArray();
+        Assert.Equal(
+            [
+                "case-parser-valid=case-valid",
+                "case-parser-invalid=case-invalid",
+                "classifier-case-valid=case-valid",
+                "synthetic-case-valid=case-valid",
+                "compare-case-valid=case-valid",
+                "compare-invalid=compare-invalid",
+            ],
+            pairs);
+
         var samples = GuardTargets.All.Select(t => t.Sample).Distinct().Order(StringComparer.Ordinal).ToArray();
 
         Assert.Equal(["case-invalid", "case-valid", "compare-invalid"], samples);

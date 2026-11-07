@@ -23,7 +23,7 @@
 
 ## 폴더 범위
 
-`.github/workflows/`, `tools/`, `.claude/settings.json`, `docs/STATUS.md`, `docs/decisions/0005-auto-mode.md`, `docs/README-instructions.md`(2·13·14절), `CLAUDE.md`, `tests/Scorecard.Tests/Guards/CoreGuardTargetTests.cs`
+`.github/workflows/`, `tools/`, `.claude/settings.json`, `docs/STATUS.md`, `docs/decisions/0005-auto-mode.md`, `docs/README-instructions.md`(2·13·14절), `CLAUDE.md`, `tests/Scorecard.Tests/Guards/CoreGuardTargetTests.cs`, `.config/dotnet-tools.json`, `.gitignore`, `.claude/agents/prototyper.md`. 같은 PR에 문서만 실린다: `docs/tasks/T-011-judgment.md`, `docs/spec/judgment.md`(T-011 초안), `docs/cases-public/README.md`(juhan 지시 원문)
 
 ## 메모
 

@@ -22,7 +22,7 @@ AI Adoption Scorecard (AI 도입 평가표). 사용자의 업무를 질문으로
 - 동시 진행 작업 카드는 2개까지. 카드에 폴더 범위를 적는다.
 
 ## 에이전트 폴더 제한
-prototyper: spikes/, docs/, tools/oracle/(스펙만 보고, src/를 읽지 않는다) · test-engineer: tests/, cases/ · core-dev: src/Scorecard.Core/ · cli-dev: src/Scorecard.Cli/ · reviewer: 수정 없음 · sweeper: 테스트 제외 전부(동작 변경 없음) · release: 태그·CHANGELOG·publish
+prototyper: spikes/, docs/, tools/oracle/(스펙만 보고, src/를 읽지 않는다) · test-engineer: tests/, cases/ · core-dev: src/Scorecard.Core/ · cli-dev: src/Scorecard.Cli/ · reviewer: 수정 없음 · ci-dev: .github/workflows/, tools/ci/, .config/dotnet-tools.json(바꾸면 ADR과 STATUS.md 원칙 변경 행을 같이 둔다) · sweeper: 테스트·tools/oracle/·tools/ci/·.github/workflows/ 제외 전부(동작 변경 없음) · release: 태그·CHANGELOG·publish
 
 ## 스타일
 한글 문서·주석, 영문 식별자. 짧은 문장. .NET 10, xUnit, dotnet format.

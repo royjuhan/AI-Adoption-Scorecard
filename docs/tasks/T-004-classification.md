@@ -13,6 +13,7 @@
 2. 기본값이 쓰인 답은 근거 문장 끝에 "(기본값 사용, 확인 필요)"가 붙는다.
 3. 공개 예제 3종(`examples/table-compare`, `form-fill`, `mixed-exceptions`)의 `answers.yaml`을 넣으면 `expected/classification.json`과 일치한다.
 4. dotnet test가 ubuntu·windows CI에서 녹색이다.
+5. 단계마다 AI 과잉 후보(`current_actor: ai_each_time`이고 단계 행이 ②)를 낸다(스펙 승인 결정 8).
 
 ## 폴더 범위
 

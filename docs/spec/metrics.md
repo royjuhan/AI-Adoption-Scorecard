@@ -1,6 +1,6 @@
 # metrics (T-006 스펙: 대조와 지표)
 
-- 상태: 초안. 사람 승인 전. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
+- 상태: 승인됨(2026-11-07, 20문항 모두 제안대로). 승인 결과는 문서 끝. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
 - 반영한 사람 결정: ADR 0004(2026-11-07 juhan 승인). 결정 2: metrics.json 첫 키 `"schema_version": 1`(정수)(3.2). 결정 3·6: 명령 넷과 내부 명령, `--json` 출력, 오류 JSON, 종료 코드 0/2/1(3.4). expected 변경 규칙·상시 승인 예외(7.1, 승인 질문 머리말).
 - 진행 순서: T-007은 PR #7로 머지됐다(main `38a507c`). Core 구현과 `expected/metrics.json` 커밋은 이 스펙의 승인 뒤에 한다. expected는 juhan이 직접 확정한다(7.1, 8절, 승인 질문 15·17·18).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
@@ -1191,3 +1191,9 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 20. **오류 JSON의 `source`·`path`(3.4, ADR 0004 결정 6 적용).** ADR은 "오류 `source`는 파일 이름, `path`는 필드 경로"라 한다. 대조 오류에는 `case.yaml`이 아닌 CSV 파일과 `inputs` 패턴 오류가 있다.
     - 제안: `source`는 케이스 폴더 기준 상대 경로로 읽는다. CSV 오류는 `reference/a.csv`처럼 폴더를 붙인다(양쪽에 같은 이름이 올 수 있다). 파일이 정해지기 전 오류는 `source` = `case.yaml`, `path` = `inputs.reference`·`inputs.candidate`(파서 오류와 같은 표기), `line`·`column` = 0. CSV 오류의 `path`는 열 이름, 열과 상관없으면 빈 문자열. 절대 경로는 쓰지 않는다(G2 R3). 오류 JSON 키 순서·바이트는 M2-1 `json-output.md`에서 고정한다.
     - 대안: `source`에 파일 이름만(`a.csv`). 양쪽이 같은 이름이면 어느 쪽인지 메시지에 따로 적어야 한다. 추천하지 않는다.
+
+## 승인 결과
+
+- 2026-11-07.
+- 15·17·18·20: juhan이 직접 "모두 제안대로"로 승인했다(결정 카드). 15: 3.2 속성 표 그대로. 17: 7.2~7.4 블록을 정답으로 확정한다. 이 카드에 한해 test-engineer가 블록을 바이트 그대로 `examples/*/expected/metrics.json`으로 옮긴다. `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/metrics.json`을 더한다. 커밋은 7.1 9의 모양으로 한다. 18: `compare-case-valid`·`compare-invalid` 등록. `Real_targets_use_case_samples_not_basic`는 "`basic`이 없다 + `case-valid`가 있다 + 샘플 폴더가 있다"로 고친다. 20: `source`는 케이스 폴더 기준 상대 경로.
+- 1~14, 16, 19: juhan의 상시 승인("끝날때까지 추천값으로 머지하고 진행해 계속")에 따라 리드가 제안대로 승인했다. ADR·지시문 2절 원칙·expected·기존 테스트를 바꾸지 않는 질문이다.

@@ -3,7 +3,7 @@
 - 상태: 초안. 사람 승인 전. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
 - 작성: prototyper, 2026-11-07
-- 확인 대상 커밋: `e6ff614` (`src/`·`tests/`·`examples/`는 `7735f8a`와 같다)
+- 확인 대상 커밋: `src/`·`tests/`·`examples/`는 `7735f8a`. 스파이크 clone의 HEAD(이 문서·스파이크 작업 중 커밋 포함)는 `summary.txt`의 `repo HEAD` 줄에 있다.
 - 확인 환경: Ubuntu 24.04 x64, .NET SDK 10.0.114, YamlDotNet 18.1.0, xUnit 2.9.3. 독립 구현 대조에만 Python 3.13.
 - 스파이크: `spikes/T-006/` (머지 대상 아님. 머지 전에 빠진다). 실행은 `spikes/T-006/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-006/summary.txt`. 이 문서의 JSON 블록, SHA-256, 오류 줄은 스파이크 후보(`spikes/T-006/core/Comparison/`)가 실제로 낸 것이다.
 
@@ -1129,4 +1129,4 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 18. **G2·G3 등록(4.10).**
     - 제안: `compare-case-valid`(샘플 `case-valid`, 출력 `metrics.json`)와 `compare-invalid`(새 샘플, 출력 `compare-errors.txt`)를 `GuardTargets`에 더한다. `case-valid`에 T-005 고정 계획의 `reference/rows.csv`·`candidate/rows.csv`를 더한다(test-engineer, `tests/`). `Real_targets_use_case_samples_not_basic`는 "`basic`이 없다 + `case-valid`가 있다 + 샘플 폴더가 있다"로 고친다. 뜻은 같다. PR 본문에 적고 reviewer가 확인한다.
 19. **Core 공개 API와 진행 순서(4.11).**
-    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 9개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다.
+    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 10개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다.

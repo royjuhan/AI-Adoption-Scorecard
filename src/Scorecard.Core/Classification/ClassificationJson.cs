@@ -27,6 +27,7 @@ public static class ClassificationJson
         using (var w = new Utf8JsonWriter(buffer, Options))
         {
             w.WriteStartObject();
+            w.WriteNumber("schema_version", 1);
             w.WriteString("case", result.Case);
             w.WriteStartArray("steps");
             foreach (var step in result.Steps)

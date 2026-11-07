@@ -51,8 +51,9 @@ public class ClassifierGuardTargetTests
         Assert.DoesNotContain((byte)'\r', bytes);
         Assert.Equal((byte)'\n', bytes[^1]);
 
+        // 최상위 속성은 스펙 3.2 모양 블록과 이름·순서까지 같다(T-007: schema_version, case, steps).
         using var json = JsonDocument.Parse(bytes);
-        Assert.Equal(["case", "steps"], json.RootElement.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(ClassificationSpec.ShapeTopLevelNames(), json.RootElement.EnumerateObject().Select(p => p.Name));
         Assert.NotEqual(0, json.RootElement.GetProperty("steps").GetArrayLength());
 
         // JSON은 '\'를 '\\'로 쓰므로 Windows 전체 경로는 그대로 나오지 않는다. 임시 폴더 이름 조각도 찾는다.

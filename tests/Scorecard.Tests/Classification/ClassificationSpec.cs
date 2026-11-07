@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Scorecard.Core.Cases;
 using Scorecard.Tests.CaseSchema;
@@ -28,6 +29,14 @@ internal static partial class ClassificationSpec
     // 지시문 12절 공개 예제 표.
     public const string InstructionsExampleHeader = "| 예제 | 업무 | 단계 수 | 기대 분류(요지) | 검증 자료 |";
 
+    // 3.2 모양 블록의 제목. 속성 이름·순서·첫 키는 이 블록에서 읽는다.
+    public const string ShapeHeading = "### 3.2 classification.json";
+
+    // ADR 0004 결정 2(T-007): classification.json의 첫 키는 "schema_version", 값은 정수 1.
+    // 스펙 3.2 블록이 같은 값을 적었는지는 테스트가 본다.
+    public const string SchemaVersionKey = "schema_version";
+    public const int SchemaVersion = 1;
+
     // 스펙 4.6. 공백 하나 + "(기본값 사용, 확인 필요)". 지시문 3.3·스펙 4.6 문구와 같은지는 테스트가 본다.
     public const string DefaultMark = " (기본값 사용, 확인 필요)";
 
@@ -45,6 +54,16 @@ internal static partial class ClassificationSpec
     public const string KindHumanGate = "human_gate";
 
     public static IReadOnlyList<string[]> Table(string header) => SpecDocument.Table(Document, header);
+
+    // 3.2 모양 블록(코드 블록 하나). 줄은 LF로 잇고 끝에 LF 하나(SpecDocument.CodeBlocks).
+    public static string ShapeBlock() => Assert.Single(SpecDocument.CodeBlocks(Document, ShapeHeading));
+
+    // 3.2 모양 블록의 최상위 속성 이름(블록 순서).
+    public static string[] ShapeTopLevelNames()
+    {
+        using var shape = JsonDocument.Parse(ShapeBlock());
+        return shape.RootElement.EnumerateObject().Select(p => p.Name).ToArray();
+    }
 
     // 4.2 조건 표.
     public static IReadOnlyList<Condition> Conditions() =>

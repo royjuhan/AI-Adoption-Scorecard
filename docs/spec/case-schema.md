@@ -1,6 +1,7 @@
 # case-schema (T-003 스펙)
 
 - 상태: 승인됨 (2026-11-06, juhan "제안대로"). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
+- T-008 개정(초안, 사람 승인 전, 2026-11-07): 10번째 답 `human_signoff`(ADR 0003)와 단계 항목 `inferred`(ADR 0004 결정 2, 질문 16 해석 A). 바뀐 곳: 4.4, 4.9, 4.12, 새 4.13, 6.1·6.2 글, 새 6.7, 7.2, 문서 끝 "T-008 개정". 질문과 스파이크 결과는 `docs/spec/human-signoff.md`.
 - 작업 카드: `docs/tasks/T-003-case-schema.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
@@ -12,6 +13,7 @@
 - `[읽음]`: 커밋된 파일을 읽어서 확인한 사실.
 - `[S0]`~`[S8]`: 스파이크 단계(9절). `[P:이름]`: S4 메모리 실험의 `PROBE 이름` 줄. `[T]`: S4 `TIMING` 줄(이 컴퓨터 기준 참고 시간).
 - `[NuGet]`: nuget.org API로 2026-11-06에 조회한 사실.
+- `[T8:S0]`~`[T8:S8]`, `[T8:P:무리]`: T-008 스파이크(`spikes/T-008/`) 단계와 S4 `PROBE <무리>` 줄. 단계 목록은 `human-signoff.md` 10절.
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
 - 후보: **A** 리플렉션 역직렬화(`DeserializerBuilder`), **B** 정적 생성기(`StaticDeserializerBuilder`), **C** 저수준 `Parser` 이벤트 + 손으로 쓴 스키마 검사.
 - G1·G2·G3, N1~N6·D1·R1은 `docs/spec/guard-tests.md`의 이름이다.
@@ -129,14 +131,17 @@ C의 구조(스파이크 코드 기준):
 - 자유 서술은 저장만 한다. 앞뒤 공백을 지우거나 정규화하지 않는다(`" 공백 "`은 그대로 [P:step name]). 블록 값(`|`)의 줄바꿈은 파일 줄바꿈(LF·CRLF·CR)과 상관없이 `\n`이다 [P:block-scalar].
 - → 승인 질문 4.
 
-### 4.4 단계와 질문 9개
+### 4.4 단계와 답 10개
+
+T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 끝 1행)와 단계 항목 `inferred`를 더했다.
 
 단계 항목(`steps[n]`):
 
 | 키 | 형식 | 필수 | 규칙 |
 | --- | --- | --- | --- |
 | `name` | 문자열 | 예 | 케이스 안에서 서수 비교로 중복 금지(`duplicate`). 유니코드 정규화는 하지 않는다. NFC `가`와 NFD `가`는 다른 이름이다 [P:nfc-nfd] |
-| `answers` | 매핑 | 아니오 | 없거나 null이면 9개 모두 기본값 |
+| `answers` | 매핑 | 아니오 | 없거나 null이면 10개 모두 기본값 |
+| `inferred` | 문자열 목록 | 아니오 | T-008. AI가 추정한 답의 키. 원소는 아래 `answers` 표의 키이고, 그 답은 `answers`에 값이 있어야 한다. 없거나 null이면 추정 답이 없다. 4.13 |
 
 `answers`의 키(지시문 3.2와 같은 순서·같은 기본값). 테스트가 이 표를 읽는다(7절). 표 모양을 바꾸지 않는다.
 
@@ -151,6 +156,7 @@ C의 구조(스파이크 코드 기준):
 | `minutes_per_item` | 건당 걸리는 시간(분) | 숫자 | 0 이상 | `null` |
 | `failure_impact` | 틀리면 무슨 일이 생기나 | 열거 | internal_rework / external / safety_legal | `internal_rework` |
 | `existing_feature` | 기존 프로그램에 같은 기능이 있나 | 열거 | yes / no / unknown | `unknown` |
+| `human_signoff` | 사람이 최종 확인·서명하는 단계인가 | 열거 | yes / no | `no` |
 
 기본값 규칙:
 
@@ -161,6 +167,8 @@ C의 구조(스파이크 코드 기준):
 - 지시문 12.1 예시는 모든 단계에서 `minutes_per_item`을 빼고 있다 [읽음]. 같은 구조의 합성 예시가 오류 없이 읽히고, 그 값은 `null`, `IsDefault = true`다 [S3 example-12-1].
 - 3.2에 없는 범위를 정했다: `batch_size` 1 이상, `exception_rate` 소수 허용, `minutes_per_item` 0 이상. → 승인 질문 6.
 - 기본값 표는 이 문서에 하나만 둔다. T-004의 `classification.md`는 이 표를 가리킨다. → 승인 질문 5.
+- `human_signoff`(T-008, ADR 0003): 파서 규칙은 다른 열거 답과 같다. 없거나 null이면 `no`, `IsDefault = true`. `Yes`·`true`·`""`·`unknown`은 `enum` 오류다 [T8:P:mark]. `yes`·`no`는 YAML 1.1 불리언 낱말이지만 문자열로 들어온다(4.6). 따옴표가 있어도 같다 [T8:P:mark].
+- `human_signoff`는 단계마다 묻지 않는다. 문답(exe 마법사·스킬)은 "사람이 최종 확인·서명하는 단계가 어디인가"를 한 번 묻고, 고른 단계는 `yes`, 나머지는 `no`로 모든 단계에 적는다(ADR 0003 결정). 그래서 문답으로 만든 파일에서는 기본값이 되지 않는다. 파일을 손으로 쓰고 키를 빼면 기본값이고, 분류 문장에 기본값 표시가 붙는다(classification.md 4.6). 지시문 2절 6과의 관계는 `human-signoff.md` 질문.
 
 ### 4.5 inputs, compare, thresholds
 
@@ -286,11 +294,11 @@ C의 구조(스파이크 코드 기준):
 | `duplicate-key` | 같은 매핑에 같은 키 | 둘째 키 | `중복된 키다 (처음: N줄)` |
 | `type` | 매핑·목록·스칼라 자리가 틀림 | 그 값 | `매핑이어야 한다` / `목록이어야 한다` / `스칼라 값이어야 한다` |
 | `unknown-field` | 표에 없는 키 | 그 키 | `알 수 없는 필드다` |
-| `required` | 필수 필드 없음 / 값이 빔 / 단계 0개 / `compare`에 `inputs` 없음 | 없음: 부모 매핑 시작. 빔: 그 값. 단계 0개: 그 목록. `inputs`: `compare` 값 | `필수 필드가 없다` / `값이 비어 있다` / `단계가 1개 이상 있어야 한다` / `compare가 있으면 inputs가 있어야 한다` |
-| `enum` | 선택지 밖 | 그 값 | `선택지 밖의 값 '<값>'. 가능한 값: <목록>` |
+| `required` | 필수 필드 없음 / 값이 빔 / 단계 0개 / `compare`에 `inputs` 없음 / `inferred` 원소가 null / `inferred`에 적은 답에 값이 없음(T-008) | 없음: 부모 매핑 시작. 빔: 그 값. 단계 0개: 그 목록. `inputs`: `compare` 값. `inferred`: 그 원소(경로는 null 원소면 `steps[n].inferred[m]`, 값이 없으면 `steps[n].answers.<키>`) | `필수 필드가 없다` / `값이 비어 있다` / `단계가 1개 이상 있어야 한다` / `compare가 있으면 inputs가 있어야 한다` / `inferred에 적은 답은 answers에 값이 있어야 한다` |
+| `enum` | 선택지 밖 / `inferred` 원소가 답 키가 아님(T-008) | 그 값 / 그 원소 | `선택지 밖의 값 '<값>'. 가능한 값: <목록>` (`inferred`의 목록은 4.4 답 키 10개) |
 | `format` | 정수·숫자·불리언·이름·경로 모양 | 그 값 | `정수가 아니다: <값>` / `숫자가 아니다: <값>` (따옴표가 있으면 ` (따옴표 없이 쓴다)`) / `true 또는 false로 쓴다: <값>` / `소문자·숫자·'-'만, 64자까지 쓴다` / 경로 문구 |
 | `range` | 범위 밖 | 그 값 | `범위 밖이다 (<범위>): <값>` |
-| `duplicate` | 단계 이름·비교 필드 중복 | 둘째 값 | `단계 이름이 중복된다 (처음: steps[n])` / `비교 필드가 중복된다 (처음: compare[n])` |
+| `duplicate` | 단계 이름·비교 필드·`inferred` 키(T-008) 중복 | 둘째 값 | `단계 이름이 중복된다 (처음: steps[n])` / `비교 필드가 중복된다 (처음: compare[n])` / `추정 답 키가 중복된다 (처음: steps[n].inferred[m])` |
 | `conflict` | `tolerance`와 `tolerance_pct` 같이 | 그 항목 시작 | `tolerance와 tolerance_pct 중 하나만 쓴다` |
 
 모으기·순서:
@@ -366,12 +374,15 @@ public sealed record CaseDefinition(
 
 public sealed record CaseStep(int Number, string Name, StepAnswers Answers);   // Number는 1부터
 
+// T-008: 10번째 HumanSignoff. 위치 매개변수라 기존 9인자 생성은 컴파일되지 않는다.
 public sealed record StepAnswers(
     Answer<string> InputKind, Answer<string> RuleExpressible, Answer<string> Frequency,
     Answer<int> BatchSize, Answer<decimal> ExceptionRate, Answer<string> CurrentActor,
-    Answer<decimal?> MinutesPerItem, Answer<string> FailureImpact, Answer<string> ExistingFeature);
+    Answer<decimal?> MinutesPerItem, Answer<string> FailureImpact, Answer<string> ExistingFeature,
+    Answer<string> HumanSignoff);
 
-public sealed record Answer<T>(T Value, bool IsDefault);
+// T-008: IsInferred는 선택 인자(기본 false). 기존 2인자 생성은 그대로 컴파일된다 [T8:S2].
+public sealed record Answer<T>(T Value, bool IsDefault, bool IsInferred = false);
 
 public sealed record CaseInputs(string Reference, string Candidate, string Key);
 public sealed record CompareField(string Field, decimal? Tolerance, decimal? TolerancePct);
@@ -383,6 +394,35 @@ public sealed record CaseThresholds(decimal? AccuracyMin, decimal? MissingMax, b
 - 오류 목록 `Code`는 4.9 표의 문자열.
 - YamlDotNet 타입은 공개 API에 나오지 않는다. 트리·검사 코드는 `internal`.
 - → 승인 질문 14.
+- T-008 개정: 공개 타입 목록은 그대로다(새 타입 없음). `CaseStep`은 바꾸지 않는다. 추정 여부는 답마다 `IsInferred`로 둔다(ADR 0004 "추정 답 표시"). 레코드 값 비교에 `IsInferred`가 들어간다. `inferred`가 없는 파일은 모든 답이 false라 기존 비교(`new Answer<string>("no", false)` 등)가 그대로 맞는다 [T8:S2].
+
+### 4.13 추정 답 목록 `inferred` (T-008)
+
+ADR 0004 결정 2: "단계마다 선택 항목 `inferred: [키 목록]`을 두고, case-schema 4.4에 같은 PR에서 추가한다. 예제에는 넣지 않는다" [읽음]. 질문 16 해석 A로 T-008이 맡는다.
+
+```yaml
+steps:
+  - name: 주문서 양식 읽기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, human_signoff: no}
+    inferred: [frequency, batch_size]
+```
+
+규칙(제안):
+
+- 단계 항목의 선택 키다. 없거나 null(`inferred:`, `~`)이면 추정 답이 없다. 빈 목록 `[]`도 같다 [T8:P:inferred].
+- 흐름 목록(`[a, b]`)과 블록 목록(`- a`) 모두 받는다. 단계 항목 안의 키 순서는 상관없다(`inferred`가 `answers` 앞에 있어도 된다) [T8:P:inferred-error].
+- 목록이 아니면(스칼라, 매핑) `type` `목록이어야 한다`. 위치는 그 값, 경로 `steps[n].inferred`.
+- 원소는 스칼라 문자열이다. 매핑·목록이면 `type` `스칼라 값이어야 한다`. null 원소(`[~]`)는 `required` `값이 비어 있다`. 경로는 `steps[n].inferred[m]`(m은 1부터).
+- 원소는 4.4 `answers` 표의 키 10개 중 하나다(서수, 대소문자 구분, 따옴표 상관없음). 아니면 `enum`. 메시지의 가능한 값은 4.4 표 순서의 키 10개다. `name`·`yes`·`Frequency`도 `enum`이다 [T8:P:inferred-error].
+- 같은 키가 둘 이상이면 둘째부터 `duplicate` `추정 답 키가 중복된다 (처음: steps[n].inferred[m])`.
+- 적은 키의 답은 `answers`에 값이 있어야 한다. 키가 없거나 null(`answers`가 없는 단계 포함)이면 `required` `inferred에 적은 답은 answers에 값이 있어야 한다`. 위치는 그 원소, 경로는 `steps[n].answers.<키>`. 값이 없는 답은 기본값이지 추정이 아니기 때문이다(ADR 0004). 경로·위치 모양은 `compare가 있으면 inputs가 있어야 한다`(경로 `inputs`, 위치 `compare` 값)와 같다.
+- 값이 있지만 잘못된 답(예: `rule_expressible: maybe`)은 그 답의 오류 한 건만 난다. `inferred` 쪽 오류는 더하지 않는다 [T8:P:inferred-error].
+- `answers`가 매핑이 아니면 `answers`의 `type` 오류와 `inferred` 원소마다의 `required`가 같이 난다(값이 없으므로) [T8:P:inferred-error].
+- 결과: 목록에 있는 답만 `IsInferred = true`. 값·`IsDefault`는 그대로다. 그래서 한 답이 `IsDefault`이면서 `IsInferred`일 수 없다.
+- 순서: 쓴 순서와 상관없다. 분류 결과의 키 목록은 4.4 표 순서다(classification.md 4.12) [T8:P:inferred].
+- `inferred`는 분류(담당·근거 키·행)를 바꾸지 않는다. 근거 문장 표시만 바꾼다(classification.md 4.12).
+- 공개 예제 3종에는 넣지 않는다(결정 2). 테스트는 TestData 표본(6.7, classification.md 6.5)으로 한다.
+- → `human-signoff.md` 승인 질문.
 
 ## 5. 예외
 
@@ -463,8 +503,11 @@ thresholds:
 | 3단계 `input_kind` | fixed_form | true (키 없음) |
 | 3단계 `rule_expressible` | no | false (`"no"` 따옴표) |
 | 3단계 `minutes_per_item` | null | true (`~`) |
-| 4단계 9개 전부 | 3.2 기본값 | true (`answers` 없음) |
+| 4단계 10개 전부 | 3.2 기본값 | true (`answers` 없음) |
+| 1~4단계 `human_signoff` | no | true (키 없음, T-008) |
 | `after` | `프로그램이 구간을 고른다.\n사람이 검토한다.\n` | — |
+
+- T-008: 위 블록은 `human_signoff`를 적지 않았다. 그대로 둔다. 이 블록은 `TestData/case-schema/valid-full`·`TestData/guard/case-valid`와 같아야 한다(T-003 테스트). 블록을 바꾸면 G2·G3 표본까지 바뀐다. 그대로 두면 표본이 "`human_signoff` 기본값 → 기본값 표시" 경로를 탄다. 분류 결과의 기본값 표시는 3행에서 5행이 된다(classification.md 4.10) [T8:S4 guard].
 
 ### 6.2 최소
 
@@ -475,7 +518,7 @@ steps:
   - name: 한 단계
 ```
 
-오류 0건. `ai_usage`·`before`·`after`·`inputs` null, `compare` 빈 목록, `thresholds` 세 값 null, 답 9개 모두 기본값 [S3 valid-minimal].
+오류 0건. `ai_usage`·`before`·`after`·`inputs` null, `compare` 빈 목록, `thresholds` 세 값 null, 답 9개 모두 기본값 [S3 valid-minimal]. T-008 뒤에는 `human_signoff`까지 10개 모두 기본값이다.
 
 ### 6.3 필드 누락
 
@@ -615,6 +658,45 @@ case.yaml:10:13: duplicate compare[2].field: 비교 필드가 중복된다 (처�
 
 `spikes/T-003/samples/example-12-1/case.yaml`은 12.1 예시와 키·단계 수·답이 같고 이름·문장만 합성으로 바꿨다. 오류 0건 [S3]. 비공개 케이스(`cases/`)는 저장소에 넣지 않는다.
 
+### 6.7 추정 답 목록 오류 (T-008)
+
+TestData 표본 후보 `tests/Scorecard.Tests/TestData/case-schema/inferred-errors/case.yaml`. 실제 값 없음. `enum`·`duplicate`·`required`·`type`을 모두 낸다(T-008 카드 수용 기준 3).
+
+```yaml
+# 합성 오류 예시. 실제 업무·값 없음. 추정 답 목록(inferred)의 오류를 섞었다.
+name: inferred-errors
+task: 추정 답 목록 오류 합성 예시
+steps:
+  - name: 답 키가 아님
+    answers: {frequency: weekly, batch_size: 10, human_signoff: no}
+    inferred: [frequency, freq, Batch_size, name]
+  - name: 중복
+    answers: {frequency: weekly, human_signoff: no}
+    inferred: [frequency, frequency]
+  - name: 값 없음
+    answers: {frequency: weekly, minutes_per_item: ~, human_signoff: no}
+    inferred: [batch_size, minutes_per_item, ~]
+  - name: 목록 아님
+    answers: {human_signoff: no}
+    inferred: human_signoff
+```
+
+오류 8건 [T8:S8 inferred-errors]:
+
+```text
+case.yaml:7:27: enum steps[1].inferred[2]: 선택지 밖의 값 'freq'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+case.yaml:7:33: enum steps[1].inferred[3]: 선택지 밖의 값 'Batch_size'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+case.yaml:7:45: enum steps[1].inferred[4]: 선택지 밖의 값 'name'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+case.yaml:10:27: duplicate steps[2].inferred[2]: 추정 답 키가 중복된다 (처음: steps[2].inferred[1])
+case.yaml:13:16: required steps[3].answers.batch_size: inferred에 적은 답은 answers에 값이 있어야 한다
+case.yaml:13:28: required steps[3].answers.minutes_per_item: inferred에 적은 답은 answers에 값이 있어야 한다
+case.yaml:13:46: required steps[3].inferred[3]: 값이 비어 있다
+case.yaml:16:15: type steps[4].inferred: 목록이어야 한다
+```
+
+- 1단계 `frequency`는 맞는 원소라 오류가 없다. 4단계는 목록이 아니라 원소를 보지 않는다.
+- 정상 쪽(`IsInferred` 값, 추정 표시 문장)은 classification.md 6.5 표본이 본다.
+
 ## 7. 테스트로 옮기는 방법 (test-engineer 참고)
 
 ### 7.1 위치와 샘플
@@ -630,7 +712,10 @@ case.yaml:10:13: duplicate compare[2].field: 비교 필드가 중복된다 (처�
 | --- | --- |
 | 정상 전체 | 오류 0건. 6.1 표의 값과 `IsDefault` |
 | 정상 최소 | 6.2 |
-| 기본값 표 | 이 문서에서 머리 행이 `\| 키 \| 질문 \| 형식 \| 선택지·범위 \| 기본값 \|`인 표(4.4)를 읽는다. 9행의 다섯째 칸 기본값과, `answers` 없는 단계의 값이 같고 `IsDefault`가 모두 true |
+| 기본값 표 | 이 문서에서 머리 행이 `\| 키 \| 질문 \| 형식 \| 선택지·범위 \| 기본값 \|`인 표(4.4)를 읽는다. 10행(T-008 전 9행)의 다섯째 칸 기본값과, `answers` 없는 단계의 값이 같고 `IsDefault`가 모두 true |
+| `inferred` 오류(T-008) | 6.7 표본 = 블록, 오류 줄 = 블록. 4.13 글머리마다 테스트 안 문자열 하나 이상(목록 아님, null·매핑 원소, 키 아님, 중복, 값 없음, `answers` 없음, 빈 목록·null은 오류 없음) |
+| `IsInferred`(T-008) | 목록의 답만 true, 값·`IsDefault`는 그대로. `inferred` 없는 파일은 모두 false. 쓴 순서와 상관없다 |
+| `human_signoff`(T-008) | 4.4 표 행이 다른 열거 행과 같은 테스트(기본값, 선택지, `enum`)를 그대로 탄다(표에서 읽으므로 새 코드 없이 늘어난다) |
 | 필드 누락 | 6.3의 4줄과 `ToString()` 목록이 같다 |
 | 형식 오류 | 6.4의 18줄과 같다 |
 | 인코딩 변형 | 4.8 표 각 행. BOM·CRLF·CR은 LF와 모델이 같다 |
@@ -763,3 +848,11 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
 12. G2 빈 출력 규칙을 넣는다(G2만). test-engineer가 `tests/Guards`에 더한다.
 13. G2·G3 등록은 4.11 그대로. 샘플 `TestData/guard/case-valid/`, `case-invalid/`.
 14. Core 공개 API는 4.12 그대로. test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
+
+## T-008 개정 (초안, 사람 승인 전)
+
+- 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"·"규칙", ADR 0004 결정 2·질문 16 해석 A [읽음].
+- 확인 대상 커밋 `32f7692`. 스파이크 `spikes/T-008/`(머지 대상 아님). 결과와 질문은 `docs/spec/human-signoff.md`.
+- 바꾼 곳: 4.4(제목, 단계 항목 표 `inferred` 행, `answers` 표 끝 `human_signoff` 행, 글머리 둘), 4.9(`enum`·`required`·`duplicate` 행의 T-008 경우. 코드 수 17개는 그대로), 4.12(`StepAnswers` 10번째 답, `Answer<T>.IsInferred`), 새 4.13, 6.1 표 1행·글머리, 6.2 글, 새 6.7, 7.2 표 3행.
+- 바꾸지 않은 곳: 6.1 블록(= `valid-full` = `guard/case-valid`), 오류 코드 표의 코드 목록, 4.3 최상위 필드.
+- 위 승인 결과 5("기본값 표는 4.4에만")는 그대로다. `human_signoff` 행도 4.4 표에만 있다.

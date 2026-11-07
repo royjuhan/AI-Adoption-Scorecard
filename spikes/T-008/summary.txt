@@ -1,0 +1,407 @@
+dotnet SDK: 10.0.114
+python: Python 3.13.18
+repo HEAD: 32f7692
+spec(작업 트리) docs/spec/case-schema.md sha256: dfdfa5152d38ac19
+spec(작업 트리) docs/spec/classification.md sha256: 663fb88cfd823308
+spec(작업 트리) docs/spec/synthetic-examples.md sha256: f67463dea78a7dde
+[s0-clone] HEAD=32f7692
+[s1-base-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s1-base-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:  1066, Skipped:     0, Total:  1066
+[s2-files] Cases: CaseModel.cs CaseReader.cs StepQuestions.cs  Classification: ClassificationModel.cs ClassificationRules.cs StepClassifier.cs 
+[s2a-head-tests-build] rc=1 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+    <작업>/c/tests/Scorecard.Tests/Classification/ClassificationApiShapeTests.cs(64,24): error CS7036: There is no argument given that corresponds to the required parameter 'Inferred' of 'StepClassification.StepClassification(int, string, IReadOnlyList<string>, IReadOnlyList<string>, IReadOnlyList<string>, bool, IReadOnlyList<ClassificationRow>)' [<작업>/c/tests/Scorecard.Tests/Scorecard.Tests.csproj]
+    <작업>/c/tests/Scorecard.Tests/CaseSchema/CaseApiShapeTests.cs(51,27): error CS7036: There is no argument given that corresponds to the required parameter 'HumanSignoff' of 'StepAnswers.StepAnswers(Answer<string>, Answer<string>, Answer<string>, Answer<int>, Answer<decimal>, Answer<string>, Answer<decimal?>, Answer<string>, Answer<string>, Answer<string>)' [<작업>/c/tests/Scorecard.Tests/Scorecard.Tests.csproj]
+    <작업>/c/tests/Scorecard.Tests/Classification/ClassificationInput.cs(167,25): error CS7036: There is no argument given that corresponds to the required parameter 'HumanSignoff' of 'StepAnswers.StepAnswers(Answer<string>, Answer<string>, Answer<string>, Answer<int>, Answer<decimal>, Answer<string>, Answer<decimal?>, Answer<string>, Answer<string>, Answer<string>)' [<작업>/c/tests/Scorecard.Tests/Scorecard.Tests.csproj]
+[s2a-compile-errors] CaseApiShapeTests.cs(51,27): error CS7036 ClassificationApiShapeTests.cs(64,24): error CS7036 ClassificationInput.cs(167,25): error CS7036 
+[s2a-compile-fix-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s2a-compile-fix-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "table-compare")
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "mixed-exceptions")
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "form-fill")
+      Failed Scorecard.Tests.Classification.ReasonSentenceTests.All_combinations_match_templates_and_phrases
+      Failed Scorecard.Tests.Classification.ReasonSentenceTests.Instructions_example_sentence_is_produced_exactly
+      Failed Scorecard.Tests.Classification.ClassificationJsonTests.Json_is_indented_by_two_spaces_one_element_per_line
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 4)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 0)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 9)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 6)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 10)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 8)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 7)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 5)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 2)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 1)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_example_row(index: 3)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Step_without_answers_matches_spec_block
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Explicit_values_equal_to_defaults_are_not_marked
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "form-fill")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "mixed-exceptions")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "table-compare")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "table-compare", variant: "bom")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "mixed-exceptions", variant: "bom")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "form-fill", variant: "lf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "table-compare", variant: "lf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "form-fill", variant: "crlf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "form-fill", variant: "cr")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "form-fill", variant: "bom")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "table-compare", variant: "crlf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "table-compare", variant: "cr")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "mixed-exceptions", variant: "cr")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "mixed-exceptions", variant: "crlf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "mixed-exceptions", variant: "lf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "form-fill")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "mixed-exceptions")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "table-compare")
+      Failed Scorecard.Tests.Classification.ClassifierGuardTargetTests.Guard_sample_exercises_all_row_kinds_marks_and_checks
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_appears_exactly_on_rows_that_read_the_default_answer
+    Failed!  - Failed:    40, Passed:  1026, Skipped:     0, Total:  1066
+[s2a-failed-count] 40
+[s2b-test-variants] ./CaseSchema/CaseApiShapeTests.cs ./CaseSchema/CaseDefaultsTests.cs ./CaseSchema/SpecDocumentTests.cs ./Classification/BranchExampleTests.cs ./Classification/ClassificationApiShapeTests.cs ./Classification/ClassificationInput.cs ./Classification/ClassifierGuardTargetTests.cs ./Classification/ConditionTableTests.cs ./Classification/DefaultMarkTests.cs ./Classification/ReasonSentenceTests.cs 
+[s2b-instructions] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/instructions-variant.py <작업>/c/docs/README-instructions.md
+    RESULT instructions-variant 2.6 3.1 3.2 3.3 applied
+[s2b-add-signoff-table-compare-answers.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/table-compare/answers.yaml <작업>/tmp-table-compare-answers.yaml
+    RESULT add-signoff table-compare/answers.yaml steps=4 changed=4 yes=[]
+[s2b-add-signoff-table-compare-case.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/table-compare/case.yaml <작업>/tmp-table-compare-case.yaml
+    RESULT add-signoff table-compare/case.yaml steps=4 changed=4 yes=[]
+[s2b-add-signoff-form-fill-answers.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/form-fill/answers.yaml <작업>/tmp-form-fill-answers.yaml
+    RESULT add-signoff form-fill/answers.yaml steps=4 changed=4 yes=[]
+[s2b-add-signoff-form-fill-case.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/form-fill/case.yaml <작업>/tmp-form-fill-case.yaml
+    RESULT add-signoff form-fill/case.yaml steps=4 changed=4 yes=[]
+[s2b-add-signoff-mixed-exceptions-answers.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/mixed-exceptions/answers.yaml <작업>/tmp-mixed-exceptions-answers.yaml
+    RESULT add-signoff mixed-exceptions/answers.yaml steps=4 changed=4 yes=[]
+[s2b-add-signoff-mixed-exceptions-case.yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py examples/mixed-exceptions/case.yaml <작업>/tmp-mixed-exceptions-case.yaml
+    RESULT add-signoff mixed-exceptions/case.yaml steps=4 changed=4 yes=[]
+[s2b-changed-files]  M docs/README-instructions.md; M docs/spec/case-schema.md; M docs/spec/classification.md; M docs/spec/synthetic-examples.md; M examples/form-fill/answers.yaml; M examples/form-fill/case.yaml; M examples/mixed-exceptions/answers.yaml; M examples/mixed-exceptions/case.yaml; M examples/table-compare/answers.yaml; M examples/table-compare/case.yaml; M src/Scorecard.Core/Cases/CaseModel.cs; M src/Scorecard.Core/Cases/CaseReader.cs; M src/Scorecard.Core/Cases/StepQuestions.cs; M src/Scorecard.Core/Classification/ClassificationModel.cs; M src/Scorecard.Core/Classification/ClassificationRules.cs; M src/Scorecard.Core/Classification/StepClassifier.cs; M tests/Scorecard.Tests/CaseSchema/CaseApiShapeTests.cs; M tests/Scorecard.Tests/CaseSchema/CaseDefaultsTests.cs; M tests/Scorecard.Tests/CaseSchema/SpecDocumentTests.cs; M tests/Scorecard.Tests/Classification/BranchExampleTests.cs; M tests/Scorecard.Tests/Classification/ClassificationApiShapeTests.cs; M tests/Scorecard.Tests/Classification/ClassificationInput.cs; M tests/Scorecard.Tests/Classification/ClassifierGuardTargetTests.cs; M tests/Scorecard.Tests/Classification/ConditionTableTests.cs; M tests/Scorecard.Tests/Classification/DefaultMarkTests.cs; M tests/Scorecard.Tests/Classification/ReasonSentenceTests.cs;
+[s2b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s2b-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61
+[s2b-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
+[s2b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:  1082, Skipped:     0, Total:  1082
+[s2b-g2g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3
+    Passed!  - Failed:     0, Passed:    32, Skipped:     0, Total:    32
+[s3-tool-build] rc=0 cmd: dotnet build spikes/T-008/SignoffSpike/SignoffSpike.csproj -c Release --artifacts-path <작업>/artifacts -warnaserror
+[s3-classify-table-compare-answers] rc=0 cmd: tool classify examples/table-compare/answers.yaml <작업>/out/table-compare/answers.json
+    SHA 44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5 2642 table-compare/answers.yaml
+[s3-classify-table-compare-case] rc=0 cmd: tool classify examples/table-compare/case.yaml <작업>/out/table-compare/case.json
+    SHA 44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5 2642 table-compare/case.yaml
+[s3-metrics-table-compare] rc=0 cmd: tool metrics examples/table-compare <작업>/out/table-compare/metrics.json
+    SHA d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 4314 table-compare/metrics.json
+[s3-classify-table-compare-head-answers] rc=0 cmd: tool classify <작업>/head/table-compare/answers.yaml <작업>/out/table-compare/head-answers.json
+    SHA 3e356710192122e709a41b1b64e5b3d1d8468549ef161b294efd5f3839beae81 2878 table-compare/answers.yaml
+[s3-det-moved-table-compare] rc=0 cmd: tool classify <작업>/moved/a/b/table-compare/answers.yaml <작업>/out/table-compare/moved.json
+    SHA 44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5 2642 table-compare/answers.yaml
+[s3-det-de-table-compare] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/SignoffSpike/release/SignoffSpike.dll classify examples/table-compare/answers.yaml <작업>/out/table-compare/de.json
+    SHA 44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5 2642 table-compare/answers.yaml
+[s3-classify] table-compare answers=expected: same case=expected: same metrics=expected: same moved: same de: same
+[s3-head-answers] table-compare HEAD answers.yaml → bytes=2878 (expected 2642) differing-lines=12 default-mark-lines=4
+[s3-sha] examples/table-compare/answers.yaml d79245e6f54ee87f58fa8b19614d68bc554c75da5db36b4518e0f1767b25377c bytes=1159 cr=0
+[s3-sha] examples/table-compare/case.yaml 451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2 bytes=1640 cr=0
+[s3-spec-sha] table-compare case.yaml spec=451a22acd60c6b65 file=451a22acd60c6b65 same
+[s3-case-in-answers-table-compare] rc=0 cmd: python3 -I -c import sys; a=open(sys.argv[1],'rb').read(); c=open(sys.argv[2],'rb').read(); i=a.index(b'\nname: ')+1; print('RESULT case-in-answers', sys.argv[3], a[i:] in c) examples/table-compare/answers.yaml examples/table-compare/case.yaml table-compare
+    RESULT case-in-answers table-compare True
+[s3-classify-form-fill-answers] rc=0 cmd: tool classify examples/form-fill/answers.yaml <작업>/out/form-fill/answers.json
+    SHA b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc 2488 form-fill/answers.yaml
+[s3-classify-form-fill-case] rc=0 cmd: tool classify examples/form-fill/case.yaml <작업>/out/form-fill/case.json
+    SHA b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc 2488 form-fill/case.yaml
+[s3-metrics-form-fill] rc=0 cmd: tool metrics examples/form-fill <작업>/out/form-fill/metrics.json
+    SHA 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc 952 form-fill/metrics.json
+[s3-classify-form-fill-head-answers] rc=0 cmd: tool classify <작업>/head/form-fill/answers.yaml <작업>/out/form-fill/head-answers.json
+    SHA 83c607552825c35c49e393d3411955611df212aeab88a5dec8ce9a1d17d2f3bb 2690 form-fill/answers.yaml
+[s3-det-moved-form-fill] rc=0 cmd: tool classify <작업>/moved/a/b/form-fill/answers.yaml <작업>/out/form-fill/moved.json
+    SHA b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc 2488 form-fill/answers.yaml
+[s3-det-de-form-fill] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/SignoffSpike/release/SignoffSpike.dll classify examples/form-fill/answers.yaml <작업>/out/form-fill/de.json
+    SHA b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc 2488 form-fill/answers.yaml
+[s3-classify] form-fill answers=expected: same case=expected: same metrics=expected: same moved: same de: same
+[s3-head-answers] form-fill HEAD answers.yaml → bytes=2690 (expected 2488) differing-lines=11 default-mark-lines=4
+[s3-sha] examples/form-fill/answers.yaml 5875c7be4fafcb2a1810e4e973b324778828d49d2cebbb20babed55ad1311546 bytes=1252 cr=0
+[s3-sha] examples/form-fill/case.yaml 9660f3cb0f9ce1e5faea096c50fc5be9a3af64a0614ecd91949ed9fe27dde381 bytes=1672 cr=0
+[s3-spec-sha] form-fill case.yaml spec=9660f3cb0f9ce1e5 file=9660f3cb0f9ce1e5 same
+[s3-case-in-answers-form-fill] rc=0 cmd: python3 -I -c import sys; a=open(sys.argv[1],'rb').read(); c=open(sys.argv[2],'rb').read(); i=a.index(b'\nname: ')+1; print('RESULT case-in-answers', sys.argv[3], a[i:] in c) examples/form-fill/answers.yaml examples/form-fill/case.yaml form-fill
+    RESULT case-in-answers form-fill True
+[s3-classify-mixed-exceptions-answers] rc=0 cmd: tool classify examples/mixed-exceptions/answers.yaml <작업>/out/mixed-exceptions/answers.json
+    SHA 46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df 2464 mixed-exceptions/answers.yaml
+[s3-classify-mixed-exceptions-case] rc=0 cmd: tool classify examples/mixed-exceptions/case.yaml <작업>/out/mixed-exceptions/case.json
+    SHA 46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df 2464 mixed-exceptions/case.yaml
+[s3-metrics-mixed-exceptions] rc=0 cmd: tool metrics examples/mixed-exceptions <작업>/out/mixed-exceptions/metrics.json
+    SHA 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 314 mixed-exceptions/metrics.json
+[s3-classify-mixed-exceptions-head-answers] rc=0 cmd: tool classify <작업>/head/mixed-exceptions/answers.yaml <작업>/out/mixed-exceptions/head-answers.json
+    SHA b0c2741cb239ac0af42199da4cc186e22a84fec2a1e56e1c49bb9bc172ee0af0 2700 mixed-exceptions/answers.yaml
+[s3-det-moved-mixed-exceptions] rc=0 cmd: tool classify <작업>/moved/a/b/mixed-exceptions/answers.yaml <작업>/out/mixed-exceptions/moved.json
+    SHA 46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df 2464 mixed-exceptions/answers.yaml
+[s3-det-de-mixed-exceptions] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/SignoffSpike/release/SignoffSpike.dll classify examples/mixed-exceptions/answers.yaml <작업>/out/mixed-exceptions/de.json
+    SHA 46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df 2464 mixed-exceptions/answers.yaml
+[s3-classify] mixed-exceptions answers=expected: same case=expected: same metrics=expected: same moved: same de: same
+[s3-head-answers] mixed-exceptions HEAD answers.yaml → bytes=2700 (expected 2464) differing-lines=12 default-mark-lines=4
+[s3-sha] examples/mixed-exceptions/answers.yaml 7a26167c0cbc662f8dede402b4e906457d7e1a32275bacf07dfc70c1479c6146 bytes=1150 cr=0
+[s3-sha] examples/mixed-exceptions/case.yaml 96f04387180ce242879bc91ae1ad516415538c6a84f411006b41616adcad189c bytes=1255 cr=0
+[s3-spec-sha] mixed-exceptions case.yaml spec=96f04387180ce242 file=96f04387180ce242 same
+[s3-case-in-answers-mixed-exceptions] rc=0 cmd: python3 -I -c import sys; a=open(sys.argv[1],'rb').read(); c=open(sys.argv[2],'rb').read(); i=a.index(b'\nname: ')+1; print('RESULT case-in-answers', sys.argv[3], a[i:] in c) examples/mixed-exceptions/answers.yaml examples/mixed-exceptions/case.yaml mixed-exceptions
+    RESULT case-in-answers mixed-exceptions True
+[s3-examples-diff]  6 files changed, 24 insertions(+), 24 deletions(-)
+[s3-examples-diff-lines] +24 -24 non-answers-line-changes=0
+[s3-csv-intake] 0 other example files changed
+[s4-probe] rc=0 cmd: tool probe
+    PROBE signoff 기준: ② ELSE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    PROBE signoff human_signoff=yes: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff   SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    PROBE signoff human_signoff=yes failure_impact=external: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes failure_impact=safety_legal: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes existing_feature=yes: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes rule_expressible=no: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes input_kind=image: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes frequency=rare batch_size=1: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes rule_expressible=partial: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes rule_expressible=partial failure_impact=external: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes current_actor=ai_each_time: ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff human_signoff=yes existing_feature=unknown minutes_per_item=-: ④ SIGNOFF defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item,confirm_existing_feature] overuse=False
+    PROBE signoff human_signoff=no failure_impact=external: ② ELSE + ④ GATE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE signoff   GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    PROBE signoff human_signoff=no current_actor=ai_each_time: ② ELSE defaults=[] inferred=[] checks=[] overuse=True
+    PROBE mark human_signoff=-: ② ELSE defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    PROBE mark human_signoff=- failure_impact=external: ② ELSE + ④ GATE defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark   GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    PROBE mark human_signoff=- rule_expressible=partial: ② ELSE + ④ PARTIAL defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    PROBE mark   PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.
+    PROBE mark human_signoff=- existing_feature=yes: ① Q1 defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark   Q1 step used=[failure_impact,existing_feature,human_signoff] 기존 프로그램에 같은 기능이 있으므로(yes) 기존 기능·설정으로 분류. (기본값 사용, 확인 필요)
+    PROBE mark human_signoff=- frequency=rare batch_size=3: ④ Q4 defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark   Q4 step used=[input_kind,rule_expressible,frequency,batch_size,failure_impact,existing_feature,human_signoff] 드물게 반복되고 한 번에 3건이므로 그대로 두거나 일회성 AI 보조로 분류. 개발비가 더 크다. (기본값 사용, 확인 필요)
+    PROBE mark human_signoff=~: ② ELSE defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark human_signoff=null: ② ELSE defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    PROBE mark human_signoff="yes": ④ SIGNOFF defaults=[] inferred=[] checks=[] overuse=False
+    PROBE mark   SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    PROBE mark human_signoff='no': ② ELSE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE mark   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    PROBE mark 답 없는 단계: ② ELSE + ④ PARTIAL defaults=[input_kind,rule_expressible,frequency,batch_size,exception_rate,current_actor,minutes_per_item,failure_impact,existing_feature,human_signoff] inferred=[] checks=[measure_minutes_per_item,confirm_existing_feature] overuse=False
+    PROBE mark   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    PROBE mark   PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (기본값 사용, 확인 필요)
+    PROBE mark human_signoff=Yes: 오류 1건
+    PROBE mark   answers.yaml:5:224: enum steps[1].answers.human_signoff: 선택지 밖의 값 'Yes'. 가능한 값: yes, no
+    PROBE mark human_signoff=true: 오류 1건
+    PROBE mark   answers.yaml:5:224: enum steps[1].answers.human_signoff: 선택지 밖의 값 'true'. 가능한 값: yes, no
+    PROBE mark human_signoff="": 오류 1건
+    PROBE mark   answers.yaml:5:224: enum steps[1].answers.human_signoff: 선택지 밖의 값 ''. 가능한 값: yes, no
+    PROBE mark human_signoff=unknown: 오류 1건
+    PROBE mark   answers.yaml:5:224: enum steps[1].answers.human_signoff: 선택지 밖의 값 'unknown'. 가능한 값: yes, no
+    PROBE inferred 기준 inferred:[frequency]: ② ELSE defaults=[] inferred=[frequency] checks=[] overuse=False
+    PROBE inferred   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)
+    PROBE inferred failure_impact=external inferred:[failure_impact]: ② ELSE + ④ GATE defaults=[] inferred=[failure_impact] checks=[] overuse=False
+    PROBE inferred   GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다. (AI 추정, 확인 필요)
+    PROBE inferred rule_expressible=partial inferred:[rule_expressible]: ② ELSE + ④ PARTIAL defaults=[] inferred=[rule_expressible] checks=[] overuse=False
+    PROBE inferred   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)
+    PROBE inferred   PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (AI 추정, 확인 필요)
+    PROBE inferred rule_expressible=partial failure_impact=external inferred:[rule_expressible, failure_impact]: ② ELSE + ④ PARTIAL + ④ GATE defaults=[] inferred=[rule_expressible,failure_impact] checks=[] overuse=False
+    PROBE inferred 기준 inferred:[exception_rate]: ② ELSE defaults=[] inferred=[exception_rate] checks=[] overuse=False
+    PROBE inferred   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    PROBE inferred current_actor=ai_each_time inferred:[current_actor]: ② ELSE defaults=[] inferred=[current_actor] checks=[] overuse=True
+    PROBE inferred 기준 inferred:[minutes_per_item]: ② ELSE defaults=[] inferred=[minutes_per_item] checks=[] overuse=False
+    PROBE inferred 기준 inferred:[batch_size]: ② ELSE defaults=[] inferred=[batch_size] checks=[] overuse=False
+    PROBE inferred frequency=rare batch_size=10 inferred:[batch_size]: ② ELSE defaults=[] inferred=[batch_size] checks=[] overuse=False
+    PROBE inferred   ELSE step used=[input_kind,rule_expressible,frequency,batch_size,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 드물게 반복되지만 한 번에 10건이므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)
+    PROBE inferred frequency=rare batch_size=3 inferred:[batch_size]: ④ Q4 defaults=[] inferred=[batch_size] checks=[] overuse=False
+    PROBE inferred   Q4 step used=[input_kind,rule_expressible,frequency,batch_size,failure_impact,existing_feature,human_signoff] 드물게 반복되고 한 번에 3건이므로 그대로 두거나 일회성 AI 보조로 분류. 개발비가 더 크다. (AI 추정, 확인 필요)
+    PROBE inferred human_signoff=yes inferred:[human_signoff]: ④ SIGNOFF defaults=[] inferred=[human_signoff] checks=[] overuse=False
+    PROBE inferred   SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류. (AI 추정, 확인 필요)
+    PROBE inferred 기준 inferred:[human_signoff]: ② ELSE defaults=[] inferred=[human_signoff] checks=[] overuse=False
+    PROBE inferred human_signoff=yes inferred:[frequency, failure_impact]: ④ SIGNOFF defaults=[] inferred=[frequency,failure_impact] checks=[] overuse=False
+    PROBE inferred   SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    PROBE inferred existing_feature=yes inferred:[existing_feature]: ① Q1 defaults=[] inferred=[existing_feature] checks=[] overuse=False
+    PROBE inferred   Q1 step used=[failure_impact,existing_feature,human_signoff] 기존 프로그램에 같은 기능이 있으므로(yes) 기존 기능·설정으로 분류. (AI 추정, 확인 필요)
+    PROBE inferred existing_feature=yes inferred:[input_kind]: ① Q1 defaults=[] inferred=[input_kind] checks=[] overuse=False
+    PROBE inferred   Q1 step used=[failure_impact,existing_feature,human_signoff] 기존 프로그램에 같은 기능이 있으므로(yes) 기존 기능·설정으로 분류.
+    PROBE inferred existing_feature=- inferred:[frequency]: ② ELSE defaults=[existing_feature] inferred=[frequency] checks=[confirm_existing_feature] overuse=False
+    PROBE inferred   ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요) (AI 추정, 확인 필요)
+    PROBE inferred human_signoff=- inferred:[frequency]: ② ELSE defaults=[human_signoff] inferred=[frequency] checks=[] overuse=False
+    PROBE inferred human_signoff=- failure_impact=external inferred:[failure_impact]: ② ELSE + ④ GATE defaults=[human_signoff] inferred=[failure_impact] checks=[] overuse=False
+    PROBE inferred 기준 inferred:[input_kind, frequency]: ② ELSE defaults=[] inferred=[input_kind,frequency] checks=[] overuse=False
+    PROBE inferred 기준 inferred:[frequency, input_kind]: ② ELSE defaults=[] inferred=[input_kind,frequency] checks=[] overuse=False
+    PROBE inferred 기준 inferred:[]: ② ELSE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE inferred 기준 inferred:~: ② ELSE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE inferred 기준 inferred:: ② ELSE defaults=[] inferred=[] checks=[] overuse=False
+    PROBE inferred 기준 inferred:["frequency"]: ② ELSE defaults=[] inferred=[frequency] checks=[] overuse=False
+    PROBE inferred 기준 inferred:\n      - frequency\n      - input_kind: ② ELSE defaults=[] inferred=[input_kind,frequency] checks=[] overuse=False
+    PROBE inferred-error 기준 inferred: frequency: 오류 1건
+    PROBE inferred-error   answers.yaml:6:15: type steps[1].inferred: 목록이어야 한다
+    PROBE inferred-error 기준 inferred: {frequency: yes}: 오류 1건
+    PROBE inferred-error 기준 inferred: [freq]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: enum steps[1].inferred[1]: 선택지 밖의 값 'freq'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE inferred-error 기준 inferred: [Frequency]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: enum steps[1].inferred[1]: 선택지 밖의 값 'Frequency'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE inferred-error 기준 inferred: [name]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: enum steps[1].inferred[1]: 선택지 밖의 값 'name'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE inferred-error 기준 inferred: [yes]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: enum steps[1].inferred[1]: 선택지 밖의 값 'yes'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE inferred-error 기준 inferred: [frequency, frequency]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:27: duplicate steps[1].inferred[2]: 추정 답 키가 중복된다 (처음: steps[1].inferred[1])
+    PROBE inferred-error 기준 inferred: [frequency, batch_size, frequency, frequency]: 오류 2건
+    PROBE inferred-error   answers.yaml:6:39: duplicate steps[1].inferred[3]: 추정 답 키가 중복된다 (처음: steps[1].inferred[1])
+    PROBE inferred-error   answers.yaml:6:50: duplicate steps[1].inferred[4]: 추정 답 키가 중복된다 (처음: steps[1].inferred[1])
+    PROBE inferred-error frequency=- inferred: [frequency]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: required steps[1].answers.frequency: inferred에 적은 답은 answers에 값이 있어야 한다
+    PROBE inferred-error frequency=~ inferred: [frequency]: 오류 1건
+    PROBE inferred-error minutes_per_item=- inferred: [minutes_per_item]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: required steps[1].answers.minutes_per_item: inferred에 적은 답은 answers에 값이 있어야 한다
+    PROBE inferred-error minutes_per_item=null inferred: [minutes_per_item]: 오류 1건
+    PROBE inferred-error 기준 inferred: [~]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: required steps[1].inferred[1]: 값이 비어 있다
+    PROBE inferred-error 기준 inferred: [[frequency]]: 오류 1건
+    PROBE inferred-error   answers.yaml:6:16: type steps[1].inferred[1]: 스칼라 값이어야 한다
+    PROBE inferred-error 기준 inferred: [frequency, freq, ~, frequency]: 오류 3건
+    PROBE inferred-error   answers.yaml:6:27: enum steps[1].inferred[2]: 선택지 밖의 값 'freq'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE inferred-error   answers.yaml:6:33: required steps[1].inferred[3]: 값이 비어 있다
+    PROBE inferred-error   answers.yaml:6:36: duplicate steps[1].inferred[4]: 추정 답 키가 중복된다 (처음: steps[1].inferred[1])
+    PROBE inferred-error frequency=- inferred: [frequency, frequency]: 오류 2건
+    PROBE inferred-error rule_expressible=maybe inferred: [rule_expressible]: 오류 1건
+    PROBE inferred-error   answers.yaml:5:52: enum steps[1].answers.rule_expressible: 선택지 밖의 값 'maybe'. 가능한 값: yes, partial, no
+    PROBE inferred-error answers 없음 inferred: [frequency]: 오류 1건
+    PROBE inferred-error   answers.yaml:5:16: required steps[1].answers.frequency: inferred에 적은 답은 answers에 값이 있어야 한다
+    PROBE inferred-error answers 목록 inferred: [frequency]: 오류 2건
+    PROBE inferred-error   answers.yaml:5:14: type steps[1].answers: 매핑이어야 한다
+    PROBE inferred-error inferred가 answers 앞: 오류 1건
+    PROBE inferred-error   answers.yaml:5:27: enum steps[1].inferred[2]: 선택지 밖의 값 'freq'. 가능한 값: input_kind, rule_expressible, frequency, batch_size, exception_rate, current_actor, minutes_per_item, failure_impact, existing_feature, human_signoff
+    PROBE json inferred-property: False
+    PROBE json lines plain=28 marked=28 differing=2
+    PROBE json   - "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+    PROBE json   + "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)"
+    PROBE json   - "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    PROBE json   + "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다. (AI 추정, 확인 필요)"
+    PROBE culture 7종 SHA-256 수=1 8c7fd9e239e9972c
+[s4-example-12-1-head] rc=0 cmd: tool rows tests/Scorecard.Tests/TestData/case-schema/example-12-1/case.yaml
+    RESULT step 1 합성 파일 열기·정리 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT step 2 구간 선택(정상 신호) defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT step 3 구간 선택(불규칙 신호) defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.
+    RESULT step 4 값 계산·복사 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 5 보고서 채우기 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 6 결과 해석 문장 작성 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ③ Q2 step used=[rule_expressible,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다. (기본값 사용, 확인 필요)
+    RESULT   ④ GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    RESULT step 7 최종 확인·제출 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT total steps=7 rows=10 default-marked=7
+[s4-example-12-1-signoff-add] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/add-signoff.py tests/Scorecard.Tests/TestData/case-schema/example-12-1/case.yaml <작업>/e121/case.yaml 7
+    RESULT add-signoff example-12-1/case.yaml steps=7 changed=7 yes=[7]
+[s4-example-12-1-signoff] rc=0 cmd: tool rows <작업>/e121/case.yaml
+    RESULT step 1 합성 파일 열기·정리 defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT step 2 구간 선택(정상 신호) defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT step 3 구간 선택(불규칙 신호) defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.
+    RESULT step 4 값 계산·복사 defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 5 보고서 채우기 defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 6 결과 해석 문장 작성 defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ③ Q2 step used=[rule_expressible,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.
+    RESULT   ④ GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    RESULT step 7 최종 확인·제출 defaults=[minutes_per_item] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ④ SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    RESULT total steps=7 rows=9 default-marked=0
+[s4-guard-case-valid] rc=0 cmd: tool rows tests/Scorecard.Tests/TestData/guard/case-valid/case.yaml
+    RESULT step 1 로그 파일 열기 defaults=[minutes_per_item,human_signoff] inferred=[] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT step 2 구간 선택(불규칙) defaults=[human_signoff] inferred=[] checks=[] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.
+    RESULT step 3 결과 확인 defaults=[input_kind,frequency,batch_size,exception_rate,current_actor,minutes_per_item,existing_feature,human_signoff] inferred=[] checks=[measure_minutes_per_item,confirm_existing_feature] overuse=False
+    RESULT   ③ Q2 step used=[rule_expressible,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다. (기본값 사용, 확인 필요)
+    RESULT   ④ GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    RESULT step 4 보고서 채우기 defaults=[input_kind,rule_expressible,frequency,batch_size,exception_rate,current_actor,minutes_per_item,failure_impact,existing_feature,human_signoff] inferred=[] checks=[measure_minutes_per_item,confirm_existing_feature] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (기본값 사용, 확인 필요)
+    RESULT total steps=4 rows=7 default-marked=5
+[s5-mut-gate-after-signoff-apply] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/mutate.py <작업>/c/src/Scorecard.Core/Classification/StepClassifier.cs gate-after-signoff
+    RESULT mutate gate-after-signoff
+[s5-mut-gate-after-signoff-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-mut-gate-after-signoff-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, rule_expressible: partial, fai"···, expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: safety_legal", expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: external", expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+      Failed Scorecard.Tests.Classification.ReasonSentenceTests.All_combinations_match_templates_and_phrases
+    Failed!  - Failed:     5, Passed:  1077, Skipped:     0, Total:  1082
+[s5-mut-gate-after-signoff] failed=5
+[s5-mut-signoff-after-q1-apply] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/mutate.py <작업>/c/src/Scorecard.Core/Classification/StepClassifier.cs signoff-after-q1
+    RESULT mutate signoff-after-q1
+[s5-mut-signoff-after-q1-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-mut-signoff-after-q1-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+      Failed Scorecard.Tests.Classification.ReasonSentenceTests.All_combinations_match_templates_and_phrases
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, existing_feature: yes", expectedRows: "④ SIGNOFF")
+    Failed!  - Failed:     3, Passed:  1079, Skipped:     0, Total:  1082
+[s5-mut-signoff-after-q1] failed=3
+[s5-mut-inferred-before-default-apply] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/mutate.py <작업>/c/src/Scorecard.Core/Classification/StepClassifier.cs inferred-before-default
+    RESULT mutate inferred-before-default
+[s5-mut-inferred-before-default-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-mut-inferred-before-default-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:  1082, Skipped:     0, Total:  1082
+[s5-mut-inferred-before-default] failed=0
+[s5-mut-signoff-reads-fi-apply] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/mutate.py <작업>/c/src/Scorecard.Core/Classification/StepClassifier.cs signoff-reads-fi
+    RESULT mutate signoff-reads-fi
+[s5-mut-signoff-reads-fi-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-mut-signoff-reads-fi-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Mark_appears_exactly_on_rows_that_read_the_default_answer
+    Failed!  - Failed:     2, Passed:  1080, Skipped:     0, Total:  1082
+[s5-mut-signoff-reads-fi] failed=2
+[s5-restore-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-restore-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:  1082, Skipped:     0, Total:  1082
+[s5-g2g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3
+    Passed!  - Failed:     0, Passed:    32, Skipped:     0, Total:    32
+[s8-extract-6.7-yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/extract-block.py docs/spec/case-schema.md ### 6.7 추정 답 목록 오류 (T-008) 0 <작업>/s8/inferred-errors/case.yaml
+    BLOCK extract ### 6.7 추정 답 목록 오류 (T-008) [0] lines=16 blocks=2
+[s8-extract-6.7-errors] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/extract-block.py docs/spec/case-schema.md ### 6.7 추정 답 목록 오류 (T-008) 1 <작업>/s8/inferred-errors.expected
+    BLOCK extract ### 6.7 추정 답 목록 오류 (T-008) [1] lines=8 blocks=2
+[s8-inferred-errors] rc=0 cmd: tool errors <작업>/s8/inferred-errors/case.yaml <작업>/s8/inferred-errors.actual
+    RESULT errors count=8
+[s8-inferred-errors] spec block = parser: same
+[s8-extract-6.5-yaml] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/extract-block.py docs/spec/classification.md ### 6.5 서명 단계와 추정 표시 (T-008) 0 <작업>/s8/signoff-inferred/answers.yaml
+    BLOCK extract ### 6.5 서명 단계와 추정 표시 (T-008) [0] lines=16 blocks=2
+[s8-extract-6.5-rows] rc=0 cmd: python3 -I <작업>/c/spikes/T-008/extract-block.py docs/spec/classification.md ### 6.5 서명 단계와 추정 표시 (T-008) 1 <작업>/s8/signoff-inferred.expected
+    BLOCK extract ### 6.5 서명 단계와 추정 표시 (T-008) [1] lines=10 blocks=2
+[s8-signoff-inferred] rc=0 cmd: tool spec-rows <작업>/s8/signoff-inferred/answers.yaml <작업>/s8/signoff-inferred.actual
+    RESULT spec-rows lines=10 json-has-inferred=False
+[s8-signoff-inferred] spec block = classifier: same
+[s8-signoff-inferred-rows] rc=0 cmd: tool rows <작업>/s8/signoff-inferred/answers.yaml
+    RESULT step 1 자료 모으기 defaults=[] inferred=[frequency,batch_size] checks=[] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)
+    RESULT step 2 예외 건 고르기 defaults=[existing_feature] inferred=[rule_expressible,failure_impact] checks=[confirm_existing_feature] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요) (AI 추정, 확인 필요)
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (AI 추정, 확인 필요)
+    RESULT   ④ GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다. (AI 추정, 확인 필요)
+    RESULT step 3 최종 확인·서명 defaults=[] inferred=[failure_impact] checks=[] overuse=False
+    RESULT   ④ SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    RESULT step 4 월간 정리 defaults=[human_signoff] inferred=[current_actor] checks=[] overuse=True
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매월 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
+    RESULT total steps=4 rows=6 default-marked=1
+[s8-json-inferred] rc=0 cmd: tool classify <작업>/s8/signoff-inferred/answers.yaml <작업>/s8/with.json
+    SHA 3c1d0bcaf297b470e0232efa8416cd880b425e6f7a69904a3b90c308922c79d0 2550 signoff-inferred/answers.yaml
+[s8-json-noinf] rc=0 cmd: tool classify <작업>/s8/signoff-inferred-noinf/answers.yaml <작업>/s8/without.json
+    SHA 7ef8d79e50e24f6d694d36023187c2d6db6737aa72bdd5a8231a1260feec2d1f 2442 signoff-inferred-noinf/answers.yaml
+[s8-json-diff] differing-lines=4 all-reason=yes has-inferred-key=0
+    16c16
+    <           "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+    ---
+    >           "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (AI 추정, 확인 필요)"
+    35c35
+    <           "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)"
+    ---
+    >           "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요) (AI 추정, 확인 필요)"
+    41c41
+    <           "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+    ---
+    >           "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (AI 추정, 확인 필요)"
+    47c47
+    <           "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    ---
+    >           "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다. (AI 추정, 확인 필요)"
+[done] summary=summary.txt

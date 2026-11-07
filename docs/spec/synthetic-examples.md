@@ -1,6 +1,7 @@
 # synthetic-examples (T-005 스펙)
 
 - 상태: 승인됨(2026-11-07, 질문 9 외 제안대로. 9는 테스트로 진행하고 원칙 문구는 사람 답 대기). 7절 예제 파일도 제안대로 확정. 승인 결과는 문서 끝.
+- T-008 개정(초안, 사람 승인 전, 2026-11-07): 7.2~7.4 `case.yaml` 블록의 모든 `answers` 줄 끝에 `, human_signoff: no`를 더하고 SHA-256 줄을 맞췄다(ADR 0003). 그 밖의 블록(CSV, `intake.md`)과 생성기는 그대로다. 문서 끝 "T-008 개정".
 - 작업 카드: `docs/tasks/T-005-synthetic-examples.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `8a3afa0`
@@ -273,6 +274,7 @@ examples/
 ### 4.8 case.yaml
 
 - `name`, `task`, `steps`는 T-004 `answers.yaml`과 같다. `answers.yaml`의 `name:` 줄부터 끝까지가 `case.yaml` 안에 바이트 그대로 들어 있다. 앞 주석 줄만 다르다 [S3 case-check].
+- T-008: 두 파일의 같은 `answers` 줄에 `, human_signoff: no`를 더한다. 그래서 위 관계는 그대로다 [T8:S3 case-in-answers].
 - 확인: 파싱 오류 0건, `name`·`task`·`steps`가 같다, `case.yaml`을 분류한 결과 = `expected/classification.json` 바이트 [S3 case-check]. 카드 수용 기준 4.
 - 더하는 키:
 
@@ -507,10 +509,11 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 | `mixed-exceptions` | `intake.md` |
 
 - 블록과 생성 파일이 같고, SHA-256 줄이 파일과 같다 [S10 blocks].
+- T-008: `case.yaml` 블록 셋과 SHA-256 줄만 바꿨다. 스파이크 `spikes/T-008/add-signoff.py`가 `examples/*/case.yaml`의 `    answers: {…}` 줄 끝에 키를 더하고, `fill-blocks.py`가 블록과 SHA-256 줄을 채웠다. 바꾼 `case.yaml`을 분류하면 `expected/classification.json`과 바이트가 같고, 대조하면 `expected/metrics.json`과 바이트가 같다 [T8:S3]. CSV·`intake.md` 블록은 그대로다.
 
 ### 7.2 table-compare
 
-`examples/table-compare/case.yaml` (SHA-256 `886bbbfdb0cd85a29d207b672b575c19476dc2c4903cf13952c2b2c4a77fb5ca`):
+`examples/table-compare/case.yaml` (SHA-256 `451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 table-compare.
@@ -519,13 +522,13 @@ name: table-compare
 task: 센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다
 steps:
   - name: 정상 신호 구간 선택
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 불규칙 신호 구간 선택
-    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 30, exception_rate: 40, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 30, exception_rate: 40, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 구간 평균 계산
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 결과표 채우기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no}
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
 inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
@@ -627,7 +630,7 @@ log23,normal,7192,292,62.94
 
 ### 7.3 form-fill
 
-`examples/form-fill/case.yaml` (SHA-256 `5beb58182f80b340a7d2adccce0be86b5992aadb3bac23bb7b0cb3c1bb2413ee`):
+`examples/form-fill/case.yaml` (SHA-256 `9660f3cb0f9ce1e5faea096c50fc5be9a3af64a0614ecd91949ed9fe27dde381`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 form-fill.
@@ -637,13 +640,13 @@ name: form-fill
 task: 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다
 steps:
   - name: 주문서 파일 모으기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework}
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, human_signoff: no}
   - name: 주문서 양식 읽기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: ai_each_time, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: ai_each_time, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 품목·수량 집계
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 주간 보고서 만들기
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
 inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
@@ -724,7 +727,7 @@ ord11,item-e,34
 
 ### 7.4 mixed-exceptions
 
-`examples/mixed-exceptions/case.yaml` (SHA-256 `79b2133e5cd1b73a7f28366bd0690f445c790bce32c6a0e66fcbe80b89cf417b`):
+`examples/mixed-exceptions/case.yaml` (SHA-256 `96f04387180ce242879bc91ae1ad516415538c6a84f411006b41616adcad189c`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 mixed-exceptions.
@@ -733,13 +736,13 @@ name: mixed-exceptions
 task: 자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다
 steps:
   - name: 메일 접수 기록
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 문의 유형 분류
-    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
   - name: 답변 초안 쓰기
-    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: external, existing_feature: no}
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
   - name: 처리 결과 기록
-    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no}
+    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
 ```
 
 `examples/mixed-exceptions/intake.md` (SHA-256 `6487074ad780a8c4b81113b8d6ec7218de77dc123e5d192d3a36c0897d89aa3f`):
@@ -860,3 +863,10 @@ steps:
 - 5: 대조 정의(P2)는 T-006이 확정한다.
 - 리뷰 1회차(2026-11-07): 4.5 4·5에 "소수도 열 범위를 벗어나면 부호를 뒤집는다"를 더했다(리드). 범위 안 값은 바뀌지 않아 7절 블록 바이트는 그대로다.
 - 승인 결정 9 확정(2026-11-07, juhan 카드 선택): 테스트로만 검사한다. 지시문 2절 10을 "pre-commit 또는 테스트에서"로 고쳤다.
+
+## T-008 개정 (초안, 사람 승인 전)
+
+- 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"(예제 3종은 모든 단계 `human_signoff: no`, expected 바이트 그대로) [읽음].
+- 바꾼 곳: 머리 상태 글머리, 4.8 글머리, 7.1 글머리, 7.2~7.4 `case.yaml` 블록과 SHA-256 줄(table-compare `451a22ac…`, form-fill `9660f3cb…`, mixed-exceptions `96f04387…`).
+- 바꾸지 않은 곳: 생성기 규칙(4.1~4.7), CSV 블록·SHA-256, `intake.md` 블록, 4.10 패턴 표.
+- 결과와 질문은 `docs/spec/human-signoff.md`. `examples/*/case.yaml`을 블록대로 바꾸는 것은 juhan 직접 승인 질문이다.

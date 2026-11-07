@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "case": "table-compare",
+  "verdict": "conditional",
+  "rule": "FOCUS",
+  "reason": "정확도·누락률은 문턱을 충족하나 불일치 3건이 모두 signal_type = irregular인 행이므로 조건부.",
+  "thresholds": {
+    "accuracy_min": 85,
+    "missing_max": 5,
+    "time_must_drop": false
+  },
+  "defaults": [],
+  "checks": [
+    {
+      "rule": "ACCURACY",
+      "result": "met",
+      "reason": "정확도 90.0%(27/30)가 문턱 85% 이상이다."
+    },
+    {
+      "rule": "MISSING",
+      "result": "met",
+      "reason": "누락률 3.3%(1/30)가 문턱 5% 이하다."
+    },
+    {
+      "rule": "UNEXPLAINED",
+      "result": "not_reviewed",
+      "reason": "불일치 3건이 설명되는지 사람이 아직 보지 않았다."
+    },
+    {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    {
+      "rule": "FOCUS",
+      "result": "found",
+      "reason": "불일치 3건이 모두 signal_type = irregular인 행이다(irregular 12행 중 3행, 다른 값 18행 중 0행)."
+    }
+  ],
+  "todo": [
+    {
+      "key": "review_mismatches",
+      "text": "불일치 3건을 보고 설명이 되는지 적는다."
+    }
+  ]
+}

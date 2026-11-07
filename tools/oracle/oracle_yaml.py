@@ -259,7 +259,8 @@ class _Parser:
         rest = text[pos:]
         if rest.strip(' \t') == '':
             return value
-        if rest[0] in ' \t' and rest.lstrip(' \t').startswith('#'):
+        # 주석은 공백 뒤의 '#'. plain 값은 공백을 먹고 '#' 앞에서 멈추므로 앞 글자도 본다.
+        if rest.lstrip(' \t').startswith('#') and (rest[0] in ' \t' or (pos > 0 and text[pos - 1] in ' \t')):
             return value
         self.fail(i, f'값 뒤에 읽지 못한 글자 {rest!r}')
 

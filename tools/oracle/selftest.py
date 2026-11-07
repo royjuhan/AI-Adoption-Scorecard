@@ -6,6 +6,8 @@
 # 1. 스펙 표·블록 대조: oracle이 스펙 문서의 예시 표와 같은 답을 내는지 본다. 이 점검만 스펙 문서를 읽는다.
 #    classification.md 6.1 분기 표, 6.2 기본값 표시 표·"답 없는 단계" 블록, 6.5 TestData 표본(추정 표시).
 #    metrics.md 4.1 패턴 표 2개, 4.5 숫자 모양·칸 판정 표, 4.6 앞뒤 글자 표, 4.8 퍼센트 표.
+#    TestData: valid-full 값, guard case-valid 분류(기본값 표시 5행)·metrics(4.10 SHA-256·크기), 오류 표본은 멈춤.
+#    변형: 예제 CSV의 CRLF·CR·BOM·따옴표·마지막 줄바꿈 없음·끝 빈 행·칸 앞뒤 공백, answers.yaml의 CRLF·CR·BOM이 같은 바이트.
 # 2. 음성 대조: 예제 사본에서 expected 한 바이트, expected 삭제, 결과 CSV 값, answers.yaml 답을 바꾸면
 #    check.py가 DIFF·MISSING과 종료 코드 1을 낸다. 사본 그대로면 모두 MATCH, 종료 코드 0.
 # 3. 결정론: 문화권·해시 시드 환경 변수를 바꿔 check.py를 돌려도 표준 출력·보고서 바이트가 같다.
@@ -23,12 +25,13 @@ from decimal import Decimal
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.dont_write_bytecode = True  # 저장소에 __pycache__를 쓰지 않는다.
 sys.path.insert(0, str(HERE))
 
-from classify import DEFAULT_MARK, INFERRED_MARK, classify, to_json_value  # noqa: E402
-from compare import is_supported_pattern, judge, matches, parse_number, percent  # noqa: E402
+from classify import DEFAULT_MARK, INFERRED_MARK, classification_bytes, classify, to_json_value  # noqa: E402
+from compare import is_supported_pattern, judge, matches, metrics_bytes, parse_number, percent  # noqa: E402
 from oracle_case import ANSWER_KEYS, CompareField, parse_case  # noqa: E402
-from oracle_common import OracleError, utf8_stdio  # noqa: E402
+from oracle_common import OracleError, sha256_hex, utf8_stdio  # noqa: E402
 from oracle_csv import normalize  # noqa: E402
 from oracle_json import render  # noqa: E402
 
@@ -236,6 +239,82 @@ def check_metrics_tables(spec: list) -> None:
         expect(percent(int(part), int(whole)).text == pct, f'4.8 {part}/{whole}')
 
 
+# ---- TestData 표본 ----
+
+def check_testdata(repo: Path, cls_spec: list, met_spec: list) -> None:
+    data_dir = repo / 'tests/Scorecard.Tests/TestData'
+    # case-schema 6.1 블록 = valid-full = guard/case-valid. 블록 목록·따옴표·~·'|' 블록을 읽는다.
+    full = parse_case((data_dir / 'case-schema/valid-full/case.yaml').read_bytes(), 'case.yaml')
+    s2, s3, s4 = full.steps[1].answers, full.steps[2].answers, full.steps[3].answers
+    expect(s2['exception_rate'].value == Decimal('62.5') and not s2['exception_rate'].is_default, 'valid-full 2단계 exception_rate')
+    expect(s3['rule_expressible'].value == 'no' and not s3['rule_expressible'].is_default, 'valid-full 3단계 "no"')
+    expect(s3['minutes_per_item'].value is None and s3['minutes_per_item'].is_default, 'valid-full 3단계 ~')
+    expect(all(a.is_default for a in s4.values()), 'valid-full 4단계 10개 기본값')
+
+    # classification 4.10(T-008): guard case-valid는 기본값 표시 5행.
+    guard = data_dir / 'guard/case-valid'
+    out = classification_bytes((guard / 'case.yaml').read_bytes(), 'case.yaml').decode('utf-8')
+    expect(out.count(DEFAULT_MARK.strip()) == 5, 'classification 4.10 guard case-valid 기본값 표시 5행')
+
+    # metrics 4.10: guard case-valid metrics.json의 SHA-256 앞자리와 크기.
+    m = next(re.search(r'metrics\.json SHA-256 `([0-9a-f]+)…`, ([0-9,]+)바이트', line) for line in met_spec
+             if 'xcheck-case-valid' in line)
+    got = metrics_bytes(guard)
+    expect(sha256_hex(got).startswith(m.group(1)) and len(got) == int(m.group(2).replace(',', '')),
+           f'metrics 4.10 guard case-valid metrics.json {sha256_hex(got)[:8]} {len(got)}')
+
+    # 오류 표본은 답을 내지 않고 멈춘다(범위 밖).
+    for rel in ('case-schema/type-errors', 'case-schema/missing-required', 'case-schema/inferred-errors',
+                'guard/case-invalid'):
+        try:
+            classification_bytes((data_dir / rel / 'case.yaml').read_bytes(), 'case.yaml')
+            expect(False, f'오류 표본 {rel}: 멈추지 않았다')
+        except OracleError:
+            expect(True, '')
+    try:
+        metrics_bytes(data_dir / 'guard/compare-invalid')
+        expect(False, '오류 표본 guard/compare-invalid: 멈추지 않았다')
+    except OracleError:
+        expect(True, '')
+
+
+# ---- 줄바꿈·인코딩 변형 (metrics 3.3 [P:eol], classification 2절 [P:eol]) ----
+
+def _csv_variants(data: bytes) -> dict:
+    text = data.decode('utf-8')
+    lines = text.split('\n')[:-1] if text.endswith('\n') else text.split('\n')
+    quoted = '\n'.join(','.join('"' + c.replace('"', '""') + '"' for c in line.split(',')) for line in lines) + '\n'
+    spaced = '\n'.join(','.join(' ' + c + '\t' for c in line.split(',')) for line in lines) + '\n'
+    return {
+        'crlf': text.replace('\n', '\r\n').encode('utf-8'),
+        'cr': text.replace('\n', '\r').encode('utf-8'),
+        'bom': b'\xef\xbb\xbf' + data,
+        'quoted': quoted.encode('utf-8'),
+        'no-final-newline': text.rstrip('\n').encode('utf-8'),
+        'blank-lines-at-end': (text + '\n\n,,\n').encode('utf-8'),
+        'spaces-around-cells': spaced.encode('utf-8'),
+    }
+
+
+def check_variants(repo: Path) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ('table-compare', 'signoff-final', 'form-fill'):
+            src = repo / 'examples' / name
+            want = (src / 'expected/metrics.json').read_bytes()
+            csvs = sorted(p.relative_to(src) for p in src.rglob('*.csv'))
+            for label in _csv_variants(b'a\n'):
+                work = Path(tmp) / f'{name}-{label}'
+                shutil.copytree(src, work)
+                for rel in csvs:
+                    (work / rel).write_bytes(_csv_variants((src / rel).read_bytes())[label])
+                expect(metrics_bytes(work) == want, f'CSV 변형 {name} {label}')
+            ans = (src / 'answers.yaml').read_bytes()
+            want_cls = (src / 'expected/classification.json').read_bytes()
+            for label, data in (('crlf', ans.replace(b'\n', b'\r\n')), ('cr', ans.replace(b'\n', b'\r')),
+                                ('bom', b'\xef\xbb\xbf' + ans), ('bom-crlf', b'\xef\xbb\xbf' + ans.replace(b'\n', b'\r\n'))):
+                expect(classification_bytes(data, 'answers.yaml') == want_cls, f'answers.yaml 변형 {name} {label}')
+
+
 # ---- check.py 음성 대조·결정론 ----
 
 def run_check(repo: Path, report: Path, env=None):
@@ -329,6 +408,8 @@ def main(argv: list) -> int:
     check_classification(cls_spec)
     check_signoff_inferred(repo, cls_spec)
     check_metrics_tables(met_spec)
+    check_testdata(repo, cls_spec, met_spec)
+    check_variants(repo)
     check_negative(repo)
     check_determinism(repo)
 

@@ -19,6 +19,7 @@ import os
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # 저장소에 __pycache__를 쓰지 않는다.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from classify import classification_bytes  # noqa: E402

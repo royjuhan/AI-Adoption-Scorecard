@@ -1,0 +1,2 @@
+# oracle은 바이트코드를 쓰지 않게 했지만(sys.dont_write_bytecode), 다른 길로 생겨도 넣지 않는다.
+__pycache__/

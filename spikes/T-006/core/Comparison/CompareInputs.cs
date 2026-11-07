@@ -18,8 +18,8 @@ public static class CompareInputs
         ArgumentNullException.ThrowIfNull(inputs);
 
         var errors = new List<CaseError>();
-        var reference = ReadSide(caseDirectory, inputs.Reference, errors);
-        var candidate = ReadSide(caseDirectory, inputs.Candidate, errors);
+        var reference = ReadSide(caseDirectory, inputs.Reference, CompareRules.PathReference, errors);
+        var candidate = ReadSide(caseDirectory, inputs.Candidate, CompareRules.PathCandidate, errors);
         return errors.Count == 0
             ? new CompareSourcesResult(new CompareSources(reference, candidate), [])
             : new CompareSourcesResult(null, errors);
@@ -78,12 +78,14 @@ public static class CompareInputs
         return p == namePattern.Length;
     }
 
-    private static List<SourceFile> ReadSide(string caseDirectory, string pattern, List<CaseError> errors)
+    // 파일이 정해지기 전 오류는 Source = case.yaml, Path = inputs.reference·inputs.candidate다(4.7). 패턴 글자는 오류에 넣지 않는다.
+    private static List<SourceFile> ReadSide(string caseDirectory, string pattern, string fieldPath, List<CaseError> errors)
     {
         var files = new List<SourceFile>();
+        CaseError InputsError(string message) => new(CaseParser.FileName, 0, 0, CompareRules.CodeFile, fieldPath, message);
         if (!IsSupportedPattern(pattern))
         {
-            errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodePattern, string.Empty, "지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다"));
+            errors.Add(new CaseError(CaseParser.FileName, 0, 0, CompareRules.CodePattern, fieldPath, "지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다"));
             return files;
         }
 
@@ -97,7 +99,7 @@ public static class CompareInputs
                 // 대소문자를 무시하는 파일 시스템에서도 같은 결과가 나오게 이름 목록에서 서수로 찾는다.
                 if (!Directory.EnumerateDirectories(folder).Any(d => string.Equals(Path.GetFileName(d), segment, StringComparison.Ordinal)))
                 {
-                    errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "폴더가 없다: " + relative + segment));
+                    errors.Add(InputsError("폴더가 없다: " + relative + segment));
                     return files;
                 }
 
@@ -112,7 +114,7 @@ public static class CompareInputs
                 .ToArray();
             if (names.Length == 0)
             {
-                errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "일치하는 파일이 없다"));
+                errors.Add(InputsError("일치하는 파일이 없다"));
                 return files;
             }
 
@@ -132,11 +134,11 @@ public static class CompareInputs
         }
         catch (DirectoryNotFoundException)
         {
-            errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, relative.Length == 0 ? "케이스 폴더가 없다" : "폴더가 없다: " + relative.TrimEnd('/')));
+            errors.Add(InputsError(relative.Length == 0 ? "케이스 폴더가 없다" : "폴더가 없다: " + relative.TrimEnd('/')));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "폴더를 읽을 수 없다: " + ex.GetType().Name));
+            errors.Add(InputsError("폴더를 읽을 수 없다: " + ex.GetType().Name));
         }
 
         return files;

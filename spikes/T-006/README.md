@@ -4,7 +4,7 @@
 
 - `core/Comparison/`: Core에 넣을 후보 6파일. 스파이크는 clone의 `src/Scorecard.Core/Comparison/`에 복사해 빌드한다.
 - `CompareSpike/`: 실험 도구. `run`(예제 → metrics.json), `probe`(메모리 안 실험), `spec`(스펙 표·블록 대조), `guard-samples`, `refs`.
-- `xcheck/compare.py`: 스펙 글만 보고 따로 짠 Python 구현. 예제 3종 바이트가 같은지 본다.
+- `xcheck/compare.py`: 스펙 글만 보고 따로 짠 Python 구현(C# 코드를 쓰지 않는다). 예제 3종과 G2 표본 `case-valid`에서 수치(`XCHECK` 줄)와 바이트가 C# 후보와 같은지 본다.
 - `samples/guard/compare-invalid/`: G2·G3 오류 표본 후보.
 - `tests-variant/`: clone에서만 바꿔 보는 테스트 파일(GuardTargets, CoreGuardTargetTests).
 - `fill-blocks.py`: 스파이크 출력으로 스펙 7.2~7.4 블록·SHA-256 줄과 6.4 오류 블록을 채운다.

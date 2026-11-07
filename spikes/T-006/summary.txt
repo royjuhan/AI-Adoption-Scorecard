@@ -1,18 +1,18 @@
 dotnet SDK: 10.0.114
 python: Python 3.13.18
-repo HEAD: 9f30e14
-spec(작업 트리) sha256: d4aa91953a4cb029
-[s0-clone] HEAD=9f30e14
+repo HEAD: 63430e6
+spec(작업 트리) sha256: 8aa2c8a2a8235e02
+[s0-clone] HEAD=63430e6
 [s1-base-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s1-base-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   830, Skipped:     0, Total:   830, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   850, Skipped:     0, Total:   850, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s2-files] CompareEngine.cs CompareInputs.cs CompareRules.cs ComparisonModel.cs CsvText.cs MetricsJson.cs 
 [s2-core-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s2-core-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 163 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 177 ms - Scorecard.Tests.dll (net10.0)
 [s2-core-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
 [s2-core-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   830, Skipped:     0, Total:   830, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   850, Skipped:     0, Total:   850, Duration: 4 s - Scorecard.Tests.dll (net10.0)
 [s3-tool-build] rc=0 cmd: dotnet build spikes/T-006/CompareSpike/CompareSpike.csproj -c Release --artifacts-path <작업>/artifacts -warnaserror
 [s3-base-core-refs] rc=0 cmd: tool refs <작업>/base-Scorecard.Core.dll
     ASMREF System.Collections
@@ -151,6 +151,7 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     RESULT table-compare item log27 missing ref=reference/logs.csv:28 cand=null 
     RESULT table-compare item log31 extra ref=null cand=candidate/logs.csv:26 
 [s3-xcheck-table-compare] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/table-compare <작업>/py/table-compare.json
+    XCHECK table-compare status=measured reason=null counts=reference=30 candidate=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3 items=8 sha256=d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314
 [s3-det-cmp] table-compare again: same moved: same de: same python: same
 [s3-det-again-form-fill] rc=0 cmd: tool run examples/form-fill <작업>/again/form-fill.json
     SHA form-fill form-fill.json 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952 cr=0 bom=False last-lf=True culture=(1.5)
@@ -171,6 +172,7 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     RESULT form-fill field item kind=text tol=null pct=null compared=20 outside=0 within=0 not-number=0
     RESULT form-fill field quantity kind=number tol=0 pct=null compared=20 outside=0 within=0 not-number=0
 [s3-xcheck-form-fill] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/form-fill <작업>/py/form-fill.json
+    XCHECK form-fill status=measured reason=null counts=reference=20 candidate=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0 items=0 sha256=6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952
 [s3-det-cmp] form-fill again: same moved: same de: same python: same
 [s3-det-again-mixed-exceptions] rc=0 cmd: tool run examples/mixed-exceptions <작업>/again/mixed-exceptions.json
     SHA mixed-exceptions mixed-exceptions.json 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314 cr=0 bom=False last-lf=True culture=(1.5)
@@ -185,6 +187,7 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     RESULT mixed-exceptions status=not_verified reason=no_inputs key=null ref-files=[] cand-files=[]
     RESULT mixed-exceptions counts=null accuracy=null missing-rate=null
 [s3-xcheck-mixed-exceptions] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/mixed-exceptions <작업>/py/mixed-exceptions.json
+    XCHECK mixed-exceptions status=not_verified reason=no_inputs counts=null accuracy=null missing-rate=null items=0 sha256=372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314
 [s3-det-cmp] mixed-exceptions again: same moved: same de: same python: same
 [s4-probe] rc=0 cmd: tool probe examples <작업>/probe
     PROBE glob supported 'reference/*.csv' True
@@ -217,13 +220,13 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     PROBE glob match '*.CSV' 'logs.csv' False
     PROBE glob match '?' '' False
     PROBE glob read reference/*.csv ref=[reference/.hidden.csv,reference/a.csv,reference/b.csv] cand=[reference/a.csv]
-    PROBE glob read candidate/*.csv (폴더 이름 Candidate) ERR candidate/*.csv: file: 폴더가 없다: candidate
+    PROBE glob read candidate/*.csv (폴더 이름 Candidate) ERR case.yaml: file inputs.candidate: 폴더가 없다: candidate
     PROBE glob read reference/*.txt ref=[reference/notes.txt] cand=[reference/a.csv]
-    PROBE glob read reference/*.json (일치 없음) ERR reference/*.json: file: 일치하는 파일이 없다
-    PROBE glob read missing/*.csv (폴더 없음) ERR missing/*.csv: file: 폴더가 없다: missing
+    PROBE glob read reference/*.json (일치 없음) ERR case.yaml: file inputs.reference: 일치하는 파일이 없다
+    PROBE glob read missing/*.csv (폴더 없음) ERR case.yaml: file inputs.reference: 폴더가 없다: missing
     PROBE glob read reference/sub/*.csv ref=[reference/sub/c.csv] cand=[reference/a.csv]
-    PROBE glob read ref*/a.csv (지원 밖) ERR ref*/a.csv: pattern: 지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다
-    PROBE glob read 케이스 폴더 없음 ERR reference/*.csv: file: 케이스 폴더가 없다 | candidate/*.csv: file: 케이스 폴더가 없다
+    PROBE glob read ref*/a.csv (지원 밖) ERR case.yaml: pattern inputs.reference: 지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다
+    PROBE glob read 케이스 폴더 없음 ERR case.yaml: file inputs.reference: 케이스 폴더가 없다 | case.yaml: file inputs.candidate: 케이스 폴더가 없다
     PROBE glob overlap reference/a.csv vs reference/*.csv reference/a.csv: overlap: 같은 파일이 두 번 나온다(기준·결과 패턴이 겹친다) | reference/a.csv:2:1: duplicate-key id: 키가 중복된다: k (처음: reference/.hidden.csv:2) | reference/b.csv:2:1: duplicate-key id: 키가 중복된다: k (처음: reference/.hidden.csv:2)
     PROBE csv lf ref=2 cand=2 match=2 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0
     PROBE csv crlf ref=2 cand=2 match=2 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0
@@ -250,7 +253,7 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     PROBE csv invalid-utf8-after-bom ERR reference/a.csv:2: encoding: UTF-8이 아니다 (바이트 10)
     PROBE csv nul-in-value ref=2 cand=2 match=2 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0
     PROBE csv semicolon-delimiter ERR reference/a.csv:1: column id: 머리 행에 열이 없다 | reference/a.csv:1: column n: 머리 행에 열이 없다 | reference/a.csv:1: column t: 머리 행에 열이 없다
-    PROBE csv header-only ERR reference/*.csv: no-rows: 기준 자료에 데이터 행이 없다
+    PROBE csv header-only ERR case.yaml: no-rows inputs.reference: 기준 자료에 데이터 행이 없다
     PROBE csv empty-file ERR reference/a.csv: empty: 머리 행이 없다
     PROBE csv bom-only ERR reference/a.csv: empty: 머리 행이 없다
     PROBE csv blank-only ERR reference/a.csv: empty: 머리 행이 없다
@@ -417,9 +420,9 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     PROBE not-verified no-inputs status=not_verified reason=no_inputs
     PROBE not-verified no-inputs directory not read status=not_verified reason=no_inputs
     PROBE not-verified no-compare-fields status=not_verified reason=no_compare_fields
-    PROBE not-verified reference-header-only reference/*.csv: no-rows: 기준 자료에 데이터 행이 없다
-    PROBE not-verified reference-no-files reference/*.csv: file: 일치하는 파일이 없다
-    PROBE not-verified candidate-no-files ERR candidate/*.csv: file: 일치하는 파일이 없다
+    PROBE not-verified reference-header-only case.yaml: no-rows inputs.reference: 기준 자료에 데이터 행이 없다
+    PROBE not-verified reference-no-files case.yaml: file inputs.reference: 일치하는 파일이 없다
+    PROBE not-verified candidate-no-files ERR case.yaml: file inputs.candidate: 일치하는 파일이 없다
     PROBE example table-compare ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 acc=90.0 miss=3.3
     PROBE example form-fill ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0
     PROBE example mixed-exceptions status=not_verified reason=no_inputs
@@ -454,8 +457,8 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     PROBE alt item=cell accuracy=94.4
     PROBE alt denominator=both-present accuracy=93.1
     PROBE alt denominator=reference+extra accuracy=87.1
-    TIMING compare rows=10000 bytes=456138 ms=83 json-bytes=4447357 ref=10000 cand=10000 match=10000 mismatch=0 missing=0 extra=0 within=10000 acc=100.0 miss=0.0
-    TIMING compare rows=100000 bytes=4561798 ms=693 json-bytes=44662969 ref=100000 cand=100000 match=100000 mismatch=0 missing=0 extra=0 within=100000 acc=100.0 miss=0.0
+    TIMING compare rows=10000 bytes=456138 ms=105 json-bytes=4447357 ref=10000 cand=10000 match=10000 mismatch=0 missing=0 extra=0 within=10000 acc=100.0 miss=0.0
+    TIMING compare rows=100000 bytes=4561798 ms=696 json-bytes=44662969 ref=100000 cand=100000 match=100000 mismatch=0 missing=0 extra=0 within=100000 acc=100.0 miss=0.0
 [s5-guard-samples] rc=0 cmd: tool guard-samples tests/Scorecard.Tests/TestData/guard/case-valid
     SHA guard reference/rows.csv 66d83729d31403dec9e866a9911c17c3850f980937966de966e9dd2caf8b693f bytes=216
     SHA guard candidate/rows.csv 9be987a92902a672ad3c8735a3f1467ce2b5a20088d89011163f11385e3d9943 bytes=216
@@ -467,23 +470,23 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     RESULT guard planted within:mean: r09 r11
 [s5a-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s5a-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    [xUnit.net 00:00:01.59]     Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [FAIL]
+    [xUnit.net 00:00:01.18]     Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [FAIL]
       Failed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [6 ms]
        Assert.Equal() Failure: Collections differ
     Actual:   OrderedIterator<string, string> ["case-invalid", "case-valid", "compare-invalid"]
          at Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic() in <작업>/c/tests/Scorecard.Tests/Guards/CoreGuardTargetTests.cs:line 74
-    Failed!  - Failed:     1, Passed:   833, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Failed!  - Failed:     1, Passed:   853, Skipped:     0, Total:   854, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s5b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s5b-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
 [s5b-g2g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3 --logger console;verbosity=normal
-      Passed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [3 ms]
       Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-invalid") [89 ms]
-      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-case-valid") [12 ms]
+      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-case-valid") [11 ms]
       Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [9 ms]
       Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [6 ms]
+      Passed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [6 ms]
     Total tests: 32
 [s5b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   854, Skipped:     0, Total:   854, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s5-run-case-valid] rc=0 cmd: tool run tests/Scorecard.Tests/TestData/guard/case-valid <작업>/ex/guard/case-valid-metrics.json
     SHA case-valid case-valid-metrics.json c5906d4588c34913613ffd6885c9d15cb4b24101a5300b0ad0ad771705ca00ae bytes=3803 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT case-valid status=measured reason=null key=row_id ref-files=[reference/rows.csv] cand-files=[candidate/rows.csv]
@@ -507,55 +510,59 @@ spec(작업 트리) sha256: d4aa91953a4cb029
     ERR reference/b.csv:2:1: duplicate-key row_id: 키가 중복된다: r02 (처음: reference/a.csv:3)
     ERR reference/c.csv:2:1: csv-syntax: 따옴표가 닫히지 않았다
     ERR candidate/a.csv:1: column label: 머리 행에 열이 없다
+[s5-xcheck-case-valid] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py tests/Scorecard.Tests/TestData/guard/case-valid <작업>/py/guard-case-valid.json
+    XCHECK sample-full status=measured reason=null counts=reference=12 candidate=12 match=8 mismatch=3 missing=1 extra=1 within=2 accuracy=66.7 missing-rate=8.3 items=7 sha256=c5906d4588c34913613ffd6885c9d15cb4b24101a5300b0ad0ad771705ca00ae bytes=3803
+[s5-xcheck-cmp] case-valid python: same
 [s6a-variant] 바뀐 줄 수: 1
 [s6a-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s6a-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 166 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 170 ms - Scorecard.Tests.dll (net10.0)
 [s6a-g2] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~CoreDeterminismGuardTests --logger console;verbosity=normal
-    [xUnit.net 00:00:00.71]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
-    [xUnit.net 00:00:00.71]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.71]       Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
-    [xUnit.net 00:00:00.71]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
-    [xUnit.net 00:00:00.71]       Collection: ["G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [37 ms]
+    [xUnit.net 00:00:00.74]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
+    [xUnit.net 00:00:00.74]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.74]       Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
+    [xUnit.net 00:00:00.75]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
+    [xUnit.net 00:00:00.75]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.75]       Collection: ["G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름"]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [38 ms]
        Assert.Empty() Failure: Collection was not empty
     Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [6 ms]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [7 ms]
     Collection: ["G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름"]
     Total tests: 6
 [s6b-variant] 바뀐 줄 수: 1
 [s6b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s6b-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 157 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 165 ms - Scorecard.Tests.dll (net10.0)
 [s6b-g2] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~CoreDeterminismGuardTests --logger console;verbosity=normal
-    [xUnit.net 00:00:00.69]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
-    [xUnit.net 00:00:00.69]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.69]       Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
-    [xUnit.net 00:00:00.70]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
-    [xUnit.net 00:00:00.70]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.70]       Collection: ["G2 R3 다른 경로: out/compare-errors.txt SHA-256 다름"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [30 ms]
+    [xUnit.net 00:00:00.72]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
+    [xUnit.net 00:00:00.72]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.72]       Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
+    [xUnit.net 00:00:00.74]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
+    [xUnit.net 00:00:00.74]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.74]       Collection: ["G2 R3 다른 경로: out/compare-errors.txt SHA-256 다름"]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [31 ms]
        Assert.Empty() Failure: Collection was not empty
     Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [13 ms]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [16 ms]
     Collection: ["G2 R3 다른 경로: out/compare-errors.txt SHA-256 다름"]
     Total tests: 6
 [s6-restore-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s7a-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    [xUnit.net 00:00:01.50]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [FAIL]
-    [xUnit.net 00:00:01.51]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [FAIL]
-    [xUnit.net 00:00:01.51]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "table-compare") [FAIL]
+    [xUnit.net 00:00:03.38]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [FAIL]
+    [xUnit.net 00:00:03.40]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [FAIL]
+    [xUnit.net 00:00:03.40]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "table-compare") [FAIL]
       Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [5 ms]
        Assert.Equal() Failure: Collections differ
          at Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(String example) in <작업>/c/tests/Scorecard.Tests/Synthetic/ExampleFileTests.cs:line 81
-      Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [< 1 ms]
+      Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [1 ms]
        at InvokeStub_ExampleFileTests.Example_folder_has_exactly_the_planned_files(Object, Span`1)
       Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "table-compare") [< 1 ms]
-    Failed!  - Failed:     3, Passed:   831, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Failed!  - Failed:     3, Passed:   851, Skipped:     0, Total:   854, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s7b-variant] ExampleFileTests 바뀐 줄 수: 1
 [s7b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s7b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   854, Skipped:     0, Total:   854, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s7b-pattern] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~ExamplePatternTests|FullyQualifiedName~Example_text_files --logger console;verbosity=normal
     Total tests: 8
 [s7-eol] plain/metrics.json original=4314 autocrlf-clone=4514 same=no

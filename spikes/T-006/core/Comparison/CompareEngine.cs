@@ -57,12 +57,12 @@ public static class CompareEngine
         var candidateFiles = sources.Candidate.OrderBy(f => f.Path, StringComparer.Ordinal).ToArray();
         CheckOverlap(referenceFiles, candidateFiles, errors);
 
-        // 한쪽에 파일이 하나도 없으면 file 오류(CompareInputs.Read와 같은 줄).
-        foreach (var (side, files, pattern) in new[] { (0, referenceFiles, inputs.Reference), (1, candidateFiles, inputs.Candidate) })
+        // 한쪽에 파일이 하나도 없으면 file 오류(CompareInputs.Read와 같은 줄: Source = case.yaml, Path = inputs.*).
+        foreach (var (side, files, fieldPath) in new[] { (0, referenceFiles, CompareRules.PathReference), (1, candidateFiles, CompareRules.PathCandidate) })
         {
             if (files.Length == 0)
             {
-                errors.Add(side, -1, new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "일치하는 파일이 없다"));
+                errors.Add(side, -1, new CaseError(CaseParser.FileName, 0, 0, CompareRules.CodeFile, fieldPath, "일치하는 파일이 없다"));
             }
         }
 
@@ -70,7 +70,7 @@ public static class CompareEngine
         var candidate = ReadSide(1, candidateFiles, inputs.Key, definition.Compare, checkNumbers: false, errors);
         if (errors.Count == 0 && reference.Count == 0)
         {
-            errors.Add(0, -1, new CaseError(inputs.Reference, 0, 0, CompareRules.CodeNoRows, string.Empty, "기준 자료에 데이터 행이 없다"));
+            errors.Add(0, -1, new CaseError(CaseParser.FileName, 0, 0, CompareRules.CodeNoRows, CompareRules.PathReference, "기준 자료에 데이터 행이 없다"));
         }
 
         if (errors.Count > 0)

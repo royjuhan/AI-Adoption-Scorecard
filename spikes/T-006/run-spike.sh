@@ -43,7 +43,7 @@ step() {
   ( cd "$dir" && "$@" ) > "$log" 2>&1
   rc=$?
   note "[$name] rc=$rc cmd: $*"
-  grep -E '^(RESULT|PROBE|SHA|ERR|ASMREF|TYPEREF-NS|SPEC|SPEC-DIFF|BLOCK|TIMING) |warning [A-Z]+[0-9]+|error [A-Z]+[0-9]+|Passed!|Failed!|\[FAIL\]|^ +(N[1-6]|D1|R1|Y1) |^ +G[23] |Assert\.|^ +(Expected|Actual):|compare-case-valid|compare-invalid|Real_targets|Example_folder_has|^Total tests:|Collection: \["G|Unhandled' "$log" \
+  grep -E '^(RESULT|PROBE|SHA|ERR|ASMREF|TYPEREF-NS|SPEC|SPEC-DIFF|BLOCK|TIMING|XCHECK) |warning [A-Z]+[0-9]+|error [A-Z]+[0-9]+|Passed!|Failed!|\[FAIL\]|^ +(N[1-6]|D1|R1|Y1) |^ +G[23] |Assert\.|^ +(Expected|Actual):|compare-case-valid|compare-invalid|Real_targets|Example_folder_has|^Total tests:|Collection: \["G|Unhandled' "$log" \
     | clean | awk '!seen[$0]++' | head -300 | sed 's/^/    /' | tee -a "$SUMMARY"
   return 0
 }
@@ -76,7 +76,7 @@ step s2-core-g1 "$C" dotnet test $SLN --no-build -c Release --filter Rule=G1
 step s2-core-format "$C" dotnet format $SLN --verify-no-changes
 step s2-core-test "$C" dotnet test $SLN --no-build -c Release
 
-# S3. 도구 빌드 → Core 참조 비교 → 예제 3종 대조 → 바이트 확인 → 결정론 → Python 독립 구현.
+# S3. 도구 빌드 → Core 참조 비교 → 예제 3종 대조 → 바이트 확인 → 결정론 → Python 독립 구현(xcheck, 스펙 글만 보고 짠 것. C# 코드를 쓰지 않는다).
 step s3-tool-build "$C" dotnet build spikes/T-006/CompareSpike/CompareSpike.csproj -c Release --artifacts-path "$WORK/artifacts" -warnaserror
 TOOLDLL="$WORK/artifacts/bin/CompareSpike/release/CompareSpike.dll"
 tool() { dotnet "$TOOLDLL" "$@"; }
@@ -129,6 +129,9 @@ mkdir -p "$EX/guard"
 cp -R "$SPIKE/samples/guard/compare-invalid" "$EX/guard/sample"
 step s5-run-case-valid "$C" tool run "$GUARD/case-valid" "$EX/guard/case-valid-metrics.json"
 step s5-run-compare-invalid "$C" tool run "$GUARD/compare-invalid" "$EX/guard/compare-invalid.txt"
+# Python 독립 구현도 G2 표본 case-valid(텍스트 필드 label, 결과 행 섞임)에서 같은 바이트를 내는지 본다.
+step s5-xcheck-case-valid "$C" python3 -I "$C/spikes/T-006/xcheck/compare.py" "$GUARD/case-valid" "$WORK/py/guard-case-valid.json"
+note "[s5-xcheck-cmp] case-valid python: $(cmp -s "$EX/guard/case-valid-metrics.json" "$WORK/py/guard-case-valid.json" && echo same || echo DIFF)"
 
 # S6. 음성 대조. (a) 숫자를 현재 문화권으로 읽음 → G1 → G2. (b) 입력 파일 경로를 절대 경로로 → G2.
 RULES="$C/src/Scorecard.Core/Comparison/CompareRules.cs"

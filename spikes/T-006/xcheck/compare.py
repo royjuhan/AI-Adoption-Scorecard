@@ -5,6 +5,7 @@
 # 사용: compare.py <케이스폴더> <출력파일>
 # 표준 라이브러리만 쓴다. 네트워크 없음.
 import csv
+import hashlib
 import io
 import re
 import sys
@@ -153,9 +154,15 @@ def main(case_dir, out):
                            'missing': missing, 'extra': extra, 'within': within_items},
                 'accuracy_pct': Raw(pct(match, len(ref))), 'missing_rate_pct': Raw(pct(missing, len(ref))),
                 'fields': fields, 'items': items}
+    data = (dump({'schema_version': 1, 'case': name, 'compare': body}) + '\n').encode('utf-8')
     Path(out).parent.mkdir(parents=True, exist_ok=True)
-    Path(out).write_bytes((dump({'schema_version': 1, 'case': name, 'compare': body}) + '\n').encode('utf-8'))
-    print('ok')
+    Path(out).write_bytes(data)
+    # 요약 줄: C# 후보의 RESULT 줄과 따로 센 수치. 바이트 비교는 run-spike.sh가 한다.
+    c = body['counts']
+    counts = 'null' if c is None else ' '.join(f'{k}={v}' for k, v in c.items())
+    print(f"XCHECK {name} status={body['status']} reason={body['reason'] or 'null'} counts={counts} "
+          f"accuracy={body['accuracy_pct'] or 'null'} missing-rate={body['missing_rate_pct'] or 'null'} "
+          f"items={len(body['items'])} sha256={hashlib.sha256(data).hexdigest()} bytes={len(data)}")
 
 
 if __name__ == '__main__':

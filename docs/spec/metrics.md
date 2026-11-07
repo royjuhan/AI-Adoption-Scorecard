@@ -1,11 +1,11 @@
 # metrics (T-006 스펙: 대조와 지표)
 
 - 상태: 초안. 사람 승인 전. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
-- 반영한 사람 결정: metrics.json 첫 키 `"schema_version": 1`(정수). juhan 결정, 2026-11-07, 리드 전달(3.2).
-- 진행 순서(리드 전달): 지금은 스펙·스파이크만. Core 구현과 `expected/metrics.json` 커밋은 T-007 머지 뒤에 한다(7.1, 8절).
+- 반영한 사람 결정: ADR 0004(2026-11-07 juhan 승인). 결정 2: metrics.json 첫 키 `"schema_version": 1`(정수)(3.2). 결정 3·6: 명령 넷과 내부 명령, `--json` 출력, 오류 JSON, 종료 코드 0/2/1(3.4). expected 변경 규칙·상시 승인 예외(7.1, 승인 질문 머리말).
+- 진행 순서: T-007은 PR #7로 머지됐다(main `38a507c`). Core 구현과 `expected/metrics.json` 커밋은 이 스펙의 승인 뒤에 한다. expected는 juhan이 직접 확정한다(7.1, 8절, 승인 질문 15·17·18).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
 - 작성: prototyper, 2026-11-07
-- 확인 대상 커밋: `src/`·`tests/`·`examples/`는 `7735f8a`. 스파이크 clone의 HEAD(이 문서·스파이크 작업 중 커밋 포함)는 `summary.txt`의 `repo HEAD` 줄에 있다.
+- 확인 대상 커밋: `63430e6`(main `38a507c` + T-006 작업 파일 복원 + 카드 문구 수정). `63430e6`의 `src/`·`tests/`·`examples/`는 `38a507c`와 같다. 스파이크는 이 커밋을 clone하고 작업 트리의 이 문서·`spikes/T-006/`를 복사해 돌렸다(`summary.txt`의 `repo HEAD` 줄).
 - 확인 환경: Ubuntu 24.04 x64, .NET SDK 10.0.114, YamlDotNet 18.1.0, xUnit 2.9.3. 독립 구현 대조에만 Python 3.13.
 - 스파이크: `spikes/T-006/` (머지 대상 아님. 머지 전에 빠진다). 실행은 `spikes/T-006/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-006/summary.txt`. 이 문서의 JSON 블록, SHA-256, 오류 줄은 스파이크 후보(`spikes/T-006/core/Comparison/`)가 실제로 낸 것이다.
 
@@ -37,15 +37,16 @@
 | 리드 지시: 오류 모델과 메시지 | 4.7 | 14 |
 | 리드 지시: G1 충돌, 결정론, Core API | 4.10, 4.11 | 1, 19 |
 | 메모: T-004·T-005 예제 파일은 바꾸지 않는다 | 7.1 | 17 |
-| juhan 결정: metrics.json 첫 키 `schema_version` | 3.2, 3.3 | — (결정됨) |
+| ADR 0004 결정 2: metrics.json 첫 키 `schema_version` | 3.2, 3.3 | — (결정됨) |
+| ADR 0004 결정 3·6: 내부 명령 `compare`, `--json` 출력 = 결과 객체, 오류 JSON, 종료 코드 0/2/1 | 3.4, 4.7 | 14, 20 |
 
 범위 밖:
 
 - 판정: 통과·조건부·보류·미검증 판정, `thresholds` 사용과 기본값, "특정 유형에만 불일치가 몰림". 판정 카드에서 정한다(11절).
-- 시간 지표(건당 처리 시간, 검토 시간, 재작업률, 완료당 비용). `scorecard measure`·판정 카드.
-- `scorecard compare` 명령, 출력 폴더 위치, 화면 문구. M2(cli-dev).
-- 입력 SHA-256 기록. 지시문 2절 2는 "평가서에 기록"이다 [읽음]. classification.md와 같이 평가서 카드로 둔다. metrics.json에는 넣지 않는다. Core API가 읽은 바이트를 돌려주므로 평가서가 같은 바이트로 해시를 낼 수 있다(4.11).
-- 자료 투입 단계의 "읽기 전용 복사"(지시문 3.1 4단계). M2.
+- 시간 지표(건당 처리 시간, 검토 시간, 재작업률, 완료당 비용). 내부 명령 `measure`(사용자 명령 `check` 안)·판정 카드.
+- 명령. 사용자 명령 `scorecard check`와 내부 명령 `compare`의 인자·옵션, 출력 폴더 위치, 화면 문구, `--json` 출력을 쓰는 코드. M2(M2-1 명령 틀과 AI용 입구, M2-5 `check`). 이 문서는 그 명령이 낼 대조 결과와 오류 값만 정한다(3.4).
+- 입력 SHA-256 기록. 지시문 2절 2는 "평가서에 기록"이다 [읽음]. 지시문 3.5는 스코어카드 7구역 "입력 SHA-256"이다 [읽음]. classification.md와 같이 스코어카드 카드(`report.md`, M2-3·M2-5)로 둔다. metrics.json에는 넣지 않는다. Core API가 읽은 바이트를 돌려주므로 스코어카드가 같은 바이트로 해시를 낼 수 있다(4.11).
+- 자료 투입의 "읽기 전용으로 복사하고 해시를 남긴다"(지시문 3.1 `check` 행). M2-5.
 - CSV가 아닌 형식(Excel 파일 등). 이 카드는 CSV만 읽는다.
 
 ## 2. 입력
@@ -58,7 +59,7 @@
 | --- | --- | --- | --- |
 | A | Core(`CompareDirectory`)만 | Cli가 짧다. glob 규칙이 Core 한 곳에 있다 | 테스트가 늘 파일을 만들어야 한다 |
 | B | 부르는 쪽(Cli)이 바이트를 넘긴다 | Core가 순수 함수다 | glob 규칙이 Cli에 간다. Core 테스트·G2·G3가 파일 찾기를 보지 않는다 |
-| C (제안) | 둘 다. `CompareDirectory` = `CompareInputs.Read`(파일 찾기·읽기) + `Compare`(순수 함수, 바이트) | glob은 Core. 테스트는 메모리 바이트로 `Compare`를 부른다. 평가서가 같은 바이트로 해시를 낸다 | 공개 API가 하나 더 있다 |
+| C (제안) | 둘 다. `CompareDirectory` = `CompareInputs.Read`(파일 찾기·읽기) + `Compare`(순수 함수, 바이트) | glob은 Core. 테스트는 메모리 바이트로 `Compare`를 부른다. 스코어카드가 같은 바이트로 해시를 낸다 | 공개 API가 하나 더 있다 |
 
 - Core가 파일을 읽는 것은 G1과 충돌하지 않는다. `CaseParser.ParseDirectory`가 이미 `File.ReadAllBytes`·`Directory.EnumerateFileSystemEntries`를 쓴다 [읽음]. D1 목록에 파일 읽기 멤버는 없다 [읽음 guard-tests.md D1 표]. 후보를 넣고 G1이 통과했다 [S2].
 - 읽기만 한다. 쓰는 API(`File.Write*`, `Create`, `Delete`, `Move`)를 쓰지 않는다. G3 통과 [S5b]. 같은 바이트 배열을 넘기면 대조 뒤에도 바이트가 같다 [P:immutable].
@@ -105,7 +106,7 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 ```
 
 - 위 블록은 모양 설명이다. 실제 바이트는 7절 블록처럼 배열 원소도 한 줄에 하나다.
-- 첫 키는 `schema_version`이다. 값은 정수 `1`. juhan 결정(2026-11-07, 리드 전달): 처음부터 버전을 넣는다. 미검증 모양에도 있다. 속성을 빼거나 이름·뜻을 바꾸는 카드가 값을 올리고 `expected/metrics.json`을 같이 고친다(그 변경은 juhan 직접 승인).
+- 첫 키는 `schema_version`이다. 값은 정수 `1`. ADR 0004 결정 2(juhan, 2026-11-07): 처음부터 버전을 넣는다. 미검증 모양에도 있다. 속성을 빼거나 이름·뜻을 바꾸는 카드가 값을 올리고 `expected/metrics.json`을 같이 고친다. 그 변경은 ADR 0004의 expected 변경 규칙을 따르고 juhan이 직접 승인한다.
 - 지표는 `compare` 아래에 둔다. 판정 카드가 시간 지표·판정을 같은 파일의 다른 속성으로 더할 수 있게 하려는 것이다(11절).
 
 속성 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 순서는 파일 안 순서(table-compare에서 처음 나오는 순서)다. `[]`는 배열 원소다.
@@ -160,7 +161,7 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 - `items`에 쓰는 항목: 값 불일치, 누락, 추가, 그리고 허용오차 안 차이가 있는 일치. 차이 없는 일치는 쓰지 않는다. 그래서 같은 자료면 `items`가 `[]`다 [S3 form-fill].
 - 칸 값은 문자열로 쓴다. 숫자 칸도 정규화한 텍스트 그대로다(`1e3`은 `1e3`). 숫자로 바꿔 쓰지 않는다.
 - 쓰지 않는 것: 절대 경로, 입력 해시, 정규화 전 원문, `compare`에 없는 열(`signal_type`), 차이 없는 일치 항목, 오류. → 승인 질문 15, 16.
-- 오류가 있으면 metrics.json이 없다(3.1). 오류를 어디에 어떻게 보일지는 Cli(M2)가 정한다.
+- 오류가 있으면 metrics.json이 없다(3.1). 명령이 `--json`으로 돌면 ADR 0004 결정 6의 오류 JSON을 낸다(3.4). 사람용 화면 문구는 M2가 정한다.
 - 미검증 모양(mixed-exceptions): `schema_version`·`case` 다음 `compare` 안에서 `status`·`reason`만 값이 있고 `key`·`counts`·퍼센트는 null, 배열은 `[]`다(7.4) [P:json empty-arrays].
 
 ### 3.3 바이트 규칙
@@ -168,14 +169,33 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 바이트 규칙은 `docs/spec/classification.md` 3.3 표와 같다: `Utf8JsonWriter`(리플렉션 직렬화 없음), 들여쓰기 2칸, 줄바꿈 `\n`(CR 0개), 끝에 `\n` 하나, UTF-8(BOM 없음), `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` [S3 json-check].
 
 - 같은 것은 바이트 규칙뿐이다. 최상위 키는 파일마다 다르다. metrics.json은 `schema_version` → `case` → `compare`(3.2)다.
-- classification.json(T-004)은 지금 첫 키가 `case`다 [읽음 classification.md 3.2]. T-007(별개 카드)에서 첫 키 `"schema_version": 1`을 갖게 된다(리드 전달). T-007 뒤에는 두 파일 모두 첫 키가 정수 `schema_version`이고, 바이트 규칙은 위 표 그대로다. 이 카드는 classification.json을 바꾸지 않는다.
+- classification.json도 T-007(PR #7, 머지됨)부터 첫 키가 정수 `"schema_version": 1`이다 [읽음 classification.md 3.2, `ClassificationJson.SchemaVersion`]. 그래서 두 파일 모두 첫 키가 같고, 바이트 규칙은 위 표 그대로다. 이 카드는 classification.json을 바꾸지 않는다. T-007 뒤 clone에서도 예제 3종 metrics.json 바이트는 T-007 전과 같았다 [S3](입력은 `case.yaml`·CSV뿐이다).
 
 - `schema_version`은 정수(`WriteNumber(int)`)로 `1`이다. 그 밖의 숫자는 `decimal` 그대로 쓴다(`WriteNumber(decimal)`). 자릿수가 남는다: `90.0`, `1.0`, `1.50`, `0` [P:json decimal]. 퍼센트는 늘 소수 한 자리다(4.8).
 - 이스케이프는 classification.md 3.3 표와 같다. 키에 큰따옴표, 역슬래시, 탭, U+2028, U+1F600, `<>&'+`, 백틱을 넣으면 차례로 `\"`, `\\`, `\t`, `\u2028`, `\uD83D\uDE00`, 그대로, 그대로가 된다 [P:json escape key].
 - 빈 배열은 `[]`다(한 줄) [P:json empty-arrays].
-- 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [P:culture]. Python 독립 구현(`spikes/T-006/xcheck/compare.py`, 이 문서 3·4절만 보고 짰다)이 예제 3종에서 같은 바이트를 냈다 [S3 det-cmp python].
+- 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [P:culture]. Python 독립 구현(`spikes/T-006/xcheck/compare.py`, 이 문서 3·4절만 보고 짰다. C# 코드를 쓰지 않는다)이 예제 3종과 G2 표본 `case-valid`에서 같은 수치와 같은 바이트를 냈다 [S3 xcheck, S5 xcheck-cmp](7.1).
 - 기준·결과 CSV의 줄바꿈(CRLF, CR), BOM, 따옴표, 마지막 줄바꿈 없음, 끝 빈 줄, 칸 앞뒤 공백 변형 9종을 기준·결과 양쪽 또는 결과만 바꿔도 같은 바이트다 [P:eol].
 - `CompareSources`의 파일 순서와 상관없다 [P:order reference files given in reverse]. 결과 행 순서를 바꾸면 셈은 같고, 줄 번호가 바뀌어 바이트는 다르다 [P:order table-compare candidate rows sorted].
+
+### 3.4 명령과 AI용 입구 (ADR 0004 적용)
+
+이 카드는 명령을 만들지 않는다(1절 범위 밖). 명령이 이 결과를 낼 때는 ADR 0004 결정 3·6과 지시문 3.1을 따른다 [읽음]. 아래는 그 적용이다. 명령 쪽 바이트(표준 출력, 오류 JSON)는 이 스파이크가 만들지 않았다(**미확인**, M2-1에서 확인).
+
+- 명령: 사용자 명령은 `scorecard check <case>`다. 대조는 그 안의 내부 명령 `compare`가 한다. 내부 명령은 도움말에 보이지 않고 테스트·재현에 쓴다(지시문 3.1).
+- `--json` 출력: 봉투가 없다. 내부 명령 `compare --json`의 표준 출력은 그 케이스의 metrics.json과 바이트까지 같다(ADR 0004 결정 6 규칙 5. `classify --json` = classification.json과 같은 방식). 그래서 7절 `expected/metrics.json`이 AI용 입구의 정답도 된다. `check --json`의 결과는 스코어카드 결과 객체(`report.md`, M2-3·M2-5)다. 그 검증 부분은 3.2의 `compare` 모양을 쓴다(ADR 0004 "영향 받는 스펙").
+- 바이트: 3.3 규칙은 ADR 0004 결정 6 규칙 3(UTF-8 BOM 없음, LF, 들여쓰기 2칸, 끝 `\n`)·규칙 4(첫 키 `"schema_version": 1`)와 같다. 경로는 케이스 폴더 기준 상대 경로만 쓴다(지시문 2절 3, 4.10).
+- 종료 코드(ADR 0004 결정 6 규칙 7):
+  - 0: `measured`와 미검증(`not_verified`) 모두. 미검증은 오류가 아니다(규칙 7: 판정이 보류·미검증이어도 0).
+  - 2: 4.7 오류(코드 13개)가 하나라도 있을 때. 모두 입력 오류다(파일 없음, 형식·검증 오류). 파일·폴더 읽기 실패(`file` `파일을 읽을 수 없다: <타입>`)도 2다.
+  - 1: 예상하지 못한 예외. Core 후보는 4.7 오류만 `CaseError`로 돌려준다. 그 밖의 예외(5절 `ArgumentNullException` 등)는 잡지 않는다 [후보 코드]. 부르는 쪽(Cli)이 1과 예외 타입 이름으로 바꾼다(규칙 6).
+- 오류 JSON(ADR 0004 결정 6 규칙 6): `schema_version`, `exit_code`, `errors`. `errors`의 원소는 `CaseError` 여섯 값(`code`, `source`, `line`, `column`, `path`, `message`)을 그대로 쓴다. 4.7 오류 줄과 같은 값이고 순서도 4.7 순서다. 예: 6.4 첫 줄 `reference/a.csv:3:8: number mean: 숫자가 아니다: x1`은 `code` = `number`, `source` = `reference/a.csv`, `line` = 3, `column` = 8, `path` = `mean`, `message` = `숫자가 아니다: x1`이다. 오류 JSON의 키 순서·바이트는 `json-output.md`(M2-1)에서 고정한다.
+- `source`(ADR 0004 "경로와 G2 R3"): 케이스 폴더 기준 상대 경로, `/` 구분. `inputs` 오류(파일이 정해지기 전: `pattern`, 폴더·파일 없음, `no-rows`)는 `case.yaml`이다. CSV 오류는 그 CSV의 상대 경로(`reference/a.csv`)다. ADR은 "오류 `source`는 파일 이름"이라 한다. `case.yaml`은 이름과 상대 경로가 같다. CSV는 하위 폴더에 있고 양쪽에 같은 이름(`reference/a.csv`, `candidate/a.csv`)이 올 수 있어 폴더를 붙인다(**해석**, 승인 질문 20). 절대 경로·`~`·드라이브 문자는 없다. 새면 G2 R3가 잡는다(4.10 음성 대조 (b)).
+- `path`: 필드 경로다. 파일 경로가 아니다(ADR 0004 결정 6). CSV 오류는 열 이름(키 열 또는 `compare` 필드), `inputs` 오류는 `inputs.reference`·`inputs.candidate`다. 파서 오류와 같은 표기다(case-schema 6.4 `case.yaml:23:14: format inputs.reference: …` [읽음]). 열과 상관없는 CSV 오류(`encoding`, `empty`, `csv-syntax`, `field-count`, `overlap`, 읽기 실패)는 빈 문자열.
+- `line`·`column`: CSV 오류는 4.2의 줄·열. `inputs` 오류는 0이다. `CaseDefinition`에 위치가 없다(ADR 0004 "위치가 없으면 `line`·`column`은 0").
+- 이전 초안과 다른 점: `inputs` 오류의 `source`에 패턴 글자(`reference/*.csv`)를 쓰고 `path`를 비웠었다. 패턴은 파일 이름이 아니고, `path`가 비면 오류 JSON만으로 어느 설정이 틀렸는지 알 수 없다. 그래서 `source` = `case.yaml`, `path` = `inputs.*`로 바꿨다. 메시지는 그대로다 [P:glob read], [P:not-verified], [P:csv header-only].
+- G2·G3: 4.10의 Core 대상(`compare-case-valid`, `compare-invalid`)은 metrics.json과 오류 줄 파일을 쓴다. 테스트 어댑터의 파일이고 제품 출력이 아니다. 명령 `--json` 출력(오류 JSON 포함)의 G2·G3 대상은 M2-1·M2-5에서 더한다(ADR 0004 결정 6 규칙 9).
+- → 승인 질문 14, 20.
 
 ## 4. 규칙
 
@@ -439,20 +459,21 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 
 오류 하나는 `CaseError(Source, Line, Column, Code, Path, Message)`다(case-schema 4.9를 그대로 쓴다). 문자열 형식도 같다: `<Source>:<Line>:<Column>: <Code> <Path>: <Message>`. 열이 0이면 `<Source>:<Line>:`, 줄도 0이면 `<Source>:`, 경로가 비면 `<Code>: <Message>`.
 
-- `Source`: 케이스 폴더 기준 상대 파일 경로. 파일이 정해지기 전 오류(`pattern`, 폴더·파일 없음, `no-rows`)는 그 패턴(`inputs.reference` 또는 `inputs.candidate` 값)이다.
-- `Path`: 열 이름(키 열 또는 `compare` 필드). 열과 상관없는 오류는 빈 문자열.
+- `Source`: 케이스 폴더 기준 상대 파일 경로. 파일이 정해지기 전 오류(`pattern`, 폴더·파일 없음, `no-rows`)는 `case.yaml`이다(`CaseParser.FileName`). 줄·열은 0이다(3.4).
+- `Path`: 열 이름(키 열 또는 `compare` 필드). 파일이 정해지기 전 오류는 그 패턴의 필드 경로 `inputs.reference` 또는 `inputs.candidate`다. 그 밖의 오류는 빈 문자열.
+- 예: `case.yaml: file inputs.candidate: 일치하는 파일이 없다`, `case.yaml: pattern inputs.reference: 지원하지 않는 패턴이다. …` [P:glob read], [P:not-verified].
 - `Message`: 한국어. 메시지 안의 값은 제어 문자를 `\uXXXX`로 쓰고, 64자를 넘으면 자르고 `…`를 붙인다.
 - 오류는 모두 모은다. 한 번에 고칠 수 있게 하려는 것이다 [P:column all-errors-collected]. 단 한 파일에서 `encoding`·`empty`·`csv-syntax`가 나면 그 파일의 나머지는 보지 않는다. 머리 행에 `column`·`duplicate-column`이 있으면 그 파일의 데이터 행은 보지 않는다.
 - 오류가 하나라도 있으면 지표를 내지 않는다(3.1).
-- 순서: 기준 쪽 → 결과 쪽. 쪽 안에서는 파일 앞 오류(패턴) → 파일 경로 서수. 파일 안에서는 (줄, 열). 같으면 찾은 순서.
+- 순서: 기준 쪽 → 결과 쪽. 쪽 안에서는 파일이 정해지기 전 오류(`Source` = `case.yaml`) → 파일 경로 서수. 파일 안에서는 (줄, 열). 같으면 찾은 순서.
 - 오류 수에 상한이 없다. 큰 파일이 모두 틀리면 오류 줄이 행 수만큼 나온다. 상한은 T-003에서도 미뤘다(classification.md 1절). → 승인 질문 14.
 
 오류 코드. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다.
 
 | 코드 | 언제 | 위치 | 메시지 |
 | --- | --- | --- | --- |
-| `pattern` | 패턴 모양이 4.1 밖 | 패턴 | `지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다` |
-| `file` | 폴더 없음 / 맞는 파일 없음 / 읽기 실패 / 케이스 폴더 없음 | 패턴, 읽기 실패는 그 파일 | `폴더가 없다: <폴더>` / `일치하는 파일이 없다` / `파일을 읽을 수 없다: <예외 타입>` / `폴더를 읽을 수 없다: <예외 타입>` / `케이스 폴더가 없다` |
+| `pattern` | 패턴 모양이 4.1 밖 | `case.yaml`, 경로 = `inputs.reference`·`inputs.candidate` | `지원하지 않는 패턴이다. 폴더는 글자 그대로, 마지막 조각에만 '*'·'?'를 쓴다` |
+| `file` | 폴더 없음 / 맞는 파일 없음 / 읽기 실패 / 케이스 폴더 없음 | `case.yaml`, 경로 = `inputs.reference`·`inputs.candidate`. 파일 읽기 실패는 그 파일 | `폴더가 없다: <폴더>` / `일치하는 파일이 없다` / `파일을 읽을 수 없다: <예외 타입>` / `폴더를 읽을 수 없다: <예외 타입>` / `케이스 폴더가 없다` |
 | `overlap` | 같은 파일이 두 번 나옴(기준·결과 패턴이 겹침) | 둘째 파일 | `같은 파일이 두 번 나온다(기준·결과 패턴이 겹친다)` |
 | `encoding` | UTF-16 BOM / UTF-8이 아닌 바이트 | 파일:1 / 파일:그 바이트가 있는 줄 | `UTF-16이다. UTF-8로 저장한다` / `UTF-8이 아니다 (바이트 <N>)` |
 | `empty` | 빈 파일, BOM만, 빈 행만 | 파일 | `머리 행이 없다` |
@@ -463,7 +484,7 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 | `empty-key` | 키 칸이 정규화 뒤 빔 | 키 칸, 경로 = 키 열 | `키가 비어 있다` |
 | `duplicate-key` | 같은 쪽에 같은 키 | 둘째 키 칸, 경로 = 키 열 | `키가 중복된다: <키> (처음: <파일>:<줄>)` |
 | `number` | 기준 자료의 숫자 필드 칸이 숫자가 아님 | 그 칸, 경로 = 필드 | `숫자가 아니다: <값>` |
-| `no-rows` | 다른 오류가 없는데 기준 데이터 행이 0 | 기준 패턴 | `기준 자료에 데이터 행이 없다` |
+| `no-rows` | 다른 오류가 없는데 기준 데이터 행이 0 | `case.yaml`, 경로 = `inputs.reference` | `기준 자료에 데이터 행이 없다` |
 
 - 쓰지 않는 열의 중복(`a,b,b`에서 `b`를 안 쓰면)은 오류가 아니다 [P:column duplicate-unused-column]. 머리 행 이름은 앞뒤 공백을 떼고(`row_id `도 `row_id`), 대소문자는 구분한다 [P:column header-spaces-trimmed, header-case-differs].
 - `column`은 기준·결과 모두에 건다. 결과 자료에 `compare` 필드 열이 없으면 오류다(모든 항목을 값 불일치로 세지 않는다) [P:column missing-in-candidate]. → 승인 질문 6.
@@ -511,7 +532,8 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 
 - `Compare`는 순수 함수다. 난수·시각·환경 변수·현재 폴더를 쓰지 않는다. 비교는 서수, 숫자는 decimal·`InvariantCulture`.
 - 파일 목록은 서수로 정렬한다. OS 열거 순서를 쓰지 않는다. `Dictionary`·`HashSet`은 찾기에만 쓴다. 출력 순서는 3.1이다.
-- G1: 후보 6파일을 Core에 넣고 Release `-warnaserror` 빌드, G1 테스트 61개, `dotnet format --verify-no-changes`, 전체 테스트 830개가 통과했다 [S2]. 기준선 Core와 AssemblyRef·TypeRef 네임스페이스 목록이 같다(T-004에서 `System.Text.Json`이 이미 들어왔다) [S3 refs-diff].
+- 기준선(`63430e6` clone): Release `-warnaserror` 빌드, 전체 테스트 850개 통과 [S1]. T-007 전 기준선은 830개였다. T-007(PR #7)이 20개를 더했다.
+- G1: 후보 6파일을 Core에 넣고 Release `-warnaserror` 빌드, G1 테스트 61개, `dotnet format --verify-no-changes`, 전체 테스트 850개가 통과했다 [S2]. 기준선 Core와 AssemblyRef·TypeRef 네임스페이스 목록이 같다(T-004에서 `System.Text.Json`이 이미 들어왔다) [S3 refs-diff].
 - G2·G3 등록(제안):
 
 | 이름 | 샘플(`TestData/guard/…`) | 어댑터 |
@@ -519,9 +541,9 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 | `compare-case-valid` | `case-valid` (기존. `reference/rows.csv`·`candidate/rows.csv`를 더한다) | `CaseParser.ParseDirectory` → `CompareEngine.CompareDirectory` → 출력 폴더의 `metrics.json` 한 파일 |
 | `compare-invalid` | `compare-invalid` (새) | 같음. 오류면 오류 줄(LF, 끝 LF)을 `compare-errors.txt` 한 파일로 |
 
-- `case-valid`의 두 CSV는 T-005 G2 고정 계획(`GuardTargets.SyntheticGuardPlan`과 같은 값: 시드 7, `rows.csv`, 12행)으로 `SyntheticGenerator`가 만든 바이트다(SHA-256 `reference/rows.csv` `66d83729…`, `candidate/rows.csv` `9be987a9…`, 각 216바이트) [S5 guard-samples]. 대조하면 심은 구조가 그대로 나온다: 12행, 일치 8(허용오차 안 차이 2), 값 불일치 3(`start`·`mean`·`label` 하나씩), 누락 1, 추가 1, 정확도 66.7, 누락률 8.3 [S5 run-case-valid].
+- `case-valid`의 두 CSV는 T-005 G2 고정 계획(`GuardTargets.SyntheticGuardPlan`과 같은 값: 시드 7, `rows.csv`, 12행)으로 `SyntheticGenerator`가 만든 바이트다(SHA-256 `reference/rows.csv` `66d83729…`, `candidate/rows.csv` `9be987a9…`, 각 216바이트) [S5 guard-samples]. 대조하면 심은 구조가 그대로 나온다: 12행, 일치 8(허용오차 안 차이 2), 값 불일치 3(`start`·`mean`·`label` 하나씩), 누락 1, 추가 1, 정확도 66.7, 누락률 8.3 [S5 run-case-valid]. Python 독립 구현도 같은 수치와 같은 바이트(metrics.json SHA-256 `c5906d45…`, 3,803바이트)를 냈다 [S5 xcheck-case-valid, xcheck-cmp].
 - `compare-invalid`는 6.4다. 정상 `case.yaml` + 오류 7건을 섞은 CSV 4개다. 오류 줄의 `Source`에 상대 경로가 들어가므로 절대 경로가 새면 R3가 잡는다.
-- 결과 [S5b]: `compare-case-valid`·`compare-invalid` G2·G3 차이 0건. 기존 대상(`case-parser-valid`, `classifier-case-valid`, `synthetic-case-valid` 등)도 CSV가 늘어난 `case-valid`에서 그대로 통과한다(G2·G3 32개, 전체 834개).
+- 결과 [S5b]: `compare-case-valid`·`compare-invalid` G2·G3 차이 0건. 기존 대상(`case-parser-valid`, `classifier-case-valid`, `synthetic-case-valid` 등)도 CSV가 늘어난 `case-valid`에서 그대로 통과한다(G2·G3 32개, 전체 854개 = 기준선 850 + 새 대상 2개 × G2·G3).
 - 기존 테스트 하나가 깨진다 [S5a]: `GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic`가 샘플 목록(중복 뺀 것)을 `["case-invalid", "case-valid"]`로 고정해 둬서, 새 샘플 `compare-invalid`가 생기면 실패한다. 이 테스트의 뜻은 "실제 대상은 `guard/basic`을 쓰지 않는다"이다. "`basic`이 없다 + `case-valid`가 있다 + 모든 샘플 폴더가 있다"로 바꾼다 [S5b]. 약화가 아니라 새 샘플을 반영하는 변경이다. PR 본문에 적는다. → 승인 질문 18.
 - 음성 대조 [S6]: (a) 숫자를 `CultureInfo.CurrentCulture`로 읽게 바꾸면 G1은 통과하고 G2가 잡는다: `G2 R4 문화권: out/metrics.json 삭제`, `out/compare-errors.txt 추가`(de-DE에서 기준 소수 칸이 숫자가 아니게 되어 오류로 바뀐다). `compare-invalid`는 `G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름`. (b) `SourceFile.Path`에 절대 경로를 넣으면 G1은 통과하고 `G2 R3 다른 경로: out/metrics.json SHA-256 다름`(`compare-invalid`는 `out/compare-errors.txt`)으로 잡는다.
 
@@ -603,10 +625,10 @@ public sealed record CsvRow(string File, int Line, IReadOnlyList<string> Header,
 | `caseDirectory`가 null·빈 문자열 | `ArgumentException` | 후보 코드 |
 | `inputs` 없음 | 미검증 `no_inputs`. 폴더를 읽지 않는다 | [P:not-verified] |
 | `compare`가 빔(`inputs`는 있음) | 미검증 `no_compare_fields`. 폴더를 읽지 않는다 | [P:not-verified] |
-| 케이스 폴더가 없음(`inputs` 있음) | `file` `케이스 폴더가 없다` (양쪽) | [P:glob read 케이스 폴더 없음] |
-| `Compare`에 파일 0개인 쪽 | `file` `일치하는 파일이 없다` | [P:not-verified candidate-no-files] |
+| 케이스 폴더가 없음(`inputs` 있음) | `case.yaml: file inputs.reference: 케이스 폴더가 없다`, `inputs.candidate`도 같음(양쪽) | [P:glob read 케이스 폴더 없음] |
+| `Compare`에 파일 0개인 쪽 | `case.yaml: file inputs.<쪽>: 일치하는 파일이 없다` | [P:not-verified candidate-no-files, reference-no-files] |
 | 결과 자료가 머리 행뿐 | 오류 아님. 모두 누락 | [P:csv candidate-header-only] |
-| 기준 자료가 머리 행뿐 | `no-rows` | [P:csv header-only] |
+| 기준 자료가 머리 행뿐 | `case.yaml: no-rows inputs.reference: 기준 자료에 데이터 행이 없다` | [P:csv header-only] |
 | 파일·폴더 읽기 중 `IOException`·`UnauthorizedAccessException` | `file` `파일을 읽을 수 없다: <타입>` / `폴더를 읽을 수 없다: <타입>` | 후보 코드. 실제로 일으키지는 않았다(**미확인**) |
 | Excel이 연 파일(`~$` 잠금 파일, 잠긴 CSV) | `*.csv`에 맞으면 읽는다. 어떤 오류가 나는지 **미확인** | 4.1 |
 | `;` 구분 CSV(유럽 문화권 Excel) | `column` 오류로 드러난다 | [P:csv semicolon-delimiter] |
@@ -643,7 +665,7 @@ public sealed record CsvRow(string File, int Line, IReadOnlyList<string> Header,
 ### 6.3 mixed-exceptions
 
 - `case.yaml`에 `inputs`가 없다. 미검증 `no_inputs`. 파일을 읽지 않는다 [S3 run-mixed-exceptions].
-- 지시문 12절 "자료 없음 → 전 항목 미검증" [읽음]. 평가서의 "측정 방법"은 평가서 카드에서 정한다.
+- 지시문 12절 "자료 없음 → 전 항목 미검증" [읽음]. 스코어카드 검증 구역(지시문 3.5 4)의 "측정 방법"은 스코어카드 카드(`report.md`)·판정 카드에서 정한다.
 
 ### 6.4 오류 예시 (`compare-invalid`)
 
@@ -720,15 +742,20 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 ### 7.1 만드는 방법과 확정 절차 (제안)
 
-1. 이 절의 블록은 스파이크 후보가 T-005 예제 파일(`examples/*/case.yaml`·`reference/`·`candidate/`)에서 실제로 낸 바이트다 [S3]. Python 독립 구현도 같은 바이트를 냈다 [S3 det-cmp python].
+1. 이 절의 블록은 엔진 후보 하나의 출력이 아니다. 두 구현이 T-005 예제 파일(`examples/*/case.yaml`·`reference/`·`candidate/`)에서 따로 낸 바이트가 같은 것이다.
+   - (a) 스파이크 후보(C#, `spikes/T-006/core/Comparison/`)가 낸 바이트 [S3 run]. 블록은 이것으로 채웠다(`spikes/T-006/fill-blocks.py`).
+   - (b) Python 독립 구현(`spikes/T-006/xcheck/compare.py`)이 따로 낸 바이트 [S3 xcheck]. 이 문서 3·4절 글만 보고 짰다. C# 코드·출력을 읽지 않는다. CSV는 Python 표준 `csv` 모듈, 숫자는 `decimal`, 퍼센트는 4.8 정수 셈, JSON은 3.3 규칙대로 직접 쓴다.
+   - (a)와 (b)가 3종 모두 바이트까지 같다(`cmp`) [S3 det-cmp python: same]. Python이 따로 찍은 수치: table-compare 기준 30·결과 30·일치 27·값 불일치 2·누락 1·추가 1·허용오차 안 차이 4, 정확도 90.0, 누락률 3.3, `items` 8개(SHA-256 `d250fbee…`). form-fill 20·20·20·0·0·0·0, 100.0, 0.0, `items` 0개(`6dd5b7c6…`). mixed-exceptions `not_verified`·`no_inputs`, 셈·퍼센트 null(`372e25df…`) [S3 xcheck].
+   - 수치는 지시문 12절(90%·3.3%, 100%·0%, 미검증) [읽음], T-005가 심은 구조(synthetic-examples.md 4.7 [읽음], 시드 2,000개 [P:seeds])와도 같다.
+   - Python이 다루는 범위: 공개 예제 모양(따옴표 없음, 오류 없음, 짧은 `case.yaml`)과 G2 표본 `case-valid`뿐이다. CSV 변형·오류·허용 오차 경계는 C# 후보의 PROBE와 S8 표 대조로만 확인했다.
 2. 사람이 이 문서를 승인할 때 블록 내용을 확정한다. 고치면 prototyper가 스파이크를 다시 돌려 블록을 맞춘다.
-3. 승인 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/expected/metrics.json`으로 옮긴다. 테스트가 블록·SHA-256 줄·파일이 같은지 본다(T-004·T-005 방식). CLAUDE.md 에이전트 폴더 제한에 `examples/`가 없다 [읽음]. 카드 폴더 범위에는 있다 [읽음 카드]. → 승인 질문 17.
+3. 승인 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/expected/metrics.json`으로 옮긴다. 구현할 Core의 출력에서 복사하지 않는다. Core가 이 파일에 맞춘다(ADR 0004 expected 변경 규칙의 뜻, 지시문 2절 11 "기대값을 먼저"). 테스트가 블록·SHA-256 줄·파일이 같은지 본다(T-004·T-005 방식). CLAUDE.md 에이전트 폴더 제한에 `examples/`가 없다 [읽음]. 카드 폴더 범위에는 있다 [읽음 카드]. → 승인 질문 17.
 4. 기존 테스트 `Example_folder_has_exactly_the_planned_files`가 예제 폴더 파일 목록을 고정해 둬서, `expected/metrics.json`을 넣으면 3건 실패한다 [S7a]. 목록에 `expected/metrics.json`을 더하면 통과한다 [S7b]. 이 테스트의 뜻은 "계획한 파일만 있다"이다. 계획에 새 파일을 더하는 변경이다. PR 본문에 적는다.
 5. T-004·T-005 예제 파일은 바꾸지 않는다(카드 메모). `examples/.gitattributes`(`* -text`)가 새 파일에도 걸린다. `core.autocrlf=true` clone에서 이 파일이 없으면 table-compare `metrics.json`이 4,314바이트에서 4,514바이트로 바뀌고, 있으면 그대로다 [S7 eol].
 6. 실제 값 패턴 검사(`ExamplePatternTests`)가 새 파일도 본다. 걸린 것이 없다 [S7b pattern].
 7. mixed-exceptions에도 `expected/metrics.json`을 둔다(미검증 모양). 지시문 5절 "expected/에는 classification.json, metrics.json, report-outline.json" [읽음].
-8. 순서(리드 전달): Core 구현과 `expected/metrics.json` 커밋은 T-007 머지 뒤에 한다. 이 절의 블록·SHA-256과 S7(예제 폴더 테스트)은 T-007 전 `main`(`7735f8a`의 `src/`·`tests/`·`examples/`) 기준이다. T-007 머지 뒤 prototyper가 스파이크를 다시 돌려 S5·S7·S8이 그대로인지 확인한다(9절 10).
-9. `expected/metrics.json`을 새로 넣는 것은 expected 변경이다. 상시 승인에서 빠졌으므로 juhan이 직접 승인한다(승인 질문 17).
+8. T-007 뒤 다시 확인: T-007은 머지됐다. 이 절의 블록·SHA-256과 S5·S7·S8은 `63430e6` clone에서 다시 돌린 결과다. T-007 전 실행(`9f30e14` clone. `src/`·`tests/`·`examples/`는 `7735f8a`와 같음)과 비교해 바뀐 것은 테스트 수뿐이다: 기준선 830 → 850, S5a·S5b·S7a·S7b 834 → 854. metrics.json SHA-256 3개, S5a(1건)·S7a(3건)의 기대 실패, S6 음성 대조, S8 차이 0건은 같다. 이번에 스파이크에서 바꾼 것(3.4 `inputs` 오류의 `source`·`path`, Python 수치 줄, G2 표본 Python 대조)도 metrics.json 바이트를 바꾸지 않았다(9절 10).
+9. `expected/metrics.json`을 새로 넣는 것은 expected 변경이다. 상시 승인에서 빠졌으므로 juhan이 직접 승인한다(승인 질문 17). 커밋 모양(제안, 질문 17): ADR 0004 expected 변경 규칙을 새 파일에 맞춰 쓴다. 커밋 메시지는 `expected migration:`으로 시작하고, 그 커밋에는 `examples/*/expected/metrics.json` 3개만 둔다(스펙 블록·SHA-256 줄은 이 스펙 PR에 이미 있다). PR 본문에 시작 전 main 통과 수(지금 850)와 끝난 뒤 통과 수(그 이상, 삭제·Skip 없음)를 적고, reviewer가 `git diff --stat`과 expected diff 전문을 붙인다.
 
 예제 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `—`는 null이다.
 
@@ -1042,7 +1069,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | 숫자(4.5) | 머리 행 `\| 칸 \| 숫자인가 \| 값 \|`. 기준 칸이면 숫자/`number` 오류, 결과 칸이면 같음/`not_number` | 2 |
 | 칸 판정(4.5) | 머리 행 `\| 허용 오차 \| 기준 값 \| 결과 값 \| 판정 \|`. 경계 행과 바로 다음 값. 넘침 6종 | 3 |
 | 텍스트(4.6) | 머리 행 `\| 글자 \| 이름 \| 앞뒤에서 떼나 \|`. NFC·NFD, 대소문자, tr-TR, 안쪽 줄바꿈 | 3 |
-| 오류 코드(4.7) | 머리 행 `\| 코드 \| 언제 \| 위치 \| 메시지 \|`. 표의 코드마다 그 오류를 내는 입력이 하나 이상. 오류 순서. 모두 모음 | 2 |
+| 오류 코드(4.7) | 머리 행 `\| 코드 \| 언제 \| 위치 \| 메시지 \|`. 표의 코드마다 그 오류를 내는 입력이 하나 이상. 오류 순서. 모두 모음. 파일이 정해지기 전 오류는 `Source` = `case.yaml`, `Path` = `inputs.reference`·`inputs.candidate`, 줄·열 0(3.4) | 2 |
 | 퍼센트(4.8) | 머리 행 `\| 일치 \| 기준 행 \| 정확도(%) \|`. 결과 소수 자릿수 1 | 1 |
 | 미검증(4.4) | `no_inputs`(폴더 없어도), `no_compare_fields`, `file`·`no-rows` 오류 | 1 |
 | JSON(3.2·3.3) | 머리 행 `\| 속성 \| 형식 \| 뜻 \|`. table-compare 경로 순서 = 표. 미검증 경로. 첫 키 `schema_version` = 정수 1(`MetricsJson.SchemaVersion`). BOM·CR 없음, 끝 `\n`, 이스케이프, decimal 자릿수 | 1 |
@@ -1055,7 +1082,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | 예제 폴더 파일 | `Example_folder_has_exactly_the_planned_files`에 `expected/metrics.json` 추가 | 1 |
 
 - 표 이름(머리 행)이 이 문서에 정확히 한 번 나와야 한다. `SpecDocument.Table`이 그렇게 검사한다 [읽음]. G2 표의 머리 행은 classification.md·synthetic-examples.md와 같은 글자다. 문서마다 한 번이라 괜찮다.
-- 시작 시점: T-007 머지 뒤(리드 전달). 그 전에는 테스트·구현·`examples/` 파일을 만들지 않는다.
+- 시작 시점: 이 스펙의 승인 뒤(질문 15·17·18은 juhan 직접). T-007은 머지됐다. 승인 전에는 테스트·구현·`examples/` 파일을 만들지 않는다.
 - 실패 테스트 먼저: test-engineer 단계에서는 `Scorecard.Core.Comparison`이 없어 새 테스트가 컴파일되지 않는다. T-003 승인 결정 14와 같이 이 상태를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
 - 골든 테스트는 `examples/` 파일이 있어야 돈다. 파일이 없으면 실패해야 한다(빈 통과 금지).
 
@@ -1070,7 +1097,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 7. 매우 큰 자료의 메모리 사용량. 10만 행까지만 쟀다.
 8. 판정 카드가 metrics.json을 읽을지, `CompareResult`를 다시 만들지(11절).
 9. Windows에서 만든 metrics.json의 SHA-256이 7.2~7.4와 같은지. 같은 바이트면 같아야 한다.
-10. T-007 머지 뒤의 결과. T-007이 classification.json·예제 테스트·G2 대상 목록을 바꾸면 S5(`Real_targets_use_case_samples_not_basic`)·S7(`Example_folder_has_exactly_the_planned_files`)의 실패 모양이 달라질 수 있다. metrics.json 바이트는 T-007과 상관없어야 한다(이 카드의 입력은 `case.yaml`·CSV뿐이다).
+10. (해결) T-007 머지 뒤의 결과. `63430e6` clone에서 다시 돌렸다. 테스트 수만 바뀌었다(기준선 850). S5a·S7a의 실패 모양, metrics.json 바이트는 그대로다(7.1 8).
 
 ## 10. 스파이크 단계 목록
 
@@ -1081,9 +1108,9 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | S0 | clone, 스파이크 파일·스펙 복사 |
 | S1 | 기준선 Release `-warnaserror` 빌드, 전체 테스트 |
 | S2 | Core에 대조 후보 6파일 → 빌드 → G1 → `dotnet format --verify-no-changes` → 전체 테스트 |
-| S3 | 스파이크 도구 빌드. 기준선·후보 Core의 참조 목록. 예제 3종 대조 → metrics.json 바이트 확인. 결정론(다시, 다른 경로, de-DE 프로세스), Python 독립 구현 |
+| S3 | 스파이크 도구 빌드. 기준선·후보 Core의 참조 목록. 예제 3종 대조 → metrics.json 바이트 확인. 결정론(다시, 다른 경로, de-DE 프로세스), Python 독립 구현(`XCHECK` 줄에 수치·SHA-256, 바이트 `cmp`) |
 | S4 | 메모리 안 실험 `PROBE`: 패턴, CSV, 키, 열, 숫자, 허용 오차, 텍스트, 퍼센트, JSON, 미검증, 예제, 문화권 7종, 줄바꿈 변형, 순서, 원본 불변, 시드 2,000개 × 3, 다른 정의, 시간 |
-| S5 | G2·G3 등록: `case-valid`에 CSV 2개, `compare-invalid` 샘플, `GuardTargets` 변형 → 기존 `CoreGuardTargetTests` 그대로(a) → 변형(b) → G2·G3 → 전체 테스트. 표본 두 개 대조 |
+| S5 | G2·G3 등록: `case-valid`에 CSV 2개, `compare-invalid` 샘플, `GuardTargets` 변형 → 기존 `CoreGuardTargetTests` 그대로(a) → 변형(b) → G2·G3 → 전체 테스트. 표본 두 개 대조. `case-valid`를 Python 독립 구현으로도 대조해 바이트 `cmp` |
 | S6 | 음성 대조: (a) 숫자를 현재 문화권으로 → G1 → G2, (b) 파일 경로를 절대 경로로 → G2 |
 | S7 | metrics.json을 clone `examples/*/expected/`에 넣고 전체 테스트(a) → 파일 목록 테스트 변형(b) → 패턴·CR 테스트. `core.autocrlf=true` clone 바이트 |
 | S8 | 이 문서의 표 9개, 7절 블록·SHA-256, 6.4 블록을 읽어 후보와 대조 |
@@ -1105,12 +1132,18 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 질문마다 prototyper의 제안을 적었다. "제안대로"로 답할 수 있다.
 
-- **juhan 직접 승인 필요**: 질문 17(`expected/metrics.json` 추가 = expected 변경, 기존 테스트 `Example_folder_has_exactly_the_planned_files` 변경, CLAUDE.md 에이전트 폴더 제한 예외), 질문 18(기존 테스트 `Real_targets_use_case_samples_not_basic` 변경). expected 변경·테스트 완화(변경)·원칙 예외는 상시 승인에서 빠졌다(리드 전달). 질문 15(metrics.json 모양)는 expected 바이트를 정하므로 질문 17과 같이 본다.
-- 나머지 질문(1~14, 16, 19)은 ADR·원칙 변경이 아니다. 상시 승인 범위인지는 리드가 판단한다.
-- 이미 결정됨(질문 아님): metrics.json 첫 키 `"schema_version": 1`(juhan, 2026-11-07).
+- **juhan 직접 승인 필요**: 질문 15, 17, 18. expected 변경, 기존 테스트 삭제·완화, ADR 결정, 지시문 2절 원칙 변경은 상시 승인에서 빠졌다(ADR 0004 "사람 결정"의 상시 승인 예외).
+  - 질문 15: metrics.json 모양. expected 바이트를 정하므로 질문 17과 같이 본다.
+  - 질문 17: `expected/metrics.json` 3개 추가(expected 변경), 기존 테스트 `Example_folder_has_exactly_the_planned_files` 변경, CLAUDE.md 에이전트 폴더 제한 예외, 커밋 모양.
+  - 질문 18: 기존 테스트 `Real_targets_use_case_samples_not_basic` 변경.
+- 리드가 추천값으로 승인: 질문 1~14, 16, 19, 20. ADR·지시문 2절 원칙을 바꾸지 않는다. 기존 테스트를 지우거나 고치지 않는다. expected를 바꾸지 않는다.
+  - 다만 질문 7·8·10·12는 7절 블록의 수치·바이트를 정한다. 리드가 추천값으로 승인해도 juhan이 질문 17에서 블록을 다르게 정하면 juhan의 답이 앞선다. 그때 prototyper가 스파이크를 다시 돌려 블록을 맞춘다.
+  - 질문 16의 제안은 지금 metrics.json에 열을 더하지 않는 것이다. 판정 카드가 더하면 그때 expected 변경이라 juhan이 승인한다.
+  - 질문 20은 ADR 0004 결정 6의 문구("오류 `source`는 파일 이름")를 CSV에 적용하는 해석이다. ADR을 바꾸지 않는다. 리드가 ADR 결정으로 보면 juhan에게 올린다.
+- 이미 결정됨(질문 아님): metrics.json 첫 키 `"schema_version": 1`(ADR 0004 결정 2). 명령 이름(사용자 명령 `check`, 내부 명령 `compare`), `--json` 출력 = 결과 객체, 오류 JSON 모양, 종료 코드 0/2/1(ADR 0004 결정 3·6). 이 문서는 3.4에서 적용만 한다.
 
 1. **파일을 누가 읽나(2절, 4.11).** Core가 읽으면 glob 규칙이 Core에 있고, 부르는 쪽이 바이트를 넘기면 Core가 순수 함수다.
-   - 제안: 둘 다(안 C). `CompareDirectory`(Core가 케이스 폴더에서 찾아 읽음) = `CompareInputs.Read` + `Compare`(순수 함수, 바이트). 읽기만 한다. Core가 파일을 읽는 것은 `CaseParser.ParseDirectory`와 같고 G1과 충돌하지 않는다(통과 확인). 입력 해시는 metrics.json에 넣지 않고 평가서 카드가 같은 바이트로 기록한다(지시문 2절 2).
+   - 제안: 둘 다(안 C). `CompareDirectory`(Core가 케이스 폴더에서 찾아 읽음) = `CompareInputs.Read` + `Compare`(순수 함수, 바이트). 읽기만 한다. Core가 파일을 읽는 것은 `CaseParser.ParseDirectory`와 같고 G1과 충돌하지 않는다(통과 확인). 입력 해시는 metrics.json에 넣지 않고 스코어카드 카드(`report.md`)가 같은 바이트로 기록한다(지시문 2절 2, 3.5 7구역).
 2. **패턴(glob) 규칙(4.1).**
    - 제안: 폴더 조각은 글자 그대로, 마지막 조각에만 `*`·`?`. `**`·`[]`·`{}`·빈 조각·`.` 조각은 `pattern` 오류. 이름·폴더 비교는 서수(대소문자 구분)이고 OS 검색 패턴을 쓰지 않는다. 하위 폴더는 보지 않는다. 숨김·`~$` 파일도 이름이 맞으면 읽는다. 맞는 파일이 없거나 폴더가 없으면 `file` 오류.
 3. **여러 파일(4.1).**
@@ -1134,11 +1167,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 12. **퍼센트(4.8).**
     - 제안: 소수 첫째 자리, 0.05는 올림(0에서 먼 쪽), 정수 셈. 늘 한 자리(`90.0`, `100.0`). 99.95% 이상은 `100.0`으로 보이므로 판정 카드는 셈(`counts`)으로 문턱과 비교하길 권한다.
 13. **미검증과 오류의 경계(4.4).**
-    - 제안: `inputs` 없음 → `not_verified`/`no_inputs`, `compare` 빔 → `not_verified`/`no_compare_fields`(둘 다 파일을 읽지 않음). `inputs`를 적었는데 파일이 없거나 기준 데이터 행이 0이면 오류(`file`, `no-rows`). 결과 자료가 머리 행뿐이면 오류가 아니라 모두 누락.
+    - 제안: `inputs` 없음 → `not_verified`/`no_inputs`, `compare` 빔 → `not_verified`/`no_compare_fields`(둘 다 파일을 읽지 않음). `inputs`를 적었는데 파일이 없거나 기준 데이터 행이 0이면 오류(`file`, `no-rows`). 결과 자료가 머리 행뿐이면 오류가 아니라 모두 누락. 명령의 종료 코드는 미검증이면 0, 오류면 2다(ADR 0004 결정 6 규칙 7, 3.4).
 14. **오류 모델(4.7).**
-    - 제안: `CaseError`를 그대로 쓴다(`Source` = 상대 파일 경로 또는 패턴, `Path` = 열 이름). 코드 13개(4.7 표). 모두 모아 한 번에 보인다(치명 오류가 난 파일만 그 파일의 나머지를 건너뜀). 순서는 기준 → 결과, 파일 경로, 줄·열. 오류가 하나라도 있으면 지표를 내지 않는다. 오류 수 상한은 두지 않는다(T-003처럼 뒤 카드로 미룬다).
-15. **metrics.json 형식(3.2, 3.3).** (expected 바이트를 정한다. 질문 17과 같이 juhan이 본다)
-    - 제안: 3.2 속성 표 그대로. 첫 키 `schema_version: 1`(결정됨). 지표는 `compare` 아래. `items`는 차이가 있는 항목만(값 불일치·누락·추가·허용오차 안 차이), 칸 값은 정규화한 텍스트 문자열. 경로는 상대 경로만. 입력 해시·원문·`compare`에 없는 열은 넣지 않는다. 바이트 규칙은 classification.md 3.3과 같다. 골든 테스트는 바이트로 비교한다.
+    - 제안: `CaseError`를 그대로 쓴다. `Source` = 케이스 폴더 기준 상대 파일 경로, `Path` = 열 이름. 파일이 정해지기 전 오류(`pattern`, 폴더·파일 없음, `no-rows`)는 `Source` = `case.yaml`, `Path` = `inputs.reference`·`inputs.candidate`, 줄·열 0(3.4. 이전 초안의 "`Source` = 패턴"을 ADR 0004 결정 6에 맞춰 바꿨다). 코드 13개(4.7 표). 모두 모아 한 번에 보인다(치명 오류가 난 파일만 그 파일의 나머지를 건너뜀). 순서는 기준 → 결과, 파일 경로, 줄·열. 오류가 하나라도 있으면 지표를 내지 않는다. `--json`이면 이 값들이 ADR 0004 오류 JSON의 `errors`가 되고 종료 코드는 2다(3.4). 오류 수 상한은 두지 않는다(T-003처럼 뒤 카드로 미룬다).
+15. **metrics.json 형식(3.2, 3.3). juhan 직접 승인 필요(expected 바이트를 정한다. 질문 17과 같이 본다).**
+    - 제안: 3.2 속성 표 그대로. 첫 키 `schema_version: 1`(결정됨). 내부 명령 `compare --json`의 표준 출력도 이 바이트다(3.4, ADR 0004 결정 6 규칙 5). 지표는 `compare` 아래. `items`는 차이가 있는 항목만(값 불일치·누락·추가·허용오차 안 차이), 칸 값은 정규화한 텍스트 문자열. 경로는 상대 경로만. 입력 해시·원문·`compare`에 없는 열은 넣지 않는다. 바이트 규칙은 classification.md 3.3과 같다. 골든 테스트는 바이트로 비교한다.
 16. **판정 카드가 쓸 정보(`signal_type` 같은 다른 열).** table-compare의 "조건부"는 불일치가 `irregular`에 몰린 것에서 나와야 한다(T-005 4.7).
     - 제안: 이 카드에서는 metrics.json에 넣지 않는다. 메모리 결과 `CsvRow`가 모든 열을 갖고 있다. 어느 열로 몰림을 볼지(`case.yaml`에 키를 더할지)와 metrics.json에 무엇을 더할지는 판정 카드가 정한다. 더하면 그 카드에서 `expected/metrics.json`을 같이 고친다.
 17. **예제 3종 `expected/metrics.json` 확정. juhan 직접 승인 필요(expected 변경, 기존 테스트 변경, 폴더 제한 예외).** 7.2~7.4 블록은 초안이다. 확인할 점:
@@ -1147,9 +1180,14 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
     - mixed-exceptions: `not_verified`/`no_inputs`, 나머지 null·`[]`.
     - 옮기기: 확정 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/expected/metrics.json`으로 옮긴다(CLAUDE.md 폴더 제한에 `examples/`가 없어 이 카드에 한해 허용 필요). `Example_folder_has_exactly_the_planned_files`의 파일 목록에 `expected/metrics.json`을 더한다(PR 본문에 적음).
     - 셋 다 첫 키가 `"schema_version": 1`이다.
-    - 시점: T-007 머지 뒤에 옮기고 커밋한다(리드 전달).
-    - 제안: 위 초안대로 확정하고, test-engineer가 옮기는 것과 파일 목록 테스트 변경을 허용한다.
+    - 근거: 블록은 C# 후보와 Python 독립 구현(스펙 글만 보고 짠 것)이 따로 낸 바이트가 같은 것이다. 수치는 지시문 12절, T-005 심은 구조와 같다(7.1 1).
+    - 시점: T-007은 머지됐다. 이 스펙 승인 뒤 test-engineer 단계에서 옮기고 커밋한다. Core 구현보다 먼저다(지시문 2절 11).
+    - 커밋 모양: ADR 0004 expected 변경 규칙을 새 파일에 맞춰 쓴다. 메시지 `expected migration:`으로 시작, 그 커밋에는 expected 파일 3개만. 시작 전 main 통과 수(850)와 끝난 뒤 통과 수를 PR 본문에, reviewer가 `git diff --stat`과 expected diff 전문을 붙인다(7.1 9).
+    - 제안: 위 초안대로 확정하고, test-engineer가 옮기는 것과 파일 목록 테스트 변경을 허용한다. 커밋은 위 모양으로 한다.
 18. **G2·G3 등록(4.10). juhan 직접 승인 필요(기존 테스트 변경).**
     - 제안: `compare-case-valid`(샘플 `case-valid`, 출력 `metrics.json`)와 `compare-invalid`(새 샘플, 출력 `compare-errors.txt`)를 `GuardTargets`에 더한다. `case-valid`에 T-005 고정 계획의 `reference/rows.csv`·`candidate/rows.csv`를 더한다(test-engineer, `tests/`). `Real_targets_use_case_samples_not_basic`는 "`basic`이 없다 + `case-valid`가 있다 + 샘플 폴더가 있다"로 고친다. 뜻은 같다. PR 본문에 적고 reviewer가 확인한다.
 19. **Core 공개 API와 진행 순서(4.11).**
-    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 10개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다. 시작은 T-007 머지 뒤다(리드 전달).
+    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 10개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다. T-007은 머지됐다. 시작은 이 스펙 승인 뒤다.
+20. **오류 JSON의 `source`·`path`(3.4, ADR 0004 결정 6 적용).** ADR은 "오류 `source`는 파일 이름, `path`는 필드 경로"라 한다. 대조 오류에는 `case.yaml`이 아닌 CSV 파일과 `inputs` 패턴 오류가 있다.
+    - 제안: `source`는 케이스 폴더 기준 상대 경로로 읽는다. CSV 오류는 `reference/a.csv`처럼 폴더를 붙인다(양쪽에 같은 이름이 올 수 있다). 파일이 정해지기 전 오류는 `source` = `case.yaml`, `path` = `inputs.reference`·`inputs.candidate`(파서 오류와 같은 표기), `line`·`column` = 0. CSV 오류의 `path`는 열 이름, 열과 상관없으면 빈 문자열. 절대 경로는 쓰지 않는다(G2 R3). 오류 JSON 키 순서·바이트는 M2-1 `json-output.md`에서 고정한다.
+    - 대안: `source`에 파일 이름만(`a.csv`). 양쪽이 같은 이름이면 어느 쪽인지 메시지에 따로 적어야 한다. 추천하지 않는다.

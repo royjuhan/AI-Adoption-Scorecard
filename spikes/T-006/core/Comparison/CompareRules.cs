@@ -23,6 +23,11 @@ internal static class CompareRules
     public const string CodeNumber = "number";
     public const string CodeNoRows = "no-rows";
 
+    // 4.7 inputs 오류(파일이 정해지기 전: pattern, 폴더·파일 없음, no-rows)의 Path. Source는 CaseParser.FileName("case.yaml").
+    // 파서 오류(case-schema 4.9)의 필드 경로와 같은 표기다. ADR 0004 결정 6: source = 파일 이름, path = 필드 경로.
+    public const string PathReference = "inputs.reference";
+    public const string PathCandidate = "inputs.candidate";
+
     // 4.8 퍼센트: 소수 첫째 자리. 0.05는 올린다(0에서 먼 쪽).
     public const int PercentDigits = 1;
 

@@ -6,13 +6,17 @@
   base에 없는 새 파일은 base 점수 없음(null)이다.
 - 파일이 속한 프로젝트(가장 가까운 상위 폴더의 .csproj)마다 Stryker를 한 번 돌린다. --mutate는 파일 절대 경로.
   테스트 프로젝트는 tests/Scorecard.Tests.
-- Stryker 버전은 .config/dotnet-tools.json(dotnet tool manifest)에 고정한다. base worktree에도 같은 manifest를
-  복사해 양쪽을 같은 버전으로 잰다.
+- Stryker 버전은 .config/dotnet-tools.json(dotnet tool manifest)에 고정한다. base 커밋의 manifest를 양쪽 worktree에
+  써서 같은 버전으로 잰다(PR이 버전을 바꿔도 base 버전으로 잰다). base에 없으면 head의 것을 쓴다(부트스트랩).
+- worktree의 테스트 프로젝트 폴더에 stryker-config.json·.yaml·.yml이 있으면 지우고 돌린다. PR이 설정 파일로
+  돌연변이를 빼서(ignore-methods 등) 점수를 올리지 못하게 한다. 명령 인자만 쓴다.
+- 시간: 한 번 실행은 RUN_TIMEOUT_SECONDS(50분) 안, 전체는 --budget-minutes(기본 100분) 안. 잡 제한(120분)보다 짧다.
+  시간이 넘으면 status: timeout으로 mutation.json을 쓴다.
 - 점수 = (Killed + Timeout) / (Killed + Timeout + Survived + NoCoverage). CompileError·Ignored 등은 빼고 센다.
   유효 돌연변이가 0이면 점수는 null.
 
 출력: mutation.json(--out), job summary(--summary, 기본 $GITHUB_STEP_SUMMARY).
-종료 코드: 0 측정함 또는 해당 없음, 1 Stryker 실행 오류, 2 실행할 수 없음(base·head가 없음 등).
+종료 코드: 0 측정함 또는 해당 없음, 1 Stryker 실행 오류·시간 초과, 2 실행할 수 없음(base·head가 없음 등).
 """
 
 from __future__ import annotations
@@ -35,7 +39,11 @@ SRC_PREFIX = "src/"
 TEST_PROJECT_DIR = "tests/Scorecard.Tests"
 TOOL_MANIFEST = ".config/dotnet-tools.json"
 TOOL_PACKAGE = "dotnet-stryker"
-RUN_TIMEOUT_SECONDS = 60 * 60
+RUN_TIMEOUT_SECONDS = 50 * 60  # 한 번 실행. head·base 두 번이 전체 시간 안에 들어간다
+DEFAULT_BUDGET_MINUTES = 100  # mutation.py 전체. 잡 제한 120분에서 준비·올리기 시간을 뺀 값
+MIN_RUN_SECONDS = 120  # 남은 시간이 이보다 적으면 실행을 시작하지 않는다
+STRYKER_CONFIG_NAMES = ("stryker-config.json", "stryker-config.yaml", "stryker-config.yml")
+TIMEOUT_EXIT = 124
 
 # mutation-testing-elements 상태 → mutation.json 키
 STATUS_KEYS = {
@@ -123,8 +131,8 @@ def read_report(report_path: str, root: str, wanted: list[str]) -> dict[str, dic
     return {path: (score_stats(by_rel[path]) if path in by_rel else None) for path in wanted}
 
 
-def run_stryker(root: str, project: str, files: list[str], out_dir: str, log_path: str) -> tuple[int, float]:
-    """root(worktree)에서 Stryker를 한 번 돌린다. (종료 코드, 초)"""
+def run_stryker(root: str, project: str, files: list[str], out_dir: str, log_path: str, timeout: float = RUN_TIMEOUT_SECONDS) -> tuple[int, float]:
+    """root(worktree)에서 Stryker를 한 번 돌린다. (종료 코드, 초). 시간 초과면 종료 코드 124."""
     cmd = ["dotnet", "tool", "run", TOOL_PACKAGE, "--project", os.path.basename(project)]
     for path in files:
         cmd += ["--mutate", os.path.join(os.path.realpath(root), path)]
@@ -135,20 +143,42 @@ def run_stryker(root: str, project: str, files: list[str], out_dir: str, log_pat
         log.write("$ " + " ".join(cmd) + "\n")
         log.flush()
         try:
-            proc = subprocess.run(cmd, cwd=cwd, stdout=log, stderr=subprocess.STDOUT, timeout=RUN_TIMEOUT_SECONDS)
+            proc = subprocess.run(cmd, cwd=cwd, stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
             code = proc.returncode
         except subprocess.TimeoutExpired:
-            log.write(f"\n시간 초과({RUN_TIMEOUT_SECONDS}초)\n")
-            code = 124
+            log.write(f"\n시간 초과({int(timeout)}초)\n")
+            code = TIMEOUT_EXIT
     return code, round(time.monotonic() - start, 1)
 
 
-def tool_version(repo: str) -> str | None:
+def tool_manifest(repo: str, rng: cigit.Range) -> tuple[bytes | None, str]:
+    """쓸 dotnet tool manifest와 출처. base 커밋에 있으면 base, 없으면 head 작업 트리(부트스트랩)."""
+    data = cigit.read_file(repo, rng.base, TOOL_MANIFEST)
+    if data is not None:
+        return data, "base"
     try:
-        with open(os.path.join(repo, TOOL_MANIFEST), encoding="utf-8") as f:
-            return json.load(f)["tools"][TOOL_PACKAGE]["version"]
-    except (OSError, KeyError, ValueError):
+        with open(os.path.join(repo, TOOL_MANIFEST), "rb") as f:
+            return f.read(), "head"
+    except OSError:
+        return None, "없음"
+
+
+def tool_version(manifest: bytes | None) -> str | None:
+    try:
+        return json.loads((manifest or b"").decode("utf-8"))["tools"][TOOL_PACKAGE]["version"]
+    except (KeyError, ValueError, TypeError, UnicodeDecodeError):
         return None
+
+
+def remove_stryker_configs(root: str) -> list[str]:
+    """worktree 테스트 프로젝트 폴더의 Stryker 설정 파일을 지운다. 지운 파일 이름."""
+    removed = []
+    for name in STRYKER_CONFIG_NAMES:
+        path = os.path.join(root, TEST_PROJECT_DIR, name)
+        if os.path.isfile(path):
+            os.remove(path)
+            removed.append(name)
+    return removed
 
 
 def tail(path: str, count: int = 25) -> str:
@@ -159,13 +189,17 @@ def tail(path: str, count: int = 25) -> str:
         return ""
 
 
-def measure(repo: str, rng: cigit.Range, files: list[dict], work: str) -> dict:
-    """양쪽 worktree를 만들고 프로젝트마다 Stryker를 돌려 files에 head·base 셈을 채운다."""
+def measure(repo: str, rng: cigit.Range, files: list[dict], work: str, manifest: bytes | None,
+            deadline: float | None = None) -> dict:
+    """양쪽 worktree를 만들고 프로젝트마다 Stryker를 돌려 files에 head·base 셈을 채운다.
+
+    deadline(time.monotonic 기준)을 넘기면 남은 실행을 하지 않고 timed_out을 참으로 돌려준다.
+    """
     errors: list[str] = []
     runs: list[dict] = []
-    manifest = os.path.join(repo, TOOL_MANIFEST)
-    if not os.path.isfile(manifest):
-        return {"errors": [f"{TOOL_MANIFEST}가 없다"], "runs": runs}
+    timed_out = False
+    if manifest is None:
+        return {"errors": [f"{TOOL_MANIFEST}가 없다"], "runs": runs, "timed_out": False}
     os.makedirs(os.path.join(work, "logs"), exist_ok=True)
     for side, rev, key in (("head", rng.head, "path"), ("base", rng.base, "base_path")):
         side_files = [f for f in files if f[key] is not None]
@@ -178,7 +212,8 @@ def measure(repo: str, rng: cigit.Range, files: list[dict], work: str) -> dict:
         cigit.git(repo, "worktree", "add", "--detach", root, rev)
         try:
             os.makedirs(os.path.join(root, ".config"), exist_ok=True)
-            shutil.copyfile(manifest, os.path.join(root, TOOL_MANIFEST))
+            with open(os.path.join(root, TOOL_MANIFEST), "wb") as f:
+                f.write(manifest)
             restore = subprocess.run(["dotnet", "tool", "restore"], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if restore.returncode != 0:
                 errors.append(f"{side}: dotnet tool restore 실패: {restore.stdout.decode('utf-8', 'replace')[-500:]}")
@@ -186,6 +221,8 @@ def measure(repo: str, rng: cigit.Range, files: list[dict], work: str) -> dict:
             if not os.path.isdir(os.path.join(root, TEST_PROJECT_DIR)):
                 errors.append(f"{side}: 테스트 프로젝트가 없다: {TEST_PROJECT_DIR}")
                 continue
+            for name in remove_stryker_configs(root):
+                print(f"--- {side}: {TEST_PROJECT_DIR}/{name}를 지우고 돌린다(명령 인자만 쓴다) ---")
             groups: dict[str, list[dict]] = {}
             for f in side_files:
                 project = find_project(repo, rev, f[key])
@@ -200,11 +237,26 @@ def measure(repo: str, rng: cigit.Range, files: list[dict], work: str) -> dict:
                 label = f"{side}-{project.replace('/', '_')}"
                 out_dir = os.path.join(work, "out", label)
                 log_path = os.path.join(work, "logs", label + ".log")
-                code, seconds = run_stryker(root, project, paths, out_dir, log_path)
+                limit = float(RUN_TIMEOUT_SECONDS)
+                if deadline is not None:
+                    limit = min(limit, deadline - time.monotonic())
+                if limit < MIN_RUN_SECONDS:
+                    timed_out = True
+                    errors.append(f"{side}: {project} 시간 초과. 전체 시간 안에 시작하지 못했다(남은 {max(0, int(limit))}초)")
+                    for f in group:
+                        f[side] = None
+                    continue
+                code, seconds = run_stryker(root, project, paths, out_dir, log_path, limit)
                 report = os.path.join(out_dir, "reports", "mutation-report.json")
                 runs.append({"side": side, "project": project, "files": paths, "exit_code": code, "seconds": seconds})
                 print(f"--- Stryker {side} {project}: 종료 {code}, {seconds}초 ---")
                 print(tail(log_path))
+                if code == TIMEOUT_EXIT:
+                    timed_out = True
+                    errors.append(f"{side}: {project} 시간 초과({int(limit)}초 안에 끝나지 않았다). 로그 {log_path}")
+                    for f in group:
+                        f[side] = None
+                    continue
                 if code != 0 or not os.path.isfile(report):
                     errors.append(f"{side}: {project} Stryker 실패(종료 {code}). 로그 {log_path}")
                     for f in group:
@@ -217,10 +269,11 @@ def measure(repo: str, rng: cigit.Range, files: list[dict], work: str) -> dict:
                         errors.append(f"{side}: {f[key]}가 Stryker 보고서에 없다")
         finally:
             cigit.git(repo, "worktree", "remove", "--force", root, check=False)
-    return {"errors": errors, "runs": runs}
+    return {"errors": errors, "runs": runs, "timed_out": timed_out}
 
 
-def build_result(rng: cigit.Range, files: list[dict], errors: list[str], runs: list[dict], version: str | None) -> dict:
+def build_result(rng: cigit.Range, files: list[dict], errors: list[str], runs: list[dict], version: str | None,
+                 timed_out: bool = False, manifest_source: str | None = None) -> dict:
     entries = []
     head_total = [0, 0]
     base_total = [0, 0]
@@ -243,6 +296,8 @@ def build_result(rng: cigit.Range, files: list[dict], errors: list[str], runs: l
                 total[1] += detected + stats["survived"] + stats["no_coverage"]
     if not files:
         status = "not_applicable"
+    elif timed_out:
+        status = "timeout"
     elif errors:
         status = "error"
     else:
@@ -254,6 +309,7 @@ def build_result(rng: cigit.Range, files: list[dict], errors: list[str], runs: l
         "head": rng.head,
         "range_note": rng.note,
         "stryker_version": version,
+        "tool_manifest": manifest_source,
         "files": entries,
         # 합계 점수: base에도 있는 파일(점수를 비교할 수 있는 파일)만 더한다. 새 파일은 files[]의 head_score에만 있다.
         "head_score": round(head_total[0] / head_total[1] * 100, 2) if head_total[1] else None,
@@ -273,6 +329,9 @@ def render_summary(data: dict) -> str:
     if data["status"] == "not_applicable":
         out.append("해당 없음: 바뀐 `src/**/*.cs` 파일이 없다.")
         return "\n".join(out) + "\n"
+    if data["status"] == "timeout":
+        out.append("**시간 초과**: 측정이 시간 안에 끝나지 않았다. 점수는 증거가 되지 않는다.")
+        out.append("")
     out += ["| 파일 | base | head | 변화 | head 셈(killed/timeout/survived/no_coverage) |", "| --- | --- | --- | --- | --- |"]
     for f in data["files"]:
         h, b = f["head_score"], f["base_score"]
@@ -303,7 +362,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default="mutation.json")
     ap.add_argument("--work", help="worktree·보고서·로그 폴더(기본: 임시 폴더)")
     ap.add_argument("--summary", default=os.environ.get("GITHUB_STEP_SUMMARY"))
+    ap.add_argument("--budget-minutes", type=float, default=DEFAULT_BUDGET_MINUTES, help="전체 시간(분). 넘으면 status: timeout")
     args = ap.parse_args(argv)
+    deadline = time.monotonic() + args.budget_minutes * 60
     repo = os.path.abspath(args.repo)
     try:
         rng = cigit.resolve_range(repo, args.base, args.head)
@@ -316,14 +377,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {f['path']}" + ("" if f["base_path"] == f["path"] else f" (base: {f['base_path']})"))
     errors: list[str] = []
     runs: list[dict] = []
+    timed_out = False
+    manifest, manifest_source = tool_manifest(repo, rng)
     if files:
+        print(f"mutation: tool manifest는 {manifest_source}의 {TOOL_MANIFEST} (Stryker {tool_version(manifest)})")
         work = args.work or tempfile.mkdtemp(prefix="mutation-", dir=os.environ.get("RUNNER_TEMP"))
         try:
-            measured = measure(repo, rng, files, work)
-            errors, runs = measured["errors"], measured["runs"]
+            measured = measure(repo, rng, files, work, manifest, deadline)
+            errors, runs, timed_out = measured["errors"], measured["runs"], measured["timed_out"]
         except Exception as e:  # noqa: BLE001 — 어떤 실패든 mutation.json(status: error)을 남긴다
             errors = [f"예외: {type(e).__name__}: {e}"]
-    data = build_result(rng, files, errors, runs, tool_version(repo))
+    data = build_result(rng, files, errors, runs, tool_version(manifest), timed_out, manifest_source)
     with open(args.out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
@@ -332,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.summary:
         with open(args.summary, "a", encoding="utf-8") as f:
             f.write(summary)
-    return 1 if data["status"] == "error" else 0
+    return 1 if data["status"] in ("error", "timeout") else 0
 
 
 if __name__ == "__main__":

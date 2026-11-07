@@ -1,10 +1,15 @@
-"""C# 테스트 소스를 대충이 아니라 토큰으로 읽어 세는 도구(regression-guard용).
+r"""C# 테스트 소스를 대충이 아니라 토큰으로 읽어 세는 도구(regression-guard용).
 
 센다:
 - 테스트 특성 `[Fact]`·`[Theory]`(이름 끝 Attribute, Xunit. 한정 이름 포함). 특성 구역 안의 이름 자리만 센다.
-- Skip 표시: `Skip =`·`SkipWhen =` 같은 Skip* 대입, 특성 인자 `Explicit =`, `Trait(...)` 문자열 인자에 skip,
-  `Assert.Skip(`·`Skip.If(` 호출, `SkipException`, `SkippableFact`·`SkippableTheory`, 그리고 `#if` 지시문.
+  `using X = Xunit.FactAttribute;` 별칭 `[X]`도 센다.
+- Skip 표시: `Skip =`·`SkipWhen =` 같은 Skip* 대입, Skip* 속성 선언·재정의(`Skip =>`, `Skip {`, `Skip ??=`),
+  특성 인자 `Explicit =`, `Trait(...)` 문자열 인자에 skip, `Assert.Skip(`·`Skip.If(` 호출, `SkipException`,
+  `SkippableFact`·`SkippableTheory`, `#if` 지시문, `*FactAttribute`·`*TheoryAttribute`를 상속한 클래스,
+  `Fact`·`FactAttribute` 같은 이름의 클래스(가림), Fact·Theory 특성을 가리키는 `using` 별칭.
 - `GuardTargets` 클래스의 `All` 목록에 등록된 대상 이름.
+
+식별자와 일반 문자열의 `\uXXXX`·`\UXXXXXXXX` 이스케이프는 풀고 본다(`Sk\u0069p`는 `Skip`이다).
 
 세지 않는다: 주석 안, 문자열·문자 리터럴 안, 거짓으로 확정된 `#if` 구역 안(`#if false` 등).
 정의되지 않은 기호(`#if NEVER`)는 참·거짓을 모른다고 보고 구역을 센다. 대신 `#if` 자체가 Skip 표시로 걸린다.
@@ -19,6 +24,10 @@ from dataclasses import dataclass, field
 TEST_ATTRIBUTES = {"Fact", "Theory", "FactAttribute", "TheoryAttribute"}
 SKIPPABLE_ATTRIBUTES = {"SkippableFact", "SkippableTheory", "SkippableFactAttribute", "SkippableTheoryAttribute"}
 TRAIT_ATTRIBUTES = {"Trait", "TraitAttribute"}
+# 이 이름으로 끝나는 기반 클래스를 상속하면 Skip 표시다(재정의로 Skip을 걸 수 있다).
+TEST_ATTRIBUTE_BASE_SUFFIXES = ("FactAttribute", "TheoryAttribute")
+HEX_DIGITS = set("0123456789abcdefABCDEF")
+SIMPLE_ESCAPES = {"n": "\n", "r": "\r", "t": "\t", "0": "\0", "a": "\a", "b": "\b", "f": "\f", "v": "\v", "e": "\x1b"}
 ATTRIBUTE_TARGETS = {"assembly", "module", "field", "event", "method", "param", "property", "return", "type", "typevar"}
 
 PUNCT3 = {"??=", "<<=", ">>=", "..."}
@@ -309,8 +318,8 @@ def tokenize(src: str) -> tuple[list[Tok], list[Directive]]:
                     continue
             else:
                 if c == "\\" and j + 1 < n:
-                    value.append(src[j + 1])
-                    j += 2
+                    j, ch = read_escape(j)
+                    value.append(ch)
                     continue
                 if c == '"':
                     return j + 1, "".join(value)
@@ -330,6 +339,57 @@ def tokenize(src: str) -> tuple[list[Tok], list[Directive]]:
             value.append(c)
             j += 1
         return j, "".join(value)
+
+    def read_escape(j: int) -> tuple[int, str]:
+        """j는 역슬래시. 일반 문자열의 이스케이프 하나를 푼다. (다음 위치, 글자)"""
+        kind = src[j + 1]
+        if kind in "uU":
+            got = unicode_escape(j)
+            if got is not None:
+                return got
+        if kind == "x":
+            k = j + 2
+            while k < n and k < j + 6 and src[k] in HEX_DIGITS:
+                k += 1
+            if k > j + 2:
+                return k, chr(int(src[j + 2:k], 16))
+        return j + 2, SIMPLE_ESCAPES.get(kind, kind)
+
+    def unicode_escape(j: int) -> tuple[int, str] | None:
+        """j는 역슬래시. \\uXXXX 또는 \\UXXXXXXXX를 푼다. 아니면 None."""
+        if j + 1 >= n or src[j + 1] not in "uU":
+            return None
+        width = 4 if src[j + 1] == "u" else 8
+        digits = src[j + 2:j + 2 + width]
+        if len(digits) != width or not all(h in HEX_DIGITS for h in digits):
+            return None
+        code = int(digits, 16)
+        if code > 0x10FFFF:
+            return None
+        return j + 2 + width, chr(code)
+
+    def ident_at(j: int) -> tuple[int, str] | None:
+        """j에서 식별자 하나. 유니코드 이스케이프를 푼 이름을 돌려준다. 식별자가 아니면 None."""
+        out: list[str] = []
+        k = j
+        while k < n:
+            ch = src[k]
+            if ch == "\\":
+                got = unicode_escape(k)
+                if got is None:
+                    break
+                nxt, dec = got
+                if not (dec.isalpha() or dec == "_" or (out and dec.isalnum())):
+                    break
+                out.append(dec)
+                k = nxt
+                continue
+            if ch.isalpha() or ch == "_" or (out and ch.isalnum()):
+                out.append(ch)
+                k += 1
+                continue
+            break
+        return (k, "".join(out)) if out else None
 
     def scan_char(j: int) -> int:
         j += 1
@@ -378,16 +438,15 @@ def tokenize(src: str) -> tuple[list[Tok], list[Directive]]:
             i = scan_char(i)
             toks.append(Tok("char", "", start_line))
             continue
-        if c == "@" and i + 1 < n and (src[i + 1].isalpha() or src[i + 1] == "_"):
+        if c == "@" and i + 1 < n and (src[i + 1].isalpha() or src[i + 1] in "_\\"):
             i += 1
             c = src[i]
-        if c.isalpha() or c == "_":
-            j = i
-            while j < n and (src[j].isalnum() or src[j] == "_"):
-                j += 1
-            toks.append(Tok("id", src[i:j], start_line))
-            i = j
-            continue
+        if c.isalpha() or c == "_" or c == "\\":
+            got = ident_at(i)
+            if got is not None:
+                i, name = got
+                toks.append(Tok("id", name, start_line))
+                continue
         if c.isdigit():
             j = i
             while j < n and (src[j].isalnum() or src[j] == "_" or (src[j] == "." and j + 1 < n and src[j + 1].isdigit())):
@@ -427,6 +486,9 @@ def analyze(src: str) -> FileScan:
         if d.name == "if":
             scan.skips.append((d.line, "#if"))
 
+    aliases = _declarations(toks, scan)
+    test_names = TEST_ATTRIBUTES | aliases
+
     # 괄호 쌓기: (글자, 특성 구역인가, 특성 이름)
     stack: list[tuple[str, bool, str | None]] = []
     last_closed_attr = False
@@ -452,7 +514,7 @@ def analyze(src: str) -> FileScan:
                 name = nxt.text
                 j += 2
             expect_name = False
-            if name in TEST_ATTRIBUTES:
+            if name in test_names:
                 scan.facts.append((t.line, name))
             elif name in SKIPPABLE_ATTRIBUTES:
                 scan.skips.append((t.line, name))
@@ -465,6 +527,9 @@ def analyze(src: str) -> FileScan:
             continue
 
         if t.kind == "punct":
+            if t.text in SKIP_MEMBER_PUNCT and prev is not None and prev.kind == "id" and _is_skip_name(prev.text):
+                # Skip 속성 선언·재정의: Skip => "…", Skip { get … }, Skip ??= "…"
+                scan.skips.append((prev.line, prev.text + t.text))
             if t.text == "[":
                 is_attr = prev is None or (prev.kind == "punct" and prev.text in (";", "{", "}")) or (_is(prev, "]") and last_closed_attr)
                 stack.append(("[", is_attr, None))
@@ -484,7 +549,7 @@ def analyze(src: str) -> FileScan:
             elif t.text == "=" and prev is not None and prev.kind == "id":
                 # Skip = "…", SkipWhen = …, SkipUnless = … (어디서든), Explicit = true (특성 인자 안)
                 in_attr_args = bool(stack) and stack[-1][0] == "(" and stack[-1][2] is not None
-                if prev.text == "Skip" or (prev.text.startswith("Skip") and len(prev.text) > 4 and prev.text[4].isupper()):
+                if _is_skip_name(prev.text):
                     scan.skips.append((prev.line, prev.text + "="))
                 elif prev.text == "Explicit" and in_attr_args:
                     scan.skips.append((prev.line, "Explicit="))
@@ -506,6 +571,98 @@ def analyze(src: str) -> FileScan:
                 scan.guard_names = _guard_names(toks, i + 2)
         i += 1
     return scan
+
+
+SKIP_MEMBER_PUNCT = {"=>", "{", "??="}
+
+
+def _is_skip_name(name: str) -> bool:
+    """Skip, SkipWhen, SkipUnless 같은 이름(Skip 뒤가 대문자)."""
+    return name == "Skip" or (name.startswith("Skip") and len(name) > 4 and name[4].isupper())
+
+
+def _qualified_last(toks: list[Tok], k: int, stop: set[str]) -> tuple[str | None, int]:
+    """k부터 한정 이름(a.b::c<T>)을 읽어 마지막 조각과 다음 위치를 돌려준다. 이름이 아니면 (None, k)."""
+    n = len(toks)
+    last = None
+    while k < n:
+        t = toks[k]
+        if t.kind == "id":
+            last = t.text
+            k += 1
+            if k < n and (_is(toks[k], ".") or _is(toks[k], "::")):
+                k += 1
+                continue
+            break
+        break
+    if last is None:
+        return None, k
+    # 형식 인자 <…>는 건너뛴다
+    if k < n and _is(toks[k], "<"):
+        depth = 0
+        while k < n:
+            if _is(toks[k], "<"):
+                depth += 1
+            elif _is(toks[k], ">"):
+                depth -= 1
+                if depth == 0:
+                    k += 1
+                    break
+            elif toks[k].kind == "punct" and toks[k].text in stop:
+                break
+            k += 1
+    return last, k
+
+
+def _is_test_attribute_type(name: str | None, aliases: set[str]) -> bool:
+    return name is not None and (name.endswith(TEST_ATTRIBUTE_BASE_SUFFIXES) or name in TEST_ATTRIBUTES or name in aliases)
+
+
+def _declarations(toks: list[Tok], scan: FileScan) -> set[str]:
+    """using 별칭과 클래스 선언을 본다. Skip 표시를 scan에 더하고, Fact·Theory 별칭 이름을 돌려준다.
+
+    - `using X = …FactAttribute;`(global 포함): 별칭이 Fact·Theory 특성을 가리키거나, 별칭 이름이 Fact 등이면 표시.
+    - `class X : …FactAttribute`·`…TheoryAttribute`(별칭 포함): 상속한 특성은 Skip을 재정의할 수 있어 표시.
+    - `class Fact`·`class FactAttribute` 등: 같은 이름공간의 [Fact]를 가려 테스트가 사라질 수 있어 표시.
+    """
+    n = len(toks)
+    aliases: set[str] = set()
+    for k, t in enumerate(toks):
+        if t.kind != "id" or t.text != "using":
+            continue
+        name_tok = toks[k + 1] if k + 1 < n else None
+        if name_tok is None or name_tok.kind != "id" or not (k + 2 < n and _is(toks[k + 2], "=")):
+            continue
+        target, _ = _qualified_last(toks, k + 3, {";"})
+        if target is not None and target.endswith(TEST_ATTRIBUTE_BASE_SUFFIXES):
+            aliases.add(name_tok.text)
+            scan.skips.append((t.line, "using-alias"))
+        elif name_tok.text in TEST_ATTRIBUTES:
+            scan.skips.append((t.line, "using-alias"))
+    for k, t in enumerate(toks):
+        if t.kind != "id" or t.text != "class":
+            continue
+        name_tok = toks[k + 1] if k + 1 < n else None
+        if name_tok is None or name_tok.kind != "id":
+            continue
+        if name_tok.text in TEST_ATTRIBUTES or name_tok.text in aliases:
+            scan.skips.append((name_tok.line, "shadow-attribute"))
+        _, m = _qualified_last(toks, k + 1, {"{", ";", ":"})
+        if m >= n or not _is(toks[m], ":"):
+            continue
+        m += 1
+        while m < n:
+            base, nxt = _qualified_last(toks, m, {"{", ";"})
+            if base is None:
+                break
+            if _is_test_attribute_type(base, aliases):
+                scan.skips.append((name_tok.line, "derived-attribute"))
+                break
+            if nxt < n and _is(toks[nxt], ","):
+                m = nxt + 1
+                continue
+            break
+    return aliases
 
 
 def _guard_names(toks: list[Tok], start: int) -> list[str]:

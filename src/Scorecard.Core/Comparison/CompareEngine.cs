@@ -346,7 +346,7 @@ public static class CompareEngine
 
     private sealed record Row(string Key, CsvRow Source, int KeyIndex, int[] FieldIndex);
 
-    // 오류 순서: 기준 쪽 → 결과 쪽, 쪽 안에서는 패턴 오류(-1) → 파일 경로 서수 순, 파일 안에서는 (줄, 열), 같으면 찾은 순서.
+    // 오류 순서: 기준 쪽 → 결과 쪽, 쪽 안에서는 파일이 정해지기 전 오류(-1: pattern, 폴더·파일 없음, no-rows) → 파일 경로 서수 순, 파일 안에서는 (줄, 열), 같으면 찾은 순서.
     private sealed class ErrorList
     {
         private readonly List<(int Side, int File, int Seq, CaseError Error)> errors = [];

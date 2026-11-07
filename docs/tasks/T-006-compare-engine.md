@@ -32,3 +32,10 @@ T-005가 만든 예제 3종의 `case.yaml`·`reference/`·`candidate/`. `expecte
 - T-004·T-005 예제 파일은 바꾸지 않는다.
 - metrics.json 첫 키는 `"schema_version": 1`(정수)이다(ADR 0004 결정 2). 처음부터 넣는다.
 - 같은 입력이면 `--json` 출력이 바이트까지 같아야 한다(ADR 0004). metrics.json 바이트 규칙이 그 바탕이다.
+
+## 남은 일 (정리 카드로)
+
+reviewer 비차단 지적(2026-11-07):
+- CR만 쓰는 파일에서 `encoding` 오류 줄 번호가 1로 나온다(`CsvText.cs`, `CaseParser.cs`도 같은 식). CR도 줄로 세고 테스트를 더한다.
+- 메시지 값 64자 자르기가 서로게이트 쌍 가운데서 자를 수 있다(`CompareRules.cs`).
+- 기준 빈 칸의 `number` 메시지가 `숫자가 아니다: `로 끝난다. 스펙 개정 때 `(빈 칸)` 표시를 검토한다.

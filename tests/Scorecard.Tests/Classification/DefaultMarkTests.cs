@@ -6,7 +6,7 @@ namespace Scorecard.Tests.Classification;
 
 // 스펙 4.6 기본값 표시(카드 수용 기준 2, 승인 결정 6)와 6.2 예시.
 // 규칙: 행을 정할 때 트리가 읽은 답(4.6 읽은 답 표) 중 하나라도 IsDefault면 그 행 문장 끝에 " (기본값 사용, 확인 필요)".
-// defaults에는 답 9개 중 IsDefault인 키를 모두 적는다(4.4 표 순서). 문장 표시와 상관없다.
+// defaults에는 답 10개 중 IsDefault인 키를 모두 적는다(4.4 표 순서). 문장 표시와 상관없다.
 [Trait("Spec", "classification")]
 public class DefaultMarkTests
 {
@@ -30,7 +30,7 @@ public class DefaultMarkTests
         Assert.All(entries, e => Assert.Equal(e.Keys.OrderBy(k => Array.IndexOf(keys, k)), e.Keys));
     }
 
-    // 4.6 표와 Core의 Used가 조합 2,160개의 모든 행에서 같다. Used는 4.4 표 순서다.
+    // 4.6 표와 Core의 Used가 조합 4,320개의 모든 행에서 같다. Used는 4.4 표 순서다.
     [Fact]
     public void Used_matches_spec_table_for_all_combinations()
     {
@@ -51,11 +51,11 @@ public class DefaultMarkTests
             }
         }
 
-        Assert.Equal(3768, rows);
+        Assert.Equal(5928, rows);
         Assert.True(differences.Count == 0, $"차이 {differences.Count}건(앞 20건):\n" + string.Join("\n", differences.Take(20)));
     }
 
-    // 4.6 규칙 전체: 조합 2,160개 × 키 9개. 키 하나만 IsDefault(값은 그대로)일 때,
+    // 4.6 규칙 전체: 조합 4,320개 × 키 10개. 키 하나만 IsDefault(값은 그대로)일 때,
     // 읽은 답에 그 키가 있는 행만 표시가 붙고, defaults는 그 키 하나다. 표시는 문장 끝에 정확히 한 번.
     [Fact]
     public void Mark_appears_exactly_on_rows_that_read_the_default_answer()
@@ -116,7 +116,7 @@ public class DefaultMarkTests
         Assert.All(step.Rows, r => Assert.True(Occurrences(r.Reason, ClassificationSpec.DefaultMark.Trim()) <= 1, r.Reason));
     }
 
-    // 6.2 블록: 파서를 거친 "답 없는 단계". 두 행 모두 표시, defaults 9개 모두, 확인 항목 2종.
+    // 6.2 블록: 파서를 거친 "답 없는 단계". 두 행 모두 표시, defaults 10개 모두, 확인 항목 2종.
     [Fact]
     public void Step_without_answers_matches_spec_block()
     {
@@ -126,7 +126,7 @@ public class DefaultMarkTests
 
         Assert.Equal(3, block.Length);
         Assert.Equal(block.Take(2), step.Rows.Select(r => $"{r.Assignee} {r.Rule}: {r.Reason}"));
-        Assert.StartsWith("defaults: 9개 모두. checks: ", block[2], StringComparison.Ordinal);
+        Assert.StartsWith("defaults: 10개 모두. checks: ", block[2], StringComparison.Ordinal);
         Assert.Equal(ClassificationInput.Keys, step.Defaults);
         Assert.Equal(block[2].Split("checks: ")[1].Split(", "), step.Checks);
         Assert.All(step.Rows, r => Assert.Equal(1, Occurrences(r.Reason, ClassificationSpec.DefaultMark)));
@@ -137,7 +137,7 @@ public class DefaultMarkTests
     [Fact]
     public void Explicit_values_equal_to_defaults_are_not_marked()
     {
-        var yaml = "name: p\ntask: t\nsteps:\n  - name: s\n    answers: {input_kind: fixed_form, rule_expressible: partial, frequency: weekly, batch_size: 10, exception_rate: 20, current_actor: human, minutes_per_item: null, failure_impact: internal_rework, existing_feature: unknown}\n";
+        var yaml = "name: p\ntask: t\nsteps:\n  - name: s\n    answers: {input_kind: fixed_form, rule_expressible: partial, frequency: weekly, batch_size: 10, exception_rate: 20, current_actor: human, minutes_per_item: null, failure_impact: internal_rework, existing_feature: unknown, human_signoff: no}\n";
         var step = Assert.Single(StepClassifier.Classify(CaseInput.Valid(CaseParser.Parse(ClassificationInput.Bytes(yaml), "answers.yaml"))).Steps);
 
         Assert.Equal(["minutes_per_item"], step.Defaults);

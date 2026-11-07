@@ -4,7 +4,7 @@ namespace Scorecard.Tests.Classification;
 
 // 스펙 4.5 근거 문장(카드 수용 기준 2, 승인 결정 5).
 // 문장 틀·문구 표를 파일에서 읽어 만든 문장이 Core 문장과 같다. 담당·행 종류도 틀 표와 같다.
-// 조합 2,160개(4.5)의 모든 행을 본다. 답은 모두 직접 쓴 값이라 기본값 표시가 없다.
+// 조합 4,320개(4.5)의 모든 행을 본다. 답은 모두 직접 쓴 값이라 기본값 표시가 없다.
 [Trait("Spec", "classification")]
 public class ReasonSentenceTests
 {
@@ -17,16 +17,16 @@ public class ReasonSentenceTests
     // 스펙 4.6 규칙 글머리. 공백 하나와 `(기본값 사용, 확인 필요)`.
     private const string SpecMarkBullet = "- 규칙: 행을 정할 때 트리가 읽은 답";
 
-    // 4.5 문장 틀은 7개(Q1~Q4, ELSE, PARTIAL, GATE)다.
+    // 4.5 문장 틀은 8개(SIGNOFF, Q1~Q4, ELSE, PARTIAL, GATE)다.
     [Fact]
-    public void Template_table_has_seven_rules()
+    public void Template_table_has_eight_rules()
     {
         Assert.Equal(
-            ["Q1", "Q2", "Q3", "Q4", "ELSE", "PARTIAL", "GATE"],
+            ["SIGNOFF", "Q1", "Q2", "Q3", "Q4", "ELSE", "PARTIAL", "GATE"],
             ClassificationSpec.Table(ClassificationSpec.TemplateHeader).Select(c => SpecDocument.Unquote(c[0])));
     }
 
-    // 4.5 조합 2,160개, 행 3,768개. 문장·담당·행 종류가 표로 만든 것과 같다. 차이를 모아 한 번에 보인다.
+    // 4.5 조합 4,320개, 행 5,928개. 문장·담당·행 종류가 표로 만든 것과 같다. 차이를 모아 한 번에 보인다.
     [Fact]
     public void All_combinations_match_templates_and_phrases()
     {
@@ -51,8 +51,8 @@ public class ReasonSentenceTests
             }
         }
 
-        Assert.Equal(2160, combinations.Count);
-        Assert.Equal(3768, rows);
+        Assert.Equal(4320, combinations.Count);
+        Assert.Equal(5928, rows);
         Assert.True(differences.Count == 0, $"차이 {differences.Count}건(앞 20건):\n" + string.Join("\n", differences.Take(20)));
     }
 

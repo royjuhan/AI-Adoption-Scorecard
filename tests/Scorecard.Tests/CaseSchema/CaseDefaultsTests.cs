@@ -3,7 +3,7 @@ using Scorecard.Core.Cases;
 
 namespace Scorecard.Tests.CaseSchema;
 
-// 스펙 4.4 단계와 질문 9개, 기본값 규칙. 승인 결정 5.
+// 스펙 4.4 단계와 답 10개, 기본값 규칙. 승인 결정 5. human_signoff는 T-008(ADR 0003).
 // 기본값은 코드에 박지 않고 스펙 4.4 표를 파일에서 읽어 대조한다(지시문 13절).
 [Trait("Spec", "case-schema")]
 public class CaseDefaultsTests
@@ -24,7 +24,7 @@ public class CaseDefaultsTests
     public static TheoryData<string> UnboundedKeys =>
         new(DefaultRow.ReadAll().Where(r => r.IsNumeric && !r.IsInteger && r.Bounds.Max is null).Select(r => r.Key));
 
-    // 답 9개를 4.4 표 순서로 (키, 값 문자열, IsDefault)로 편다. 값은 InvariantCulture, null은 "null".
+    // 답 10개를 4.4 표 순서로 (키, 값 문자열, IsDefault)로 편다. 값은 InvariantCulture, null은 "null".
     internal static IReadOnlyList<(string Key, string Value, bool IsDefault)> AllAnswers(StepAnswers a) =>
     [
         ("input_kind", a.InputKind.Value, a.InputKind.IsDefault),
@@ -36,9 +36,10 @@ public class CaseDefaultsTests
         ("minutes_per_item", a.MinutesPerItem.Value?.ToString(CultureInfo.InvariantCulture) ?? "null", a.MinutesPerItem.IsDefault),
         ("failure_impact", a.FailureImpact.Value, a.FailureImpact.IsDefault),
         ("existing_feature", a.ExistingFeature.Value, a.ExistingFeature.IsDefault),
+        ("human_signoff", a.HumanSignoff.Value, a.HumanSignoff.IsDefault),
     ];
 
-    // answers가 없는 단계의 9개 값이 4.4 표 다섯째 칸과 같고 모두 IsDefault다.
+    // answers가 없는 단계의 10개 값이 4.4 표 다섯째 칸과 같고 모두 IsDefault다.
     [Fact]
     public void Step_without_answers_matches_spec_defaults_table()
     {

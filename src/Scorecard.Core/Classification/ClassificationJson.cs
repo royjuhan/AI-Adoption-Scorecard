@@ -8,7 +8,7 @@ namespace Scorecard.Core.Classification;
 // Utf8JsonWriter로 속성 순서를 직접 정한다. 리플렉션 직렬화는 쓰지 않는다.
 // 들여쓰기 2칸, 줄바꿈 "\n", UnsafeRelaxedJsonEscaping, UTF-8(BOM 없음), 마지막 } 뒤에 "\n" 하나.
 // 첫 키는 schema_version(정수, ADR 0004 결정 2).
-// 경로·입력 해시·Used는 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장뿐이다.
+// 경로·입력 해시·Used·Inferred는 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장뿐이다.
 public static class ClassificationJson
 {
     public const string FileName = "classification.json";

@@ -62,7 +62,8 @@ public class ClassifierGuardTargetTests
         Assert.DoesNotContain(Path.GetFileName(Path.TrimEndingDirectorySeparator(workspace.Root)), text, StringComparison.Ordinal);
     }
 
-    // 4.10: 정상 표본 case-valid는 ②·③·④(예외 검토·게이트), 기본값 표시 3행, 확인 항목 2종을 모두 낸다.
+    // 4.10: 정상 표본 case-valid는 ②·③·④(예외 검토·게이트), 기본값 표시 5행, 확인 항목 2종을 모두 낸다.
+    // T-008: 표본에 human_signoff가 없어(기본값) 1·2단계 ELSE 행에도 표시가 붙는다(3 → 5행).
     // 표본이 바뀌어 분류 기능 일부만 쓰게 되면 G2·G3가 약해지므로 여기서 알린다.
     [Fact]
     public void Guard_sample_exercises_all_row_kinds_marks_and_checks()
@@ -74,7 +75,7 @@ public class ClassifierGuardTargetTests
         Assert.Equal(["②", "③", "④"], rows.Select(r => r.Assignee).Distinct().Order(StringComparer.Ordinal));
         Assert.Contains(rows, r => r.Kind == StepClassifier.KindExceptionReview);
         Assert.Contains(rows, r => r.Kind == StepClassifier.KindHumanGate);
-        Assert.Equal(3, rows.Count(r => r.Reason.EndsWith(ClassificationSpec.DefaultMark, StringComparison.Ordinal)));
+        Assert.Equal(5, rows.Count(r => r.Reason.EndsWith(ClassificationSpec.DefaultMark, StringComparison.Ordinal)));
         Assert.Equal(ClassificationSpec.CheckKeys(), ClassificationSpec.CheckKeys().Where(k => result.Steps.Any(s => s.Checks.Contains(k))));
     }
 

@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Scorecard.Core.Classification;
 
 // 분류의 값·숫자·문장을 이 파일 한 곳에만 둔다(docs/spec/classification.md 4.9, 승인 결정 9).
-// 원본은 스펙 4.2 조건 표, 4.4 값 표, 4.5 문장 틀·문구 표, 4.6 기본값 표시, 4.7 확인 항목 표다.
+// 원본은 스펙 4.2 조건 표, 4.4 값 표, 4.5 문장 틀·문구 표, 4.6 기본값 표시, 4.7 확인 항목 표, 4.12 추정 표시다.
 // 값을 바꾸려면 스펙 표를 먼저 고친다. 테스트가 스펙 표를 읽어 Core 동작과 대조한다.
 // 실행 중에 스펙 문서를 읽지 않는다. 비교는 서수, 숫자는 InvariantCulture다.
 internal static class ClassificationRules
@@ -14,7 +14,8 @@ internal static class ClassificationRules
     public const string AssigneeRuntimeAi = "③";
     public const string AssigneeHuman = "④";
 
-    // 4.4 근거 키.
+    // 4.4 근거 키. SIGNOFF는 사람이 최종 확인·서명하는 단계다(ADR 0003).
+    public const string RuleSignoff = "SIGNOFF";
     public const string RuleQ1 = "Q1";
     public const string RuleQ2 = "Q2";
     public const string RuleQ3 = "Q3";
@@ -24,6 +25,7 @@ internal static class ClassificationRules
     public const string RuleGate = "GATE";
 
     // 4.2 조건 표. 같은 근거 키의 조건은 모두 참이어야 걸린다(그리고).
+    public const string SignoffHumanSignoff = "yes";
     public const string Q1ExistingFeature = "yes";
     public const string Q2RuleExpressible = "no";
     public static readonly string[] Q3InputKinds = ["free_doc", "image", "conversation"];
@@ -41,7 +43,12 @@ internal static class ClassificationRules
     // 4.6 기본값 표시. 공백 하나 + 지시문 3.3 문구.
     public const string DefaultMark = " (기본값 사용, 확인 필요)";
 
+    // 4.12 추정 표시. 공백 하나 + 지시문 3.3 문구. 기본값 표시와 같이 붙으면 그 뒤에 둔다(ADR 0004).
+    public const string InferredMark = " (AI 추정, 확인 필요)";
+
     // 4.5 문장 틀. 그 잎을 정한 답만 쓴다.
+    public const string SignoffReason = "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.";
+
     public const string Q1Reason = "기존 프로그램에 같은 기능이 있으므로(yes) 기존 기능·설정으로 분류.";
 
     public const string Q2Reason = "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.";

@@ -1,0 +1,16 @@
+# 합성 예시. 실제 업무·값 없음. 서명 단계(SIGNOFF)와 추정 답 표시(inferred)를 섞었다.
+name: signoff-inferred
+task: 합성 보고서를 만들고 사람이 서명해 보낸다
+steps:
+  - name: 자료 모으기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 10, exception_rate: 0, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+    inferred: [batch_size, frequency]
+  - name: 예외 건 고르기
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 10, exception_rate: 30, current_actor: human, minutes_per_item: 3, failure_impact: external, human_signoff: no}
+    inferred: [rule_expressible, failure_impact]
+  - name: 최종 확인·서명
+    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, minutes_per_item: 5, failure_impact: external, existing_feature: no, human_signoff: yes}
+    inferred: [failure_impact]
+  - name: 월간 정리
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: monthly, batch_size: 10, exception_rate: 0, current_actor: ai_each_time, minutes_per_item: 1, failure_impact: internal_rework, existing_feature: no}
+    inferred: [current_actor]

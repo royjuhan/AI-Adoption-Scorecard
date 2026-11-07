@@ -24,6 +24,7 @@ public class SpecDocumentTests
         "minutes_per_item",
         "failure_impact",
         "existing_feature",
+        "human_signoff",
     ];
 
     // 12.1 예시에서 합성 샘플이 바꿔도 되는 줄(이름·문장). 나머지 줄은 같아야 한다.
@@ -46,7 +47,7 @@ public class SpecDocumentTests
     };
 
     [Fact]
-    public void Defaults_table_lists_nine_answer_keys_in_instruction_order()
+    public void Defaults_table_lists_ten_answer_keys_in_instruction_order()
     {
         Assert.Equal(AnswerKeys, DefaultRow.ReadAll().Select(r => r.Key));
     }
@@ -66,12 +67,12 @@ public class SpecDocumentTests
         Assert.All(spec.Where(r => r.IsEnum), r => Assert.Equal(instructions.Single(i => i.Key == r.Key).Choices, r.Choices));
     }
 
-    // 열거 6개, 정수 1개, 숫자 2개. 형식 칸이 바뀌면 파서 테스트의 값 변환도 바뀌어야 한다.
+    // 열거 7개, 정수 1개, 숫자 2개. 형식 칸이 바뀌면 파서 테스트의 값 변환도 바뀌어야 한다.
     [Fact]
     public void Defaults_table_kinds_are_enum_integer_or_number()
     {
         Assert.Equal(
-            ["열거", "열거", "열거", "정수", "숫자", "열거", "숫자", "열거", "열거"],
+            ["열거", "열거", "열거", "정수", "숫자", "열거", "숫자", "열거", "열거", "열거"],
             DefaultRow.ReadAll().Select(r => r.Kind));
     }
 

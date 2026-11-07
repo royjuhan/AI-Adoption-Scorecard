@@ -318,8 +318,11 @@ def main(argv: list[str] | None = None) -> int:
     runs: list[dict] = []
     if files:
         work = args.work or tempfile.mkdtemp(prefix="mutation-", dir=os.environ.get("RUNNER_TEMP"))
-        measured = measure(repo, rng, files, work)
-        errors, runs = measured["errors"], measured["runs"]
+        try:
+            measured = measure(repo, rng, files, work)
+            errors, runs = measured["errors"], measured["runs"]
+        except Exception as e:  # noqa: BLE001 — 어떤 실패든 mutation.json(status: error)을 남긴다
+            errors = [f"예외: {type(e).__name__}: {e}"]
     data = build_result(rng, files, errors, runs, tool_version(repo))
     with open(args.out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

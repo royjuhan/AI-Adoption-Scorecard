@@ -23,3 +23,117 @@ jobs:
       - run: dotnet restore AIAdoptionScorecard.sln
       - run: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
       - run: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+
+  # 바뀐 src/**/*.cs만 Stryker.NET으로 head·base 양쪽에서 돌린다(ADR 0005 원문 2). 규칙: tools/ci/README.md
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # base: PR이면 base 브랜치 끝 커밋, main push면 push 전 끝 커밋(event.before).
+      # 비었거나 0 40개·저장소에 없으면 스크립트가 head의 첫 부모(HEAD~1)로 정한다(tools/ci/cigit.py).
+      # head: checkout한 커밋(github.sha). PR이면 GitHub가 만든 병합 커밋(refs/pull/N/merge)이다.
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Stryker 설치(.config/dotnet-tools.json 고정 버전)
+        run: dotnet tool restore
+      - name: mutation 측정
+        run: python3 tools/ci/mutation.py --repo . --base "$CI_BASE" --head HEAD --out mutation.json --work "$RUNNER_TEMP/mutation"
+      - name: mutation.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-result
+          path: mutation.json
+          if-no-files-found: warn
+      - name: Stryker 보고서·로그 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: |
+            ${{ runner.temp }}/mutation/out/**/reports/mutation-report.json
+            ${{ runner.temp }}/mutation/logs/*.log
+          if-no-files-found: ignore
+
+  # tools/oracle/(Python 독립 구현)이 예제 expected/와 같은 바이트를 내는지 본다(ADR 0005 원문 3).
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: oracle 대조
+        run: python3 tools/oracle/check.py --repo . --json oracle.json
+      - name: oracle.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-result
+          path: oracle.json
+          if-no-files-found: warn
+
+  # PR base 대비 회귀 신호를 막는다(ADR 0005 원문 1). mutation·oracle이 실패해도 결과 파일을 읽고 판단한다.
+  regression-guard:
+    needs: [mutation, oracle]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # base: PR이면 base 브랜치 끝 커밋, main push면 push 전 끝 커밋(event.before).
+      # 비었거나 0 40개·저장소에 없으면 스크립트가 head의 첫 부모(HEAD~1)로 정한다(tools/ci/cigit.py).
+      # head: checkout한 커밋(github.sha). PR이면 GitHub가 만든 병합 커밋(refs/pull/N/merge)이다.
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 자기 검사(tools/ci 단위 테스트)
+        run: python3 -m unittest discover -s tools/ci -p "test_*.py" -v
+      - name: mutation 결과 받기
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mutation-result
+          path: ci-results/mutation
+      - name: oracle 결과 받기
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: oracle-result
+          path: ci-results/oracle
+      - name: regression-guard
+        env:
+          MUTATION_RESULT: ${{ needs.mutation.result }}
+          ORACLE_RESULT: ${{ needs.oracle.result }}
+        run: >-
+          python3 tools/ci/regression_guard.py --repo . --base "$CI_BASE" --head HEAD
+          --mutation ci-results/mutation/mutation.json
+          --oracle ci-results/oracle/oracle.json
+          --json-out regression-guard.json
+      - name: regression-guard.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-guard-result
+          path: regression-guard.json
+          if-no-files-found: warn

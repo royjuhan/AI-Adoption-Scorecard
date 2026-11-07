@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "case": "form-fill",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "order_id",
+    "reference_files": [
+      "reference/orders.csv"
+    ],
+    "candidate_files": [
+      "candidate/orders.csv"
+    ],
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 20,
+      "mismatch": 0,
+      "missing": 0,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 100.0,
+    "missing_rate_pct": 0.0,
+    "fields": [
+      {
+        "field": "item",
+        "kind": "text",
+        "tolerance": null,
+        "tolerance_pct": null,
+        "compared": 20,
+        "outside": 0,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "quantity",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 20,
+        "outside": 0,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": []
+  }
+}

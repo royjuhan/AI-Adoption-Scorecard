@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "case": "table-compare",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "log_id",
+    "reference_files": [
+      "reference/logs.csv"
+    ],
+    "candidate_files": [
+      "candidate/logs.csv"
+    ],
+    "counts": {
+      "reference": 30,
+      "candidate": 30,
+      "match": 27,
+      "mismatch": 2,
+      "missing": 1,
+      "extra": 1,
+      "within": 4
+    },
+    "accuracy_pct": 90.0,
+    "missing_rate_pct": 3.3,
+    "fields": [
+      {
+        "field": "start_index",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 29,
+        "outside": 0,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "length",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 29,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "mean_value",
+        "kind": "number",
+        "tolerance": null,
+        "tolerance_pct": 1.0,
+        "compared": 29,
+        "outside": 1,
+        "within": 4,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "log04",
+        "status": "match",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 5
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 21
+        },
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "62.69",
+            "candidate": "62.82"
+          }
+        ]
+      },
+      {
+        "key": "log07",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 8
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 8
+        },
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "outside",
+            "reference": "30.77",
+            "candidate": "31.69"
+          }
+        ]
+      },
+      {
+        "key": "log08",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 9
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 27
+        },
+        "differences": [
+          {
+            "field": "length",
+            "result": "outside",
+            "reference": "274",
+            "candidate": "268"
+          }
+        ]
+      },
+      {
+        "key": "log20",
+        "status": "match",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 21
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 2
+        },
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "84.15",
+            "candidate": "84.07"
+          }
+        ]
+      },
+      {
+        "key": "log23",
+        "status": "match",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 24
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 31
+        },
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "63.13",
+            "candidate": "62.94"
+          }
+        ]
+      },
+      {
+        "key": "log26",
+        "status": "match",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 27
+        },
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 29
+        },
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "55.76",
+            "candidate": "55.54"
+          }
+        ]
+      },
+      {
+        "key": "log27",
+        "status": "missing",
+        "reference": {
+          "file": "reference/logs.csv",
+          "line": 28
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "log31",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/logs.csv",
+          "line": 26
+        },
+        "differences": []
+      }
+    ]
+  }
+}

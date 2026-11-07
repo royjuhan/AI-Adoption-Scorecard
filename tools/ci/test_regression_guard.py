@@ -16,18 +16,38 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import cigit  # noqa: E402
 import csharp_scan  # noqa: E402
+import lead_check  # noqa: E402
 import mutation  # noqa: E402
 import regression_guard as rg  # noqa: E402
 import testrun  # noqa: E402
 
 _ENV_BACKUP: dict[str, str | None] = {}
 _GIT_HOME = ""
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def repo_file(*parts: str) -> str | None:
+    """저장소 파일. 이 폴더의 두 단계 위(checkout 안) → GITHUB_WORKSPACE 순서로 찾는다.
+
+    CI의 regression-guard 잡은 base 커밋의 tools/ci를 임시 폴더에 꺼내 돌린다(옆에 tests/가 없다). 그때는
+    GITHUB_WORKSPACE(checkout 폴더)의 파일을 본다. GITHUB_WORKSPACE가 있는데 못 찾으면 실패한다(건너뛰지 않는다).
+    """
+    candidates = [os.path.join(HERE, "..", "..", *parts)]
+    if os.environ.get("GITHUB_WORKSPACE"):
+        candidates.append(os.path.join(os.environ["GITHUB_WORKSPACE"], *parts))
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    if os.environ.get("GITHUB_WORKSPACE"):
+        raise AssertionError(f"{'/'.join(parts)}를 찾지 못했다: {candidates}")
+    return None
 
 
 def setUpModule() -> None:  # noqa: N802
@@ -705,10 +725,9 @@ class TestCsharpScan(unittest.TestCase):
         self.assertIsNone(csharp_scan.analyze("public class Other { }").guard_names)
 
     def test_real_guard_targets_file(self) -> None:
-        here = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(here, "..", "..", "tests", "Scorecard.Tests", "Guards", "GuardTargets.cs")
-        if not os.path.isfile(path):
-            self.skipTest("저장소 밖에서 돌림")
+        path = repo_file("tests", "Scorecard.Tests", "Guards", "GuardTargets.cs")
+        if path is None:
+            self.skipTest("저장소 밖에서 돌림(GITHUB_WORKSPACE도 없음)")
         with open(path, encoding="utf-8") as f:
             names = csharp_scan.analyze(f.read()).guard_names
         self.assertTrue(names, "실제 GuardTargets.All에서 이름을 읽지 못했다")
@@ -1123,13 +1142,57 @@ class TestMigrationScope(GuardRepoTestCase):
         self.assertFail(result)
         self.assertRule(result, "FAIL", "migration-commit-scope", "src/Demo.Core/Foo.cs")
 
-    def test_migration_commit_with_spec_passes(self) -> None:
+    SPEC = "docs/spec/classification.md"
+    SPEC_TEXT = (
+        "# 스펙\n\n규칙 글.\n\n`examples/ex/expected/classification.json` (SHA-256 `" + "a" * 64 + "`):\n\n"
+        "```json\n{\n  \"schema_version\": 1\n}\n```\n\n```text\n설명 블록\n```\n\n끝 글.\n"
+    )
+
+    def spec_base(self) -> None:
+        self.repo.write(self.SPEC, self.SPEC_TEXT)
+        self.base = self.repo.commit("스펙이 있는 base")
+
+    def migrate(self, new_spec: str) -> rg.Result:
         self.repo.replace(self.PATH, '"schema_version": 1', '"schema_version": 1,\n  "case": "ex"')
-        self.repo.write("docs/spec/classification.md", "블록\n")
+        self.repo.write(self.SPEC, new_spec)
         self.repo.commit("expected migration: 스펙 블록과 같이")
-        result = self.run_guard(oracle_path=self.oracle_file({self.PATH: "match"}))
+        return self.run_guard(oracle_path=self.oracle_file({self.PATH: "match"}))
+
+    def test_migration_commit_with_spec_block_and_sha_passes(self) -> None:
+        self.spec_base()
+        new = self.SPEC_TEXT.replace("a" * 64, "b" * 64).replace('  "schema_version": 1\n}', '  "schema_version": 1,\n  "case": "ex"\n}')
+        result = self.migrate(new)
         self.assertNoFail(result)
-        self.assertRule(result, "PASS", "migration-commit-scope", "expected·docs/spec만")
+        self.assertRule(result, "PASS", "migration-commit-scope", "블록·SHA-256")
+
+    def test_migration_commit_spec_prose_fails(self) -> None:
+        # 리뷰 n7 같은 스펙 글(표) 변경을 expected migration 커밋에 섞지 못한다.
+        cases = {
+            "글": self.SPEC_TEXT.replace("규칙 글.", "규칙 글을 바꿈."),
+            "SHA 줄의 파일 이름": self.SPEC_TEXT.replace("`examples/ex/expected/classification.json`", "`examples/ex/expected/metrics.json`"),
+            "text 블록": self.SPEC_TEXT.replace("설명 블록", "설명 블록 고침"),
+            "울타리 언어": self.SPEC_TEXT.replace("```json", "```text"),
+            "블록 밖으로 끌어냄": self.SPEC_TEXT.replace('  "schema_version": 1\n}\n```', '  "schema_version": 1\n}\n```\n새 글'),
+        }
+        self.spec_base()
+        for name, text in cases.items():
+            with self.subTest(name=name):
+                self.repo.git("reset", "-q", "--hard", self.base)
+                result = self.migrate(text)
+                self.assertFail(result)
+                self.assertRule(result, "FAIL", "migration-commit-scope", "블록 밖 글이 바뀌었다")
+
+    def test_migration_commit_new_spec_file_fails(self) -> None:
+        result = self.migrate("블록\n")
+        self.assertRule(result, "FAIL", "migration-commit-scope", "새 스펙 파일이다")
+
+    def test_spec_block_lines(self) -> None:
+        lines = ["글", "```json", "{", "```", "~~~yaml", "a: 1", "~~~", "````csv", "a,b", "```", "````", "```", "x", "```"]
+        self.assertEqual(rg.spec_block_lines(lines),
+                         [False, True, True, True, True, True, True, True, True, True, True, False, False, False])
+        self.assertEqual(rg.spec_diff_problems(b"a\n", b"a\n"), [])
+        self.assertEqual(rg.spec_diff_problems(b"x " + b"1" * 64 + b"\n", b"x " + b"2" * 64 + b"\n"), [])
+        self.assertTrue(rg.spec_diff_problems(b"x " + b"1" * 64 + b"\n", b"y " + b"2" * 64 + b"\n"))
 
     def test_migration_commit_without_expected_is_also_checked(self) -> None:
         self.repo.replace("tests/Demo.Tests/FooTests.cs", "One", "OneRenamed")
@@ -1140,12 +1203,14 @@ class TestMigrationScope(GuardRepoTestCase):
 class TestTestRun(GuardRepoTestCase):
     def make_testrun(self, base_names: list[str], head_names: list[str], base_skipped: list[str] | None = None,
                      head_skipped: list[str] | None = None, status: str = "measured", base: str | None = None,
-                     head_status: str = "ok") -> str:
-        def side(names: list[str], skipped: list[str], st: str = "ok") -> dict:
-            return {"status": st, "total": len(names) + len(skipped), "passed": len(names), "failed": 0, "skipped": len(skipped),
-                    "passed_names": sorted(names), "failed_names": [], "skipped_names": sorted(skipped)}
+                     head_status: str = "ok", head_failed: list[str] | None = None, base_failed: list[str] | None = None) -> str:
+        def side(names: list[str], skipped: list[str], st: str = "ok", failed: list[str] | None = None) -> dict:
+            failed = failed or []
+            return {"status": st, "total": len(names) + len(skipped) + len(failed), "passed": len(names), "failed": len(failed),
+                    "skipped": len(skipped), "passed_names": sorted(names), "failed_names": sorted(failed), "skipped_names": sorted(skipped)}
         data = {"schema_version": 1, "status": status, "base": base or self.base, "head": self.head(), "errors": [] if status == "measured" else ["빌드 실패"],
-                "sides": {"base": side(base_names, base_skipped or []), "head": side(head_names, head_skipped or [], head_status)}}
+                "sides": {"base": side(base_names, base_skipped or [], "ok", base_failed),
+                          "head": side(head_names, head_skipped or [], head_status, head_failed)}}
         path = os.path.join(self.tmp, "testrun.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
@@ -1204,6 +1269,96 @@ class TestTestRun(GuardRepoTestCase):
         self.assertRule(self.run_guard(testrun_path=self.make_testrun(["a"], ["a"], base="1" * 40)), "FAIL", "test-run", "범위가 다르다")
         self.assertRule(self.run_guard(testrun_path=self.make_testrun(["a"], ["a"], status="error")), "FAIL", "test-run", "status=error")
         self.assertRule(self.run_guard(testrun_path=self.make_testrun(["a"], ["a"], head_status="error")), "FAIL", "test-run", "head test-run 결과가 없다")
+
+    def test_head_failure_fails_even_with_evidence(self) -> None:
+        # 리뷰 재현 n3a·n3b: head 테스트가 실패했는데 mutation 증거로 통과했다.
+        self.repo.replace("src/Demo.Core/Foo.cs", "x + 1", "x + 2")
+        self.repo.commit("src")
+        result = self.run_guard(self.mutation_file(), testrun_path=self.make_testrun(["a", "b"], ["a"], head_failed=["b"]))
+        self.assertFail(result)
+        self.assertRule(result, "FAIL", "test-run-failed", "1개")
+        self.assertRule(result, "FAIL", "test-run-failed", ": b")
+
+    def test_base_failure_warns(self) -> None:
+        self.repo.commit("빈 커밋")
+        result = self.run_guard(testrun_path=self.make_testrun(["a"], ["a", "b"], base_failed=["b"]))
+        self.assertNoFail(result)
+        self.assertRule(result, "WARN", "test-run-base-failed", "1개")
+
+    # ---- 이름 변경 출구(STATUS.md "잠정 결정")
+
+    RENAMED = (["N.C.M(x: 1)", "N.C.M(x: 2)", "N.D.K"], ["N.C.M(x: 1)", "N.C.M(x: 3)", "N.D.K"])
+
+    def provisional_base(self) -> None:
+        self.repo.write("docs/STATUS.md", PROVISIONAL_STATUS)
+        self.base = self.repo.commit("STATUS가 있는 base")
+
+    def add_provisional_row(self, card: str) -> None:
+        self.repo.write("docs/STATUS.md", textwrap.dedent(PROVISIONAL_STATUS).lstrip("\n") + f"| 2026-11-08 | {card} | 표 행의 답 순서 | 이름 변경을 받아들임 | #99 |\n")
+
+    def test_rename_with_provisional_row_warns(self) -> None:
+        # 리뷰 재현 n7: 스펙 표 행이 바뀌어 Theory 이름이 바뀐다. 클래스별 통과 수는 그대로다.
+        self.provisional_base()
+        self.add_provisional_row("T-099")
+        self.repo.commit("T-099: 6.1 표 행의 답 순서")
+        result = self.run_guard(testrun_path=self.make_testrun(*self.RENAMED))
+        self.assertNoFail(result)
+        self.assertRule(result, "WARN", "test-run-renamed", "N.C.M(x: 2)")
+        self.assertFalse([f for f in result.findings if f.rule == "test-run-missing"])
+
+    def test_rename_without_row_fails_with_hint(self) -> None:
+        self.provisional_base()
+        self.repo.commit("T-099: 6.1 표 행의 답 순서")
+        result = self.run_guard(testrun_path=self.make_testrun(*self.RENAMED))
+        self.assertFail(result)
+        self.assertRule(result, "FAIL", "test-run-missing", "N.C.M(x: 2)")
+        self.assertRule(result, "INFO", "test-run-renamed", "T-099")
+
+    def test_rename_row_must_name_the_card(self) -> None:
+        self.provisional_base()
+        self.add_provisional_row("T-100")
+        self.repo.commit("T-099: 다른 카드의 행")
+        self.assertRule(self.run_guard(testrun_path=self.make_testrun(*self.RENAMED)), "FAIL", "test-run-missing", "N.C.M(x: 2)")
+        # 카드 번호는 --card(브랜치 이름)로도 준다.
+        self.assertNoFail(self.run_guard(testrun_path=self.make_testrun(*self.RENAMED), cards=["task/T-100-rename"]))
+
+    def test_row_in_other_section_does_not_count(self) -> None:
+        self.provisional_base()
+        self.repo.replace("docs/STATUS.md", "| 2026-11-07 | 0005 | 자동 진행 | juhan | T-010 |", "| 2026-11-07 | 0005 | 자동 진행 | juhan | T-010 |\n| 2026-11-08 | T-099 | x | x | x |")
+        self.repo.commit("T-099: 원칙 표에 행")
+        self.assertRule(self.run_guard(testrun_path=self.make_testrun(*self.RENAMED)), "FAIL", "test-run-missing", "N.C.M(x: 2)")
+
+    def test_lost_test_in_class_is_not_a_rename(self) -> None:
+        self.provisional_base()
+        self.add_provisional_row("T-099")
+        self.repo.commit("T-099: 하나를 지우고 다른 클래스에 더함")
+        result = self.run_guard(testrun_path=self.make_testrun(["N.C.M(x: 1)", "N.C.M(x: 2)"], ["N.C.M(x: 1)", "N.E.New"]))
+        self.assertFail(result)
+        self.assertRule(result, "FAIL", "test-run-missing", "N.C.M(x: 2)")
+
+    def test_trx_class_and_card_ids(self) -> None:
+        self.assertEqual(rg.trx_class('A.B.C.M(changes: "a.b", x: 1)'), "A.B.C")
+        self.assertEqual(rg.trx_class("A.B.C.M"), "A.B.C")
+        self.repo.commit("T-123: 카드 커밋")
+        self.repo.commit("카드 없는 커밋 T-12")
+        rng = cigit.resolve_range(self.repo.root, self.base, "HEAD")
+        self.assertEqual(rg.card_ids(self.repo.root, rng, ["task/T-045-x", "", "origin/main"]), ["T-045", "T-123"])
+
+
+PROVISIONAL_STATUS = """
+    # STATUS
+
+    ## 원칙 변경 (맨 위에 둔다)
+
+    | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
+    | --- | --- | --- | --- | --- |
+    | 2026-11-07 | 0005 | 자동 진행 | juhan | T-010 |
+
+    ## 잠정 결정 (ADR 0005 결정 3. 리드가 추천안을 채택한 것)
+
+    | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
+    | --- | --- | --- | --- | --- |
+"""
 
 
 TRX = """<?xml version="1.0" encoding="utf-8"?>
@@ -1321,21 +1476,21 @@ class TestMutationLimits(unittest.TestCase):
 
     def test_timeouts_fit_job(self) -> None:
         self.assertLessEqual(mutation.RUN_TIMEOUT_SECONDS * 2, mutation.DEFAULT_BUDGET_MINUTES * 60)
-        # CI는 base 커밋의 tools/ci를 꺼내 돌린다. 그 폴더 옆에는 ci.yml이 없으니 checkout 폴더의 것을 본다.
-        here = os.path.dirname(os.path.abspath(__file__))
-        candidates = [os.path.join(here, "..", "..", ".github", "workflows", "ci.yml")]
-        if os.environ.get("GITHUB_WORKSPACE"):
-            candidates.append(os.path.join(os.environ["GITHUB_WORKSPACE"], ".github", "workflows", "ci.yml"))
-        found = [c for c in candidates if os.path.isfile(c)]
-        if not found:
+        # CI는 base 커밋의 tools/ci와 .github/workflows/ci.yml을 같은 임시 폴더에 꺼낸다(두 단계 위가 ci.yml 자리).
+        path = repo_file(".github", "workflows", "ci.yml")
+        if path is None:
             self.skipTest("ci.yml을 찾지 못함(저장소 밖에서 돌림)")
-        with open(found[0], encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             text = f.read()
         job = text[text.index("\n  mutation:"):text.index("\n  oracle:")]
         minutes = int(re.search(r"timeout-minutes: (\d+)", job).group(1))
         budget = float(re.search(r"--budget-minutes (\d+)", job).group(1))
         self.assertLess(budget, minutes)
         self.assertLessEqual(mutation.RUN_TIMEOUT_SECONDS * 2, budget * 60)
+        if "\n  test-run:" in text:
+            job = text[text.index("\n  test-run:"):text.index("\n  regression-guard:")]
+            minutes = int(re.search(r"timeout-minutes: (\d+)", job).group(1))
+            self.assertLess(testrun.SIDE_TIMEOUT_SECONDS * 2, minutes * 60)
 
     def test_timeout_status_and_guard_message(self) -> None:
         rng = cigit.Range("b" * 40, "h" * 40, "시험")
@@ -1386,6 +1541,319 @@ class TestMutationLimits(unittest.TestCase):
             shutil.rmtree(root, ignore_errors=True)
         self.assertEqual(removed, ["stryker-config.json", "stryker-config.yaml"])
         self.assertEqual(left, ["other.json"])
+
+
+class TestCiChangedPrinciples(GuardRepoTestCase):
+    """T-010 재리뷰 사소 8: .claude/**, CLAUDE.md, docs/README-instructions.md, global.json, 기존 ADR 수정."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        TestCiChanged.make_guarded_base(self)
+
+    def test_principle_files_fail_without_adr(self) -> None:
+        cases = {
+            ".claude/settings.json": "{}\n",
+            ".claude/agents/ci-dev.md": "# 바꿈\n",
+            "CLAUDE.md": "# 바꿈\n",
+            "docs/README-instructions.md": "# 바꿈\n",
+            "global.json": "{}\n",
+        }
+        for path, text in cases.items():
+            with self.subTest(path=path):
+                self.repo.git("reset", "-q", "--hard", self.base)
+                self.repo.write(path, text)
+                self.repo.commit(f"T-099: {path}")
+                result = self.run_guard()
+                self.assertFail(result)
+                self.assertRule(result, "FAIL", "ci-changed", path)
+
+    def test_existing_adr_edit_is_watched(self) -> None:
+        self.repo.replace("docs/decisions/0005-auto-mode.md", "# 0005", "# 0005 고침")
+        self.repo.commit("T-099: ADR 0005만 고침")
+        self.assertRule(self.run_guard(), "FAIL", "ci-changed", "docs/decisions/0005-auto-mode.md")
+
+    def test_new_adr_alone_is_not_watched(self) -> None:
+        self.repo.write("docs/decisions/0006-new.md", "# 0006\n")
+        self.repo.commit("T-099: 새 ADR만")
+        result = self.run_guard()
+        self.assertNoFail(result)
+        self.assertRule(result, "PASS", "ci-changed", "변경 없음")
+
+    def test_principle_change_with_adr_and_row_passes(self) -> None:
+        self.repo.write("CLAUDE.md", "# 바꿈\n")
+        TestCiChanged.add_adr_and_row(self, "0006")
+        self.repo.commit("T-012: 원칙 바꿈, ADR 0006")
+        result = self.run_guard()
+        self.assertNoFail(result)
+        self.assertRule(result, "PASS", "ci-changed", "CLAUDE.md")
+
+
+class TestTamper(GuardRepoTestCase):
+    """T-010 재리뷰 B4: head 테스트가 CI 러너의 base 도구·결과 파일·GITHUB_ENV를 고치는 길(덫)."""
+
+    def test_runner_temp_in_new_test_fails(self) -> None:
+        # 리뷰 재현 n1: 테스트가 $RUNNER_TEMP/base-tools/tools/ci/regression_guard.py를 덮어쓴다.
+        self.repo.write("tests/Demo.Tests/RunnerTempTests.cs", """
+            public class RunnerTempTests
+            {
+                [Fact]
+                public void Runner_temp_is_writable()
+                {
+                    var t = System.Environment.GetEnvironmentVariable("RUNNER_TEMP");
+                    var g = System.IO.Path.Combine(t, "base-tools", "tools", "ci", "regression_guard.py");
+                }
+            }
+        """)
+        self.repo.commit("T-099: 러너 임시 폴더 확인 테스트")
+        result = self.run_guard()
+        self.assertFail(result)
+        self.assertRule(result, "FAIL", "ci-tamper", "RUNNER_TEMP")
+        self.assertRule(result, "FAIL", "ci-tamper", "base-tools")
+        self.assertRule(result, "FAIL", "ci-tamper", "regression_guard")
+
+    def test_escaped_and_other_files_fail(self) -> None:
+        cases = {
+            "tests/Demo.Tests/E.cs": 'class E { string s = "\\u0047ITHUB_ENV"; }\n',
+            "src/Demo.Core/T.cs": 'class T { string s = "out/TestRun.json"; }\n',
+            "tests/Demo.Tests/data.json": '{"p": ".git/refs/replace/x"}\n',
+            "tests/Demo.Tests/Results.cs": 'class R { string s = "x.trx"; }\n',
+        }
+        for path, text in cases.items():
+            with self.subTest(path=path):
+                self.repo.git("reset", "-q", "--hard", self.base)
+                self.repo.write(path, text)
+                self.repo.commit(f"T-099: {path}")
+                self.assertRule(self.run_guard(), "FAIL", "ci-tamper", path)
+
+    def test_existing_occurrence_passes_and_evidence_does_not_help(self) -> None:
+        self.repo.write("tests/Demo.Tests/Env.cs", 'class Env { string s = "GITHUB_WORKSPACE"; }\n')
+        self.base = self.repo.commit("base에 이미 있음")
+        self.repo.replace("tests/Demo.Tests/Env.cs", "class Env", "class Env2")
+        self.repo.commit("이름만")
+        self.assertRule(self.run_guard(), "PASS", "ci-tamper")
+        self.repo.replace("tests/Demo.Tests/Env.cs", '"GITHUB_WORKSPACE";', '"GITHUB_WORKSPACE" + "RUNNER_TEMP";')
+        self.repo.replace("src/Demo.Core/Foo.cs", "x + 1", "x + 2")
+        self.repo.commit("하나 더 + src")
+        result = self.run_guard(self.mutation_file())
+        self.assertFail(result)
+        self.assertRule(result, "FAIL", "ci-tamper", "RUNNER_TEMP")
+
+    def test_tamper_counts(self) -> None:
+        self.assertEqual(rg.tamper_counts(b'"runner_temp" "\\u0052UNNER_TEMP"')["RUNNER_TEMP"], 2)
+        self.assertEqual(rg.tamper_counts(b"plain text"), {})
+        self.assertEqual(rg.tamper_counts(None), {})
+
+
+class TestJobResults(GuardRepoTestCase):
+    def test_job_results(self) -> None:
+        self.repo.commit("빈 커밋")
+        ok = self.run_guard(jobs={"test-run": "success", "oracle-head": "success"})
+        self.assertNoFail(ok)
+        self.assertRule(ok, "PASS", "job-result", "test-run")
+        bad = self.run_guard(jobs={"test-run": "failure", "oracle-head": "skipped"})
+        self.assertFail(bad)
+        self.assertRule(bad, "FAIL", "job-result", "test-run 잡 결과가 failure")
+        self.assertRule(bad, "FAIL", "job-result", "oracle-head 잡 결과가 skipped")
+
+    def test_main_job_argument(self) -> None:
+        self.repo.commit("빈 커밋")
+        common = ["--repo", self.repo.root, "--base", self.base, "--summary", ""]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(rg.main(common + ["--job", "test-run=success"]), 0)
+            self.assertEqual(rg.main(common + ["--job", "test-run=failure"]), 1)
+            self.assertEqual(rg.main(common + ["--job", "test-run"]), 2)
+
+
+class TestTestsChangedWithSrc(GuardRepoTestCase):
+    def test_src_and_existing_test_warns(self) -> None:
+        # 리뷰 재현 n3c: src 변경과 기존 테스트의 단언 변경이 같이 오면 그 테스트 파일을 적는다.
+        self.repo.replace("src/Demo.Core/Foo.cs", "x + 1", "x + 2")
+        self.repo.replace("tests/Demo.Tests/FooTests.cs", "public void One() { }", "public void One() { /* 단언 뺌 */ }")
+        self.repo.commit("src + 테스트")
+        result = self.run_guard()
+        self.assertNoFail(result)
+        self.assertRule(result, "WARN", "tests-changed-with-src", "tests/Demo.Tests/FooTests.cs")
+
+    def test_no_warning_without_src_or_for_new_tests(self) -> None:
+        self.repo.replace("tests/Demo.Tests/FooTests.cs", "public void One() { }", "public void One() { var x = 1; }")
+        self.repo.commit("테스트만")
+        self.assertFalse([f for f in self.run_guard().findings if f.rule == "tests-changed-with-src"])
+        self.repo.git("reset", "-q", "--hard", self.base)
+        self.repo.replace("src/Demo.Core/Foo.cs", "x + 1", "x + 2")
+        self.repo.write("tests/Demo.Tests/NewTests.cs", "public class N { [Fact] public void A() { } }\n")
+        self.repo.commit("src + 새 테스트")
+        self.assertFalse([f for f in self.run_guard().findings if f.rule == "tests-changed-with-src"])
+
+
+class TestMutationInitialFailures(unittest.TestCase):
+    def test_parse_stryker_log(self) -> None:
+        root = tempfile.mkdtemp(prefix="mut-log-")
+        try:
+            log = os.path.join(root, "x.log")
+            with open(log, "w", encoding="utf-8") as f:
+                f.write("[16:35:39 INF] Number of tests found: 1282. Initial test run started.\n"
+                        "[16:35:53 WRN] 1 tests are failing. Stryker will continue but outcome will be impacted.\n")
+            self.assertEqual(mutation.initial_failures(log), 1)
+            with open(log, "w", encoding="utf-8") as f:
+                f.write("[16:35:53 INF] Initial test run ok.\n")
+            self.assertEqual(mutation.initial_failures(log), 0)
+            self.assertEqual(mutation.initial_failures(os.path.join(root, "없음.log")), 0)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_guard_rejects_runs_with_initial_failures(self) -> None:
+        rng = cigit.Range("b" * 40, "h" * 40, "")
+        stats = {"killed": 9, "timeout": 0, "survived": 0, "no_coverage": 0}
+        data = {"status": "measured", "base": rng.base, "head": rng.head,
+                "files": [{"path": "src/A/A.cs", "base_path": "src/A/A.cs", "head": stats, "base": stats}],
+                "runs": [{"side": "head", "project": "src/A/A.csproj", "initial_failures": 1}]}
+        ok, reasons = rg.mutation_evidence(data, None, rng, "success")
+        self.assertFalse(ok)
+        self.assertIn("처음 테스트 실행에서 1개가 실패", reasons[0])
+        data["runs"][0]["initial_failures"] = 0
+        self.assertTrue(rg.mutation_evidence(data, None, rng, "success")[0])
+
+    def test_manifest_from_head_commit_in_bootstrap(self) -> None:
+        repo = TempRepo()
+        try:
+            repo.write("src/A/A.cs", "class A { }\n")
+            base = repo.commit("base: manifest 없음")
+            repo.write(".config/dotnet-tools.json", '{"version": 1, "tools": {"dotnet-stryker": {"version": "4.4.1"}}}\n')
+            head = repo.commit("head: manifest 넣음")
+            os.remove(os.path.join(repo.root, ".config", "dotnet-tools.json"))  # 작업 트리가 아니라 커밋에서 읽는다
+            manifest, source = mutation.tool_manifest(repo.root, cigit.Range(base, head, ""))
+            self.assertEqual((mutation.tool_version(manifest), source), ("4.4.1", "head"))
+        finally:
+            repo.close()
+
+
+class TestNoReplaceObjects(unittest.TestCase):
+    def test_replace_refs_are_ignored(self) -> None:
+        # B4: head 코드가 .git/refs/replace/에 대체 개체를 넣어도 guard는 진짜 개체를 읽는다.
+        repo = TempRepo()
+        try:
+            repo.write("tests/T.cs", "real\n")
+            repo.commit("하나")
+            real = repo.git("rev-parse", "HEAD:tests/T.cs")
+            fake = subprocess.run(["git", "-C", repo.root, "hash-object", "-w", "--stdin"], input=b"fake\n",
+                                  stdout=subprocess.PIPE, check=True).stdout.decode().strip()
+            repo.git("replace", real, fake)
+            plain = {k: v for k, v in os.environ.items() if k != "GIT_NO_REPLACE_OBJECTS"}  # CI 잡 환경에는 이 값이 있다
+            shown = subprocess.run(["git", "-C", repo.root, "cat-file", "-p", "HEAD:tests/T.cs"], stdout=subprocess.PIPE, env=plain, check=True)
+            self.assertEqual(shown.stdout, b"fake\n")  # 그냥 git은 대체 개체를 보인다
+            self.assertEqual(cigit.read_file(repo.root, "HEAD", "tests/T.cs"), b"real\n")
+            self.assertEqual(cigit.read_tree_files(repo.root, "HEAD", "tests/", ".cs"), {"tests/T.cs": b"real\n"})
+        finally:
+            repo.close()
+
+
+class TestLeadCheckHelpers(unittest.TestCase):
+    """T-010 재리뷰 B5: 리드가 머지 전에 도는 lead_check.py의 도우미."""
+
+    def setUp(self) -> None:
+        self.repo = TempRepo()
+        r = self.repo
+        r.write("tools/ci/regression_guard.py", "# guard\n")
+        r.write("tools/ci/cigit.py", "# cigit\n")
+        r.write("src/A.cs", "class A { }\n")
+        r.write("docs/a.md", "하나\n")
+        self.base = r.commit("base")
+
+    def tearDown(self) -> None:
+        self.repo.close()
+
+    def test_sensitive_paths(self) -> None:
+        cases = {
+            ".github/workflows/ci.yml": True, "tools/ci/x.py": True, "tools/other/y.sh": True, ".config/dotnet-tools.json": True,
+            ".claude/settings.json": True, "CLAUDE.md": True, "docs/README-instructions.md": True, "docs/decisions/0006-x.md": True,
+            "global.json": True, "src/A.cs": False, "docs/spec/x.md": False, "tests/X.cs": False, "docs/STATUS.md": False,
+        }
+        for path, want in cases.items():
+            self.assertEqual(lead_check.is_sensitive(path), want, path)
+        self.repo.write(".claude/settings.json", "{}\n")
+        self.repo.write("src/A.cs", "class A { int x; }\n")
+        head = self.repo.commit("민감한 경로 하나")
+        self.assertEqual(lead_check.sensitive_paths(self.repo.root, self.base, head), [".claude/settings.json"])
+
+    def test_merged_head(self) -> None:
+        r = self.repo
+        r.git("checkout", "-q", "-b", "pr")
+        r.write("src/B.cs", "class B { }\n")
+        tip = r.commit("T-099: PR")
+        self.assertEqual(lead_check.merged_head(r.root, self.base, tip)[0], tip)  # base를 품는다
+        r.git("checkout", "-q", "main")
+        r.write("docs/a.md", "둘\n")
+        main = r.commit("main이 앞으로")
+        head, note = lead_check.merged_head(r.root, main, tip)
+        self.assertNotEqual(head, tip)
+        self.assertEqual(cigit.parents(r.root, head), [main, tip])
+        self.assertEqual(lead_check.merged_head(r.root, main, tip)[0], head)  # 같은 입력이면 같은 병합 커밋
+        self.assertIn("병합한 커밋", note)
+        self.assertEqual(r.git("rev-parse", "main"), main)  # ref를 건드리지 않는다
+        r.git("checkout", "-q", "pr")
+        r.write("docs/a.md", "셋\n")
+        conflict = r.commit("같은 줄")
+        with self.assertRaises(lead_check.CheckError):
+            lead_check.merged_head(r.root, main, conflict)
+
+    def test_archive_extract_and_blob_ids(self) -> None:
+        dest = tempfile.mkdtemp(prefix="lc-extract-")
+        try:
+            data = lead_check.archive_bytes(self.repo.root, self.base, ["tools/ci", "tools/oracle"])
+            lead_check.extract(data, dest)
+            ids = lead_check.blob_ids(dest)
+            self.assertEqual(sorted(ids), ["tools/ci/cigit.py", "tools/ci/regression_guard.py"])
+            self.assertEqual(ids["tools/ci/cigit.py"], cigit.blob_id(self.repo.root, self.base, "tools/ci/cigit.py"))
+            self.assertEqual(lead_check.archive_bytes(self.repo.root, self.base, ["없는/폴더"]), b"")
+            whole = tempfile.mkdtemp(prefix="lc-whole-")
+            lead_check.extract(lead_check.archive_bytes(self.repo.root, self.base, None), whole)
+            self.assertTrue(os.path.isfile(os.path.join(whole, "docs", "a.md")))
+            shutil.rmtree(whole, ignore_errors=True)
+        finally:
+            shutil.rmtree(dest, ignore_errors=True)
+
+    def test_make_sandbox(self) -> None:
+        r = self.repo
+        r.git("checkout", "-q", "-b", "pr")
+        r.write("src/B.cs", "class B { }\n")
+        tip = r.commit("T-099: PR")
+        r.git("checkout", "-q", "main")
+        r.write("docs/a.md", "둘\n")
+        main = r.commit("main")
+        head, _ = lead_check.merged_head(r.root, main, tip)
+        folder = os.path.join(tempfile.mkdtemp(prefix="lc-sandbox-"), "s")
+        try:
+            lead_check.make_sandbox(r.root, main, tip, head, folder)
+            self.assertEqual(cigit.rev_parse(folder, "refs/lead-check/head"), head)
+            self.assertEqual(cigit.rev_parse(folder, "refs/lead-check/base"), main)
+            self.assertFalse(os.path.exists(os.path.join(folder, ".git", "FETCH_HEAD")))
+            self.assertNotIn(r.root, cigit.git(folder, "config", "--list"))
+        finally:
+            shutil.rmtree(os.path.dirname(folder), ignore_errors=True)
+
+    def test_run_step_kills_leftover_processes(self) -> None:
+        root = tempfile.mkdtemp(prefix="lc-step-")
+        try:
+            pid_file = os.path.join(root, "pid")
+            code = lead_check.run_step(["sh", "-c", f"sleep 60 & echo $! > {pid_file}; exit 3"], root, os.path.join(root, "log", "x.log"),
+                                       dict(os.environ), isolate=True)
+            self.assertEqual(code, 3)
+            with open(pid_file, encoding="utf-8") as f:
+                pid = int(f.read().strip())
+
+            def alive() -> bool:
+                try:
+                    with open(f"/proc/{pid}/stat", encoding="utf-8") as f:
+                        return f.read().rsplit(")", 1)[1].split()[0] != "Z"
+                except OSError:
+                    return False
+            for _ in range(50):
+                if not alive():
+                    break
+                time.sleep(0.05)
+            self.assertFalse(alive(), "남은 프로세스가 죽지 않았다")
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
 
 
 if __name__ == "__main__":

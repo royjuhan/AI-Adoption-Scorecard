@@ -2,14 +2,25 @@
 
 - base·head 범위를 정하는 규칙은 이 파일 한 곳에만 둔다. 두 잡이 같은 범위를 봐야 한다.
 - 표준 라이브러리만 쓴다. 저장소의 src/·tests/를 읽지 않고 git 개체만 읽는다.
+- git은 늘 GIT_NO_REPLACE_OBJECTS=1로 부른다. PR·head 코드가 .git/refs/replace/에 대체 개체를 넣어도
+  base·head 트리를 바꿔 보이게 하지 못한다(T-010 재리뷰 B4).
+- 파일 내용은 git cat-file blob으로 읽는다(textconv·필터를 거치지 않는다).
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 
 ZERO_SHA = "0" * 40
+
+
+def git_env() -> dict[str, str]:
+    """git 자식 프로세스 환경. 대체 개체(refs/replace)를 쓰지 않는다."""
+    env = dict(os.environ)
+    env["GIT_NO_REPLACE_OBJECTS"] = "1"
+    return env
 
 
 class GitError(RuntimeError):
@@ -22,6 +33,7 @@ def git(repo: str, *args: str, check: bool = True) -> str:
         ["git", "-C", repo, *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=git_env(),
     )
     if check and proc.returncode != 0:
         raise GitError(f"git {' '.join(args)}: {proc.stderr.decode('utf-8', 'replace').strip()}")
@@ -30,7 +42,7 @@ def git(repo: str, *args: str, check: bool = True) -> str:
 
 def git_bytes(repo: str, *args: str) -> bytes | None:
     """git 명령의 표준 출력을 바이트로. 실패하면 None."""
-    proc = subprocess.run(["git", "-C", repo, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.run(["git", "-C", repo, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=git_env())
     if proc.returncode != 0:
         return None
     return proc.stdout
@@ -44,6 +56,7 @@ def rev_parse(repo: str, rev: str) -> str | None:
         ["git", "-C", repo, "rev-parse", "--verify", "--quiet", rev + "^{commit}"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=git_env(),
     )
     if proc.returncode != 0:
         return None
@@ -149,6 +162,7 @@ def read_tree_files(repo: str, rev: str, prefix: str, suffix: str) -> dict[str, 
         input="".join(sha + "\n" for _, sha in wanted).encode(),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=git_env(),
     )
     if proc.returncode != 0:
         raise GitError("git cat-file --batch: " + proc.stderr.decode("utf-8", "replace"))
@@ -165,8 +179,8 @@ def read_tree_files(repo: str, rev: str, prefix: str, suffix: str) -> dict[str, 
 
 
 def read_file(repo: str, rev: str, path: str) -> bytes | None:
-    """rev의 path 내용. 없으면 None."""
-    return git_bytes(repo, "show", f"{rev}:{path}")
+    """rev의 path 내용. 없으면 None. textconv·필터를 거치지 않는다."""
+    return git_bytes(repo, "cat-file", "blob", f"{rev}:{path}")
 
 
 def blob_id(repo: str, rev: str, path: str) -> str | None:

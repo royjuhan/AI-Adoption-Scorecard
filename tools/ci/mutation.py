@@ -7,7 +7,9 @@
 - 파일이 속한 프로젝트(가장 가까운 상위 폴더의 .csproj)마다 Stryker를 한 번 돌린다. --mutate는 파일 절대 경로.
   테스트 프로젝트는 tests/Scorecard.Tests.
 - Stryker 버전은 .config/dotnet-tools.json(dotnet tool manifest)에 고정한다. base 커밋의 manifest를 양쪽 worktree에
-  써서 같은 버전으로 잰다(PR이 버전을 바꿔도 base 버전으로 잰다). base에 없으면 head의 것을 쓴다(부트스트랩).
+  써서 같은 버전으로 잰다(PR이 버전을 바꿔도 base 버전으로 잰다). base에 없으면 head 커밋의 것을 쓴다(부트스트랩).
+- Stryker의 처음 테스트 실행에서 실패한 테스트가 있으면("N tests are failing") 그 실행의 점수는 증거가 아니다.
+  실패한 테스트는 돌연변이를 잡지 않으므로 점수가 틀린다. 오류로 적는다(status: error).
 - worktree의 테스트 프로젝트 폴더에 stryker-config.json·.yaml·.yml이 있으면 지우고 돌린다. PR이 설정 파일로
   돌연변이를 빼서(ignore-methods 등) 점수를 올리지 못하게 한다. 명령 인자만 쓴다.
 - 시간: 한 번 실행은 RUN_TIMEOUT_SECONDS(50분) 안, 전체는 --budget-minutes(기본 100분) 안. 잡 제한(120분)보다 짧다.
@@ -24,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -44,6 +47,8 @@ DEFAULT_BUDGET_MINUTES = 100  # mutation.py 전체. 잡 제한 120분에서 준�
 MIN_RUN_SECONDS = 120  # 남은 시간이 이보다 적으면 실행을 시작하지 않는다
 STRYKER_CONFIG_NAMES = ("stryker-config.json", "stryker-config.yaml", "stryker-config.yml")
 TIMEOUT_EXIT = 124
+# Stryker.NET 로그: "[..] 1 tests are failing. Stryker will continue but outcome will be impacted."
+INITIAL_FAILING = re.compile(r"(\d+) tests? (?:are|is) failing", re.IGNORECASE)
 
 # mutation-testing-elements 상태 → mutation.json 키
 STATUS_KEYS = {
@@ -152,15 +157,24 @@ def run_stryker(root: str, project: str, files: list[str], out_dir: str, log_pat
 
 
 def tool_manifest(repo: str, rng: cigit.Range) -> tuple[bytes | None, str]:
-    """쓸 dotnet tool manifest와 출처. base 커밋에 있으면 base, 없으면 head 작업 트리(부트스트랩)."""
+    """쓸 dotnet tool manifest와 출처. base 커밋에 있으면 base, 없으면 head 커밋(부트스트랩)."""
     data = cigit.read_file(repo, rng.base, TOOL_MANIFEST)
     if data is not None:
         return data, "base"
+    data = cigit.read_file(repo, rng.head, TOOL_MANIFEST)
+    if data is not None:
+        return data, "head"
+    return None, "없음"
+
+
+def initial_failures(log_path: str) -> int:
+    """Stryker 로그에서 처음 테스트 실행의 실패 수. 없으면 0."""
     try:
-        with open(os.path.join(repo, TOOL_MANIFEST), "rb") as f:
-            return f.read(), "head"
+        with open(log_path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
     except OSError:
-        return None, "없음"
+        return 0
+    return max((int(m.group(1)) for m in INITIAL_FAILING.finditer(text)), default=0)
 
 
 def tool_version(manifest: bytes | None) -> str | None:
@@ -248,9 +262,16 @@ def measure(repo: str, rng: cigit.Range, files: list[dict], work: str, manifest:
                     continue
                 code, seconds = run_stryker(root, project, paths, out_dir, log_path, limit)
                 report = os.path.join(out_dir, "reports", "mutation-report.json")
-                runs.append({"side": side, "project": project, "files": paths, "exit_code": code, "seconds": seconds})
-                print(f"--- Stryker {side} {project}: 종료 {code}, {seconds}초 ---")
+                failing = initial_failures(log_path)
+                runs.append({"side": side, "project": project, "files": paths, "exit_code": code, "seconds": seconds,
+                             "initial_failures": failing})
+                print(f"--- Stryker {side} {project}: 종료 {code}, {seconds}초, 처음 실행 실패 {failing}개 ---")
                 print(tail(log_path))
+                if failing:
+                    errors.append(f"{side}: {project} 처음 테스트 실행에서 {failing}개가 실패했다. 실패한 테스트가 있으면 점수는 증거가 아니다. 로그 {log_path}")
+                    for f in group:
+                        f[side] = None
+                    continue
                 if code == TIMEOUT_EXIT:
                     timed_out = True
                     errors.append(f"{side}: {project} 시간 초과({int(limit)}초 안에 끝나지 않았다). 로그 {log_path}")
@@ -348,7 +369,7 @@ def render_summary(data: dict) -> str:
     out.append("")
     out.append(f"합계(비교 가능한 파일): base {fmt(data['base_score'])}, head {fmt(data['head_score'])}")
     for r in data.get("runs") or []:
-        out.append(f"- Stryker {r['side']} `{r['project']}`: 종료 {r['exit_code']}, {r['seconds']}초")
+        out.append(f"- Stryker {r['side']} `{r['project']}`: 종료 {r['exit_code']}, {r['seconds']}초, 처음 실행 실패 {r.get('initial_failures', 0)}개")
     for e in data.get("errors") or []:
         out.append(f"- 오류: {e}")
     return "\n".join(out) + "\n"

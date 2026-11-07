@@ -1,0 +1,380 @@
+dotnet SDK: 10.0.114
+python: Python 3.13.18
+repo HEAD: 8a3afa0
+spec(작업 트리) sha256: 6a02760ca0fdccae
+[s0-clone] HEAD=8a3afa0
+[s1-base-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s1-base-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:   630, Skipped:     0, Total:   630, Duration: 1 s - Scorecard.Tests.dll (net10.0)
+[s2-core-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s2-core-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 108 ms - Scorecard.Tests.dll (net10.0)
+[s2-core-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
+[s2-core-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:   630, Skipped:     0, Total:   630, Duration: 2 s - Scorecard.Tests.dll (net10.0)
+[s3-tool-build] rc=0 cmd: dotnet build spikes/T-005/SynthSpike/SynthSpike.csproj -c Release --artifacts-path <작업>/artifacts -warnaserror
+[s3-base-core-refs] rc=0 cmd: tool refs <작업>/base-Scorecard.Core.dll
+    ASMREF System.Collections
+    ASMREF System.Linq
+    ASMREF System.Memory
+    ASMREF System.Runtime
+    ASMREF System.Text.Encoding.Extensions
+    ASMREF System.Text.Encodings.Web
+    ASMREF System.Text.Json
+    ASMREF System.Text.RegularExpressions
+    ASMREF YamlDotNet
+    TYPEREF-NS 
+    TYPEREF-NS System
+    TYPEREF-NS System.Buffers
+    TYPEREF-NS System.Collections
+    TYPEREF-NS System.Collections.Generic
+    TYPEREF-NS System.Diagnostics
+    TYPEREF-NS System.Diagnostics.CodeAnalysis
+    TYPEREF-NS System.Globalization
+    TYPEREF-NS System.IO
+    TYPEREF-NS System.Linq
+    TYPEREF-NS System.Reflection
+    TYPEREF-NS System.Runtime.CompilerServices
+    TYPEREF-NS System.Runtime.Versioning
+    TYPEREF-NS System.Text
+    TYPEREF-NS System.Text.Encodings.Web
+    TYPEREF-NS System.Text.Json
+    TYPEREF-NS System.Text.RegularExpressions
+    TYPEREF-NS YamlDotNet.Core
+    TYPEREF-NS YamlDotNet.Core.Events
+[s3-core-refs] rc=0 cmd: tool refs <작업>/c/src/Scorecard.Core/bin/Release/net10.0/Scorecard.Core.dll
+    ASMREF System.Collections
+    ASMREF System.Linq
+    ASMREF System.Memory
+    ASMREF System.Runtime
+    ASMREF System.Text.Encoding.Extensions
+    ASMREF System.Text.Encodings.Web
+    ASMREF System.Text.Json
+    ASMREF System.Text.RegularExpressions
+    ASMREF YamlDotNet
+    TYPEREF-NS 
+    TYPEREF-NS System
+    TYPEREF-NS System.Buffers
+    TYPEREF-NS System.Collections
+    TYPEREF-NS System.Collections.Generic
+    TYPEREF-NS System.Diagnostics
+    TYPEREF-NS System.Diagnostics.CodeAnalysis
+    TYPEREF-NS System.Globalization
+    TYPEREF-NS System.IO
+    TYPEREF-NS System.Linq
+    TYPEREF-NS System.Reflection
+    TYPEREF-NS System.Runtime.CompilerServices
+    TYPEREF-NS System.Runtime.Versioning
+    TYPEREF-NS System.Text
+    TYPEREF-NS System.Text.Encodings.Web
+    TYPEREF-NS System.Text.Json
+    TYPEREF-NS System.Text.RegularExpressions
+    TYPEREF-NS YamlDotNet.Core
+    TYPEREF-NS YamlDotNet.Core.Events
+[s3-refs-diff] 0 줄: 
+[s3-gen-table-compare] rc=0 cmd: tool gen <작업>/c/docs/spec/synthetic-examples.md table-compare <작업>/ex/table-compare <작업>/ex/table-compare
+    SHA table-compare reference/logs.csv dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c bytes=920 lines=31
+    SHA table-compare candidate/logs.csv c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736 bytes=920 lines=31
+    RESULT table-compare header=[log_id,signal_type,start_index,length,mean_value]
+    RESULT table-compare reference missing: log27
+    RESULT table-compare candidate extra: log31
+    RESULT table-compare candidate mismatch:length: log08
+    RESULT table-compare candidate mismatch:mean_value: log07
+    RESULT table-compare candidate within:mean_value: log20 log04 log26 log23
+    RESULT table-compare focus signal_type=irregular rows=12: log01 log06 log07 log08 log11 log19 log20 log21 log22 log25 log27 log28
+    RESULT table-compare candidate-order: log20 log15 log17 log02 log19 log30 log07 log14 log16 log28 log12 log09 log25 log29 log24 log22 log13 log06 log18 log04 log01 log03 log21 log05 log31 log08 log11 log26 log10 log23
+[s3-gen-form-fill] rc=0 cmd: tool gen <작업>/c/docs/spec/synthetic-examples.md form-fill <작업>/ex/form-fill <작업>/ex/form-fill
+    SHA form-fill reference/orders.csv 6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab bytes=342 lines=21
+    SHA form-fill candidate/orders.csv ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd bytes=342 lines=21
+    RESULT form-fill header=[order_id,item,quantity]
+    RESULT form-fill candidate-order: ord12 ord10 ord03 ord07 ord15 ord05 ord18 ord20 ord08 ord09 ord17 ord16 ord06 ord04 ord14 ord13 ord19 ord01 ord02 ord11
+[s3-case-check-table-compare] rc=0 cmd: tool case-check <작업>/ex/table-compare
+    RESULT table-compare case.yaml errors=0 name-equal=True task-equal=True steps-equal=True steps=4
+    RESULT table-compare inputs=reference/*.csv|candidate/*.csv|log_id compare=[start_index:0:- length:0:- mean_value:-:1.0] thresholds=85/5/False before=null after=null ai_usage=null
+    RESULT table-compare answers.yaml 'name:'~끝 바이트가 case.yaml 안에 그대로: True
+    RESULT table-compare classify(case.yaml) == expected/classification.json: True
+[s3-case-check-form-fill] rc=0 cmd: tool case-check <작업>/ex/form-fill
+    RESULT form-fill case.yaml errors=0 name-equal=True task-equal=True steps-equal=True steps=4
+    RESULT form-fill inputs=reference/*.csv|candidate/*.csv|order_id compare=[item:-:- quantity:0:-] thresholds=85/5/False before=null after=null ai_usage=null
+    RESULT form-fill answers.yaml 'name:'~끝 바이트가 case.yaml 안에 그대로: True
+    RESULT form-fill classify(case.yaml) == expected/classification.json: True
+[s3-case-check-mixed-exceptions] rc=0 cmd: tool case-check <작업>/ex/mixed-exceptions
+    RESULT mixed-exceptions case.yaml errors=0 name-equal=True task-equal=True steps-equal=True steps=4
+    RESULT mixed-exceptions inputs=null compare=[] thresholds=// before=null after=null ai_usage=null
+    RESULT mixed-exceptions answers.yaml 'name:'~끝 바이트가 case.yaml 안에 그대로: True
+    RESULT mixed-exceptions classify(case.yaml) == expected/classification.json: True
+[s3-oracle-table-compare] rc=0 cmd: tool oracle <작업>/ex/table-compare
+    RESULT oracle table-compare same-header=True
+    RESULT oracle table-compare base ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing_rate=3.3 accuracy_of_compared=93.1 cell_accuracy=94.4
+    RESULT oracle table-compare strict ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing_rate=3.3 accuracy_of_compared=93.1 cell_accuracy=94.4
+    RESULT oracle table-compare candbase ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing_rate=3.3 accuracy_of_compared=93.1 cell_accuracy=94.4
+[s3-csv-check] table-compare/reference/logs.csv bytes=920 lines=31 cr=0 first3=6c6f67 last=0a non-ascii=0
+[s3-csv-check] table-compare/candidate/logs.csv bytes=920 lines=31 cr=0 first3=6c6f67 last=0a non-ascii=0
+[s3-oracle-form-fill] rc=0 cmd: tool oracle <작업>/ex/form-fill
+    RESULT oracle form-fill same-header=True
+    RESULT oracle form-fill base ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing_rate=0.0 accuracy_of_compared=100.0 cell_accuracy=100.0
+    RESULT oracle form-fill strict ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing_rate=0.0 accuracy_of_compared=100.0 cell_accuracy=100.0
+    RESULT oracle form-fill candbase ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing_rate=0.0 accuracy_of_compared=100.0 cell_accuracy=100.0
+[s3-csv-check] form-fill/reference/orders.csv bytes=342 lines=21 cr=0 first3=6f7264 last=0a non-ascii=0
+[s3-csv-check] form-fill/candidate/orders.csv bytes=342 lines=21 cr=0 first3=6f7264 last=0a non-ascii=0
+[s3-text-check] table-compare/case.yaml bytes=1564 cr=0 first3=2320ea last=0a
+[s3-text-check] table-compare/intake.md bytes=568 cr=0 first3=eba7a4 last=0a
+[s3-text-check] form-fill/case.yaml bytes=1596 cr=0 first3=2320ea last=0a
+[s3-text-check] form-fill/intake.md bytes=482 cr=0 first3=eab1b0 last=0a
+[s3-text-check] mixed-exceptions/case.yaml bytes=1179 cr=0 first3=2320ea last=0a
+[s3-text-check] mixed-exceptions/intake.md bytes=408 cr=0 first3=ebacb8 last=0a
+[s3-sha] 예제 파일 SHA-256:
+    416043a81a5804122e86ac3ddcde9c803e7a09d944af1ba713b1ab458d7a1e8c  ./form-fill/answers.yaml
+    ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd  ./form-fill/candidate/orders.csv
+    5beb58182f80b340a7d2adccce0be86b5992aadb3bac23bb7b0cb3c1bb2413ee  ./form-fill/case.yaml
+    b821763fd1528ba5940354a7f653e1e5dd77b0d9bab6ff1cb606678a6caa0b3c  ./form-fill/expected/classification.json
+    d17d834b2051afee4650d49addefc51bacb66fbe37c67249816de45cf71b2def  ./form-fill/intake.md
+    6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab  ./form-fill/reference/orders.csv
+    efd4d10a492dd8e0056fa7f42c56c0bbb8aa2ea9552ae40754c3cd3e2e0d2645  ./mixed-exceptions/answers.yaml
+    79b2133e5cd1b73a7f28366bd0690f445c790bce32c6a0e66fcbe80b89cf417b  ./mixed-exceptions/case.yaml
+    f291bcb88e978d8ed12ef5d4bb0c7430407c81abdcaeb48ffa201f9b4b9665f7  ./mixed-exceptions/expected/classification.json
+    6487074ad780a8c4b81113b8d6ec7218de77dc123e5d192d3a36c0897d89aa3f  ./mixed-exceptions/intake.md
+    d54bc9a27243b6f7faad400fb51467d518ad7429ab9f50c5929cbbc5de7700fa  ./table-compare/answers.yaml
+    c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736  ./table-compare/candidate/logs.csv
+    886bbbfdb0cd85a29d207b672b575c19476dc2c4903cf13952c2b2c4a77fb5ca  ./table-compare/case.yaml
+    a2f0887b697f7d1cfe3af4548d42f117c071f911e91b66c3a8b4e819068fe03b  ./table-compare/expected/classification.json
+    6e4bbac3fa1272264d976a671fb67fb07a88ce672d506a67668b8aabfe88e041  ./table-compare/intake.md
+    dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c  ./table-compare/reference/logs.csv
+[s3-det-again-table-compare] rc=0 cmd: tool gen <작업>/c/docs/spec/synthetic-examples.md table-compare <작업>/ex/table-compare <작업>/again/table-compare
+    SHA table-compare reference/logs.csv dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c bytes=920 lines=31
+    SHA table-compare candidate/logs.csv c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736 bytes=920 lines=31
+    RESULT table-compare header=[log_id,signal_type,start_index,length,mean_value]
+    RESULT table-compare reference missing: log27
+    RESULT table-compare candidate extra: log31
+    RESULT table-compare candidate mismatch:length: log08
+    RESULT table-compare candidate mismatch:mean_value: log07
+    RESULT table-compare candidate within:mean_value: log20 log04 log26 log23
+    RESULT table-compare focus signal_type=irregular rows=12: log01 log06 log07 log08 log11 log19 log20 log21 log22 log25 log27 log28
+    RESULT table-compare candidate-order: log20 log15 log17 log02 log19 log30 log07 log14 log16 log28 log12 log09 log25 log29 log24 log22 log13 log06 log18 log04 log01 log03 log21 log05 log31 log08 log11 log26 log10 log23
+[s3-det-moved-table-compare] rc=0 cmd: dotnet <작업>/artifacts/bin/SynthSpike/release/SynthSpike.dll gen <작업>/c/docs/spec/synthetic-examples.md table-compare <작업>/moved/a/b/table-compare <작업>/moved-out/table-compare
+    SHA table-compare reference/logs.csv dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c bytes=920 lines=31
+    SHA table-compare candidate/logs.csv c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736 bytes=920 lines=31
+    RESULT table-compare header=[log_id,signal_type,start_index,length,mean_value]
+    RESULT table-compare reference missing: log27
+    RESULT table-compare candidate extra: log31
+    RESULT table-compare candidate mismatch:length: log08
+    RESULT table-compare candidate mismatch:mean_value: log07
+    RESULT table-compare candidate within:mean_value: log20 log04 log26 log23
+    RESULT table-compare focus signal_type=irregular rows=12: log01 log06 log07 log08 log11 log19 log20 log21 log22 log25 log27 log28
+    RESULT table-compare candidate-order: log20 log15 log17 log02 log19 log30 log07 log14 log16 log28 log12 log09 log25 log29 log24 log22 log13 log06 log18 log04 log01 log03 log21 log05 log31 log08 log11 log26 log10 log23
+[s3-det-de-table-compare] rc=0 cmd: env LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/SynthSpike/release/SynthSpike.dll gen <작업>/c/docs/spec/synthetic-examples.md table-compare <작업>/ex/table-compare <작업>/de/table-compare
+    SHA table-compare reference/logs.csv dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c bytes=920 lines=31
+    SHA table-compare candidate/logs.csv c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736 bytes=920 lines=31
+    RESULT table-compare header=[log_id,signal_type,start_index,length,mean_value]
+    RESULT table-compare reference missing: log27
+    RESULT table-compare candidate extra: log31
+    RESULT table-compare candidate mismatch:length: log08
+    RESULT table-compare candidate mismatch:mean_value: log07
+    RESULT table-compare candidate within:mean_value: log20 log04 log26 log23
+    RESULT table-compare focus signal_type=irregular rows=12: log01 log06 log07 log08 log11 log19 log20 log21 log22 log25 log27 log28
+    RESULT table-compare candidate-order: log20 log15 log17 log02 log19 log30 log07 log14 log16 log28 log12 log09 log25 log29 log24 log22 log13 log06 log18 log04 log01 log03 log21 log05 log31 log08 log11 log26 log10 log23
+[s3-xcheck-table-compare] rc=0 cmd: python3 -I <작업>/c/spikes/T-005/xcheck/generate.py <작업>/c/docs/spec/synthetic-examples.md table-compare <작업>/ex/table-compare/case.yaml <작업>/py/table-compare
+    PROBE xcheck python seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+[s3-det-cmp] table-compare/reference/logs.csv again: same moved: same de: same python: same
+[s3-det-cmp] table-compare/candidate/logs.csv again: same moved: same de: same python: same
+[s3-det-again-form-fill] rc=0 cmd: tool gen <작업>/c/docs/spec/synthetic-examples.md form-fill <작업>/ex/form-fill <작업>/again/form-fill
+    SHA form-fill reference/orders.csv 6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab bytes=342 lines=21
+    SHA form-fill candidate/orders.csv ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd bytes=342 lines=21
+    RESULT form-fill header=[order_id,item,quantity]
+    RESULT form-fill candidate-order: ord12 ord10 ord03 ord07 ord15 ord05 ord18 ord20 ord08 ord09 ord17 ord16 ord06 ord04 ord14 ord13 ord19 ord01 ord02 ord11
+[s3-det-moved-form-fill] rc=0 cmd: dotnet <작업>/artifacts/bin/SynthSpike/release/SynthSpike.dll gen <작업>/c/docs/spec/synthetic-examples.md form-fill <작업>/moved/a/b/form-fill <작업>/moved-out/form-fill
+    SHA form-fill reference/orders.csv 6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab bytes=342 lines=21
+    SHA form-fill candidate/orders.csv ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd bytes=342 lines=21
+    RESULT form-fill header=[order_id,item,quantity]
+    RESULT form-fill candidate-order: ord12 ord10 ord03 ord07 ord15 ord05 ord18 ord20 ord08 ord09 ord17 ord16 ord06 ord04 ord14 ord13 ord19 ord01 ord02 ord11
+[s3-det-de-form-fill] rc=0 cmd: env LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/SynthSpike/release/SynthSpike.dll gen <작업>/c/docs/spec/synthetic-examples.md form-fill <작업>/ex/form-fill <작업>/de/form-fill
+    SHA form-fill reference/orders.csv 6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab bytes=342 lines=21
+    SHA form-fill candidate/orders.csv ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd bytes=342 lines=21
+    RESULT form-fill header=[order_id,item,quantity]
+    RESULT form-fill candidate-order: ord12 ord10 ord03 ord07 ord15 ord05 ord18 ord20 ord08 ord09 ord17 ord16 ord06 ord04 ord14 ord13 ord19 ord01 ord02 ord11
+[s3-xcheck-form-fill] rc=0 cmd: python3 -I <작업>/c/spikes/T-005/xcheck/generate.py <작업>/c/docs/spec/synthetic-examples.md form-fill <작업>/ex/form-fill/case.yaml <작업>/py/form-fill
+    PROBE xcheck python seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+[s3-det-cmp] form-fill/reference/orders.csv again: same moved: same de: same python: same
+[s3-det-cmp] form-fill/candidate/orders.csv again: same moved: same de: same python: same
+[s4-probe] rc=0 cmd: tool probe <작업>/c/docs/spec/synthetic-examples.md <작업>/ex
+    PROBE prng seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+    PROBE prng seed=101 first3=d1024a5fad64d717,0466a7d0954b76a3,44c666b6b3e8ba5a
+    PROBE prng seed=102 first3=11402f2430284f2c,989b810659c5a8bc,7c3c8f3b8d5beb03
+    PROBE prng seed=18446744073709551615 first3=e4d971771b652c20,e99ff867dbf682c9,382ff84cb27281e9
+    PROBE prng seed=0 below2x10=1001000101
+    PROBE prng seed=0 below10x10=8409131729
+    PROBE prng core-via-generate seed=0 int0-999 rows=883,431,26 expected=883,431,26
+    PROBE culture table-compare cultures=7 distinct-sha=1 sha=1769e2f78567d312 de-DE-decimal-sep=,
+    PROBE culture form-fill cultures=7 distinct-sha=1 sha=c7becbc19cac44cf de-DE-decimal-sep=,
+    PROBE repeat table-compare same-twice=True seed+1-differs=True
+    PROBE repeat form-fill same-twice=True seed+1-differs=True
+    PROBE alt P1 불일치3+누락1+추가1: ref=30 cand=30 match=26 mismatch=3 missing=1 extra=1 within=4 accuracy=86.7 missing_rate=3.3 accuracy_of_compared=89.7 cell_accuracy=93.3
+    PROBE alt P2 불일치2+누락1+추가1(제안): ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing_rate=3.3 accuracy_of_compared=93.1 cell_accuracy=94.4
+    PROBE alt P3 불일치3+누락1: ref=30 cand=29 match=26 mismatch=3 missing=1 extra=0 within=4 accuracy=86.7 missing_rate=3.3 accuracy_of_compared=89.7 cell_accuracy=93.3
+    PROBE alt P4 불일치2+누락1: ref=30 cand=29 match=27 mismatch=2 missing=1 extra=0 within=4 accuracy=90.0 missing_rate=3.3 accuracy_of_compared=93.1 cell_accuracy=94.4
+    PROBE seeds table-compare seeds=2000 ok=2000 counts-equal-plan(all-variants)=2000 failures=[] focus-rows min=6 max=23 first-seed-with-12=8 first-seed-all-choices=0
+    PROBE seeds form-fill seeds=2000 ok=2000 counts-equal-plan(all-variants)=2000 failures=[] first-seed-all-choices=0
+    PROBE seeds small-focus seeds=50 exceptions=39 first='누락·불일치 4행을 고를 기준 행이 2개뿐이다. (Parameter 'plan')'
+    PROBE validate compare-field-not-in-columns: ArgumentException compare 필드 length가 계획의 열에 없다.
+    PROBE validate mismatch-on-non-compare: ArgumentException 불일치 열 signal_type은 compare 필드여야 한다.
+    PROBE validate within-on-integer: ArgumentException 허용 오차 안 차이 열은 tolerance_pct가 있는 compare 필드여야 한다.
+    PROBE validate pct-on-integer-column: ArgumentException compare 필드 mean_value의 허용 오차와 열 종류(integer)가 맞지 않는다.
+    PROBE validate key-digits-too-small: ArgumentException 키 자릿수가 모자란다.
+    PROBE validate choice-with-comma: ArgumentException CSV 값은 ASCII 인쇄 문자만, ','·'"' 없이 쓴다: 'a,b'
+    PROBE validate non-ascii-choice: ArgumentException CSV 값은 ASCII 인쇄 문자만, ','·'"' 없이 쓴다: '정상'
+    PROBE validate file-name-with-folder: ArgumentException 파일 이름은 폴더 없이 '.csv'로 끝난다.
+    PROBE validate case-without-inputs: ArgumentException case.yaml에 inputs가 없다.
+    PROBE pattern email hits=2/2 misses=3/3
+    PROBE pattern url hits=2/2 misses=2/2
+    PROBE pattern windows-path hits=2/2 misses=3/3
+    PROBE pattern unc-path hits=2/2 misses=2/2
+    PROBE pattern posix-path hits=3/3 misses=4/4
+    PROBE pattern home-path hits=2/2 misses=2/2
+    PROBE pattern part-letters-digits hits=3/3 misses=5/5
+    PROBE pattern part-digit-groups hits=2/2 misses=3/3
+    PROBE pattern part-long-code hits=2/2 misses=4/4
+    PROBE pattern generator-shapes samples=213 hits=0 []
+    PROBE pattern posix-path 한글/뒤: '센서/로그/'=False ' /data/x'=True 'reference/*.csv'=False
+    PROBE csv 'a,b': ArgumentException
+    PROBE csv 'a"b': ArgumentException
+    PROBE csv 'a\nb': ArgumentException
+    PROBE csv 'a\rb': ArgumentException
+    PROBE csv '가': ArgumentException
+    PROBE csv '': ArgumentException
+    PROBE csv '\t': ArgumentException
+    PROBE csv table-compare bom=False cr=0 last-lf=True non-ascii=0 quote=0
+    PROBE csv form-fill bom=False cr=0 last-lf=True non-ascii=0 quote=0
+[s5-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s5-g2g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3 --logger console;verbosity=normal
+      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "synthetic-case-valid") [18 ms]
+      Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "synthetic-case-valid") [6 ms]
+    Total tests: 28
+         Passed: 28
+[s5-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:   632, Skipped:     0, Total:   632, Duration: 2 s - Scorecard.Tests.dll (net10.0)
+[s6-variant] 바뀐 줄 수: 1
+[s6-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s6-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 142 ms - Scorecard.Tests.dll (net10.0)
+[s6-g2] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~CoreDeterminismGuardTests --logger console;verbosity=normal
+    [xUnit.net 00:00:00.50]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "synthetic-case-valid") [FAIL]
+    [xUnit.net 00:00:00.50]       Assert.Empty() Failure: Collection was not empty
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "synthetic-case-valid") [31 ms]
+       Assert.Empty() Failure: Collection was not empty
+    Total tests: 4
+         Passed: 3
+         Failed: 1
+[s6-restore-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s7-gitkeep] clone examples/*/.gitkeep: 3개(지우지 않고 그대로 둔 채 테스트)
+[s7-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:   632, Skipped:     0, Total:   632, Duration: 1 s - Scorecard.Tests.dll (net10.0)
+[s7-test-examples] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Spec=classification&FullyQualifiedName~ExampleGolden --logger console;verbosity=normal
+    Total tests: 34
+         Passed: 34
+[s7-eol] plain/case.yaml original=1564 autocrlf-clone=1590 same=no
+[s7-eol] plain/intake.md original=568 autocrlf-clone=575 same=no
+[s7-eol] plain/reference/logs.csv original=920 autocrlf-clone=951 same=no
+[s7-eol] plain/candidate/logs.csv original=920 autocrlf-clone=951 same=no
+[s7-eol] attr/case.yaml original=1564 autocrlf-clone=1564 same=yes
+[s7-eol] attr/intake.md original=568 autocrlf-clone=568 same=yes
+[s7-eol] attr/reference/logs.csv original=920 autocrlf-clone=920 same=yes
+[s7-eol] attr/candidate/logs.csv original=920 autocrlf-clone=920 same=yes
+[s8-scan-examples] rc=0 cmd: tool scan <작업>/c/docs/spec/synthetic-examples.md <작업>/ex
+    RESULT scan form-fill files=6 hits=0
+    RESULT scan mixed-exceptions files=4 hits=0
+    RESULT scan table-compare files=6 hits=0
+    RESULT scan total files=16 hits=0
+[s8-scan-repo] rc=1 cmd: tool scan <작업>/c/docs/spec/synthetic-examples.md <작업>/c --counts
+    RESULT scan-pattern (루트) part-digit-groups hits=30
+    RESULT scan-pattern (루트) part-long-code hits=90
+    RESULT scan-pattern (루트) posix-path hits=5
+    RESULT scan-pattern .claude posix-path hits=1
+    RESULT scan-pattern docs email hits=2
+    RESULT scan-pattern docs home-path hits=2
+    RESULT scan-pattern docs part-digit-groups hits=2
+    RESULT scan-pattern docs part-letters-digits hits=19
+    RESULT scan-pattern docs part-long-code hits=9
+    RESULT scan-pattern docs posix-path hits=27
+    RESULT scan-pattern docs unc-path hits=2
+    RESULT scan-pattern docs url hits=4
+    RESULT scan-pattern docs windows-path hits=3
+    RESULT scan-pattern spikes email hits=3
+    RESULT scan-pattern spikes home-path hits=1
+    RESULT scan-pattern spikes part-digit-groups hits=1
+    RESULT scan-pattern spikes part-letters-digits hits=3
+    RESULT scan-pattern spikes part-long-code hits=1
+    RESULT scan-pattern spikes posix-path hits=11
+    RESULT scan-pattern spikes unc-path hits=2
+    RESULT scan-pattern spikes url hits=1
+    RESULT scan-pattern spikes windows-path hits=1
+    RESULT scan-pattern tests home-path hits=7
+    RESULT scan-pattern tests part-letters-digits hits=17
+    RESULT scan-pattern tests part-long-code hits=5
+    RESULT scan-pattern tests posix-path hits=7
+    RESULT scan-pattern tests unc-path hits=2
+    RESULT scan-pattern tests url hits=1
+    RESULT scan-pattern tests windows-path hits=3
+    RESULT scan (루트) files=8 hits=125
+    RESULT scan .claude files=12 hits=1
+    RESULT scan .github files=1 hits=0
+    RESULT scan docs files=19 hits=70
+    RESULT scan examples files=20 hits=0
+    RESULT scan notebooks files=1 hits=0
+    RESULT scan spikes files=20 hits=24
+    RESULT scan src files=18 hits=0
+    RESULT scan tests files=56 hits=42
+    RESULT scan total files=155 hits=262
+[s8-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
+[s8-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
+[s8-pattern-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~ExamplePatternTests --logger console;verbosity=normal
+      Passed Scorecard.Tests.Examples.ExamplePatternTests.Examples_have_no_real_value_patterns [19 ms]
+      Passed Scorecard.Tests.Examples.ExamplePatternTests.Patterns_catch_their_examples_and_skip_the_others [1 ms]
+    Total tests: 2
+         Passed: 2
+[s8-pattern-test-planted] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~ExamplePatternTests --logger console;verbosity=normal
+    [xUnit.net 00:00:00.36]     Scorecard.Tests.Examples.ExamplePatternTests.Examples_have_no_real_value_patterns [FAIL]
+    [xUnit.net 00:00:00.36]         <작업>/c/tests/Scorecard.Tests/Examples/ExamplePatternTests.cs(69,0): at Scorecard.Tests.Examples.ExamplePatternTests.Examples_have_no_real_value_patterns()
+      Failed Scorecard.Tests.Examples.ExamplePatternTests.Examples_have_no_real_value_patterns [20 ms]
+    email examples/form-fill/intake.md:8: someone@example.com
+    windows-path examples/form-fill/intake.md:9: C:\
+    posix-path examples/form-fill/intake.md:9: /home/
+    url examples/form-fill/intake.md:10: https://
+    unc-path examples/form-fill/intake.md:10: \\server\
+    posix-path examples/form-fill/intake.md:10: /intranet.example/
+    home-path examples/form-fill/intake.md:10: ~/
+    part-letters-digits examples/form-fill/intake.md:11: ABC-12345
+    part-digit-groups examples/form-fill/intake.md:11: 12-3456-789
+    part-long-code examples/form-fill/intake.md:11: A1B2C3D4
+         at Scorecard.Tests.Examples.ExamplePatternTests.Examples_have_no_real_value_patterns() in <작업>/c/tests/Scorecard.Tests/Examples/ExamplePatternTests.cs:line 69
+      Passed Scorecard.Tests.Examples.ExamplePatternTests.Patterns_catch_their_examples_and_skip_the_others [2 ms]
+    Total tests: 2
+         Passed: 1
+         Failed: 1
+[s8-pattern-test-restored] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~ExamplePatternTests
+    Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 49 ms - Scorecard.Tests.dll (net10.0)
+[s8-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
+    Passed!  - Failed:     0, Passed:   634, Skipped:     0, Total:   634, Duration: 1 s - Scorecard.Tests.dll (net10.0)
+[s9-hook-planted] commit rc=1 ms=3309 HEAD=8a3afa0
+    Failed!  - Failed:     1, Passed:     1, Skipped:     0, Total:     2, Duration: 54 ms - Scorecard.Tests.dll (net10.0)
+[s9-hook-clean] commit rc=0 ms=3060
+    Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 35 ms - Scorecard.Tests.dll (net10.0)
+[s9-hook-bypass] commit --no-verify rc=0 ms=58 (훅을 건너뛴다)
+[s9-hook-off] core.hooksPath 없이 commit rc=0 ms=57 (훅이 안 돈다)
+[s10-blocks] rc=0 cmd: tool blocks <작업>/c/docs/spec/synthetic-examples.md <작업>/ex
+    RESULT blocks table-compare heading='### 7.2 table-compare' blocks=4 files=4
+    BLOCK table-compare case.yaml block==file: True spec-sha==file: True
+    BLOCK table-compare intake.md block==file: True spec-sha==file: True
+    BLOCK table-compare reference/logs.csv block==file: True spec-sha==file: True
+    BLOCK table-compare candidate/logs.csv block==file: True spec-sha==file: True
+    RESULT blocks form-fill heading='### 7.3 form-fill' blocks=4 files=4
+    BLOCK form-fill case.yaml block==file: True spec-sha==file: True
+    BLOCK form-fill intake.md block==file: True spec-sha==file: True
+    BLOCK form-fill reference/orders.csv block==file: True spec-sha==file: True
+    BLOCK form-fill candidate/orders.csv block==file: True spec-sha==file: True
+    RESULT blocks mixed-exceptions heading='### 7.4 mixed-exceptions' blocks=2 files=2
+    BLOCK mixed-exceptions case.yaml block==file: True spec-sha==file: True
+    BLOCK mixed-exceptions intake.md block==file: True spec-sha==file: True
+[s10-structure] rc=0 cmd: tool structure <작업>/c/docs/spec/synthetic-examples.md <작업>/ex
+    RESULT structure table-compare table==oracle: True [table-compare 30 30 27 2 1 1 4 90.0 3.3]
+    RESULT structure form-fill table==oracle: True [form-fill 20 20 20 0 0 0 0 100.0 0.0]
+끝.

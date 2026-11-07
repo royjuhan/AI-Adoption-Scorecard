@@ -1,0 +1,5 @@
+#!/bin/sh
+# T-005 스파이크(머지 대상 아님): 커밋 전에 실제 값 패턴 테스트만 돌린다.
+# 켜기: git config core.hooksPath <이 폴더>. 끄기: git commit --no-verify 로 건너뛸 수 있다.
+# 작업 트리 파일을 본다(스테이지된 내용이 아니다).
+exec dotnet test AIAdoptionScorecard.sln -c Release --nologo -v q --filter "FullyQualifiedName~ExamplePatternTests"

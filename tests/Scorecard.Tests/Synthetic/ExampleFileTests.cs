@@ -25,7 +25,7 @@ public class ExampleFileTests
         }
     }
 
-    // 7.1 파일 표의 예제는 공개 예제 3종이고, 7.2~7.4 제목이 있다.
+    // 7.1 파일 표의 예제는 공개 예제 4종이고, 7.2~7.5 제목이 있다(이름의 "three"는 T-009 L4로 그대로 둔다).
     [Fact]
     public void File_table_covers_the_three_examples()
     {

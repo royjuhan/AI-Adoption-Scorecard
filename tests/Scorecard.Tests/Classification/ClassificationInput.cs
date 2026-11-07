@@ -16,8 +16,8 @@ internal static class ClassificationInput
 
     public const string ExamplesRelativePath = "examples";
 
-    // 공개 예제 3종(지시문 12절, 스펙 7절).
-    public static readonly string[] Examples = ["table-compare", "form-fill", "mixed-exceptions"];
+    // 공개 예제 4종(지시문 12절, 스펙 7절). signoff-final은 T-009(ADR 0003 남은 질문 2, signoff-final.md V1).
+    public static readonly string[] Examples = ["table-compare", "form-fill", "mixed-exceptions", "signoff-final"];
 
     // 스펙 4.5 조합의 건수. Q4 경계(5) 앞뒤와 최솟값, 그보다 큰 값.
     public static readonly int[] BatchSizes = [1, 4, 5, 12];

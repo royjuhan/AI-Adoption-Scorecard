@@ -10,6 +10,7 @@ namespace Scorecard.Tests.Guards;
 // 컴파일된 dll의 메타데이터 표만 읽는다. 어셈블리를 로드하지 않는다(PEReader).
 // 읽는 표: AssemblyRef, TypeRef, MemberRef, MethodDef(PinvokeImpl), ModuleRef.
 // 결과는 "N1 asmref System.Net.Http" 같은 문자열 목록이다. 서수 정렬, 중복 없음.
+// Y1(YamlDotNet 범위)은 docs/spec/case-schema.md 4.2(T-003 승인 결정 3).
 // 이름은 모두 서수(대소문자 구분)로 비교한다.
 internal static class MetadataScanner
 {
@@ -114,6 +115,12 @@ internal static class MetadataScanner
         "System.Reflection.IReflect::InvokeMember",
     ];
 
+    // Y1: Core가 참조해도 되는 YamlDotNet 네임스페이스(저수준 Parser와 이벤트). 같거나 하위면 허용.
+    // 그 밖의 YamlDotNet 네임스페이스(Serialization, RepresentationModel, Helpers 등)는 금지. Core에만 적용한다.
+    // YamlDotNet.dll 안의 N5·D1·R1 항목(리플렉션 역직렬화, Random)은 Core 밖 네임스페이스에 있다(스펙 4.2).
+    internal const string YamlRootNamespace = "YamlDotNet";
+    internal const string YamlAllowedNamespace = "YamlDotNet.Core";
+
     // N5 예외 1. 제네릭 CreateInstance<T>()는 new T()가 만든다. 이것은 허용한다(스펙 4.2 N5).
     private const string ActivatorCreateInstance = "System.Activator::CreateInstance";
 
@@ -147,7 +154,7 @@ internal static class MetadataScanner
     internal static IReadOnlyList<MemberReferenceInfo> ReadMemberReferences(string dllPath) =>
         Read(dllPath, md => MemberReferences(md).ToArray());
 
-    // 규칙 ID(N1~N6, D1, R1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
+    // 규칙 ID(N1~N6, D1, R1, Y1)만 고른다. 항목 문자열은 "규칙 ID + 공백"으로 시작한다.
     public static IReadOnlyList<string> OfRules(IEnumerable<string> findings, params string[] rules) =>
         findings.Where(f => rules.Any(r => f.StartsWith(r + " ", StringComparison.Ordinal))).ToArray();
 
@@ -172,6 +179,19 @@ internal static class MetadataScanner
 
         return true;
     }
+
+    // Y1 판정. 순수 함수. ns는 TypeRef의 네임스페이스(중첩 타입은 바깥 타입 것).
+    // YamlDotNet이거나 그 하위인데, YamlDotNet.Core도 그 하위도 아니면 금지. 서수 비교.
+    internal static bool IsDeniedYamlNamespace(string ns) =>
+        IsSameOrChild(ns, YamlRootNamespace) && !IsSameOrChild(ns, YamlAllowedNamespace);
+
+    // dll의 TypeRef 전체 이름. 서수 정렬, 중복 없음. 자기 검사가 카나리아 참조가 실제로 있는지 볼 때 쓴다.
+    internal static IReadOnlyList<string> ReadTypeReferences(string dllPath) =>
+        Read(dllPath, md => md.TypeReferences
+            .Select(h => TypeReferenceName(md, h))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray());
 
     // N6 프레임워크 판정. 런타임 폴더에 이름이 서수로 같은 dll이 있는가(스펙 4.2 N6).
     internal static bool IsFrameworkAssembly(string name) => RuntimeAssemblyNames.Value.Contains(name);
@@ -237,7 +257,7 @@ internal static class MetadataScanner
         }
     }
 
-    // N3, D1(타입).
+    // N3, D1(타입), Y1.
     private static void ScanTypeReferences(MetadataReader md, SortedSet<string> findings)
     {
         foreach (var handle in md.TypeReferences)
@@ -258,6 +278,11 @@ internal static class MetadataScanner
             if (DeterminismTypes.Contains(fullName, StringComparer.Ordinal))
             {
                 findings.Add($"D1 type {fullName}");
+            }
+
+            if (IsDeniedYamlNamespace(ns))
+            {
+                findings.Add($"Y1 type {fullName}");
             }
         }
     }
@@ -319,6 +344,10 @@ internal static class MetadataScanner
             findings.Add($"N4 moduleref {md.GetString(moduleRef.Name)}");
         }
     }
+
+    // ns가 parent와 같거나 "parent."으로 시작하는가. 서수.
+    private static bool IsSameOrChild(string ns, string parent) =>
+        ns == parent || ns.StartsWith(parent + ".", StringComparison.Ordinal);
 
     // 중첩 타입은 바깥 타입의 네임스페이스를 따른다. "A.B.Outer+Inner" → "A.B".
     private static string NamespaceOf(string fullName)

@@ -10,6 +10,9 @@ internal static class GuardChecks
     // G2 R4 문화권. 1.5.ToString()이 "1,5", double.Parse("1.5")가 15다(스펙 4.5).
     public const string GermanCultureName = "de-DE";
 
+    // G2 빈 출력 규칙의 차이 줄(T-003 스펙 4.11).
+    public const string NoOutput = "G2 R1 기준: 출력 파일 없음";
+
     // G3 출력 폴더 이름. 스냅숏에서 뺀다.
     private const string ImmutabilityOutput = "out";
 
@@ -48,6 +51,7 @@ internal static class GuardChecks
     // R2 반복: A(출력 폴더만 새로), InvariantCulture.
     // R3 다른 경로: 작업 폴더 B, 역순 복사, InvariantCulture.
     // R4 문화권: A(출력 폴더만 새로), de-DE.
+    // 빈 출력 규칙(T-003 스펙 4.11): R1 출력 폴더에 1바이트 이상인 파일이 없으면 "G2 R1 기준: 출력 파일 없음".
     public static IReadOnlyList<string> Determinism(GuardTarget target)
     {
         var differences = new List<string>();
@@ -56,6 +60,13 @@ internal static class GuardChecks
         var invariant = CultureInfo.InvariantCulture;
 
         var baseline = RunForOutput(target, a, "out1", invariant, "G2 R1 기준", differences);
+
+        // 출력이 없거나 0바이트 파일뿐이면 R2~R4가 빈 출력끼리 비교해 그냥 통과한다. 차이로 적는다.
+        // R2~R4 비교는 그대로 한다. G3에는 넣지 않는다(G3는 입력 보존만 본다).
+        if (!baseline.Any(e => !e.IsDirectory && e.Size > 0))
+        {
+            differences.Add(NoOutput);
+        }
 
         var repeat = RunForOutput(target, a, "out2", invariant, "G2 R2 반복", differences);
         AddOutputDifferences(differences, "G2 R2 반복", baseline, repeat);

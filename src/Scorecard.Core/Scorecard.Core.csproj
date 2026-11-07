@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- case.yaml 파서(T-003 스펙 4.2). 버전은 정확히 고정한다. YamlDotNet.Core 네임스페이스만 쓴다(G1 Y1). -->
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
 </Project>

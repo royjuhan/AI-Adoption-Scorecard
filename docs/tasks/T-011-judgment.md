@@ -15,12 +15,12 @@
 4. 판정 결과를 담는 파일·속성(새 파일 또는 metrics.json 속성)과 expected가 스펙 블록에서 정해진다. expected 추가·변경은 ADR 0005에 따라 추천안을 채택해 STATUS.md에 적고 ADR 0004 expected 변경 규칙을 따른다.
 5. 시작 전 main 통과 수는 1282다. 끝난 뒤 그 이상이고, 삭제·Skip된 테스트가 없다.
 6. dotnet test가 ubuntu·windows CI에서 녹색이다.
-7. oracle(`tools/oracle/`, prototyper만)이 판정도 낸다. oracle 잡이 `selftest.py`도 돌리고(ci-dev), `selftest.py`의 고정 파일 수(`len(base) == 8` 같은 것)를 없앤다(T-010 리뷰 사소 8).
+7. oracle(`tools/oracle/`, prototyper만)이 판정도 낸다. oracle-head 잡이 `selftest.py`도 돌리고(ci-dev, ADR 0006), `selftest.py`의 고정 파일 수(`len(base) == 8` 같은 것)를 없앤다(T-010 리뷰 사소 8).
 8. PR을 나눈다(T-010 3차 리뷰 6). oracle이 판정을 내는 변경(`tools/oracle/`)과 새 `expected/` 파일은 같은 PR에 두지 않는다(`oracle-and-expected` 규칙). 순서: (a) oracle 판정 + selftest CI PR → (b) 판정 엔진 + expected PR. (a)의 `ci.yml` 변경에는 새 ADR과 STATUS.md "원칙 변경" 행을 같이 둔다(`ci-changed` 규칙).
 
 ## 폴더 범위
 
-`docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/expected/`(juhan 승인 뒤), `examples/*/case.yaml`(필요하면, juhan 승인 뒤)
+PR (a): `tools/oracle/`, `.github/workflows/`, `tools/ci/`, `docs/decisions/`, `docs/spec/`, `docs/STATUS.md`, 이 카드. PR (b): `docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/expected/`(ADR 0005 결정 3), `docs/README-instructions.md` 5절 목록, `docs/STATUS.md`
 
 ## 메모
 

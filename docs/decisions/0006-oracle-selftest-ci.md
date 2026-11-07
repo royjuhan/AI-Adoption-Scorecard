@@ -15,7 +15,7 @@ T-011은 oracle(`tools/oracle/`)이 판정(`judgment.json`)도 내게 한다. or
 2. `oracle` 잡은 지금처럼 base `check.py`만 돈다. base selftest는 돌리지 않는다. 이유는 셋이다.
    - base selftest는 base oracle만 점검한다.
    - head 예제를 base oracle이 재현하는지는 `oracle` 잡이 이미 본다.
-   - oracle이 바뀐 PR에서는 바른 변경에도 base selftest가 실패한다.
+   - oracle이 바뀐 PR에서는 바른 변경에도 base selftest가 실패할 수 있다(예제 글자·TestData 경로를 고정해 둔다).
 3. regression-guard는 `needs`에 있는 잡 넷(mutation, oracle, oracle-head, test-run)의 결과를 모두 `--job`으로 받는다. 하나라도 `success`가 아니면 막는다. `skipped`·`cancelled`도 막는다. mutation과 oracle은 이미 "CI 잡 모두 녹색" 머지 조건에 들어 있다. 그래서 막는 범위는 그대로이고, guard 결과 하나만 보면 된다.
 
 가드를 약하게 하는 변경은 없다.

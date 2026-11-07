@@ -67,9 +67,10 @@ public class GuardTargetAdapterTests
     }
 
     // guard/basic은 T-002 가짜 대상의 바이트 샘플이라 그대로 둔다(스펙 4.11). 실제 대상은 쓰지 않는다.
+    // T-004(classification.md 4.10, 승인 결정 12): 같은 샘플을 쓰는 대상이 늘어도 뜻이 같도록 중복을 빼고 비교한다.
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
-        Assert.Equal(["case-invalid", "case-valid"], GuardTargets.All.Select(t => t.Sample).Order(StringComparer.Ordinal));
+        Assert.Equal(["case-invalid", "case-valid"], GuardTargets.All.Select(t => t.Sample).Distinct().Order(StringComparer.Ordinal));
     }
 }

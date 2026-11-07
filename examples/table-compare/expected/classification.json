@@ -1,0 +1,93 @@
+{
+  "case": "table-compare",
+  "steps": [
+    {
+      "number": 1,
+      "name": "정상 신호 구간 선택",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "불규칙 신호 구간 선택",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        },
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": "구간 평균 계산",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "name": "결과표 채우기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        },
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ]
+    }
+  ]
+}

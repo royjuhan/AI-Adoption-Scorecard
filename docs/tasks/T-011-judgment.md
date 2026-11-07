@@ -12,9 +12,10 @@
 1. 예제 4종의 판정이 지시문 12절과 맞는다: table-compare 조건부, form-fill 통과, mixed-exceptions 미검증, signoff-final(정확도 80.0, 문턱 미달)은 스펙이 정한 값.
 2. 판정 규칙 표(문턱 경계, 시간 조건, "특정 유형에만 불일치가 몰림", "설명 안 되는 불일치")가 스펙과 테스트에서 맞는다. 경계는 셈(`counts`)으로 비교한다(metrics.md 4.8 권고).
 3. 시간 자료가 없을 때의 판정과 표시가 정해져 있고 테스트가 있다.
-4. 판정 결과를 담는 파일·속성(새 파일 또는 metrics.json 속성)과 expected가 스펙 블록에서 정해진다. expected 추가·변경은 juhan이 직접 승인하고 ADR 0004 expected 변경 규칙을 따른다.
+4. 판정 결과를 담는 파일·속성(새 파일 또는 metrics.json 속성)과 expected가 스펙 블록에서 정해진다. expected 추가·변경은 ADR 0005에 따라 추천안을 채택해 STATUS.md에 적고 ADR 0004 expected 변경 규칙을 따른다.
 5. 시작 전 main 통과 수는 1282다. 끝난 뒤 그 이상이고, 삭제·Skip된 테스트가 없다.
 6. dotnet test가 ubuntu·windows CI에서 녹색이다.
+7. oracle(`tools/oracle/`, prototyper만)이 판정도 낸다. oracle 잡이 `selftest.py`도 돌리고(ci-dev), `selftest.py`의 고정 파일 수(`len(base) == 8` 같은 것)를 없앤다(T-010 리뷰 사소 8).
 
 ## 폴더 범위
 

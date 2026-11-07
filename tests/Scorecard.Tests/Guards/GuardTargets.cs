@@ -1,6 +1,7 @@
 using Scorecard.Core.Cases;
 using Scorecard.Core.Classification;
 using Scorecard.Core.Comparison;
+using Scorecard.Core.Judgment;
 using Scorecard.Core.Synthetic;
 using Scorecard.Tests.CaseSchema;
 
@@ -20,6 +21,9 @@ namespace Scorecard.Tests.Guards;
 // case-valid에는 reference/rows.csv·candidate/rows.csv(아래 고정 계획의 생성 결과)가 있다.
 // 어댑터는 CaseParser.ParseDirectory → CompareEngine.CompareDirectory 결과를 쓴다. 오류가 없으면 metrics.json,
 // 있으면 오류 줄(LF, 끝 LF)을 compare-errors.txt 한 파일로. 오류 줄의 Source에 절대 경로가 섞이면 G2 R3가 잡는다.
+// T-011 판정(judgment.md 4.12, 잠정 결정 11): 정상 표본 case-valid를 등록한다(새 샘플 없음). 판정 오류 표본은 없다.
+// 어댑터는 CaseParser.ParseDirectory → CompareEngine.CompareDirectory → JudgmentEngine.Judge(시간·사람 입력 null) →
+// JudgmentJson.Render 결과를 출력 폴더의 judgment.json 한 파일로 쓴다. 문장에 숫자가 들어가므로 R4(문화권)가 본다.
 // 새 Core 처리 기능을 만들면 이 목록에 더한다.
 internal static class GuardTargets
 {
@@ -33,6 +37,7 @@ internal static class GuardTargets
         new("synthetic-case-valid", "case-valid", GenerateSyntheticCsv),
         new("compare-case-valid", "case-valid", CompareToFile),
         new("compare-invalid", "compare-invalid", CompareToFile),
+        new("judge-case-valid", "case-valid", JudgeToFile),
     ];
 
     // T-006 대조 어댑터의 오류 출력 파일(metrics.md 4.10).
@@ -104,6 +109,15 @@ internal static class GuardTargets
         {
             File.WriteAllBytes(Path.Combine(output, CompareErrorsFile), ErrorLines(result.Errors));
         }
+    }
+
+    // 정상 표본만 쓴다. 파싱·대조 오류면 판정할 것이 없으므로 예외를 던진다(G2·G3가 차이로 적는다, judgment.md 5절).
+    private static void JudgeToFile(string input, string output)
+    {
+        var definition = CaseParser.ParseDirectory(input).Case ?? throw new InvalidOperationException("판정 대상 표본이 파싱되지 않는다.");
+        var metrics = CompareEngine.CompareDirectory(input, definition).Metrics ?? throw new InvalidOperationException("판정 대상 표본이 대조되지 않는다.");
+        Directory.CreateDirectory(output);
+        File.WriteAllBytes(Path.Combine(output, JudgmentJson.FileName), JudgmentJson.Render(JudgmentEngine.Judge(definition, metrics)));
     }
 
     // 오류 줄(CaseError.ToString) + LF. UTF-8(BOM 없음).

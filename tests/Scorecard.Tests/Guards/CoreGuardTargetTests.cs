@@ -71,6 +71,7 @@ public class GuardTargetAdapterTests
     // 실제 대상이 쓰는 샘플은 정확히 이 목록이다(ADR 0005 원문 4, T-010). 샘플을 더하거나 빼면
     // 이 목록도 같이 고쳐야 한다. 그래서 목록이 줄면 regression-guard가 잡는다.
     // basic이 없다 + case-valid가 있다 + 샘플 폴더가 있다(T-006 승인 질문 18)도 그대로 본다.
+    // T-011(judgment.md 4.12, 잠정 결정 11): judge-case-valid=case-valid 한 쌍을 더한다. 새 샘플이 없어 샘플 목록은 그대로다.
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
@@ -84,6 +85,7 @@ public class GuardTargetAdapterTests
                 "synthetic-case-valid=case-valid",
                 "compare-case-valid=case-valid",
                 "compare-invalid=compare-invalid",
+                "judge-case-valid=case-valid",
             ],
             pairs);
 

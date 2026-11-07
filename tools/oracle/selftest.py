@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-# oracle 자기 점검. oracle을 고친 prototyper가 돌린다. T-011 수용 기준 7에 따라 CI oracle 잡도 돌린다(ci-dev).
-# check.py의 CI 계약(출력 줄 모양)과는 따로다. 저장소의 docs/spec·TestData를 읽으므로 --repo로 checkout을 준다.
+# oracle 자기 점검. oracle을 고친 prototyper가 돌린다. CI도 돌린다(T-011 수용 기준 7): tools/oracle이 바뀐 PR에서
+# oracle-head 잡과 머지 전 tools/ci/lead_check.py가 head의 이 파일을 `python3 -I -B tools/oracle/selftest.py --repo <checkout>`로
+# 돌린다. base의 이 파일은 어디서도 돌리지 않는다(oracle 잡은 base check.py만). 실패하면 그 잡이 실패한다.
+# 출력 줄 모양은 check.py의 CI 계약과 따로다. 저장소의 docs/spec·examples·TestData를 읽으므로 --repo로 checkout을 준다.
 #
 #   python3 tools/oracle/selftest.py [--repo <루트>]
 #

@@ -2,7 +2,8 @@
 
 - 근거: ADR 0005 원문 3·결정 9, T-010 수용 기준 3, T-011 수용 기준 7(판정).
 - 엔진(`src/`)과 따로 짠 Python 구현이다. `docs/spec/`과 지시문만 보고 짰다. `src/`는 열지 않았다.
-- CI `oracle` 잡이 예제마다 `expected/` 바이트를 다시 만들어 비교한다. `regression-guard`는 기존 expected를 바꾼 커밋을 이 결과로 허용한다.
+- CI `oracle` 잡이 예제마다 `expected/` 바이트를 다시 만들어 비교한다(base `check.py`). `regression-guard`는 기존 expected를 바꾼 커밋을 이 결과로 허용한다.
+- `tools/oracle`이 바뀐 PR에서는 `oracle-head` 잡과 머지 전 `tools/ci/lead_check.py`가 head의 `check.py`와 `selftest.py`를 돌린다.
 - Python 3.10 이상, 표준 라이브러리만. 네트워크·외부 프로세스 없음(`selftest.py`만 `check.py`를 자식 프로세스로 돌린다).
 
 ## 고칠 수 있는 사람
@@ -23,8 +24,9 @@
 
 ### selftest.py (CI에서 부를 때)
 
-- T-011 수용 기준 7: CI `oracle` 잡이 `check.py`와 함께 돌린다(ci-dev가 `ci.yml`에 넣는다).
-- 부르는 모양: `python3 -I -B <oracle 폴더>/selftest.py --repo <checkout 루트>`. base에서 꺼낸 oracle을 돌릴 때도 `--repo`는 checkout이다. 기본값(이 파일의 두 단계 위)은 꺼낸 폴더라 `docs/spec`이 없다.
+- T-011 수용 기준 7(ci-dev, `2eb99a0`): `tools/oracle`이 바뀐 PR에서 CI `oracle-head` 잡이 head `check.py` 다음에 head `selftest.py`를 돌린다. 머지 전 `tools/ci/lead_check.py`도 같은 단계를 돈다(`run_head_oracle`). 하나라도 실패하면 그 잡·단계가 실패한다.
+- base `selftest.py`는 어디서도 돌리지 않는다. `oracle` 잡은 base `check.py`만 돈다(`tools/ci/README.md` "결정한 해석" 10).
+- 부르는 모양: `python3 -I -B tools/oracle/selftest.py --repo <checkout 루트>`(`oracle-head`는 `--repo .`, lead_check는 head 트리). `--repo`를 빼면 이 파일의 두 단계 위를 저장소로 본다.
 - 읽는 것: `docs/spec/classification.md`·`metrics.md`·`judgment.md`, `examples/`, `tests/Scorecard.Tests/TestData/`. 읽기만 한다.
 - 쓰는 것: 임시 폴더(`tempfile`)뿐이다. `check.py`를 자식 프로세스(`sys.executable`)로 돌린다. 네트워크 없음.
 - 종료 코드: 실패가 하나도 없으면 0, 있으면 1. 실패마다 `FAIL <이름>` 줄, 끝에 `selftest: 통과 N, 실패 M`.

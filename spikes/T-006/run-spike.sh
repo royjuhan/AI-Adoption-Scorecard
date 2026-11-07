@@ -43,7 +43,7 @@ step() {
   ( cd "$dir" && "$@" ) > "$log" 2>&1
   rc=$?
   note "[$name] rc=$rc cmd: $*"
-  grep -E '^(RESULT|PROBE|SHA|ERR|ASMREF|TYPEREF-NS|SPEC|SPEC-DIFF|BLOCK|TIMING) |warning [A-Z]+[0-9]+|error [A-Z]+[0-9]+|Passed!|Failed!|\[FAIL\]|^ +(N[1-6]|D1|R1|Y1) |^ +G[23] |Assert\.|^ +(Expected|Actual):|compare-case-valid|compare-invalid|Real_targets|Example_folder_has|^Total tests:|Unhandled' "$log" \
+  grep -E '^(RESULT|PROBE|SHA|ERR|ASMREF|TYPEREF-NS|SPEC|SPEC-DIFF|BLOCK|TIMING) |warning [A-Z]+[0-9]+|error [A-Z]+[0-9]+|Passed!|Failed!|\[FAIL\]|^ +(N[1-6]|D1|R1|Y1) |^ +G[23] |Assert\.|^ +(Expected|Actual):|compare-case-valid|compare-invalid|Real_targets|Example_folder_has|^Total tests:|Collection: \["G|Unhandled' "$log" \
     | clean | awk '!seen[$0]++' | head -300 | sed 's/^/    /' | tee -a "$SUMMARY"
   return 0
 }

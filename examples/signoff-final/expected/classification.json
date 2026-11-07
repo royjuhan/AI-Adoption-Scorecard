@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "steps": [
+    {
+      "number": 1,
+      "name": "기록 파일 열기·정리",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "기준 구간 고르기(안정 기록)",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": "기준 구간 고르기(흔들린 기록)",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        },
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "name": "구간 값 계산·옮기기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "name": "보고서 양식 채우기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "name": "결과 해석 문장 쓰기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "③",
+          "rule": "Q2",
+          "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다."
+        },
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "name": "최종 확인·서명·제출",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "④",
+          "rule": "SIGNOFF",
+          "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+        }
+      ]
+    }
+  ]
+}

@@ -17,7 +17,7 @@ public class MetricsGoldenTests
 {
     public static TheoryData<string> Examples => ClassificationInput.ExampleNames;
 
-    // 7.1 예제 표의 예제 = 공개 예제 3종, 7.2~7.4 제목이 있다.
+    // 7.1 예제 표의 예제 = 공개 예제 4종, 7.2~7.5 제목이 있다(이름의 "three"는 T-009 L4로 그대로 둔다).
     [Fact]
     public void Example_table_covers_the_three_examples()
     {

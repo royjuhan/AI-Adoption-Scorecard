@@ -155,10 +155,11 @@ AI-Adoption-Scorecard/                 (공개 저장소)
 │  ├─ spec/          case-schema.md  classification.md  metrics.md  report.md  build-request.md  commands.md  json-output.md  skill-scorecard.md
 │  ├─ decisions/     0001-....md (ADR, 한 건에 한 파일)
 │  └─ tasks/         T-001-....md (작업 카드, 사람이 쓴다)
-├─ examples/         공개 합성 예제 3종 = 테스트의 정답 (12절)
+├─ examples/         공개 합성 예제 4종 = 테스트의 정답 (12절)
 │  ├─ table-compare/     case.yaml intake.md answers.yaml reference/ candidate/ expected/
 │  ├─ form-fill/
-│  └─ mixed-exceptions/
+│  ├─ mixed-exceptions/
+│  └─ signoff-final/
 ├─ spikes/           일회용 실험. 테스트 의무 없음. src/에서 참조 금지. sweeper가 비운다
 ├─ src/Scorecard.Core/
 ├─ src/Scorecard.Cli/
@@ -361,8 +362,8 @@ prototyper: spikes/, docs/ · test-engineer: tests/, cases/ · core-dev: src/Sco
 | 마일스톤 | 기간 | 만드는 것 | 게이트(사람이 확인) |
 | --- | --- | --- | --- |
 | M0 저장소 세팅 | 2주 | LICENSE, README 골격, CI, CLAUDE.md, 에이전트 7개, 훅, 빈 솔루션, 스펙 초안 | G0: 새 PC에서 clone → `dotnet build && dotnet test` 통과. 작업 카드 1건이 스펙→테스트→구현→리뷰→PR까지 에이전트 흐름으로 완주 |
-| M1 Core | 3주 | case.yaml, 질문·기본값, 분류 트리, 대조, 지표, 판정, 합성 예제 생성기 | G1: 공개 예제 3종의 출력이 `expected/`와 일치. 분류 트리의 모든 분기에 단위 테스트 1개 이상. 네트워크 금지·결정론·원본 불변 테스트 통과 |
-| M2 CLI + 스코어카드 | 3주 | 명령 넷 `start`·`open`·`check`·`build`(내부 명령 new·interview(--answers)·classify·compare·measure·judge·review·report·propose), 번호 마법사, 확인 한 화면, AI용 입구(`--json`, 오류 JSON, 종료 코드), 단일 HTML 스코어카드와 Excel 내보내기, 번들, 스킬 `/scorecard` | G2: 예제 3종에서 `start --answers`→`open`→`build`까지 end-to-end 테스트 통과(사람용과 `--json` 둘 다). 명령 넷의 `--json` 출력이 결정론(G2) 테스트를 통과. 샘플 스코어카드(HTML)를 README에 게시. 비공개 사례 1건을 같은 exe로 로컬 실행해 요약만 README "사례"에 추가(2026-11-07 사람 결정: ADR 0004) |
+| M1 Core | 3주 | case.yaml, 질문·기본값, 분류 트리, 대조, 지표, 판정, 합성 예제 생성기 | G1: 공개 예제 4종의 출력이 `expected/`와 일치. 분류 트리의 모든 분기에 단위 테스트 1개 이상. 네트워크 금지·결정론·원본 불변 테스트 통과 |
+| M2 CLI + 스코어카드 | 3주 | 명령 넷 `start`·`open`·`check`·`build`(내부 명령 new·interview(--answers)·classify·compare·measure·judge·review·report·propose), 번호 마법사, 확인 한 화면, AI용 입구(`--json`, 오류 JSON, 종료 코드), 단일 HTML 스코어카드와 Excel 내보내기, 번들, 스킬 `/scorecard` | G2: 예제 4종에서 `start --answers`→`open`→`build`까지 end-to-end 테스트 통과(사람용과 `--json` 둘 다). 명령 넷의 `--json` 출력이 결정론(G2) 테스트를 통과. 샘플 스코어카드(HTML)를 README에 게시. 비공개 사례 1건을 같은 exe로 로컬 실행해 요약만 README "사례"에 추가(2026-11-07 사람 결정: ADR 0004) |
 | M3 의뢰서 + 첫 제작 | 4주 | `scorecard-factory-template` 공개, `examples/form-fill`의 build-request 번들로 샘플 도구 제작 | G3: 다른 PC에서 템플릿 README만 보고 예제 의뢰서→샘플 도구(exe + 테스트 보고서)를 재현. 제작된 도구를 `scorecard compare`로 검증해 `expected/`와 일치 |
 | M4 릴리스 + 사후 검증 | 3주 | v0.1.0 릴리스(exe 첨부), README 한/영, CONTRIBUTING, 이슈 템플릿, release 에이전트 | G4: v0.1.0 태그와 릴리스 자산 게시. 외부 이슈·PR 1건 이상 처리 또는 비공개 사례의 사후 평가서 v2 요약 공개 |
 
@@ -383,17 +384,18 @@ MCP 서버는 M4 이후 선택 과제다. 카드만 둔다(ADR 0004).
 
 T-001이 끝까지 돌면 첫 주 토큰 비용과 걸린 시간을 `docs/decisions/0001-first-week.md`에 적는다.
 
-## 12. 공개 예제 3종 (`examples/`) — 테스트의 정답
+## 12. 공개 예제 4종 (`examples/`) — 테스트의 정답
 
-세 예제는 구조가 서로 다르게 고른다. 모두 합성 데이터이고, 업종을 특정하지 않는다. 각 예제에 `intake.md`(자유 서술 예시), `answers.yaml`(질문 9개 답), `reference/`, `candidate/`, `expected/`가 있다. `expected/`의 값은 사람이 확정하고, 바꾸려면 PR 본문에 이유를 쓴다.
+네 예제는 구조가 서로 다르게 고른다. 모두 합성 데이터이고, 업종을 특정하지 않는다. 각 예제에 `intake.md`(자유 서술 예시), `answers.yaml`(답 10개), `reference/`, `candidate/`, `expected/`가 있다. `expected/`의 값은 사람이 확정하고, 바꾸려면 PR 본문에 이유를 쓴다.
 
 | 예제 | 업무 | 단계 수 | 기대 분류(요지) | 검증 자료 |
 | --- | --- | --- | --- | --- |
 | `table-compare` | 센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다 | 6 | 정상 신호 구간 선택·계산·표 채우기 = ②, 불규칙 신호 = ②+④, 최종 확인 = ④ | reference 30건 / candidate 30건, 불일치 3건·누락 1건 심어 둠 → 정확도 90%, 누락률 3.3%, 판정 "조건부" |
 | `form-fill` | 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다 | 5 | 양식 읽기·집계·보고서 = ②, 발송 = ④, `existing_feature: unknown` 1건 → 확인 항목 | reference 20건 / candidate 20건, 전부 일치 → 정확도 100%, 판정 "통과", AI 과잉 후보 1단계(`current_actor: ai_each_time`) |
 | `mixed-exceptions` | 자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다 | 5 | 접수 기록 = ②, 분류·답변 = ③(입력 양식 표준화 제안), 발송 = ④ | 자료 없음 → 전 항목 "미검증", 평가서에 측정 방법만 |
+| `signoff-final` | 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다 | 9 | 파일 정리·안정 기록 구간·값 계산·보고서 채우기 = ②, 흔들린 기록 구간 = ②+④, 해석 문장 = ③+④, 최종 확인·서명·제출 = ④(서명 단계, `human_signoff: yes`, 게이트 없음) | reference 20건 / candidate 20건, 불일치 4건·누락 1건 심어 둠 → 정확도 80%, 누락률 5% (문턱 95%·2% 미달. 판정은 판정 카드에서) |
 
-예제 3종의 `expected/`에는 위 표의 숫자와 분류가 그대로 들어간다. T-004~T-006과 M2의 end-to-end 테스트가 이 값을 기준으로 통과를 판정한다.
+예제 4종의 `expected/`에는 위 표의 숫자와 분류가 그대로 들어간다. T-004~T-006과 M2의 end-to-end 테스트가 이 값을 기준으로 통과를 판정한다.
 
 ### 12.1 비공개 케이스는 `cases/`에 로컬로만 (커밋 금지)
 

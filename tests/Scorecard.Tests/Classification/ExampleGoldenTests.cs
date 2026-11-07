@@ -7,10 +7,10 @@ using Scorecard.Tests.Structure;
 
 namespace Scorecard.Tests.Classification;
 
-// 공개 예제 3종 골든(카드 수용 기준 3, 승인 결정 11·13·14).
+// 공개 예제 4종 골든(카드 수용 기준 3, 승인 결정 11·13·14. signoff-final은 T-009).
 // examples/<예제>/answers.yaml → CaseParser.Parse(bytes, "answers.yaml") → Classify → Render가
 // expected/classification.json과 바이트까지 같다. 파일이 없으면 실패한다(빈 통과 금지).
-// 예제 파일은 스펙 7.2~7.4 블록을 바이트 그대로 옮긴 것이다(사람 확정, 승인 결정 14).
+// 예제 파일은 스펙 7.2~7.5 블록을 바이트 그대로 옮긴 것이다(사람 확정, 승인 결정 14. 7.5는 T-009 juhan J1).
 [Trait("Spec", "classification")]
 public class ExampleGoldenTests
 {
@@ -22,6 +22,7 @@ public class ExampleGoldenTests
         ["table-compare"] = "### 7.2 table-compare",
         ["form-fill"] = "### 7.3 form-fill",
         ["mixed-exceptions"] = "### 7.4 mixed-exceptions",
+        ["signoff-final"] = "### 7.5 signoff-final",
     };
 
     public static TheoryData<string> Examples => ClassificationInput.ExampleNames;
@@ -44,6 +45,7 @@ public class ExampleGoldenTests
         }
     }
 
+    // 예제 목록(4종) = 스펙 7.2~7.5 제목 사전. 이름의 "three"는 T-009 L4로 그대로 둔다.
     [Fact]
     public void Examples_are_the_three_spec_examples()
     {

@@ -13,7 +13,7 @@ namespace Scorecard.Tests.Synthetic;
 internal static class SyntheticInput
 {
     // 자료(reference/·candidate/)가 있는 예제. 스펙 4.3 계획 표·7.1 파일 표와 같은지는 테스트가 본다.
-    public static readonly string[] DataExamples = ["table-compare", "form-fill"];
+    public static readonly string[] DataExamples = ["table-compare", "form-fill", "signoff-final"];
 
     // 자료가 없는 예제(지시문 12절 "자료 없음", 스펙 3.2).
     public static readonly string[] NoDataExamples = ["mixed-exceptions"];

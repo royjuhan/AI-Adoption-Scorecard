@@ -1,6 +1,7 @@
 # metrics (T-006 스펙: 대조와 지표)
 
 - 상태: 승인됨(2026-11-07, 20문항 모두 제안대로). 승인 결과는 문서 끝. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
+- T-009 개정(승인됨, 2026-11-07, `signoff-final.md` 승인 결과): 4번째 공개 예제 `signoff-final`. 7.1 예제 표 1행·항목 10, 새 6.5·7.5. 대조 규칙(3·4절)과 Core는 그대로다. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
 - 반영한 사람 결정: ADR 0004(2026-11-07 juhan 승인). 결정 2: metrics.json 첫 키 `"schema_version": 1`(정수)(3.2). 결정 3·6: 명령 넷과 내부 명령, `--json` 출력, 오류 JSON, 종료 코드 0/2/1(3.4). expected 변경 규칙·상시 승인 예외(7.1, 승인 질문 머리말).
 - 진행 순서: T-007은 PR #7로 머지됐다(main `38a507c`). Core 구현과 `expected/metrics.json` 커밋은 이 스펙의 승인 뒤에 한다. expected는 juhan이 직접 확정한다(7.1, 8절, 승인 질문 15·17·18).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
@@ -18,6 +19,7 @@
 - 항목·일치·값 불일치·누락·추가·허용오차 안 차이는 4.4의 뜻이다. T-005 4.7(P2)에서 왔다.
 - `CaseDefinition`·`CaseInputs`·`CompareField`·`CaseError`는 `docs/spec/case-schema.md`(T-003)의 이름이다. G1·G2·G3, D1, R1~R4는 `docs/spec/guard-tests.md`의 이름이다.
 - 예제 이름은 `table-compare`, `form-fill`, `mixed-exceptions`(지시문 12절).
+- `[T9:S0]`~`[T9:S8]`: T-009 스파이크(`spikes/T-009/`) 단계. 단계 목록은 `signoff-final.md` 10절. T-009에서 예제 `signoff-final`을 더한다.
 
 ## 1. 범위
 
@@ -738,7 +740,23 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 - `reference/c.csv`는 따옴표가 닫히지 않아 그 파일의 나머지를 보지 않는다.
 - `candidate/a.csv`는 `label` 열이 없어 데이터 행을 보지 않는다.
 
-## 7. 예제 3종 `expected/metrics.json` 초안 (사람 확정 필요)
+### 6.5 signoff-final 차이 (T-009)
+
+[T9:S2 metrics]. 기준 20행, 결과 20행(섞임). `items`에 7개가 나온다.
+
+- `rec04` 값 불일치 `range_start` 345 → 358. 13 > 0.
+- `rec06` 일치(허용오차 안) `range_avg` 392.2 → 391.8. 0.4 × 100 = 40 ≤ 392.2 × 1.0.
+- `rec11` 일치(허용오차 안) `range_avg` 582.6 → 583.8. 120 ≤ 582.6.
+- `rec14` 누락. 결과에 키가 없다.
+- `rec18` 값 불일치 `range_end` 3416 → 3400. 16 > 0.
+- `rec20` 값 불일치 `range_avg` 785.9 → 762.3. 23.6 × 100 = 2360 > 785.9.
+- `rec21` 추가. 기준에 키가 없다.
+- 정확도 16/20 = 80.0, 누락률 1/20 = 5.0. `case.yaml` 문턱(95, 2)에 못 미친다. 셈으로도 같다: 16 × 100 < 95 × 20, 1 × 100 > 2 × 20(4.8 권고).
+- 필드별 셈: `range_start`·`range_end`·`range_avg` 모두 `compared` 19, `outside` 1. `range_avg`만 `within` 2.
+- `record_kind`는 `compare`에 없어 비교하지 않는다. 불일치 4건 중 3건(`rec04`, `rec18`, `rec20`)이 `unsteady`, 1건(`rec14`)이 `steady`다. 추가 `rec21`은 `unsteady`다. metrics.json에는 없고 메모리 `CsvRow`에 있다.
+- 이 절은 글머리만 쓴다. 6.1 표와 머리 행이 같아지지 않게 하려는 것이다.
+
+## 7. 예제 4종 `expected/metrics.json` (사람 확정)
 
 ### 7.1 만드는 방법과 확정 절차 (제안)
 
@@ -756,6 +774,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 7. mixed-exceptions에도 `expected/metrics.json`을 둔다(미검증 모양). 지시문 5절 "expected/에는 classification.json, metrics.json, report-outline.json" [읽음].
 8. T-007 뒤 다시 확인: T-007은 머지됐다. 이 절의 블록·SHA-256과 S5·S7·S8은 `63430e6` clone에서 다시 돌린 결과다. T-007 전 실행(`9f30e14` clone. `src/`·`tests/`·`examples/`는 `7735f8a`와 같음)과 비교해 바뀐 것은 테스트 수뿐이다: 기준선 830 → 850, S5a·S5b·S7a·S7b 834 → 854. metrics.json SHA-256 3개, S5a(1건)·S7a(3건)의 기대 실패, S6 음성 대조, S8 차이 0건은 같다. 이번에 스파이크에서 바꾼 것(3.4 `inputs` 오류의 `source`·`path`, Python 수치 줄, G2 표본 Python 대조)도 metrics.json 바이트를 바꾸지 않았다(9절 10).
 9. `expected/metrics.json`을 새로 넣는 것은 expected 변경이다. 상시 승인에서 빠졌으므로 juhan이 직접 승인한다(승인 질문 17). 커밋 모양(제안, 질문 17): ADR 0004 expected 변경 규칙을 새 파일에 맞춰 쓴다. 커밋 메시지는 `expected migration:`으로 시작하고, 그 커밋에는 `examples/*/expected/metrics.json` 3개만 둔다(스펙 블록·SHA-256 줄은 이 스펙 PR에 이미 있다). PR 본문에 시작 전 main 통과 수(지금 850)와 끝난 뒤 통과 수(그 이상, 삭제·Skip 없음)를 적고, reviewer가 `git diff --stat`과 expected diff 전문을 붙인다.
+10. T-009 개정(승인됨): 7.5 `signoff-final` 블록은 이 절 1과 같은 두 길로 확인했다. main Core가 T-009 초안 예제 파일(블록에서 옮긴 `case.yaml`·CSV)에서 낸 바이트, 그리고 T-006 Python 독립 구현(`spikes/T-009/xcheck/compare.py`, T-006 것 그대로)이 따로 낸 바이트가 같다 [T9:S2 xcheck]. 수치: 기준 20·결과 20·일치 16·값 불일치 3·누락 1·추가 1·허용오차 안 차이 2, 정확도 80.0, 누락률 5.0, `items` 7개. 엔진 출력은 정답이 아니다. juhan이 블록을 확정하고, test-engineer가 블록을 옮긴다(`signoff-final.md` 8절). 7.2~7.4 블록·SHA-256은 그대로다 [T9:S4].
 
 예제 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `—`는 null이다.
 
@@ -764,6 +783,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | `table-compare` | `measured` | 30 | 30 | 27 | 2 | 1 | 1 | 4 | 90.0 | 3.3 |
 | `form-fill` | `measured` | 20 | 20 | 20 | 0 | 0 | 0 | 0 | 100.0 | 0.0 |
 | `mixed-exceptions` | `not_verified` | — | — | — | — | — | — | — | — | — |
+| `signoff-final` | `measured` | 20 | 20 | 16 | 3 | 1 | 1 | 2 | 80.0 | 5.0 |
 
 - table-compare·form-fill 셈은 T-005 4.7 구조 표와 같다 [읽음 synthetic-examples.md 4.7].
 
@@ -1053,6 +1073,195 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 }
 ```
 
+### 7.5 signoff-final
+
+T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 항목 10, 근거와 질문은 `docs/spec/signoff-final.md`.
+
+`examples/signoff-final/expected/metrics.json` (SHA-256 `95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b`):
+
+```json
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "record_id",
+    "reference_files": [
+      "reference/records.csv"
+    ],
+    "candidate_files": [
+      "candidate/records.csv"
+    ],
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 16,
+      "mismatch": 3,
+      "missing": 1,
+      "extra": 1,
+      "within": 2
+    },
+    "accuracy_pct": 80.0,
+    "missing_rate_pct": 5.0,
+    "fields": [
+      {
+        "field": "range_start",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 19,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "range_end",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 19,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "range_avg",
+        "kind": "number",
+        "tolerance": null,
+        "tolerance_pct": 1.0,
+        "compared": 19,
+        "outside": 1,
+        "within": 2,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "rec04",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 5
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 2
+        },
+        "differences": [
+          {
+            "field": "range_start",
+            "result": "outside",
+            "reference": "345",
+            "candidate": "358"
+          }
+        ]
+      },
+      {
+        "key": "rec06",
+        "status": "match",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 7
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 5
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "392.2",
+            "candidate": "391.8"
+          }
+        ]
+      },
+      {
+        "key": "rec11",
+        "status": "match",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 12
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 12
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "582.6",
+            "candidate": "583.8"
+          }
+        ]
+      },
+      {
+        "key": "rec14",
+        "status": "missing",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 15
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "rec18",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 19
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 15
+        },
+        "differences": [
+          {
+            "field": "range_end",
+            "result": "outside",
+            "reference": "3416",
+            "candidate": "3400"
+          }
+        ]
+      },
+      {
+        "key": "rec20",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 21
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 6
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "outside",
+            "reference": "785.9",
+            "candidate": "762.3"
+          }
+        ]
+      },
+      {
+        "key": "rec21",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 10
+        },
+        "differences": []
+      }
+    ]
+  }
+}
+```
+
 ## 8. 테스트로 옮기는 방법 (test-engineer 참고)
 
 - 폴더 `tests/Scorecard.Tests/Comparison/`, 네임스페이스 `Scorecard.Tests.Comparison`. Trait `Spec` = `metrics`.
@@ -1197,3 +1406,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 - 2026-11-07.
 - 15·17·18·20: juhan이 직접 "모두 제안대로"로 승인했다(결정 카드). 15: 3.2 속성 표 그대로. 17: 7.2~7.4 블록을 정답으로 확정한다. 이 카드에 한해 test-engineer가 블록을 바이트 그대로 `examples/*/expected/metrics.json`으로 옮긴다. `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/metrics.json`을 더한다. 커밋은 7.1 9의 모양으로 한다. 18: `compare-case-valid`·`compare-invalid` 등록. `Real_targets_use_case_samples_not_basic`는 "`basic`이 없다 + `case-valid`가 있다 + 샘플 폴더가 있다"로 고친다. 20: `source`는 케이스 폴더 기준 상대 경로.
 - 1~14, 16, 19: juhan의 상시 승인("끝날때까지 추천값으로 머지하고 진행해 계속")에 따라 리드가 제안대로 승인했다. ADR·지시문 2절 원칙·expected·기존 테스트를 바꾸지 않는 질문이다.
+
+## T-009 개정 (승인됨, 2026-11-07)
+
+- 작업 카드 `docs/tasks/T-009-signoff-final.md`. 출발점: ADR 0003 남은 질문 2 [읽음].
+- 확인 대상 커밋 `ce6c4f0`. 스파이크 `spikes/T-009/`(머지 대상 아님). 근거·질문·결과는 `docs/spec/signoff-final.md`.
+- 바꾼 곳: 머리 글머리, 새 6.5, 7.1 항목 10·예제 표 1행, 새 7.5.
+- 바꾸지 않은 곳: 1~5절(대조 규칙, 오류, 퍼센트, API), 6.1~6.4, 7.2~7.4 블록·SHA-256 줄, 8~11절, Core.
+- 7절 제목("예제 3종")은 그대로 두었다. 테스트가 읽지 않는다. 승인 뒤 리드가 "4종"으로 고쳐도 된다(`signoff-final.md` 리드 질문 L5).

@@ -78,8 +78,10 @@ public class CaseYamlTests
 
     // 4.7·4.8: 구조 표의 정확도·누락률이 thresholds를 충족한다(table-compare 90.0 ≥ 85, 3.3 ≤ 5. form-fill 100.0, 0.0).
     // 시간 자료가 없어 time_must_drop은 false다.
+    // T-009(signoff-final.md V6, juhan 승인 J2·J3 안 A): 문턱을 충족하는 자료 예제만 본다.
+    // signoff-final(정확도 80.0 < 95, 누락률 5.0 > 2)의 문턱 미달은 SignoffFinalExampleTests가 본다.
     [Theory]
-    [MemberData(nameof(SyntheticInput.DataExampleNames), MemberType = typeof(SyntheticInput))]
+    [MemberData(nameof(ThresholdExampleNames))]
     public void Structure_meets_thresholds(string example)
     {
         var thresholds = SyntheticInput.CaseOf(example).Thresholds;
@@ -110,6 +112,10 @@ public class CaseYamlTests
     }
 
     public static TheoryData<string> NoDataExampleNames => new(SyntheticInput.NoDataExamples);
+
+    // T-009(V6): 문턱을 충족하는 자료 예제 = 자료 예제에서 signoff-final을 뺀 것.
+    public static TheoryData<string> ThresholdExampleNames =>
+        new(SyntheticInput.DataExamples.Where(e => e != SignoffFinalExampleTests.Example));
 
     // 4.8 표의 그 예제 행 → (inputs, compare, thresholds). "없음"은 없음, "같음"은 바로 위 행과 같음.
     private static (CaseInputs? Inputs, CompareField[] Compare, CaseThresholds Thresholds) CaseKeys(string example)

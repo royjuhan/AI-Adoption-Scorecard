@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "record_id",
+    "reference_files": [
+      "reference/records.csv"
+    ],
+    "candidate_files": [
+      "candidate/records.csv"
+    ],
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 16,
+      "mismatch": 3,
+      "missing": 1,
+      "extra": 1,
+      "within": 2
+    },
+    "accuracy_pct": 80.0,
+    "missing_rate_pct": 5.0,
+    "fields": [
+      {
+        "field": "range_start",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 19,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "range_end",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 19,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      },
+      {
+        "field": "range_avg",
+        "kind": "number",
+        "tolerance": null,
+        "tolerance_pct": 1.0,
+        "compared": 19,
+        "outside": 1,
+        "within": 2,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "rec04",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 5
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 2
+        },
+        "differences": [
+          {
+            "field": "range_start",
+            "result": "outside",
+            "reference": "345",
+            "candidate": "358"
+          }
+        ]
+      },
+      {
+        "key": "rec06",
+        "status": "match",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 7
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 5
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "392.2",
+            "candidate": "391.8"
+          }
+        ]
+      },
+      {
+        "key": "rec11",
+        "status": "match",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 12
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 12
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "582.6",
+            "candidate": "583.8"
+          }
+        ]
+      },
+      {
+        "key": "rec14",
+        "status": "missing",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 15
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "rec18",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 19
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 15
+        },
+        "differences": [
+          {
+            "field": "range_end",
+            "result": "outside",
+            "reference": "3416",
+            "candidate": "3400"
+          }
+        ]
+      },
+      {
+        "key": "rec20",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/records.csv",
+          "line": 21
+        },
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 6
+        },
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "outside",
+            "reference": "785.9",
+            "candidate": "762.3"
+          }
+        ]
+      },
+      {
+        "key": "rec21",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/records.csv",
+          "line": 10
+        },
+        "differences": []
+      }
+    ]
+  }
+}

@@ -64,6 +64,7 @@ internal static partial class SyntheticSpec
         ["table-compare"] = "### 7.2 table-compare",
         ["form-fill"] = "### 7.3 form-fill",
         ["mixed-exceptions"] = "### 7.4 mixed-exceptions",
+        ["signoff-final"] = "### 7.5 signoff-final",
     };
 
     public static IReadOnlyList<string[]> Table(string header) => SpecDocument.Table(Document, header);

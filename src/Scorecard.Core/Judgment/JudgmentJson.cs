@@ -11,7 +11,8 @@ namespace Scorecard.Core.Judgment;
 public static class JudgmentJson
 {
     public const string FileName = "judgment.json";
-    public const int SchemaVersion = 1;
+    // T-012(스펙 11.2): 확인 결과의 뜻과 다음 할 일 키가 바뀌어 2다(ADR 0004 결정 2).
+    public const int SchemaVersion = 2;
 
     private static readonly JsonWriterOptions Options = new()
     {

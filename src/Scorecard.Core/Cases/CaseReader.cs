@@ -20,6 +20,7 @@ internal sealed class CaseReader(ErrorSink errors)
     private const string MustBeMapping = "매핑이어야 한다";
     private const string MustBeList = "목록이어야 한다";
     private const string MustBeScalar = "스칼라 값이어야 한다";
+    private const string GroupPath = "inputs.group";
 
     // 끝은 \z로 묶는다. $는 끝 줄바꿈 앞에서도 맞는다(따옴표·블록 값의 "a\n").
     private static readonly Regex CaseNamePattern = new(@"^[a-z0-9]+(-[a-z0-9]+)*\z", RegexOptions.CultureInvariant);
@@ -32,7 +33,8 @@ internal sealed class CaseReader(ErrorSink errors)
 
     // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
     private static readonly string[] StepKeys = ["name", "answers", "inferred"];
-    private static readonly string[] InputKeys = ["reference", "candidate", "key"];
+    // group은 선택 키다(스펙 10.1, T-012).
+    private static readonly string[] InputKeys = ["reference", "candidate", "key", "group"];
     private static readonly string[] CompareKeys = ["field", "tolerance", "tolerance_pct"];
     private static readonly string[] ThresholdKeys = ["accuracy_min", "missing_max", "time_must_drop"];
     private static readonly string[] AiUsageChoices = ["build-time", "runtime", "hybrid"];
@@ -60,10 +62,11 @@ internal sealed class CaseReader(ErrorSink errors)
         var steps = ReadSteps(fields, map);
         var inputs = ReadInputs(fields);
         var compare = ReadCompare(fields);
+        CheckGroupConflict(inputs, compare);
         var thresholds = ReadThresholds(fields);
         return name is null || task is null
             ? null
-            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs, compare, thresholds);
+            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds);
     }
 
     private IReadOnlyList<CaseStep> ReadSteps(Dictionary<string, YamlNode> fields, YamlMapping parent)
@@ -295,25 +298,67 @@ internal sealed class CaseReader(ErrorSink errors)
         return new Answer<decimal?>(Number(node, YamlTree.ChildPath(parent, question.Key), question.Min, null), IsDefault: false);
     }
 
-    private CaseInputs? ReadInputs(Dictionary<string, YamlNode> fields)
+    private InputsRead ReadInputs(Dictionary<string, YamlNode> fields)
     {
+        var none = new InputsRead(null, null, null, null);
         if (!TryGetPresent(fields, "inputs", out var node))
         {
-            return null;
+            return none;
         }
 
         if (node is not YamlMapping map)
         {
             TypeError(node, "inputs", MustBeMapping);
-            return null;
+            return none;
         }
 
-        // 있으면 세 키 모두 필수다. 없으면 표 순서로 inputs 매핑 위치에 적는다.
+        // 있으면 reference·candidate·key는 필수다. 없으면 표 순서로 inputs 매핑 위치에 적는다. group은 선택이다(스펙 10.1).
         var inputFields = Fields(map, InputKeys, "inputs");
         var reference = RequiredRelativePath(inputFields, map, "reference");
         var candidate = RequiredRelativePath(inputFields, map, "candidate");
         var key = RequiredString(inputFields, map, "key", "inputs.key");
-        return reference is null || candidate is null || key is null ? null : new CaseInputs(reference, candidate, key);
+        var (group, groupNode) = OptionalGroup(inputFields);
+        var inputs = reference is null || candidate is null || key is null ? null : new CaseInputs(reference, candidate, key, group);
+        return new InputsRead(inputs, key, group, groupNode);
+    }
+
+    // 스펙 10.2 inputs.group. 키 없음·null이면 적지 않은 것이다. 형식 규칙은 key와 같다:
+    // 스칼라가 아니면 type, 비거나 공백뿐이면 required(위치는 그 값). 앞뒤 공백을 지우지 않는다.
+    private (string? Group, YamlNode? Node) OptionalGroup(Dictionary<string, YamlNode> inputFields)
+    {
+        if (!TryGetPresent(inputFields, "group", out var node))
+        {
+            return (null, null);
+        }
+
+        var value = ScalarText(node, GroupPath);
+        if (value is null)
+        {
+            return (null, null);
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Add(node, ErrorCode.Required, GroupPath, EmptyValue);
+            return (null, null);
+        }
+
+        return (value, node);
+    }
+
+    // 스펙 10.2 conflict: group이 key 또는 compare 필드와 같으면(서수) 오류다. compare를 다 읽은 뒤 찾는다. 위치는 group 값.
+    private void CheckGroupConflict(InputsRead inputs, IReadOnlyList<CompareField> compare)
+    {
+        if (inputs.Group is not { } group || inputs.GroupNode is not { } node)
+        {
+            return;
+        }
+
+        if (string.Equals(group, inputs.Key, StringComparison.Ordinal)
+            || compare.Any(c => string.Equals(c.Field, group, StringComparison.Ordinal)))
+        {
+            Add(node, ErrorCode.Conflict, GroupPath, "group은 key·compare 필드와 다른 열을 쓴다");
+        }
     }
 
     private string? RequiredRelativePath(Dictionary<string, YamlNode> fields, YamlMapping parent, string key)
@@ -571,4 +616,8 @@ internal sealed class CaseReader(ErrorSink errors)
         && !value.Contains('\\')
         && !value.Contains(':')
         && !value.Split('/').Contains("..", StringComparer.Ordinal);
+
+    // inputs를 읽은 결과. Inputs는 필수 키가 모두 있을 때만 있다.
+    // Key·Group·GroupNode는 conflict 검사(스펙 10.2)에 쓴다. 다른 키에 오류가 있어도 검사한다.
+    private sealed record InputsRead(CaseInputs? Inputs, string? Key, string? Group, YamlNode? GroupNode);
 }

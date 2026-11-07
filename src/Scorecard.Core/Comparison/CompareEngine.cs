@@ -3,7 +3,7 @@ using Scorecard.Core.Cases;
 
 namespace Scorecard.Core.Comparison;
 
-// 기준 자료와 결과 자료를 키로 맞춰 일치·값 불일치·누락·추가를 낸다. docs/spec/metrics.md 4.3~4.8.
+// 기준 자료와 결과 자료를 키로 맞춰 일치·값 불일치·누락·추가·중복을 낸다. docs/spec/metrics.md 4.3~4.8, 12.2·12.3(T-012).
 // Compare는 순수 함수다. 파일·시각·환경 변수·난수를 쓰지 않는다. 비교는 서수, 숫자는 decimal·InvariantCulture.
 // 순서는 파일 경로 서수 → 줄 순서다. Dictionary는 찾기에만 쓰고 열거 순서를 출력에 쓰지 않는다.
 public static class CompareEngine
@@ -17,6 +17,9 @@ public static class CompareEngine
     public const string ItemMismatch = "mismatch";
     public const string ItemMissing = "missing";
     public const string ItemExtra = "extra";
+
+    // 결과 쪽 같은 키의 둘째 행부터(스펙 12.2, T-012). 값을 대조하지 않는다.
+    public const string ItemDuplicate = "duplicate";
 
     public const string KindNumber = "number";
     public const string KindText = "text";
@@ -66,8 +69,9 @@ public static class CompareEngine
             }
         }
 
-        var reference = ReadSide(0, referenceFiles, inputs.Key, definition.Compare, checkNumbers: true, errors);
-        var candidate = ReadSide(1, candidateFiles, inputs.Key, definition.Compare, checkNumbers: false, errors);
+        // 기준 쪽: 숫자 칸 확인, group 열 확인(12.3), 키 중복은 오류. 결과 쪽: 키 중복은 항목 duplicate(12.2).
+        var reference = ReadSide(0, referenceFiles, inputs.Key, definition.Compare, inputs.Group, isReference: true, errors);
+        var candidate = ReadSide(1, candidateFiles, inputs.Key, definition.Compare, null, isReference: false, errors);
         if (errors.Count == 0 && reference.Count == 0)
         {
             errors.Add(0, -1, new CaseError(CaseParser.FileName, 0, 0, CompareRules.CodeNoRows, CompareRules.PathReference, "기준 자료에 데이터 행이 없다"));
@@ -102,8 +106,12 @@ public static class CompareEngine
         }
     }
 
-    // 한쪽 파일을 모두 읽는다. 키 중복은 같은 쪽 모든 파일에서 본다. checkNumbers면 숫자 필드가 숫자인지 본다(기준 자료).
-    private static List<Row> ReadSide(int side, SourceFile[] files, string key, IReadOnlyList<CompareField> compare, bool checkNumbers, ErrorList errors)
+    // 한쪽 파일을 모두 읽는다. 키 중복은 같은 쪽 모든 파일에서 본다.
+    // 기준 자료(isReference): 숫자 필드가 숫자인지 보고, group 열이 머리 행에 꼭 한 번 있는지 본다(12.3). 키 중복은 duplicate-key 오류다.
+    // 결과 자료: 키 중복은 오류가 아니다. 모든 행을 돌려준다(첫 행인지는 Measure가 본다, 12.2).
+    // 열을 찾는 순서는 키 열 → compare 필드 → group 열이다(4.7 "같으면 찾은 순서").
+    private static List<Row> ReadSide(
+        int side, SourceFile[] files, string key, IReadOnlyList<CompareField> compare, string? group, bool isReference, ErrorList errors)
     {
         var rows = new List<Row>();
         var firstByKey = new Dictionary<string, Row>(StringComparer.Ordinal);
@@ -120,7 +128,8 @@ public static class CompareEngine
             var header = csv.Header.Cells.Select(c => CompareRules.Normalize(c.Text)).ToArray();
             var keyIndex = ColumnIndex(file, csv.Header, header, key, side, f, errors);
             var fieldIndex = compare.Select(c => ColumnIndex(file, csv.Header, header, c.Field, side, f, errors)).ToArray();
-            if (keyIndex < 0 || fieldIndex.Any(i => i < 0))
+            var groupMissing = group is not null && ColumnIndex(file, csv.Header, header, group, side, f, errors) < 0;
+            if (keyIndex < 0 || fieldIndex.Any(i => i < 0) || groupMissing)
             {
                 continue;
             }
@@ -141,7 +150,7 @@ public static class CompareEngine
                     continue;
                 }
 
-                if (checkNumbers)
+                if (isReference)
                 {
                     for (var c = 0; c < compare.Count; c++)
                     {
@@ -154,13 +163,17 @@ public static class CompareEngine
                 }
 
                 var row = new Row(cells[keyIndex], new CsvRow(file.Path, record.Line, header, cells), keyIndex, fieldIndex);
-                if (firstByKey.TryGetValue(row.Key, out var first))
+                if (isReference)
                 {
-                    errors.Add(side, f, CsvText.Error(file, keyCell.Line, keyCell.Column, CompareRules.CodeDuplicateKey, key, string.Create(CultureInfo.InvariantCulture, $"키가 중복된다: {CompareRules.Show(row.Key)} (처음: {first.Source.File}:{first.Source.Line})")));
-                    continue;
+                    if (firstByKey.TryGetValue(row.Key, out var first))
+                    {
+                        errors.Add(side, f, CsvText.Error(file, keyCell.Line, keyCell.Column, CompareRules.CodeDuplicateKey, key, string.Create(CultureInfo.InvariantCulture, $"키가 중복된다: {CompareRules.Show(row.Key)} (처음: {first.Source.File}:{first.Source.Line})")));
+                        continue;
+                    }
+
+                    firstByKey.Add(row.Key, row);
                 }
 
-                firstByKey.Add(row.Key, row);
                 rows.Add(row);
             }
         }
@@ -202,8 +215,15 @@ public static class CompareEngine
     private static CompareMetrics Measure(CaseDefinition definition, SourceFile[] referenceFiles, SourceFile[] candidateFiles, List<Row> reference, List<Row> candidate)
     {
         var compare = definition.Compare;
-        var byKey = candidate.ToDictionary(r => r.Key, StringComparer.Ordinal);
-        var referenceKeys = reference.Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
+
+        // 결과 쪽 같은 키는 첫 행(결과 경로 서수 → 줄)으로 대조한다(12.2). 결과 행은 그 순서로 읽었다.
+        var byKey = new Dictionary<string, Row>(StringComparer.Ordinal);
+        foreach (var c in candidate)
+        {
+            byKey.TryAdd(c.Key, c);
+        }
+
+        var referenceByKey = reference.ToDictionary(r => r.Key, StringComparer.Ordinal);
         var outside = new int[compare.Count];
         var within = new int[compare.Count];
         var notNumber = new int[compare.Count];
@@ -258,11 +278,21 @@ public static class CompareEngine
             items.Add(new CompareItem(r.Key, bad ? ItemMismatch : ItemMatch, r.Source, c.Source, differences));
         }
 
+        // 결과 쪽 항목(결과 경로 서수 → 줄): 기준에 없는 키의 첫 행은 extra, 같은 키의 둘째 행부터는 duplicate.
+        // duplicate는 값을 대조하지 않는다. reference는 그 키의 기준 행이고, 기준에 없는 키면 null이다.
         var extra = 0;
-        foreach (var c in candidate.Where(c => !referenceKeys.Contains(c.Key)))
+        foreach (var c in candidate)
         {
-            extra++;
-            items.Add(new CompareItem(c.Key, ItemExtra, null, c.Source, []));
+            referenceByKey.TryGetValue(c.Key, out var r);
+            if (!ReferenceEquals(byKey[c.Key], c))
+            {
+                items.Add(new CompareItem(c.Key, ItemDuplicate, r?.Source, c.Source, []));
+            }
+            else if (r is null)
+            {
+                extra++;
+                items.Add(new CompareItem(c.Key, ItemExtra, null, c.Source, []));
+            }
         }
 
         var compared = reference.Count - missing;

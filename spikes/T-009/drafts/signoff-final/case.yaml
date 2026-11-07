@@ -1,0 +1,33 @@
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
+# 단계·답은 answers.yaml과 같다. reference/와 candidate/는 합성 생성기로 만들었다.
+# 7단계만 사람이 최종 확인·서명하는 단계다(human_signoff: yes). 나머지 단계는 no.
+name: signoff-final
+task: 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다
+steps:
+  - name: 기록 파일 열기·정리
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(안정 기록)
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 14, exception_rate: 10, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(흔들린 기록)
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 6, exception_rate: 50, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 구간 값 계산·옮기기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 보고서 양식 채우기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결과 해석 문장 쓰기
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 40, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 최종 확인·서명·제출
+    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: record_id
+compare:
+  - {field: range_start, tolerance: 0}
+  - {field: range_end, tolerance: 0}
+  - {field: range_avg, tolerance_pct: 1.0}
+# 시간 측정 자료가 없는 예제다. 시간 조건은 끄고 정확도·누락률만 본다.
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false

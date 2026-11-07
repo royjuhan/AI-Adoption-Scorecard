@@ -2,6 +2,7 @@
 
 - 상태: 승인됨(2026-11-07, 질문 9 외 제안대로. 9는 테스트로 진행하고 원칙 문구는 사람 답 대기). 7절 예제 파일도 제안대로 확정. 승인 결과는 문서 끝.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 7.2~7.4 `case.yaml` 블록의 모든 `answers` 줄 끝에 `, human_signoff: no`를 더하고 SHA-256 줄을 맞췄다(ADR 0003). 그 밖의 블록(CSV, `intake.md`)과 생성기는 그대로다. 문서 끝 "T-008 개정".
+- T-009 개정(초안, 사람 승인 전, 2026-11-07): 4번째 공개 예제 `signoff-final`. 4.3·4.4·4.7·4.8·7.1 표에 행, 4.2·4.7·4.8 글머리, 새 6.4·7.5. 생성기 규칙과 Core는 그대로다(계획을 그대로 받는다) [T9:S2 gen]. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
 - 작업 카드: `docs/tasks/T-005-synthetic-examples.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `8a3afa0`
@@ -15,7 +16,8 @@
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
 - 기준 자료 = `reference/`, 결과 자료 = `candidate/`. 기준 행 = 기준 자료의 데이터 행(머리 행 제외).
 - G1·G2·G3, D1, R1~R4는 `docs/spec/guard-tests.md`의 이름이다. 행 모델 A는 `docs/spec/classification.md` 4.3이다.
-- 예제 이름은 `table-compare`, `form-fill`, `mixed-exceptions`(지시문 12절).
+- 예제 이름은 `table-compare`, `form-fill`, `mixed-exceptions`(지시문 12절). T-009 초안에서 `signoff-final`을 더한다.
+- `[T9:S0]`~`[T9:S8]`: T-009 스파이크(`spikes/T-009/`) 단계. 단계 목록은 `signoff-final.md` 10절.
 
 ## 1. 범위
 
@@ -141,6 +143,7 @@ examples/
 - 시드 고르기: 조건을 만족하는 가장 작은 시드(0부터).
   - table-compare `8`: 기준 30행 중 `irregular`가 12행(40%)인 가장 작은 시드 [P:seeds first-seed-with-12]. 40%는 `answers.yaml` 2단계(불규칙 신호 구간 선택)의 `exception_rate: 40`이다. 시드 0~1999에서 `irregular`는 6~23행이다 [P:seeds].
   - form-fill `0`: 선택지 5개가 기준 자료에 모두 나오는 가장 작은 시드 [P:seeds first-seed-all-choices].
+  - signoff-final `47`(T-009 초안): 기준 20행 중 `unsteady`가 6행인 가장 작은 시드 [T9:S2 seed]. 6은 `answers.yaml` 3단계(기준 구간 고르기(흔들린 기록))의 `batch_size: 6`이다. 2단계(안정 기록) `batch_size: 14`와 합이 20이다. 시드 0~1999 모두 생성에 성공하고 셈(4.7)이 하나다 [T9:S2 seeds].
 - 시드 0~1999 모두 생성에 성공한다. 셈(4.7)이 계획과 같다. 대조 변형 3종 모두 같다 [P:seeds]. 시드를 바꾸면 값만 바뀌고 구조는 같다.
 - → 승인 질문 2.
 
@@ -152,6 +155,7 @@ examples/
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `table-compare` | `8` | `logs.csv` | `log` | 2 | 30 | `length`, `mean_value` | 1 | 1 | `mean_value` 4 | `signal_type` = `irregular` | 예 |
 | `form-fill` | `0` | `orders.csv` | `ord` | 2 | 20 | 없음 | 0 | 0 | 없음 | 없음 | 예 |
+| `signoff-final` | `47` | `records.csv` | `rec` | 2 | 20 | `range_start`, `range_end`, `range_avg` | 1 | 1 | `range_avg` 2 | 없음 | 예 |
 
 칸 읽기:
 
@@ -178,6 +182,10 @@ examples/
 | `table-compare` | `mean_value` | 소수 | `10.00` ~ `99.99` |
 | `form-fill` | `item` | 선택 | `item-a`, `item-b`, `item-c`, `item-d`, `item-e` |
 | `form-fill` | `quantity` | 정수 | `1` ~ `50` |
+| `signoff-final` | `record_kind` | 선택 | `steady`, `unsteady` |
+| `signoff-final` | `range_start` | 정수 | `0` ~ `2000` |
+| `signoff-final` | `range_end` | 정수 | `3000` ~ `6000` |
+| `signoff-final` | `range_avg` | 소수 | `100.0` ~ `999.9` |
 
 - `정수`: `` `최소` ~ `최대` ``. 양 끝 포함.
 - `소수`: 같다. 소수 자릿수는 최소값의 자릿수다(`10.00` → 2).
@@ -259,6 +267,7 @@ examples/
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `table-compare` | 30 | 30 | 27 | 2 | 1 | 1 | 4 | 90.0 | 3.3 |
 | `form-fill` | 20 | 20 | 20 | 0 | 0 | 0 | 0 | 100.0 | 0.0 |
+| `signoff-final` | 20 | 20 | 16 | 3 | 1 | 1 | 2 | 80.0 | 5.0 |
 
 - 생성 파일을 키로 맞춰 센 값이 이 표와 같다 [S10 structure]. 대조 변형 3종(`≤`, `<`, 결과값 기준 %)이 같은 값을 낸다 [S3 oracle].
 - 이 표는 T-005의 자료 구조 확인이다. `expected/metrics.json`은 T-006이 만든다. T-006 정의가 이 표와 다르게 세면, 자료와 정의 중 무엇을 바꿀지 그 카드에서 사람이 정한다.
@@ -270,6 +279,7 @@ examples/
 - 그래서 불일치 3건(값 불일치 2 + 누락 1)을 모두 `signal_type = irregular` 행에 심었다. `irregular` 12행 중 3행(25%)이 불일치이고, `normal` 18행은 불일치가 0이다 [S3 gen focus]. 허용오차 안 차이 4행은 일치라 몰림과 상관없다.
 - "몰림"을 알아내는 규칙(어느 열이 유형인지, 몇 %면 몰림인지)은 case.yaml 스키마에 없다. 판정 카드가 정한다(9절 6).
 - form-fill은 일치 20/20(100%), 누락 0%다. `accuracy_min` 85 이상, `missing_max` 5 이하, 시간 조건 꺼짐이라 "통과"가 될 수 있다.
+- T-009 signoff-final(자료 구조 안 A, juhan 결정 필요): 일치 16/20(80.0%), 누락 1/20(5.0%)이다. `accuracy_min: 95`, `missing_max: 2`에 둘 다 못 미친다. 공개 예제에서 처음으로 문턱 미달이다(지시문 3.4 "보류 = 정확도 미달"의 모양). 불일치 4건(값 불일치 3 + 누락 1) 중 3건이 `unsteady`, 1건이 `steady`다. 몰림을 두지 않았다 [T9:S2 planted]. 판정은 판정 카드가 정한다. 다른 안은 `signoff-final.md` 4.3.
 
 ### 4.8 case.yaml
 
@@ -283,6 +293,7 @@ examples/
 | `table-compare` | `reference/*.csv`, `candidate/*.csv`, 키 `log_id` | `start_index` `tolerance: 0`, `length` `tolerance: 0`, `mean_value` `tolerance_pct: 1.0` | `accuracy_min: 85`, `missing_max: 5`, `time_must_drop: false` |
 | `form-fill` | `reference/*.csv`, `candidate/*.csv`, 키 `order_id` | `item`(허용 오차 없음), `quantity` `tolerance: 0` | 같음 |
 | `mixed-exceptions` | 없음 | 없음 | 없음 |
+| `signoff-final` | `reference/*.csv`, `candidate/*.csv`, 키 `record_id` | `range_start` `tolerance: 0`, `range_end` `tolerance: 0`, `range_avg` `tolerance_pct: 1.0` | `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false` |
 
 - `compare` 모양은 지시문 12.1 예시(구간 시작·끝 0, `mean_value` 1.0%)를 따랐다 [읽음].
 - `accuracy_min: 85`: 90%와 100%가 모두 충족한다. 90에 두면 90.0이 경계에 걸린다. 경계는 판정 카드 단위 테스트로 본다. case-schema 4.5 "`table-compare`는 `accuracy_min`이 90 이하여야" [읽음]와 맞다.
@@ -290,6 +301,7 @@ examples/
 - `time_must_drop: false`: 4.7. 실제 케이스(12.1)는 `true`다. `case.yaml`에 주석 한 줄로 이유를 적는다.
 - `before`·`after`·`ai_usage`는 넣지 않는다. 12절에 값이 없다. 평가서 카드가 필요하면 그때 더한다.
 - mixed-exceptions는 `inputs`·`compare`·`thresholds`가 없다 [S3 case-check inputs=null]. 판정 카드에서 "자료 없음 → 미검증"이 된다(12절).
+- T-009 signoff-final: `compare`와 `thresholds` 숫자는 12.1 예시와 같다(구간 시작·끝 0, 평균 1.0%, 95, 2) [읽음]. 열 이름은 새로 지었다. `time_must_drop`은 시간 자료가 없어 `false`다(table-compare와 같은 이유, 주석 한 줄). 4.8 표의 행은 위 행이 `없음`이라 `같음`을 쓰지 않았다.
 - → 승인 질문 8.
 
 ### 4.9 intake.md
@@ -486,6 +498,25 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 
 - CSV가 없다. `case.yaml`에 `inputs`·`compare`·`thresholds`가 없다 [S3 case-check].
 
+### 6.4 signoff-final에 심은 행 (T-009 초안)
+
+[T9:S2 planted]
+
+| 키 | `record_kind` | 심은 것 | 기준 → 결과 |
+| --- | --- | --- | --- |
+| `rec14` | steady | 누락 | 결과에 없음 |
+| `rec04` | unsteady | 값 불일치 `range_start` | 345 → 358 (허용 오차 0) |
+| `rec18` | unsteady | 값 불일치 `range_end` | 3416 → 3400 (허용 오차 0) |
+| `rec20` | unsteady | 값 불일치 `range_avg` | 785.9 → 762.3 (3.00%, 허용 1.0%) |
+| `rec21` | unsteady | 추가 | 기준에 없음 |
+| `rec06` | steady | 허용오차 안 `range_avg` | 392.2 → 391.8 (0.10%) |
+| `rec11` | steady | 허용오차 안 `range_avg` | 582.6 → 583.8 (0.21%) |
+
+- `unsteady` 기준 행 6개: `rec03`, `rec04`, `rec12`, `rec18`, `rec19`, `rec20`. `steady`는 14개다.
+- 몰림이 없다(4.3 `몰림` 칸 `없음`). 누락·값 불일치 행은 모든 기준 행에서 골랐다.
+- 결과 자료도 행 순서가 섞였다. 첫 행은 `rec04`, 추가 행 `rec21`은 9번째다.
+- 이 표와 위 줄은 테스트가 읽지 않는다. 머리 행이 6.1과 다르다(`record_kind`). test-engineer가 6.1처럼 읽게 할 수 있다. 그때도 6.1 줄과 같은 앞부분(`- 결과 행 순서는 섞였다.`)을 쓰지 않는다. `SpecDocument.Line`은 문서에서 한 번만 나오는 줄을 찾는다. 같은 앞부분으로 쓴 중간 초안에서 `Table_compare_focus_and_order_lines_match_section_6_1`이 실패했다.
+
 ## 7. 예제 파일 초안 (사람 확정 필요)
 
 ### 7.1 만드는 방법과 확정 절차 (제안)
@@ -507,8 +538,13 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 | `form-fill` | `candidate/orders.csv` |
 | `mixed-exceptions` | `case.yaml` |
 | `mixed-exceptions` | `intake.md` |
+| `signoff-final` | `case.yaml` |
+| `signoff-final` | `intake.md` |
+| `signoff-final` | `reference/records.csv` |
+| `signoff-final` | `candidate/records.csv` |
 
 - 블록과 생성 파일이 같고, SHA-256 줄이 파일과 같다 [S10 blocks].
+- T-009(초안): 파일 표 끝에 `signoff-final` 4행, 새 7.5. 블록은 prototyper 초안이다. `case.yaml`·`intake.md`는 prototyper가 썼고, CSV 블록은 main Core 생성기가 4.3·4.4 표와 이 `case.yaml`로 낸 바이트다. T-005 Python 독립 구현(4.5의 범위 뒤집기를 더함, `spikes/T-009/xcheck/generate.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. juhan이 확정한 뒤 test-engineer가 블록을 옮긴다.
 - T-008: `case.yaml` 블록 셋과 SHA-256 줄만 바꿨다. 스파이크 `spikes/T-008/add-signoff.py`가 `examples/*/case.yaml`의 `    answers: {…}` 줄 끝에 키를 더하고, `fill-blocks.py`가 블록과 SHA-256 줄을 채웠다. 바꾼 `case.yaml`을 분류하면 `expected/classification.json`과 바이트가 같고, 대조하면 `expected/metrics.json`과 바이트가 같다 [T8:S3]. CSV·`intake.md` 블록은 그대로다.
 
 ### 7.2 table-compare
@@ -757,6 +793,115 @@ steps:
 아직 AI를 써 보지 않았다. 비교할 결과 자료도 없다.
 ```
 
+### 7.5 signoff-final
+
+T-009 초안(사람 확정 필요). 만드는 방법은 7.1 T-009 글머리, 근거와 질문은 `docs/spec/signoff-final.md`.
+
+`examples/signoff-final/case.yaml` (SHA-256 `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263`):
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
+# 단계·답은 answers.yaml과 같다. reference/와 candidate/는 합성 생성기로 만들었다.
+# 7단계만 사람이 최종 확인·서명하는 단계다(human_signoff: yes). 나머지 단계는 no.
+name: signoff-final
+task: 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다
+steps:
+  - name: 기록 파일 열기·정리
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(안정 기록)
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 14, exception_rate: 10, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(흔들린 기록)
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 6, exception_rate: 50, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 구간 값 계산·옮기기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 보고서 양식 채우기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결과 해석 문장 쓰기
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 40, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 최종 확인·서명·제출
+    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: record_id
+compare:
+  - {field: range_start, tolerance: 0}
+  - {field: range_end, tolerance: 0}
+  - {field: range_avg, tolerance_pct: 1.0}
+# 시간 측정 자료가 없는 예제다. 시간 조건은 끄고 정확도·누락률만 본다.
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false
+```
+
+`examples/signoff-final/intake.md` (SHA-256 `2066d6823ed5c93ab6c36af39534d34cdeb42c8469bcb185d6cdc93ce52a654e`):
+
+```text
+매주 기록 파일이 20개쯤 들어온다. 파일을 열어 필요 없는 줄을 지우고 정리한다.
+파일마다 값이 안정된 기준 구간을 하나 고른다. 구간의 시작과 끝을 적고, 그 구간의 평균값을 낸다.
+정리, 안정된 기록의 구간 고르기, 값 계산, 보고서 채우기는 지금 직접 만든 매크로가 한다. 쓰는 프로그램에는 이 기능이 없다.
+
+20개 중 6개쯤은 기록이 흔들린다. 이런 파일은 사람이 직접 구간을 고른다. 그중 절반쯤은 어디를 골라야 할지 애매하다.
+
+보고서에는 결과가 무슨 뜻인지 해석 문장을 쓴다. 해석하는 기준은 글로 정리되어 있지 않다. 보고서는 밖으로 나가므로 틀리면 곤란하다.
+마지막에 담당자가 보고서를 확인하고 서명해서 제출한다. 서명은 사람이 책임진다.
+
+같은 기록 파일을 AI에게 주고 구간과 평균값을 받아 본 결과가 있다. 사람이 고른 값과 맞는지 비교하고 싶다.
+```
+
+`examples/signoff-final/reference/records.csv` (SHA-256 `95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771`):
+
+```csv
+record_id,record_kind,range_start,range_end,range_avg
+rec01,steady,578,3869,277.3
+rec02,steady,35,3297,844.8
+rec03,unsteady,1039,4625,819.6
+rec04,unsteady,345,3812,426.6
+rec05,steady,965,4003,823.2
+rec06,steady,1021,5269,392.2
+rec07,steady,814,5496,703.3
+rec08,steady,116,3953,473.3
+rec09,steady,720,5021,493.2
+rec10,steady,1200,5618,797.3
+rec11,steady,1147,5582,582.6
+rec12,unsteady,1342,4966,853.3
+rec13,steady,679,4637,846.2
+rec14,steady,195,3397,900.1
+rec15,steady,1019,3847,372.1
+rec16,steady,435,3898,530.6
+rec17,steady,990,5376,590.6
+rec18,unsteady,1685,3416,496.7
+rec19,unsteady,1201,3592,928.6
+rec20,unsteady,656,3995,785.9
+```
+
+`examples/signoff-final/candidate/records.csv` (SHA-256 `5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4`):
+
+```csv
+record_id,record_kind,range_start,range_end,range_avg
+rec04,unsteady,358,3812,426.6
+rec07,steady,814,5496,703.3
+rec15,steady,1019,3847,372.1
+rec06,steady,1021,5269,391.8
+rec20,unsteady,656,3995,762.3
+rec19,unsteady,1201,3592,928.6
+rec01,steady,578,3869,277.3
+rec12,unsteady,1342,4966,853.3
+rec21,unsteady,1375,4962,381.2
+rec09,steady,720,5021,493.2
+rec11,steady,1147,5582,583.8
+rec10,steady,1200,5618,797.3
+rec03,unsteady,1039,4625,819.6
+rec18,unsteady,1685,3400,496.7
+rec05,steady,965,4003,823.2
+rec13,steady,679,4637,846.2
+rec16,steady,435,3898,530.6
+rec02,steady,35,3297,844.8
+rec08,steady,116,3953,473.3
+rec17,steady,990,5376,590.6
+```
+
 ## 8. 테스트로 옮기는 방법 (test-engineer 참고)
 
 - 폴더 `tests/Scorecard.Tests/Synthetic/`, 네임스페이스 `Scorecard.Tests.Synthetic`. Trait `Spec` = `synthetic-examples`.
@@ -870,3 +1015,10 @@ steps:
 - 바꾼 곳: 머리 상태 글머리, 4.8 글머리, 7.1 글머리, 7.2~7.4 `case.yaml` 블록과 SHA-256 줄(table-compare `451a22ac…`, form-fill `9660f3cb…`, mixed-exceptions `96f04387…`).
 - 바꾸지 않은 곳: 생성기 규칙(4.1~4.7), CSV 블록·SHA-256, `intake.md` 블록, 4.10 패턴 표.
 - 결과와 질문은 `docs/spec/human-signoff.md`. `examples/*/case.yaml`을 블록대로 바꾸는 것은 승인됐다(`human-signoff.md` 승인 결과 juhan 3).
+
+## T-009 개정 (초안, 사람 승인 전)
+
+- 작업 카드 `docs/tasks/T-009-signoff-final.md`. 출발점: ADR 0003 남은 질문 2 [읽음].
+- 확인 대상 커밋 `ce6c4f0`. 스파이크 `spikes/T-009/`(머지 대상 아님). 근거·질문·결과는 `docs/spec/signoff-final.md`.
+- 바꾼 곳: 머리 글머리, 0절 표기, 4.2 글머리, 4.3 계획 표 1행, 4.4 열 표 4행, 4.7 구조 표 1행·글머리, 4.8 표 1행·글머리, 새 6.4, 7.1 파일 표 4행·글머리, 새 7.5.
+- 바꾸지 않은 곳: 생성기 규칙(4.1·4.2 수열, 4.5 뽑는 순서, 4.6), 4.10 패턴 표, 7.2~7.4 블록·SHA-256 줄, Core.

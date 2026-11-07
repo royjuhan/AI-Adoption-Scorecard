@@ -2,6 +2,7 @@
 
 - 상태: 승인됨(2026-11-07, 15문항 모두 제안대로). 7절 예제 초안도 제안대로 확정. 승인 결과는 문서 끝.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 트리 맨 앞 `SIGNOFF`(ADR 0003)와 추정 표시(ADR 0004 결정 2). 바뀐 곳은 문서 끝 "T-008 개정"에 모았다. 질문과 스파이크 결과는 `docs/spec/human-signoff.md`. `expected/classification.json` 3개는 바이트 그대로다 [T8:S3].
+- T-009 개정(초안, 사람 승인 전, 2026-11-07): 4번째 공개 예제 `signoff-final`(ADR 0003 남은 질문 2). 7.1 항목 8·요약 표 1행, 6.3·6.4 글머리, 새 7.5. 규칙(4절)과 기존 블록은 그대로다. 문서 끝 "T-009 개정". 근거·질문·스파이크 결과는 `docs/spec/signoff-final.md`. `expected/classification.json` 3개는 바이트 그대로다 [T9:S4].
 - 작업 카드: `docs/tasks/T-004-classification.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `cbbfdb6`
@@ -18,6 +19,7 @@
 - 질문 9개의 키·선택지·기본값은 `docs/spec/case-schema.md` 4.4 표에만 있다(T-003 승인 결정 5). 이 문서는 그 표를 가리킨다. 다시 적지 않는다. T-008 뒤에는 10번째 답 `human_signoff`까지 같은 표에 있다.
 - `[T8:S0]`~`[T8:S8]`, `[T8:P:무리]`: T-008 스파이크(`spikes/T-008/`) 단계와 S4 `PROBE <무리>` 줄. 단계 목록은 `human-signoff.md` 10절.
 - G1·G2·G3는 `docs/spec/guard-tests.md`, Y1은 `docs/spec/case-schema.md` 4.2의 이름이다.
+- `[T9:S0]`~`[T9:S8]`: T-009 스파이크(`spikes/T-009/`) 단계. 단계 목록은 `signoff-final.md` 10절.
 
 ## 1. 범위
 
@@ -502,6 +504,7 @@ T-003의 합성 사본 `tests/Scorecard.Tests/TestData/case-schema/example-12-1/
 - 7단계가 다른 이유: 사용자 단계가 ④만 되는 잎은 Q4뿐이다. `rule_expressible: no`면 늘 Q2(③)다. "사람이 책임지고 확인·제출하는 단계"를 가르는 질문이 9개 중에 없다.
 - 지시문 12.1: "다르면 예제를 고치는 게 아니라, 어떤 질문·규칙이 빠졌는지 ADR로 적고 `examples/`에 그 구조를 가진 합성 예제를 추가한다" [읽음]. 12.1은 통과 기준이 아니다. 그래서 T-004는 3.3 트리를 그대로 구현하고, 이 차이는 ADR로 묻는다. 무엇을 더할지(질문, 규칙)는 사람 판단이다(**미확인**). → 승인 질문 4.
 - T-008: ADR 0003(승인됨)이 이 차이를 질문 `human_signoff`와 규칙 `SIGNOFF`로 메웠다 [읽음]. 합성 사본에 1~6단계 `human_signoff: no`, 7단계 `yes`를 넣으면 7단계가 ④ `SIGNOFF` 한 행이 되고 행 수는 10 → 9다. 1~6단계 결과는 위 표와 같다 [T8:S4 example-12-1]. TestData 합성 사본 파일은 바꾸지 않는다(case-schema 테스트가 쓴다). 공개 예제는 다음 카드(`signoff-final`)에서 더한다.
+- T-009: 그 공개 예제가 7.5 `signoff-final`이다. 답의 모양은 12.1과 같고 이름·문장·값은 새로 합성했다. 7단계만 `human_signoff: yes`다. 1~6단계 근거 키가 합성 사본과 같고, 7단계는 ④ `SIGNOFF` 한 행이다. 행 수 9 [T9:S2 rows], [T9:S3b N1].
 
 ### 6.4 지시문 12절 표와 3.3 트리
 
@@ -522,6 +525,7 @@ T-003의 합성 사본 `tests/Scorecard.Tests/TestData/case-schema/example-12-1/
 - 요지에 없는 단계(제안): form-fill 1단계 "주문서 파일 모으기"(확인 항목이 달리는 단계로 씀), mixed-exceptions 4단계 "처리 결과 기록"(②). 사람이 확정해야 한다. → 승인 질문 14.
 - 12절 예제 셋 모두 Q1·Q4에 걸리는 단계가 없다(요지에 ①·Q4가 없다). Q1·Q4는 단위 테스트로만 확인된다.
 - 어긋남(그대로 적음): 12절이 ④만 맡는 단계를 "발송", "최종 확인"이라 부르지만, 트리에는 그런 단계를 사용자 단계로 만드는 잎이 없다. 행 모델 A(게이트 = 부가 행)로 읽으면 맞고, 사용자 단계로 읽으면 맞지 않는다. → 승인 질문 1·4.
+- T-009: `signoff-final`의 "최종 확인·서명·제출"이 사용자 단계 ④(`SIGNOFF`)로 나오는 첫 공개 예제다(7.5). 예제 3종은 그대로다.
 - T-008: `SIGNOFF`가 생겨 "최종 확인", "발송"을 사용자 단계 ④로 낼 수 있게 됐다. 그래도 예제 3종은 바꾸지 않는다. 모든 단계가 `human_signoff: no`이고 위 표의 결과·단계 수가 그대로다(ADR 0003 결정, 7.1).
 
 ### 6.5 서명 단계와 추정 표시 (T-008)
@@ -579,6 +583,7 @@ inferred 4: current_actor
 5. `examples/`의 다른 파일(`case.yaml`, `intake.md`, `reference/`, `candidate/`)은 T-005가 만든다. T-005의 `case.yaml` 단계·답은 이 `answers.yaml`과 같아야 한다(T-005에서 테스트).
 6. 지시문 2절 10 "examples/는 합성 생성기로만 만든다"는 자료(`reference/`, `candidate/`)에 대한 것으로 본다. `answers.yaml`은 사람이 답한 질문지이고 `expected/`는 사람이 확정한 정답이다(지시문 12절) → 승인 질문 14.
 7. T-008 개정(승인됨): 아래 `answers.yaml` 블록 셋은 모든 단계의 `answers` 줄 끝에 `, human_signoff: no`를 더한 것이다. 그 밖의 줄(주석, 단계 이름, 다른 답)은 바이트 그대로다. `expected/classification.json` 블록 셋과 SHA-256 줄은 바꾸지 않았다. 스파이크 후보가 바꾼 `answers.yaml`에서 낸 바이트가 이 블록·SHA-256과 같았다 [T8:S3 classify]. 키를 더하지 않으면(지금 파일) 후보는 모든 `step` 행에 기본값 표시를 붙여 바이트가 달라진다 [T8:S3 head-answers]. 그래서 `answers.yaml`을 같이 바꾼다. 블록 = 파일 테스트 때문에 `examples/*/answers.yaml` 세 파일도 블록대로 바꿔야 한다(`human-signoff.md` 승인 결과 juhan 1·3).
+8. T-009 개정(초안): 7.5 `signoff-final` 블록 둘은 prototyper 초안이다. `answers.yaml`은 prototyper가 썼다. `expected/classification.json` 블록은 main Core가 그 `answers.yaml`에서 낸 바이트다. 이 문서 표만 보고 따로 짠 Python 분류기(`spikes/T-009/xcheck/classify.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. 엔진 출력은 정답이 아니다. juhan이 블록을 확정한 뒤 test-engineer가 블록을 바이트 그대로 `examples/signoff-final/`로 옮긴다(`signoff-final.md` 8절). 7.2~7.4 블록은 그대로다.
 
 요약 [S3]:
 
@@ -587,7 +592,9 @@ inferred 4: current_actor
 | table-compare | 4 | 6 | 4 | 0 | 1 | 1 | `measure` 4 | 0 | 0 |
 | form-fill | 4 | 5 | 4 | 0 | 0 | 1 | `measure` 4, `confirm` 1 | 1 (2단계) | 1 (1단계) |
 | mixed-exceptions | 4 | 5 | 2 | 2 | 0 | 1 | `measure` 4 | 0 | 0 |
+| signoff-final | 7 | 9 | 5 | 1 | 1 | 1 | `measure` 7 | 0 | 0 |
 
+- T-009: `signoff-final`도 `minutes_per_item`을 적지 않았다. 7단계 모두 `measure`가 달린다. 기본값 표시 문장은 0이다(나머지 답 9개를 모두 적었다).
 - `minutes_per_item`은 세 예제 모두 적지 않았다(12.1 예시와 같음). 그래서 모든 단계에 `measure_minutes_per_item`이 달리고 `defaults`에 `minutes_per_item`이 있다. 평가서 카드가 시간 값을 원하면 그때 `answers.yaml`과 `expected`를 같이 바꾼다.
 - `batch_size`는 12절 검증 자료 건수(30·20)에 맞췄다. form-fill 주간 보고서는 1건, mixed-exceptions는 자료가 없어 15로 정했다. 분류에는 영향이 없다(`rare`인 단계가 없다).
 
@@ -936,6 +943,190 @@ steps:
 }
 ```
 
+### 7.5 signoff-final
+
+T-009 초안(사람 확정 필요). 만드는 방법은 7.1 항목 8, 근거와 질문은 `docs/spec/signoff-final.md`.
+
+`examples/signoff-final/answers.yaml`:
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
+# 7단계만 사람이 최종 확인·서명하는 단계다(human_signoff: yes). 나머지 단계는 no.
+name: signoff-final
+task: 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다
+steps:
+  - name: 기록 파일 열기·정리
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(안정 기록)
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 14, exception_rate: 10, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(흔들린 기록)
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 6, exception_rate: 50, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 구간 값 계산·옮기기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 보고서 양식 채우기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결과 해석 문장 쓰기
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 40, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 최종 확인·서명·제출
+    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
+```
+
+`examples/signoff-final/expected/classification.json` (SHA-256 `fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f`):
+
+```json
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "steps": [
+    {
+      "number": 1,
+      "name": "기록 파일 열기·정리",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "기준 구간 고르기(안정 기록)",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": "기준 구간 고르기(흔들린 기록)",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        },
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "name": "구간 값 계산·옮기기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "name": "보고서 양식 채우기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "name": "결과 해석 문장 쓰기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "③",
+          "rule": "Q2",
+          "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다."
+        },
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "name": "최종 확인·서명·제출",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "④",
+          "rule": "SIGNOFF",
+          "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## 8. 테스트로 옮기는 방법 (test-engineer 참고)
 
 - 폴더 `tests/Scorecard.Tests/Classification/`, 네임스페이스 `Scorecard.Tests.Classification`. Trait `Spec` = `classification`.
@@ -1056,3 +1247,11 @@ steps:
 - 바꾼 곳: 0절·2절 글머리, 3.2(`rule` 값, `Inferred` 글머리), 4.1(해석 표 `SIGNOFF` 행, `GATE` 행), 4.2(조건 표 첫 행 `SIGNOFF`), 4.3·4.4, 4.5(문장 틀 표 첫 행), 4.6(읽은 답 표 `SIGNOFF` 행, Q1~ELSE 행에 `human_signoff`), 4.7·4.8·4.9·4.10·4.11 글머리, 새 4.12, 5절 표 5행, 6.1 기준 답 줄·표 6행, 6.2 표 5행·블록 `10개`, 6.3·6.4 글머리, 새 6.5, 7.1 항목 7, 7.2~7.4 `answers.yaml` 블록, 8절·9절.
 - 바꾸지 않은 곳: 7.2~7.4 `expected/classification.json` 블록·SHA-256 줄, 7.1 요약 표, 3.3 바이트 규칙, 4.5 문구 표, 행 모델 A.
 - 위 승인 결과 1~15는 그대로다. `SIGNOFF`는 승인 결과 4("12.1 7단계 차이는 ADR로")의 답이다(ADR 0003 승인됨).
+
+## T-009 개정 (초안, 사람 승인 전)
+
+- 작업 카드 `docs/tasks/T-009-signoff-final.md`. 출발점: ADR 0003 남은 질문 2(이름 `signoff-final`, T-008 다음 카드. 지시문 2절 11과의 순서 차이는 juhan 승인) [읽음].
+- 확인 대상 커밋 `ce6c4f0`. 스파이크 `spikes/T-009/`(머지 대상 아님). 근거·질문·결과는 `docs/spec/signoff-final.md`.
+- 바꾼 곳: 머리 글머리, 0절 표기, 6.3·6.4 글머리, 7.1 항목 8·요약 표 1행·글머리, 새 7.5.
+- 바꾸지 않은 곳: 규칙(1~5절 표와 글), 6.1·6.2·6.5, 7.2~7.4 블록·SHA-256 줄, 8절 표, 행 모델 A.
+- 요약 표에 `SIGNOFF` 열을 더하지 않았다. 머리 행을 바꾸면 테스트 상수와 기존 3행이 같이 바뀐다. `SIGNOFF` 한 행은 새 테스트가 본다(`signoff-final.md` 5.3).

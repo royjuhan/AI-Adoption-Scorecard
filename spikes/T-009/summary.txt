@@ -1,0 +1,378 @@
+dotnet SDK: 10.0.114
+python: Python 3.13.18
+repo HEAD: ce6c4f0
+spec(작업 트리) docs/spec/classification.md sha256: c3394e61dfc3855e
+spec(작업 트리) docs/spec/synthetic-examples.md sha256: 5c76ca80a567b228
+spec(작업 트리) docs/spec/metrics.md sha256: 7dd5b90039934b72
+spec(작업 트리) docs/spec/signoff-final.md sha256: 0bcff607a3a1d2d6
+[s0-clone] HEAD=ce6c4f0
+[s1-restore] rc=0 cmd: dotnet restore AIAdoptionScorecard.sln
+[s1-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s1-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s1-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:  1196, Skipped:     0, Total:  1196
+    TESTS total=1196 not-passed=0
+[s2-extract] rc=0 cmd: python3 -I spikes/T-009/extract-example.py .
+    RESULT extract answers.yaml sha256=2ff0c4aa01110f300d2eeb92a1e78b70803b8d5be80e7f12d8aec9843416b7fa bytes=2109 sha-line=none
+    RESULT extract expected/classification.json sha256=fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f bytes=4201 sha-line=same
+    RESULT extract case.yaml sha256=a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263 bytes=2595 sha-line=same
+    RESULT extract intake.md sha256=2066d6823ed5c93ab6c36af39534d34cdeb42c8469bcb185d6cdc93ce52a654e bytes=1025 sha-line=same
+    RESULT extract reference/records.csv sha256=95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771 bytes=633 sha-line=same
+    RESULT extract candidate/records.csv sha256=5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4 bytes=636 sha-line=same
+    RESULT extract expected/metrics.json sha256=95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b bytes=3913 sha-line=same
+[s2-instructions] rc=0 cmd: python3 -I spikes/T-009/instructions-variant.py .
+    RESULT instructions ├─ examples/         공개 합성 예제 3종 = 테스트의  -> changed
+    RESULT instructions │  ├─ form-fill/ -> changed
+    RESULT instructions G1: 공개 예제 3종의 출력이 `expected/`와 일치. -> changed
+    RESULT instructions ## 12. 공개 예제 3종 (`examples/`) — 테스트의 정답 -> changed
+    RESULT instructions 세 예제는 구조가 서로 다르게 고른다. -> changed
+    RESULT instructions `answers.yaml`(질문 9개 답) -> changed
+    RESULT instructions | `mixed-exceptions` | 자유 형식 메일을 접수해 분류하 -> changed
+    RESULT instructions 예제 3종의 `expected/`에는 위 표의 숫자와 분류가 그대로 들어 -> changed
+[s2-tool-build] rc=0 cmd: dotnet build spikes/T-009/SignoffFinalSpike/SignoffFinalSpike.csproj -c Release -warnaserror
+[s2-gen] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike gen docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml <작업>/gen/signoff-final
+    SHA 95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771 633 reference/records.csv rows=20
+    SHA 5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4 636 candidate/records.csv rows=20
+[s2-planted] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike planted docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml
+    RESULT choice-column record_kind steady=14 unsteady=6
+    RESULT record_kind=unsteady keys rec03,rec04,rec12,rec18,rec19,rec20
+    RESULT planted rec14 steady missing 결과에 없음
+    RESULT planted rec04 unsteady mismatch:range_start 345 -> 358
+    RESULT planted rec06 steady within:range_avg 392.2 -> 391.8 0.10%
+    RESULT planted rec20 unsteady mismatch:range_avg 785.9 -> 762.3 3.00%
+    RESULT planted rec21 unsteady extra 기준에 없음 position=9
+    RESULT planted rec11 steady within:range_avg 582.6 -> 583.8 0.21%
+    RESULT planted rec18 unsteady mismatch:range_end 3416 -> 3400
+    RESULT candidate-first rec04
+[s2-seed] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike seed docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml record_kind unsteady 3
+    RESULT seed 47 record_kind=unsteady count=6 defects=rec14:steady,rec04:unsteady,rec20:unsteady,rec18:unsteady
+    RESULT seed 77 record_kind=unsteady count=6 defects=rec07:steady,rec13:steady,rec11:steady,rec12:steady
+    RESULT seed 86 record_kind=unsteady count=6 defects=rec04:steady,rec13:unsteady,rec05:steady,rec18:steady
+    RESULT seed 114 record_kind=unsteady count=6 defects=rec03:steady,rec15:unsteady,rec07:steady,rec16:steady
+    RESULT seed 124 record_kind=unsteady count=6 defects=rec03:steady,rec04:steady,rec12:steady,rec13:steady
+    RESULT smallest-seed 47 target=6 plan-seed=47
+[s2-seeds] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike seeds docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml
+    RESULT seeds 0..1999 ok=2000 distinct-counts=1 [20/20/16/3/1/1/2 80.0/5.0]
+    RESULT decimal-flip-rows mismatch=55 within=0 plan-seed=47 plan-seed-flips=none
+[s2-gen-cmp] reference/records.csv block-vs-core: same
+[s2-gen-cmp] candidate/records.csv block-vs-core: same
+[s2-classify-answers] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike classify examples/signoff-final/answers.yaml <작업>/out/answers/classification.json
+    SHA fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f 4201 signoff-final/answers.yaml
+[s2-classify-case] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike classify examples/signoff-final/case.yaml <작업>/out/case/classification.json
+    SHA fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f 4201 signoff-final/case.yaml
+[s2-rows] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike rows examples/signoff-final/answers.yaml
+    RESULT step 1 기록 파일 열기·정리 defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT step 2 기준 구간 고르기(안정 기록) defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT step 3 기준 구간 고르기(흔들린 기록) defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ② ELSE step used=[input_kind,rule_expressible,frequency,failure_impact,existing_feature,human_signoff] 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+    RESULT   ④ PARTIAL exception_review used=[rule_expressible] 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.
+    RESULT step 4 구간 값 계산·옮기기 defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 5 보고서 양식 채우기 defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT step 6 결과 해석 문장 쓰기 defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ③ Q2 step used=[rule_expressible,failure_impact,existing_feature,human_signoff] 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.
+    RESULT   ④ GATE human_gate used=[failure_impact] 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+    RESULT step 7 최종 확인·서명·제출 defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=False
+    RESULT   ④ SIGNOFF step used=[human_signoff] 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+    RESULT summary steps=7 rows=9 ②=5 ③=1 exception_review=1 human_gate=1 signoff=1 measure=7 confirm=0 overuse=0 default-marked=0
+[s2-metrics] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike metrics examples/signoff-final <작업>/out/metrics.json
+    RESULT metrics signoff-final status=measured counts=reference=20 candidate=20 match=16 mismatch=3 missing=1 extra=1 within=2 accuracy=80.0 missing-rate=5.0 items=7
+    SHA 95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b 3913 signoff-final/metrics.json
+[s2-cmp] classification answers.yaml block-vs-core: same
+[s2-cmp] classification case.yaml block-vs-core: same
+[s2-cmp] metrics block-vs-core: same
+[s2-xcheck-generate] rc=0 cmd: python3 -I spikes/T-009/xcheck/generate.py docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml <작업>/py/gen/signoff-final
+    PROBE xcheck python seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+[s2-xcheck-gen-cmp] reference/records.csv block-vs-python: same
+[s2-xcheck-gen-cmp] candidate/records.csv block-vs-python: same
+[s2-xcheck-classify-table-compare] rc=0 cmd: python3 -I spikes/T-009/xcheck/classify.py docs/spec/classification.md docs/spec/case-schema.md examples/table-compare/answers.yaml <작업>/py/classify/table-compare.json
+    XCHECK classify table-compare steps=4 rows=6 rules=1:ELSE,2:ELSE+PARTIAL,3:ELSE,4:ELSE+GATE measure=4 confirm=0 overuse=0 default-marked=0 sha256=44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5 bytes=2642
+[s2-xcheck-classify-cmp] table-compare block-vs-python: same
+[s2-xcheck-compare-table-compare] rc=0 cmd: python3 -I spikes/T-009/xcheck/compare.py examples/table-compare <작업>/py/compare/table-compare.json
+    XCHECK table-compare status=measured reason=null counts=reference=30 candidate=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3 items=8 sha256=d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314
+[s2-xcheck-compare-cmp] table-compare block-vs-python: same
+[s2-xcheck-classify-form-fill] rc=0 cmd: python3 -I spikes/T-009/xcheck/classify.py docs/spec/classification.md docs/spec/case-schema.md examples/form-fill/answers.yaml <작업>/py/classify/form-fill.json
+    XCHECK classify form-fill steps=4 rows=5 rules=1:ELSE,2:ELSE,3:ELSE,4:ELSE+GATE measure=4 confirm=1 overuse=1 default-marked=1 sha256=b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc bytes=2488
+[s2-xcheck-classify-cmp] form-fill block-vs-python: same
+[s2-xcheck-compare-form-fill] rc=0 cmd: python3 -I spikes/T-009/xcheck/compare.py examples/form-fill <작업>/py/compare/form-fill.json
+    XCHECK form-fill status=measured reason=null counts=reference=20 candidate=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0 items=0 sha256=6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952
+[s2-xcheck-compare-cmp] form-fill block-vs-python: same
+[s2-xcheck-classify-mixed-exceptions] rc=0 cmd: python3 -I spikes/T-009/xcheck/classify.py docs/spec/classification.md docs/spec/case-schema.md examples/mixed-exceptions/answers.yaml <작업>/py/classify/mixed-exceptions.json
+    XCHECK classify mixed-exceptions steps=4 rows=5 rules=1:ELSE,2:Q3,3:Q3+GATE,4:ELSE measure=4 confirm=0 overuse=0 default-marked=0 sha256=46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df bytes=2464
+[s2-xcheck-classify-cmp] mixed-exceptions block-vs-python: same
+[s2-xcheck-compare-mixed-exceptions] rc=0 cmd: python3 -I spikes/T-009/xcheck/compare.py examples/mixed-exceptions <작업>/py/compare/mixed-exceptions.json
+    XCHECK mixed-exceptions status=not_verified reason=no_inputs counts=null accuracy=null missing-rate=null items=0 sha256=372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314
+[s2-xcheck-compare-cmp] mixed-exceptions block-vs-python: same
+[s2-xcheck-classify-signoff-final] rc=0 cmd: python3 -I spikes/T-009/xcheck/classify.py docs/spec/classification.md docs/spec/case-schema.md examples/signoff-final/answers.yaml <작업>/py/classify/signoff-final.json
+    XCHECK classify signoff-final steps=7 rows=9 rules=1:ELSE,2:ELSE,3:ELSE+PARTIAL,4:ELSE,5:ELSE,6:Q2+GATE,7:SIGNOFF measure=7 confirm=0 overuse=0 default-marked=0 sha256=fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f bytes=4201
+[s2-xcheck-classify-cmp] signoff-final block-vs-python: same
+[s2-xcheck-compare-signoff-final] rc=0 cmd: python3 -I spikes/T-009/xcheck/compare.py examples/signoff-final <작업>/py/compare/signoff-final.json
+    XCHECK signoff-final status=measured reason=null counts=reference=20 candidate=20 match=16 mismatch=3 missing=1 extra=1 within=2 accuracy=80.0 missing-rate=5.0 items=7 sha256=95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b bytes=3913
+[s2-xcheck-compare-cmp] signoff-final block-vs-python: same
+[s2-xcheck-generate-table-compare] rc=0 cmd: python3 -I spikes/T-009/xcheck/generate.py docs/spec/synthetic-examples.md table-compare examples/table-compare/case.yaml <작업>/py/gen/table-compare
+    PROBE xcheck python seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+[s2-xcheck-gen-cmp] table-compare/candidate/logs.csv committed-vs-python: same
+[s2-xcheck-gen-cmp] table-compare/reference/logs.csv committed-vs-python: same
+[s2-xcheck-generate-form-fill] rc=0 cmd: python3 -I spikes/T-009/xcheck/generate.py docs/spec/synthetic-examples.md form-fill examples/form-fill/case.yaml <작업>/py/gen/form-fill
+    PROBE xcheck python seed=0 first3=e220a8397b1dcdaf,6e789e6aa1b965f4,06c45d188009454f
+[s2-xcheck-gen-cmp] form-fill/candidate/orders.csv committed-vs-python: same
+[s2-xcheck-gen-cmp] form-fill/reference/orders.csv committed-vs-python: same
+[s2-det-other-path] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike metrics <작업>/other/signoff-final <작업>/out/other/metrics.json
+    RESULT metrics signoff-final status=measured counts=reference=20 candidate=20 match=16 mismatch=3 missing=1 extra=1 within=2 accuracy=80.0 missing-rate=5.0 items=7
+    SHA 95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b 3913 signoff-final/metrics.json
+[s2-det-other-path-classify] rc=0 cmd: spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike classify <작업>/other/signoff-final/answers.yaml <작업>/out/other/classification.json
+    SHA fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f 4201 signoff-final/answers.yaml
+[s2-det-de] rc=0 cmd: env LANG=de_DE.UTF-8 SPIKE_KEEP_CULTURE=1 spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike metrics examples/signoff-final <작업>/out/de/metrics.json
+    RESULT metrics signoff-final status=measured counts=reference=20 candidate=20 match=16 mismatch=3 missing=1 extra=1 within=2 accuracy=80.0 missing-rate=5.0 items=7
+    SHA 95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b 3913 signoff-final/metrics.json
+[s2-det-de-classify] rc=0 cmd: env LANG=de_DE.UTF-8 SPIKE_KEEP_CULTURE=1 spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike classify examples/signoff-final/answers.yaml <작업>/out/de/classification.json
+    SHA fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f 4201 signoff-final/answers.yaml
+[s2-det-de-gen] rc=0 cmd: env LANG=de_DE.UTF-8 SPIKE_KEEP_CULTURE=1 spikes/T-009/SignoffFinalSpike/bin/Release/net10.0/SignoffFinalSpike gen docs/spec/synthetic-examples.md signoff-final examples/signoff-final/case.yaml <작업>/gen-de/signoff-final
+    SHA 95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771 633 reference/records.csv rows=20
+    SHA 5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4 636 candidate/records.csv rows=20
+[s2-det-cmp] other/metrics.json: same
+[s2-det-cmp] other/classification.json: same
+[s2-det-cmp] de/metrics.json: same
+[s2-det-cmp] de/classification.json: same
+[s2-det-cmp] de gen reference/records.csv: same
+[s2-det-cmp] de gen candidate/records.csv: same
+[s3a-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s3a-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s3a-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+      Failed Scorecard.Tests.Comparison.MetricsGoldenTests.Example_table_covers_the_three_examples
+      Failed Scorecard.Tests.Synthetic.ExampleFileTests.Examples_root_has_only_gitattributes_and_example_folders
+      Failed Scorecard.Tests.Synthetic.ExampleFileTests.File_table_covers_the_three_examples
+      Failed Scorecard.Tests.Synthetic.PlanTableTests.Plan_examples_are_the_examples_with_csv
+      Failed Scorecard.Tests.Synthetic.StructureTests.Structure_table_examples_are_data_examples
+    Failed!  - Failed:     5, Passed:  1195, Skipped:     0, Total:  1200
+    TESTS total=1200 not-passed=5
+    NOT-PASSED Failed Scorecard.Tests.Comparison.MetricsGoldenTests.Example_table_covers_the_three_examples
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleFileTests.Examples_root_has_only_gitattributes_and_example_folders
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleFileTests.File_table_covers_the_three_examples
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.PlanTableTests.Plan_examples_are_the_examples_with_csv
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.StructureTests.Structure_table_examples_are_data_examples
+    TESTS-DIFF before=1196 after=1200 gone=0 new=4
+    NEW 4 Scorecard.Tests.Synthetic.ExampleFileTests.File_hash_matches_spec_line
+[s3c-variant] rc=0 cmd: python3 -I spikes/T-009/tests-variant/apply.py . --no-thresholds
+    RESULT variant V1 tests/Scorecard.Tests/Classification/ClassificationInput.cs
+    RESULT variant V2 tests/Scorecard.Tests/Classification/ExampleGoldenTests.cs
+    RESULT variant V3 tests/Scorecard.Tests/Synthetic/SyntheticInput.cs
+    RESULT variant V4 tests/Scorecard.Tests/Synthetic/SyntheticSpec.cs
+    RESULT variant V5 tests/Scorecard.Tests/Comparison/MetricsSpec.cs
+    RESULT variant N1 tests/Scorecard.Tests/Synthetic/SignoffFinalExampleTests.cs (새 테스트 제안)
+[s3c-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s3c-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s3c-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Structure_meets_thresholds(example: "signoff-final")
+    Failed!  - Failed:     1, Passed:  1282, Skipped:     0, Total:  1283
+    TESTS total=1283 not-passed=1
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.CaseYamlTests.Structure_meets_thresholds(example: "signoff-final")
+[s3b-variant] rc=0 cmd: python3 -I spikes/T-009/tests-variant/apply.py . --only-thresholds
+    RESULT variant V6 tests/Scorecard.Tests/Synthetic/CaseYamlTests.cs
+[s3b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s3b-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
+[s3b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s3b-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+    Passed!  - Failed:     0, Passed:  1282, Skipped:     0, Total:  1282
+    TESTS total=1282 not-passed=0
+    TESTS-DIFF before=1196 after=1282 gone=0 new=86
+    NEW 1 Scorecard.Tests.Classification.ClassificationJsonTests.Schema_version_is_first_key_with_integer_one
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Answers_use_only_name_task_and_steps
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Example_files_equal_spec_blocks
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Expected_file_hash_matches_spec
+    NEW 4 Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes
+    NEW 1 Scorecard.Tests.Classification.ExampleGoldenTests.Row_count_equals_instructions_step_count
+    NEW 1 Scorecard.Tests.Comparison.CompareDeterminismTests.CompareDirectory_does_not_change_example_folder
+    NEW 1 Scorecard.Tests.Comparison.CompareDeterminismTests.Culture_does_not_change_bytes
+    NEW 1 Scorecard.Tests.Comparison.CompareDeterminismTests.Example_sources_compared_in_memory_equal_expected
+    NEW 1 Scorecard.Tests.Comparison.CompareDeterminismTests.Same_input_twice_gives_same_bytes
+    NEW 9 Scorecard.Tests.Comparison.LineEndingVariantTests.Variant_changes_bytes
+    NEW 9 Scorecard.Tests.Comparison.LineEndingVariantTests.Variant_gives_expected_bytes
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Example_gives_expected_metrics_bytes
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Example_table_matches_expected_file
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Expected_file_equals_spec_block
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Expected_file_has_no_carriage_return
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Expected_file_hash_matches_spec_line
+    NEW 1 Scorecard.Tests.Comparison.MetricsGoldenTests.Planted_structure_equals_compared_structure
+    NEW 1 Scorecard.Tests.Synthetic.CaseYamlTests.Case_bytes_contain_answers_from_name_line
+    NEW 1 Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes
+    NEW 1 Scorecard.Tests.Synthetic.CaseYamlTests.Case_data_keys_match_spec_table
+    NEW 1 Scorecard.Tests.Synthetic.CaseYamlTests.Case_steps_equal_answers
+    NEW 1 Scorecard.Tests.Synthetic.ExampleCsvTests.Candidate_keys_are_reference_minus_missing_plus_extra
+    NEW 2 Scorecard.Tests.Synthetic.ExampleCsvTests.Committed_csv_follows_byte_rules
+    NEW 2 Scorecard.Tests.Synthetic.ExampleCsvTests.Committed_csv_values_have_column_shapes
+    NEW 1 Scorecard.Tests.Synthetic.ExampleCsvTests.Each_data_folder_has_one_csv_named_by_plan
+    NEW 2 Scorecard.Tests.Synthetic.ExampleCsvTests.Generated_csv_equals_committed_file
+    NEW 1 Scorecard.Tests.Synthetic.ExampleCsvTests.Reference_rows_are_in_key_order
+    NEW 1 Scorecard.Tests.Synthetic.ExampleFileTests.Example_files_equal_spec_blocks
+    NEW 1 Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files
+    NEW 4 Scorecard.Tests.Synthetic.ExampleFileTests.File_hash_matches_spec_line
+    NEW 1 Scorecard.Tests.Synthetic.PlanTableTests.Column_table_values_are_well_formed
+    NEW 1 Scorecard.Tests.Synthetic.PlanTableTests.Compare_fields_have_column_kind_from_table
+    NEW 1 Scorecard.Tests.Synthetic.PlanTableTests.File_table_lists_plan_csv_in_both_folders
+    NEW 1 Scorecard.Tests.Synthetic.PlanTableTests.Plan_cells_fit_case_inputs
+    NEW 1 Scorecard.Tests.Synthetic.PlanTableTests.Planted_columns_fit_compare
+    NEW 1 Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Every_step_writes_all_ten_answers_except_minutes
+    NEW 1 Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Metrics_are_below_thresholds
+    NEW 1 Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Seed_is_the_smallest_with_unsteady_count_equal_to_step_three_batch
+    NEW 1 Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Step_seven_is_a_single_signoff_row_without_gate
+    NEW 1 Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Steps_one_to_six_match_the_12_1_copy
+    NEW 3 Scorecard.Tests.Synthetic.StructureTests.Committed_files_match_structure_table
+    NEW 1 Scorecard.Tests.Synthetic.StructureTests.Defects_are_only_in_focus_rows
+    NEW 1 Scorecard.Tests.Synthetic.StructureTests.Every_seed_below_2000_keeps_the_structure
+    NEW 1 Scorecard.Tests.Synthetic.StructureTests.Planted_counts_match_structure_table
+    NEW 1 Scorecard.Tests.Synthetic.StructureTests.Planted_rows_follow_plan
+    NEW 1 Scorecard.Tests.Synthetic.StructureTests.Structure_matches_instructions_section_12
+    NEW 1 Scorecard.Tests.Synthetic.SyntheticDeterminismTests.Next_seed_gives_different_bytes
+    NEW 7 Scorecard.Tests.Synthetic.SyntheticDeterminismTests.Output_does_not_depend_on_culture
+    NEW 1 Scorecard.Tests.Synthetic.SyntheticDeterminismTests.Same_case_in_different_folders_gives_same_bytes
+    NEW 1 Scorecard.Tests.Synthetic.SyntheticDeterminismTests.Same_input_twice_gives_same_bytes
+[s3b-guards] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1|Rule=G2|Rule=G3|FullyQualifiedName~GuardTarget
+    Passed!  - Failed:     0, Passed:   111, Skipped:     0, Total:   111
+[s4-expected] table-compare/expected/classification.json head=44e64b8dad5182a1 work=44e64b8dad5182a1 same
+[s4-expected] table-compare/expected/metrics.json head=d250fbeeb8bbed24 work=d250fbeeb8bbed24 same
+[s4-expected] form-fill/expected/classification.json head=b1898a856862e821 work=b1898a856862e821 same
+[s4-expected] form-fill/expected/metrics.json head=6dd5b7c6868ed30a work=6dd5b7c6868ed30a same
+[s4-expected] mixed-exceptions/expected/classification.json head=46bd9f0ab27cea29 work=46bd9f0ab27cea29 same
+[s4-expected] mixed-exceptions/expected/metrics.json head=372e25df94129fd6 work=372e25df94129fd6 same
+[s4-old-examples] git diff HEAD -- examples/{3종}: no change
+[s4-status]  M docs/README-instructions.md; M docs/spec/classification.md; M docs/spec/metrics.md; M docs/spec/synthetic-examples.md; M tests/Scorecard.Tests/Classification/ClassificationInput.cs; M tests/Scorecard.Tests/Classification/ExampleGoldenTests.cs; M tests/Scorecard.Tests/Comparison/MetricsSpec.cs; M tests/Scorecard.Tests/Synthetic/CaseYamlTests.cs; M tests/Scorecard.Tests/Synthetic/SyntheticInput.cs; M tests/Scorecard.Tests/Synthetic/SyntheticSpec.cs;?? docs/spec/signoff-final.md;?? examples/signoff-final/;?? tests/Scorecard.Tests/Synthetic/SignoffFinalExampleTests.cs;
+[s4-diff-stat] rc=0 cmd: git diff --stat HEAD -- docs tests src examples
+[s4-src] git diff HEAD -- src: no change
+[s5-gate-after-signoff-mutate] rc=0 cmd: python3 -I spikes/T-009/mutate.py . gate-after-signoff
+    RESULT mutate gate-after-signoff
+[s5-gate-after-signoff-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s5-gate-after-signoff-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s5-gate-after-signoff-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+      Failed Scorecard.Tests.Classification.InferredMarkTests.Signoff_inferred_sample_gives_spec_result_block
+      Failed Scorecard.Tests.Classification.InferredMarkTests.Signoff_inferred_sample_step_fields_follow_spec_bullets
+      Failed Scorecard.Tests.Classification.InferredMarkTests.Json_has_no_inferred_property_and_differs_only_in_reasons
+      Failed Scorecard.Tests.Classification.ReasonSentenceTests.All_combinations_match_templates_and_phrases
+      Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "failure_impact: external", expectedRows: "② ELSE + ④ GATE")
+      Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "existing_feature: yes, failure_impact: external", expectedRows: "① Q1 + ④ GATE")
+      Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "rule_expressible: partial, failure_impact: safety_"···, expectedRows: "② ELSE + ④ PARTIAL + ④ GATE")
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, rule_expressible: no, failure_"···)
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, failure_impact: external")
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, existing_feature: yes, failure"···)
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, input_kind: image, failure_imp"···)
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, rule_expressible: partial, fai"···)
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, failure_impact: safety_legal")
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, frequency: rare, batch_size: 1"···)
+      Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+      Failed Scorecard.Tests.Classification.SignoffTests.Signoff_yes_gives_one_person_row_whatever_the_other_answers
+      Failed Scorecard.Tests.Classification.SignoffTests.Steps_are_classified_independently_around_a_signoff_step
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, rule_expressible: partial, fai"···, expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: safety_legal", expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: external", expectedRows: "④ SIGNOFF")
+      Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Step_seven_is_a_single_signoff_row_without_gate
+      Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Steps_one_to_six_match_the_12_1_copy
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Row_count_equals_instructions_step_count(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "bom")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "cr")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "lf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "crlf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "signoff-final")
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "signoff-final")
+    Failed!  - Failed:    30, Passed:  1252, Skipped:     0, Total:  1282
+    TESTS total=1282 not-passed=30
+    NOT-PASSED Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: external", expectedRows: "④ SIGNOFF")
+    NOT-PASSED Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, failure_impact: safety_legal", expectedRows: "④ SIGNOFF")
+    NOT-PASSED Failed Scorecard.Tests.Classification.BranchExampleTests.Branch_example_gives_expected_rows(changes: "human_signoff: yes, rule_expressible: partial, fai"···, expectedRows: "④ SIGNOFF")
+    NOT-PASSED Failed Scorecard.Tests.Classification.DefaultMarkTests.Used_matches_spec_table_for_all_combinations
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "bom")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "cr")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "crlf")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "lf")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Row_count_equals_instructions_step_count(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.InferredMarkTests.Json_has_no_inferred_property_and_differs_only_in_reasons
+    NOT-PASSED Failed Scorecard.Tests.Classification.InferredMarkTests.Signoff_inferred_sample_gives_spec_result_block
+    NOT-PASSED Failed Scorecard.Tests.Classification.InferredMarkTests.Signoff_inferred_sample_step_fields_follow_spec_bullets
+    NOT-PASSED Failed Scorecard.Tests.Classification.ReasonSentenceTests.All_combinations_match_templates_and_phrases
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "existing_feature: yes, failure_impact: external", expectedRows: "① Q1 + ④ GATE")
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "failure_impact: external", expectedRows: "② ELSE + ④ GATE")
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Same_answers_with_signoff_no_go_down_the_tree(changes: "rule_expressible: partial, failure_impact: safety_"···, expectedRows: "② ELSE + ④ PARTIAL + ④ GATE")
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, existing_feature: yes, failure"···)
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, failure_impact: external")
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, failure_impact: safety_legal")
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, frequency: rare, batch_size: 1"···)
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, input_kind: image, failure_imp"···)
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, rule_expressible: no, failure_"···)
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_step_has_no_gate_or_exception_review(changes: "human_signoff: yes, rule_expressible: partial, fai"···)
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Signoff_yes_gives_one_person_row_whatever_the_other_answers
+    NOT-PASSED Failed Scorecard.Tests.Classification.SignoffTests.Steps_are_classified_independently_around_a_signoff_step
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Step_seven_is_a_single_signoff_row_without_gate
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Steps_one_to_six_match_the_12_1_copy
+[s5-step7-no-mutate] rc=0 cmd: python3 -I spikes/T-009/mutate.py . step7-no
+    RESULT mutate step7-no
+[s5-step7-no-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s5-step7-no-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s5-step7-no-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+      Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "signoff-final")
+      Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Step_seven_is_a_single_signoff_row_without_gate
+      Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Steps_one_to_six_match_the_12_1_copy
+      Failed Scorecard.Tests.Synthetic.ExampleFileTests.File_hash_matches_spec_line(example: "signoff-final", file: "case.yaml")
+      Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_files_equal_spec_blocks(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Row_count_equals_instructions_step_count(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "bom")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "cr")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "lf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "crlf")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_files_equal_spec_blocks(example: "signoff-final")
+      Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "signoff-final")
+    Failed!  - Failed:    13, Passed:  1269, Skipped:     0, Total:  1282
+    TESTS total=1282 not-passed=13
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Answers_give_expected_classification_bytes(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_files_equal_spec_blocks(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Example_summary_table_matches_result(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "bom")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "cr")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "crlf")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Line_ending_and_bom_variants_give_same_bytes(example: "signoff-final", variant: "lf")
+    NOT-PASSED Failed Scorecard.Tests.Classification.ExampleGoldenTests.Row_count_equals_instructions_step_count(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.CaseYamlTests.Case_classification_equals_expected_bytes(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_files_equal_spec_blocks(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleFileTests.File_hash_matches_spec_line(example: "signoff-final", file: "case.yaml")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Step_seven_is_a_single_signoff_row_without_gate
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Steps_one_to_six_match_the_12_1_copy
+[s5-seed-48-mutate] rc=0 cmd: python3 -I spikes/T-009/mutate.py . seed-48
+    RESULT mutate seed-48
+[s5-seed-48-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
+[s5-seed-48-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --logger trx;LogFileName=s5-seed-48-test.trx --results-directory <로그>/trx -- RunConfiguration.TreatNoTestsAsError=true
+      Failed Scorecard.Tests.Comparison.MetricsGoldenTests.Planted_structure_equals_compared_structure(example: "signoff-final")
+      Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Seed_is_the_smallest_with_unsteady_count_equal_to_step_three_batch
+      Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Generated_csv_equals_committed_file(example: "signoff-final", folder: "candidate")
+      Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Generated_csv_equals_committed_file(example: "signoff-final", folder: "reference")
+      Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Committed_csv_values_have_column_shapes(example: "signoff-final", folder: "candidate")
+      Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Candidate_keys_are_reference_minus_missing_plus_extra(example: "signoff-final")
+    Failed!  - Failed:     6, Passed:  1276, Skipped:     0, Total:  1282
+    TESTS total=1282 not-passed=6
+    NOT-PASSED Failed Scorecard.Tests.Comparison.MetricsGoldenTests.Planted_structure_equals_compared_structure(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Candidate_keys_are_reference_minus_missing_plus_extra(example: "signoff-final")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Committed_csv_values_have_column_shapes(example: "signoff-final", folder: "candidate")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Generated_csv_equals_committed_file(example: "signoff-final", folder: "candidate")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.ExampleCsvTests.Generated_csv_equals_committed_file(example: "signoff-final", folder: "reference")
+    NOT-PASSED Failed Scorecard.Tests.Synthetic.SignoffFinalExampleTests.Seed_is_the_smallest_with_unsteady_count_equal_to_step_three_batch
+[s6-eol] gitattributes=with answers.yaml bytes 2109 -> 2109 same
+[s6-eol] gitattributes=with case.yaml bytes 2595 -> 2595 same
+[s6-eol] gitattributes=with intake.md bytes 1025 -> 1025 same
+[s6-eol] gitattributes=with reference/records.csv bytes 633 -> 633 same
+[s6-eol] gitattributes=with candidate/records.csv bytes 636 -> 636 same
+[s6-eol] gitattributes=with expected/classification.json bytes 4201 -> 4201 same
+[s6-eol] gitattributes=with expected/metrics.json bytes 3913 -> 3913 same
+[s6-eol] gitattributes=without answers.yaml bytes 2109 -> 2128 DIFF
+[s6-eol] gitattributes=without case.yaml bytes 2595 -> 2628 DIFF
+[s6-eol] gitattributes=without intake.md bytes 1025 -> 1035 DIFF
+[s6-eol] gitattributes=without reference/records.csv bytes 633 -> 654 DIFF
+[s6-eol] gitattributes=without candidate/records.csv bytes 636 -> 657 DIFF
+[s6-eol] gitattributes=without expected/classification.json bytes 4201 -> 4352 DIFF
+[s6-eol] gitattributes=without expected/metrics.json bytes 3913 -> 4093 DIFF
+[s8-file] examples/signoff-final/answers.yaml sha256=2ff0c4aa01110f300d2eeb92a1e78b70803b8d5be80e7f12d8aec9843416b7fa bytes=2109
+[s8-file] examples/signoff-final/case.yaml sha256=a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263 bytes=2595
+[s8-file] examples/signoff-final/intake.md sha256=2066d6823ed5c93ab6c36af39534d34cdeb42c8469bcb185d6cdc93ce52a654e bytes=1025
+[s8-file] examples/signoff-final/reference/records.csv sha256=95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771 bytes=633
+[s8-file] examples/signoff-final/candidate/records.csv sha256=5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4 bytes=636
+[s8-file] examples/signoff-final/expected/classification.json sha256=fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f bytes=4201
+[s8-file] examples/signoff-final/expected/metrics.json sha256=95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b bytes=3913
+[done]

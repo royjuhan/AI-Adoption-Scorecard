@@ -2,7 +2,7 @@
 
 - 상태: 승인됨 (2026-11-06, juhan "제안대로"). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 10번째 답 `human_signoff`(ADR 0003)와 단계 항목 `inferred`(ADR 0004 결정 2, 질문 16 해석 A). 바뀐 곳: 4.4, 4.9, 4.12, 새 4.13, 6.1·6.2 글, 새 6.7, 7.2, 문서 끝 "T-008 개정". 질문과 스파이크 결과는 `docs/spec/human-signoff.md`.
-- T-012 개정(제안, 2026-11-07. 문서 끝 10절): `inputs`에 선택 키 `group`(몰림을 볼 기준 자료 열). 검사는 `required`·`type`·`conflict`, 오류 코드 17개는 그대로다. 제자리로 옮기는 것은 PR (b)다(10.5).
+- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 문서 끝 10절. `inputs`에 선택 키 `group`(몰림을 볼 기준 자료 열). 검사는 `required`·`type`·`conflict`, 오류 코드 17개는 그대로다. 제자리로 옮기는 것은 PR (b)다(10.5).
 - 작업 카드: `docs/tasks/T-003-case-schema.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
@@ -866,7 +866,7 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
 
 ## 10. T-012 개정 (`inputs.group`)
 
-- 상태: 제안(2026-11-07, prototyper). 질문은 `judgment.md` 11.19의 6·7·8이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
+- 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. 질문은 `judgment.md` 11.19의 6·7·8이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
 - 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 2(M-B 자동 유형 열이 우연 몰림을 잡는다)와 `judgment.md` 4.8 M-A 행 [읽음].
 - 근거: oracle `tools/oracle/oracle_case.py`(이 절 글만 보고 고쳤다). C# 파서는 PR (b)다(**미확인**).
 - 바꾸는 곳(PR (b)에서 제자리로. 10.5): 4.5 `inputs` 표와 머리 글, 4.9 `conflict` 행의 "언제", 4.12 `CaseInputs`, 7.2 표.

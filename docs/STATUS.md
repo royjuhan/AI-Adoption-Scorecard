@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-07 | 0007 | oracle이 expected judgment.json의 schema_version으로 판정 판을 고른다(T-011 동결본 `judge_v1`, 거절 가드 하나). PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-012 (a) |
 | 2026-11-07 | 0006 | `oracle-head` 잡과 lead_check가 head `selftest.py`도 돌린다. guard가 잡 넷(mutation, oracle, oracle-head, test-run) 결과를 모두 본다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | #12 |
 | 2026-11-07 | 0005 | 승인 질문을 묻지 않고 추천안 채택(T-010 뒤). 사람 게이트 대신 CI 잡(build-test, regression-guard, mutation, oracle)과 [재검토]. 지시문 2절 4·5·11, 13절, 14절 6~8, CLAUDE.md. 2절 8·10(실제 자료·회사 자료 금지)은 바꾸지 않는다 | juhan 지시 | #11 |
 | 2026-11-07 | 0004 | 사용을 단순하게(입구 둘·엔진 하나·HTML 한 장·명령 넷·AI용 JSON 입구). 2절 1·3·6·7 | juhan 승인 | #6 |
@@ -63,6 +64,18 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-07 | T-011 | 15 인자 확인 시점 | 음수 시간은 `time_must_drop`과 상관없이 예외. 사람 입력 키는 미검증에도 확인 | (b) |
 | 2026-11-07 | T-011 | 16 미검증 + 시간 입력 | `time_must_drop: true`면 `measure_time`. 받은 시간은 보지 않는다 | (b) |
 | 2026-11-07 | T-011 | 17 문턱 곱 넘침 | 예외 없이 부호대로 비교(파서를 거치면 생기지 않는다) | (b) |
+| 2026-11-07 | T-012 | 1 추가·중복 행 | 검토 항목에 넣는다. 정확도·누락률 셈은 그대로 | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 2 결과 쪽 키 중복 | 대조 오류가 아니라 항목 `duplicate`. 기준 쪽 중복·빈 키는 오류 그대로 | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 3 metrics.json | 새 속성 없음. schema_version 1, 예제 바이트 그대로 | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 4 안 본 검토 항목 | 조건부 `UNEXPLAINED`(순서 7, FOCUS 뒤) | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 5 사람 입력 | 검토 항목의 키. 그 밖의 키·중복은 `ArgumentException` | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 6 몰림 | M-A. `inputs.group` 열 하나, 없으면 off + `add_group` | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 7 `group` 검사 | 파서 `required`·`type`·`conflict`, 대조는 기준 파일마다 `column`·`duplicate-column` | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 8 예제 `case.yaml` | table-compare `group: signal_type`, signoff-final `group: record_kind` | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 9 할 일 키 | `review_items`, `add_group` | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 10 judgment.json | schema_version 2 | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 11 oracle 판 둘 | expected로 고른다. PR (b) 뒤 첫 oracle 변경에서 `judge_v1` 삭제(ADR 0007) | T-012 (a)·(b) |
+| 2026-11-07 | T-012 | 12 PR (a) 스펙 | 옛 표를 두고 새 표는 judgment.md 11절에. 제자리로 옮기는 것은 PR (b) | T-012 (a)·(b) |
 
 ## 재검토 기록 (ADR 0005 [재검토])
 

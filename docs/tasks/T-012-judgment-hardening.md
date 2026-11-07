@@ -1,7 +1,7 @@
 # T-012 판정 보강 (추가 행·결과 쪽 중복·안 본 불일치·몰림 열)
 
 - 마일스톤: M1 끝 [재검토] 결과(2026-11-07, STATUS.md 재검토 기록)
-- 상태: 스펙 작성 중
+- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) 스펙·oracle
 
 ## 목표
 
@@ -29,3 +29,20 @@ PR (a): `docs/spec/`, `tools/oracle/`, `docs/STATUS.md`, 이 카드. PR (b): `do
 - 추천안을 고르는 기준: 사용자에게 맞나 → 그다음 바이트 보존(재검토 지적 8).
 - 같이 고칠 것(작은 것): 지시문 5절 expected 목록에 judgment.json(민감 경로라 ADR 필요. 정리 PR로 미룰 수 있다), T-011 카드 상태 줄.
 - 미룬 것: CsvText 따옴표 안 CRLF 뒤 줄 번호 테스트, 엔진-oracle 시드 차분 CI, 사용자에게 보일 확인 문장 고르기(M2-3).
+
+## 잠정 결정 (ADR 0005 결정 3, 리드 채택 2026-11-07)
+
+`docs/spec/judgment.md` 11.19 질문 1~12의 추천안을 채택했다. 한 줄 요지는 STATUS.md 잠정 결정 T-012 행.
+
+1. 추가·중복 행은 검토 항목. 정확도·누락률 셈은 그대로.
+2. 결과 쪽 키 중복은 항목 `duplicate`. 기준 쪽은 오류 그대로.
+3. metrics.json 새 속성 없음.
+4. 안 본 검토 항목이 있으면 조건부 `UNEXPLAINED`(FOCUS 뒤).
+5. 사람 입력은 검토 항목 키만.
+6. 몰림은 M-A(`inputs.group`), 없으면 off + `add_group`.
+7. `group` 검사: 파서 `required`·`type`·`conflict`, 대조 `column`·`duplicate-column`.
+8. 예제 `case.yaml` 2개에 `group` 한 줄.
+9. 할 일 키 `review_items`, `add_group`.
+10. judgment.json schema_version 2.
+11. oracle 판 둘(ADR 0007). PR (b) 뒤 `judge_v1` 삭제.
+12. PR (a)는 새 표를 11절에만. 제자리 옮김은 PR (b).

@@ -1,4 +1,4 @@
-# case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13을 보고 짰다(src/는 읽지 않았다).
+# case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13, T-012 개정(inputs.group)을 보고 짰다(src/는 읽지 않았다).
 # 오류가 있는 입력은 모델을 만들지 않고 OracleError로 멈춘다. 엔진의 오류 줄은 흉내 내지 않는다.
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ ANSWER_KEYS = tuple(a[0] for a in ANSWERS)
 # case-schema 4.3 최상위 키, 4.4 단계 항목 키, 4.5 inputs·compare·thresholds 키.
 TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'thresholds')
 STEP_KEYS = ('name', 'answers', 'inferred')
-INPUT_KEYS = ('reference', 'candidate', 'key')
+INPUT_KEYS = ('reference', 'candidate', 'key', 'group')  # group: T-012 개정(case-schema 10.2), 선택
 COMPARE_KEYS = ('field', 'tolerance', 'tolerance_pct')
 THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop')
 AI_USAGE = ('build-time', 'runtime', 'hybrid')
@@ -57,6 +57,7 @@ class Inputs:
     reference: str
     candidate: str
     key: str
+    group: str | None = None  # T-012: 몰림을 볼 기준 자료의 유형 열 이름. 적지 않았거나 null이면 None
 
 
 @dataclass(frozen=True)
@@ -203,10 +204,15 @@ def parse_case(data: bytes, source: str) -> Case:
     inputs_node = root.get('inputs')
     if inputs_node is not None and not (isinstance(inputs_node, Scalar) and inputs_node.is_null):
         m = r.mapping(inputs_node, 'inputs', INPUT_KEYS)
+        group_node = m.get('group')
+        group = r.string(group_node, 'inputs.group', required=False)
+        if group is not None and net_trim(group) == '':
+            r.fail(group_node, 'inputs.group', '값이 비어 있다')  # required (case-schema T-012 개정)
         inputs = Inputs(
             r.path_text(m.get('reference'), 'inputs.reference'),
             r.path_text(m.get('candidate'), 'inputs.candidate'),
             r.string(m.get('key'), 'inputs.key', required=True),
+            group,
         )
 
     compare = []
@@ -229,6 +235,11 @@ def parse_case(data: bytes, source: str) -> Case:
             compare.append(CompareField(fname, tol, pct))
         if compare and inputs is None:
             r.fail(compare_node, 'inputs', 'compare가 있으면 inputs가 있어야 한다')
+
+    # T-012: group은 key·compare 필드와 다른 열이어야 한다(conflict, 위치는 group 값).
+    if inputs is not None and inputs.group is not None:
+        if inputs.group == inputs.key or any(f.field == inputs.group for f in compare):
+            r.fail(root.get('inputs').get('group'), 'inputs.group', 'group은 key·compare 필드와 다른 열을 쓴다')
 
     thresholds = None
     thresholds_node = root.get('thresholds')

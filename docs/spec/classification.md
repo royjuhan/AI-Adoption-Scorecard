@@ -2,7 +2,7 @@
 
 - 상태: 승인됨(2026-11-07, 15문항 모두 제안대로). 7절 예제 초안도 제안대로 확정. 승인 결과는 문서 끝.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 트리 맨 앞 `SIGNOFF`(ADR 0003)와 추정 표시(ADR 0004 결정 2). 바뀐 곳은 문서 끝 "T-008 개정"에 모았다. 질문과 스파이크 결과는 `docs/spec/human-signoff.md`. `expected/classification.json` 3개는 바이트 그대로다 [T8:S3].
-- T-009 개정(초안, 사람 승인 전, 2026-11-07): 4번째 공개 예제 `signoff-final`(ADR 0003 남은 질문 2). 7.1 항목 8·요약 표 1행, 6.3·6.4 글머리, 새 7.5. 규칙(4절)과 기존 블록은 그대로다. 문서 끝 "T-009 개정". 근거·질문·스파이크 결과는 `docs/spec/signoff-final.md`. `expected/classification.json` 3개는 바이트 그대로다 [T9:S4].
+- T-009 개정(승인됨, 2026-11-07, `signoff-final.md` 승인 결과): 4번째 공개 예제 `signoff-final`(ADR 0003 남은 질문 2). 7.1 항목 8·요약 표 1행, 6.3·6.4 글머리, 새 7.5. 규칙(4절)과 기존 블록은 그대로다. 문서 끝 "T-009 개정". 근거·질문·스파이크 결과는 `docs/spec/signoff-final.md`. `expected/classification.json` 3개는 바이트 그대로다 [T9:S4].
 - 작업 카드: `docs/tasks/T-004-classification.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `cbbfdb6`
@@ -583,7 +583,7 @@ inferred 4: current_actor
 5. `examples/`의 다른 파일(`case.yaml`, `intake.md`, `reference/`, `candidate/`)은 T-005가 만든다. T-005의 `case.yaml` 단계·답은 이 `answers.yaml`과 같아야 한다(T-005에서 테스트).
 6. 지시문 2절 10 "examples/는 합성 생성기로만 만든다"는 자료(`reference/`, `candidate/`)에 대한 것으로 본다. `answers.yaml`은 사람이 답한 질문지이고 `expected/`는 사람이 확정한 정답이다(지시문 12절) → 승인 질문 14.
 7. T-008 개정(승인됨): 아래 `answers.yaml` 블록 셋은 모든 단계의 `answers` 줄 끝에 `, human_signoff: no`를 더한 것이다. 그 밖의 줄(주석, 단계 이름, 다른 답)은 바이트 그대로다. `expected/classification.json` 블록 셋과 SHA-256 줄은 바꾸지 않았다. 스파이크 후보가 바꾼 `answers.yaml`에서 낸 바이트가 이 블록·SHA-256과 같았다 [T8:S3 classify]. 키를 더하지 않으면(지금 파일) 후보는 모든 `step` 행에 기본값 표시를 붙여 바이트가 달라진다 [T8:S3 head-answers]. 그래서 `answers.yaml`을 같이 바꾼다. 블록 = 파일 테스트 때문에 `examples/*/answers.yaml` 세 파일도 블록대로 바꿔야 한다(`human-signoff.md` 승인 결과 juhan 1·3).
-8. T-009 개정(초안): 7.5 `signoff-final` 블록 둘은 prototyper 초안이다. `answers.yaml`은 prototyper가 썼다. `expected/classification.json` 블록은 main Core가 그 `answers.yaml`에서 낸 바이트다. 이 문서 표만 보고 따로 짠 Python 분류기(`spikes/T-009/xcheck/classify.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. 엔진 출력은 정답이 아니다. juhan이 블록을 확정한 뒤 test-engineer가 블록을 바이트 그대로 `examples/signoff-final/`로 옮긴다(`signoff-final.md` 8절). 7.2~7.4 블록은 그대로다.
+8. T-009 개정(승인됨): 7.5 `signoff-final` 블록 둘은 prototyper 초안이다. `answers.yaml`은 prototyper가 썼다. `expected/classification.json` 블록은 main Core가 그 `answers.yaml`에서 낸 바이트다. 이 문서 표만 보고 따로 짠 Python 분류기(`spikes/T-009/xcheck/classify.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. 엔진 출력은 정답이 아니다. juhan이 블록을 확정한 뒤 test-engineer가 블록을 바이트 그대로 `examples/signoff-final/`로 옮긴다(`signoff-final.md` 8절). 7.2~7.4 블록은 그대로다.
 
 요약 [S3]:
 
@@ -945,7 +945,7 @@ steps:
 
 ### 7.5 signoff-final
 
-T-009 초안(사람 확정 필요). 만드는 방법은 7.1 항목 8, 근거와 질문은 `docs/spec/signoff-final.md`.
+T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 항목 8, 근거와 질문은 `docs/spec/signoff-final.md`.
 
 `examples/signoff-final/answers.yaml`:
 
@@ -1248,7 +1248,7 @@ steps:
 - 바꾸지 않은 곳: 7.2~7.4 `expected/classification.json` 블록·SHA-256 줄, 7.1 요약 표, 3.3 바이트 규칙, 4.5 문구 표, 행 모델 A.
 - 위 승인 결과 1~15는 그대로다. `SIGNOFF`는 승인 결과 4("12.1 7단계 차이는 ADR로")의 답이다(ADR 0003 승인됨).
 
-## T-009 개정 (초안, 사람 승인 전)
+## T-009 개정 (승인됨, 2026-11-07)
 
 - 작업 카드 `docs/tasks/T-009-signoff-final.md`. 출발점: ADR 0003 남은 질문 2(이름 `signoff-final`, T-008 다음 카드. 지시문 2절 11과의 순서 차이는 juhan 승인) [읽음].
 - 확인 대상 커밋 `ce6c4f0`. 스파이크 `spikes/T-009/`(머지 대상 아님). 근거·질문·결과는 `docs/spec/signoff-final.md`.

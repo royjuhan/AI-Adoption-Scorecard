@@ -18,7 +18,7 @@
 
 ## 폴더 범위
 
-`docs/spec/`, `docs/README-instructions.md`(12절, M1 G1 문구, 사람 결정 뒤 리드), `examples/signoff-final/`, `tests/`, `src/Scorecard.Core/`(필요할 때만)
+`docs/spec/`, `docs/README-instructions.md`(5절 폴더 트리, 9절 M1 G1·M2 G2, 12절, 사람 결정 뒤 리드), `examples/signoff-final/`, `tests/`, `src/Scorecard.Core/`(필요할 때만)
 
 ## 메모
 

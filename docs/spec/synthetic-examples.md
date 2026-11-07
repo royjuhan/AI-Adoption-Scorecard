@@ -2,7 +2,7 @@
 
 - 상태: 승인됨(2026-11-07, 질문 9 외 제안대로. 9는 테스트로 진행하고 원칙 문구는 사람 답 대기). 7절 예제 파일도 제안대로 확정. 승인 결과는 문서 끝.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 7.2~7.4 `case.yaml` 블록의 모든 `answers` 줄 끝에 `, human_signoff: no`를 더하고 SHA-256 줄을 맞췄다(ADR 0003). 그 밖의 블록(CSV, `intake.md`)과 생성기는 그대로다. 문서 끝 "T-008 개정".
-- T-009 개정(초안, 사람 승인 전, 2026-11-07): 4번째 공개 예제 `signoff-final`. 4.3·4.4·4.7·4.8·7.1 표에 행, 4.2·4.7·4.8 글머리, 새 6.4·7.5. 생성기 규칙과 Core는 그대로다(계획을 그대로 받는다) [T9:S2 gen]. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
+- T-009 개정(승인됨, 2026-11-07, `signoff-final.md` 승인 결과): 4번째 공개 예제 `signoff-final`. 4.3·4.4·4.7·4.8·7.1 표에 행, 4.2·4.7·4.8 글머리, 새 6.4·7.5. 생성기 규칙과 Core는 그대로다(계획을 그대로 받는다) [T9:S2 gen]. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
 - 작업 카드: `docs/tasks/T-005-synthetic-examples.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `8a3afa0`
@@ -16,7 +16,7 @@
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
 - 기준 자료 = `reference/`, 결과 자료 = `candidate/`. 기준 행 = 기준 자료의 데이터 행(머리 행 제외).
 - G1·G2·G3, D1, R1~R4는 `docs/spec/guard-tests.md`의 이름이다. 행 모델 A는 `docs/spec/classification.md` 4.3이다.
-- 예제 이름은 `table-compare`, `form-fill`, `mixed-exceptions`(지시문 12절). T-009 초안에서 `signoff-final`을 더한다.
+- 예제 이름은 `table-compare`, `form-fill`, `mixed-exceptions`(지시문 12절). T-009에서 `signoff-final`을 더한다.
 - `[T9:S0]`~`[T9:S8]`: T-009 스파이크(`spikes/T-009/`) 단계. 단계 목록은 `signoff-final.md` 10절.
 
 ## 1. 범위
@@ -143,7 +143,7 @@ examples/
 - 시드 고르기: 조건을 만족하는 가장 작은 시드(0부터).
   - table-compare `8`: 기준 30행 중 `irregular`가 12행(40%)인 가장 작은 시드 [P:seeds first-seed-with-12]. 40%는 `answers.yaml` 2단계(불규칙 신호 구간 선택)의 `exception_rate: 40`이다. 시드 0~1999에서 `irregular`는 6~23행이다 [P:seeds].
   - form-fill `0`: 선택지 5개가 기준 자료에 모두 나오는 가장 작은 시드 [P:seeds first-seed-all-choices].
-  - signoff-final `47`(T-009 초안): 기준 20행 중 `unsteady`가 6행인 가장 작은 시드 [T9:S2 seed]. 6은 `answers.yaml` 3단계(기준 구간 고르기(흔들린 기록))의 `batch_size: 6`이다. 2단계(안정 기록) `batch_size: 14`와 합이 20이다. 시드 0~1999 모두 생성에 성공하고 셈(4.7)이 하나다 [T9:S2 seeds].
+  - signoff-final `47`(T-009): 기준 20행 중 `unsteady`가 6행인 가장 작은 시드 [T9:S2 seed]. 6은 `answers.yaml` 3단계(기준 구간 고르기(흔들린 기록))의 `batch_size: 6`이다. 2단계(안정 기록) `batch_size: 14`와 합이 20이다. 시드 0~1999 모두 생성에 성공하고 셈(4.7)이 하나다 [T9:S2 seeds].
 - 시드 0~1999 모두 생성에 성공한다. 셈(4.7)이 계획과 같다. 대조 변형 3종 모두 같다 [P:seeds]. 시드를 바꾸면 값만 바뀌고 구조는 같다.
 - → 승인 질문 2.
 
@@ -279,7 +279,7 @@ examples/
 - 그래서 불일치 3건(값 불일치 2 + 누락 1)을 모두 `signal_type = irregular` 행에 심었다. `irregular` 12행 중 3행(25%)이 불일치이고, `normal` 18행은 불일치가 0이다 [S3 gen focus]. 허용오차 안 차이 4행은 일치라 몰림과 상관없다.
 - "몰림"을 알아내는 규칙(어느 열이 유형인지, 몇 %면 몰림인지)은 case.yaml 스키마에 없다. 판정 카드가 정한다(9절 6).
 - form-fill은 일치 20/20(100%), 누락 0%다. `accuracy_min` 85 이상, `missing_max` 5 이하, 시간 조건 꺼짐이라 "통과"가 될 수 있다.
-- T-009 signoff-final(자료 구조 안 A, juhan 결정 필요): 일치 16/20(80.0%), 누락 1/20(5.0%)이다. `accuracy_min: 95`, `missing_max: 2`에 둘 다 못 미친다. 공개 예제에서 처음으로 문턱 미달이다(지시문 3.4 "보류 = 정확도 미달"의 모양). 불일치 4건(값 불일치 3 + 누락 1) 중 3건이 `unsteady`, 1건이 `steady`다. 몰림을 두지 않았다 [T9:S2 planted]. 판정은 판정 카드가 정한다. 다른 안은 `signoff-final.md` 4.3.
+- T-009 signoff-final(자료 구조 안 A, juhan 결정 2026-11-07): 일치 16/20(80.0%), 누락 1/20(5.0%)이다. `accuracy_min: 95`, `missing_max: 2`에 둘 다 못 미친다. 공개 예제에서 처음으로 문턱 미달이다(지시문 3.4 "보류 = 정확도 미달"의 모양). 불일치 4건(값 불일치 3 + 누락 1) 중 3건이 `unsteady`, 1건이 `steady`다. 몰림을 두지 않았다 [T9:S2 planted]. 판정은 판정 카드가 정한다. 다른 안은 `signoff-final.md` 4.3.
 
 ### 4.8 case.yaml
 
@@ -498,7 +498,7 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 
 - CSV가 없다. `case.yaml`에 `inputs`·`compare`·`thresholds`가 없다 [S3 case-check].
 
-### 6.4 signoff-final에 심은 행 (T-009 초안)
+### 6.4 signoff-final에 심은 행 (T-009)
 
 [T9:S2 planted]
 
@@ -544,7 +544,7 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 | `signoff-final` | `candidate/records.csv` |
 
 - 블록과 생성 파일이 같고, SHA-256 줄이 파일과 같다 [S10 blocks].
-- T-009(초안): 파일 표 끝에 `signoff-final` 4행, 새 7.5. 블록은 prototyper 초안이다. `case.yaml`·`intake.md`는 prototyper가 썼고, CSV 블록은 main Core 생성기가 4.3·4.4 표와 이 `case.yaml`로 낸 바이트다. T-005 Python 독립 구현(4.5의 범위 뒤집기를 더함, `spikes/T-009/xcheck/generate.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. juhan이 확정한 뒤 test-engineer가 블록을 옮긴다.
+- T-009(승인됨): 파일 표 끝에 `signoff-final` 4행, 새 7.5. 블록은 prototyper 초안이다. `case.yaml`·`intake.md`는 prototyper가 썼고, CSV 블록은 main Core 생성기가 4.3·4.4 표와 이 `case.yaml`로 낸 바이트다. T-005 Python 독립 구현(4.5의 범위 뒤집기를 더함, `spikes/T-009/xcheck/generate.py`)도 같은 바이트를 냈다 [T9:S2 xcheck]. juhan이 확정한 뒤 test-engineer가 블록을 옮긴다.
 - T-008: `case.yaml` 블록 셋과 SHA-256 줄만 바꿨다. 스파이크 `spikes/T-008/add-signoff.py`가 `examples/*/case.yaml`의 `    answers: {…}` 줄 끝에 키를 더하고, `fill-blocks.py`가 블록과 SHA-256 줄을 채웠다. 바꾼 `case.yaml`을 분류하면 `expected/classification.json`과 바이트가 같고, 대조하면 `expected/metrics.json`과 바이트가 같다 [T8:S3]. CSV·`intake.md` 블록은 그대로다.
 
 ### 7.2 table-compare
@@ -795,7 +795,7 @@ steps:
 
 ### 7.5 signoff-final
 
-T-009 초안(사람 확정 필요). 만드는 방법은 7.1 T-009 글머리, 근거와 질문은 `docs/spec/signoff-final.md`.
+T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 T-009 글머리, 근거와 질문은 `docs/spec/signoff-final.md`.
 
 `examples/signoff-final/case.yaml` (SHA-256 `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263`):
 
@@ -1016,7 +1016,7 @@ rec17,steady,990,5376,590.6
 - 바꾸지 않은 곳: 생성기 규칙(4.1~4.7), CSV 블록·SHA-256, `intake.md` 블록, 4.10 패턴 표.
 - 결과와 질문은 `docs/spec/human-signoff.md`. `examples/*/case.yaml`을 블록대로 바꾸는 것은 승인됐다(`human-signoff.md` 승인 결과 juhan 3).
 
-## T-009 개정 (초안, 사람 승인 전)
+## T-009 개정 (승인됨, 2026-11-07)
 
 - 작업 카드 `docs/tasks/T-009-signoff-final.md`. 출발점: ADR 0003 남은 질문 2 [읽음].
 - 확인 대상 커밋 `ce6c4f0`. 스파이크 `spikes/T-009/`(머지 대상 아님). 근거·질문·결과는 `docs/spec/signoff-final.md`.

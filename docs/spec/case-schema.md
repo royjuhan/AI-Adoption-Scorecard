@@ -168,7 +168,7 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 - 3.2에 없는 범위를 정했다: `batch_size` 1 이상, `exception_rate` 소수 허용, `minutes_per_item` 0 이상. → 승인 질문 6.
 - 기본값 표는 이 문서에 하나만 둔다. T-004의 `classification.md`는 이 표를 가리킨다. → 승인 질문 5.
 - `human_signoff`(T-008, ADR 0003): 파서 규칙은 다른 열거 답과 같다. 없거나 null이면 `no`, `IsDefault = true`. `Yes`·`true`·`""`·`unknown`은 `enum` 오류다 [T8:P:mark]. `yes`·`no`는 YAML 1.1 불리언 낱말이지만 문자열로 들어온다(4.6). 따옴표가 있어도 같다 [T8:P:mark].
-- `human_signoff`는 단계마다 묻지 않는다. 문답(exe 마법사·스킬)은 "사람이 최종 확인·서명하는 단계가 어디인가"를 한 번 묻고, 고른 단계는 `yes`, 나머지는 `no`로 모든 단계에 적는다(ADR 0003 결정). 그래서 문답으로 만든 파일에서는 기본값이 되지 않는다. 파일을 손으로 쓰고 키를 빼면 기본값이고, 분류 문장에 기본값 표시가 붙는다(classification.md 4.6). 지시문 2절 6과의 관계는 `human-signoff.md` 질문.
+- `human_signoff`는 단계마다 묻지 않는다. 문답(exe 마법사·스킬)은 "사람이 최종 확인·서명하는 단계가 어디인가"를 한 번 묻고, 고른 단계는 `yes`, 나머지는 `no`로 모든 단계에 적는다(ADR 0003 결정). 그래서 문답으로 만든 파일에서는 기본값이 되지 않는다. 파일을 손으로 쓰고 키를 빼면 기본값이고, 분류 문장에 기본값 표시가 붙는다(classification.md 4.6). 지시문 2절 6에 이 예외를 적었다(juhan 결정 안 A, `human-signoff.md` 승인 결과).
 
 ### 4.5 inputs, compare, thresholds
 

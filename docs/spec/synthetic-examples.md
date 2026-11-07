@@ -869,4 +869,4 @@ steps:
 - 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"(예제 3종은 모든 단계 `human_signoff: no`, expected 바이트 그대로) [읽음].
 - 바꾼 곳: 머리 상태 글머리, 4.8 글머리, 7.1 글머리, 7.2~7.4 `case.yaml` 블록과 SHA-256 줄(table-compare `451a22ac…`, form-fill `9660f3cb…`, mixed-exceptions `96f04387…`).
 - 바꾸지 않은 곳: 생성기 규칙(4.1~4.7), CSV 블록·SHA-256, `intake.md` 블록, 4.10 패턴 표.
-- 결과와 질문은 `docs/spec/human-signoff.md`. `examples/*/case.yaml`을 블록대로 바꾸는 것은 juhan 직접 승인 질문이다.
+- 결과와 질문은 `docs/spec/human-signoff.md`. `examples/*/case.yaml`을 블록대로 바꾸는 것은 승인됐다(`human-signoff.md` 승인 결과 juhan 3).

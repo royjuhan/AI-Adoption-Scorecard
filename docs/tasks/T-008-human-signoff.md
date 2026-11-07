@@ -17,7 +17,7 @@
 
 ## 폴더 범위
 
-`docs/spec/`, `docs/README-instructions.md`(3.1·3.2·3.3, 사람 결정 뒤 리드), `src/Scorecard.Core/`, `tests/`, `examples/*/answers.yaml`, `examples/*/case.yaml`
+`docs/spec/`, `docs/README-instructions.md`(2절 6·3.1·3.2·3.3, 사람 결정 뒤 리드), `CLAUDE.md`(절대 원칙 한 줄, juhan 결정 안 A), `src/Scorecard.Core/`, `tests/`, `examples/*/answers.yaml`, `examples/*/case.yaml`
 
 ## 메모
 
@@ -26,3 +26,10 @@
 - 지시문 2절 6 "모르면 기본값"과 "`human_signoff`는 늘 명시한다"의 관계를 스펙 질문으로 juhan에게 묻는다(2절 원칙 변경은 상시 승인 예외).
 - expected 파일은 바꾸지 않는다. 스펙 블록 안의 `answers.yaml`·`case.yaml`과 SHA-256 줄(classification.md 7.2~7.4, synthetic-examples.md 7.2~7.4)은 바뀐다.
 - 4번째 예제(12.1 구조, signoff-final)는 다음 카드다.
+
+## 남은 일 (reviewer 사소한 지적, 다음 카드로)
+
+- 지시문 12절 "`answers.yaml`(질문 9개 답)"을 답 10개로. `signoff-final` 카드에서 12절을 고칠 때 같이.
+- 지시문 3.3 `SIGNOFF` 줄의 `→` 열을 Q1·Q2 줄과 맞춘다(공백 하나). 다음 지시문 수정 때.
+- `tests/Scorecard.Tests/Synthetic/CaseYamlTests.cs:19` 주석 "답 9개" → 10개. 정리 카드(sweeper).
+- `ClassificationApiShapeTests`가 `StepClassification` 위치 매개변수 순서를 검사하지 않는다. 필요하면 정리 카드에서 더한다.

@@ -4,9 +4,9 @@
 - 반영한 사람 결정: ADR 0003 "결정"(2026-11-07 juhan, 후보 1)과 남은 질문 1~5(제안대로 승인). ADR 0004 결정 2(`inferred: [키 목록]`), 질문 2(추정 표시는 TestData로), 질문 16 해석 A(T-008이 `inferred`까지 맡는다) [읽음].
 - 작업 카드: `docs/tasks/T-008-human-signoff.md`
 - 작성: prototyper, 2026-11-07
-- 확인 대상 커밋: `32f7692`(main). 스파이크는 이 커밋을 clone하고 작업 트리의 스펙 세 문서와 `spikes/T-008/`를 복사해 돌렸다(`summary.txt`의 `repo HEAD` 줄).
+- 확인 대상 커밋: `32f7692`(main `88bc21f` + T-008 카드). 스파이크는 이 커밋을 clone하고 작업 트리의 스펙 세 문서와 `spikes/T-008/`를 복사해 돌렸다(`summary.txt`의 `repo HEAD` 줄).
 - 확인 환경: Ubuntu 24.04 x64, .NET SDK 10.0.114, YamlDotNet 18.1.0, xUnit 2.9.3. 보조 스크립트에 Python 3.13.18.
-- 스파이크: `spikes/T-008/` (머지 대상 아님. 머지 전에 빠진다). 실행은 `spikes/T-008/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-008/summary.txt`.
+- 스파이크: `spikes/T-008/` (머지 대상 아님. 머지 전에 빠진다). 실행은 `spikes/T-008/run-spike.sh <작업폴더> <로그폴더>`. 요약 원문은 `spikes/T-008/summary.txt`. 이 문서의 `spikes/T-008/…` 경로는 스펙 초안 커밋 `58bfcde` 기준이다. main에는 없다.
 
 ## 0. 표기
 
@@ -100,7 +100,7 @@
 | `CaseSchema/CaseDefaultsTests.cs` | 답 목록에 `human_signoff` 줄, 주석 9 → 10 | 검사 대상이 하나 늘었다. 기대값은 스펙 4.4 표에서 읽는다 |
 | `CaseSchema/SpecDocumentTests.cs` | 키 목록에 `human_signoff`, 형식 목록에 `열거` 하나, 이름 `Defaults_table_lists_nine_…` → `…_ten_…` | 표가 10행이 됐다. 이름은 뜻을 맞춘 것이다. 지시문 3.2 표 대조(`Defaults_table_matches_instructions_3_2`)는 리드가 지시문 3.2에 행을 더해야 통과한다(6절) |
 | `Classification/BranchExampleTests.cs` | 분기 목록에 `SIGNOFF` | 6.1 표가 덮어야 할 분기가 7 → 8(강화). 테스트 이름 `…_seven_branches`는 그대로 두었다(바꿀지는 juhan 1) |
-| `Classification/ClassificationApiShapeTests.cs` | `StepClassification` 생성에 `Inferred: []` | 컴파일. 위치 매개변수 순서를 같이 검사(강화) |
+| `Classification/ClassificationApiShapeTests.cs` | `StepClassification` 생성에 `Inferred: []` | 컴파일. 이름 붙인 인자라 위치 순서는 검사하지 않는다 |
 | `Classification/ClassificationInput.cs` | `With`에 `human_signoff`, 조합에 서명 2값(2,160 → 4,320), 시작 값 10개 | 조합이 두 배가 됐다. 기준 답은 스펙 6.1 줄에서 읽는다 |
 | `Classification/ClassifierGuardTargetTests.cs` | 기본값 표시 행 수 3 → 5 | G2·G3 표본 `case-valid`(= case-schema 6.1 블록)를 바꾸지 않아서다. 표본에 `human_signoff`가 없어 1·2단계 `ELSE` 행에도 표시가 붙는다. 숫자는 더 커졌고 같은 `Assert.Equal`이다. 대안은 juhan 1 |
 | `Classification/ConditionTableTests.cs` | 조건 표 근거 키 목록 맨 앞에 `SIGNOFF` | 표 행이 하나 늘었다 |

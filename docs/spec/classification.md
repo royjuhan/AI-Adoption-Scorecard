@@ -136,7 +136,7 @@ Q4 frequency == rare and batch_size < 5
 항상: failure_impact in {external, safety_legal} 이면 → 해당 단계 뒤에 ④ 사람 게이트 추가
 ```
 
-- T-008: 위 블록은 T-004 때 읽은 원문이다. ADR 0003 결정으로 맨 앞에 `SIGNOFF` 줄이 생기고 "항상" 줄에 `SIGNOFF` 예외가 생긴다. 지시문은 사람 결정 뒤 리드가 고친다. 제안 문구는 `human-signoff.md` 6절.
+- T-008: 위 블록은 T-004 때 읽은 원문이다. ADR 0003 결정으로 맨 앞에 `SIGNOFF` 줄이 생기고 "항상" 줄에 `SIGNOFF` 예외가 생긴다. 지시문은 리드가 `human-signoff.md` 6절 문구로 고쳤다.
 
 해석(제안):
 
@@ -325,7 +325,7 @@ Q4 frequency == rare and batch_size < 5
 - 기존 테스트 하나가 깨진다 [S5]: `GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic`가 샘플 목록을 `["case-invalid", "case-valid"]`로 고정해 둬서, 같은 샘플을 쓰는 대상이 늘면 `["case-invalid", "case-valid", "case-valid"]`가 된다. 이 테스트의 뜻은 "`guard/basic`을 실제 대상이 쓰지 않는다"이다. 중복을 뺀 목록으로 비교하거나 "`basic`이 없다"로 바꾼다. 약화가 아니라 새 대상을 반영하는 변경이다. PR 본문에 적는다. → 승인 질문 12.
 - 음성 대조 [S6]: 어댑터가 케이스 이름 자리에 입력 폴더 절대 경로를 넣으면 G2가 `G2 R3 다른 경로: out/classification.json SHA-256 다름`으로 잡는다.
 - 정상 표본 `case-valid`는 분류에 ②·③·④(예외 검토·게이트)와 기본값 표시 3행, 확인 항목 2종을 모두 낸다 [S3 classify-case-valid]. 오류 표본은 분류할 것이 없어 등록하지 않는다.
-- T-008: 표본 `case-valid`는 `human_signoff`를 적지 않았다(case-schema 6.1 블록과 같아야 해서 바꾸지 않는다). 그래서 1·2단계 `ELSE` 행에도 기본값 표시가 붙어 3행 → 5행이다 [T8:S4 guard]. `ClassifierGuardTargetTests`의 숫자 3을 5로 고친다(`human-signoff.md` 승인 질문, juhan 직접). G2·G3는 같은 실행 안의 비교라 그대로 통과한다 [T8:S5]. `SIGNOFF`·`inferred`를 쓰는 G2·G3 표본은 더하지 않는다(제안, 같은 질문).
+- T-008: 표본 `case-valid`는 `human_signoff`를 적지 않았다(case-schema 6.1 블록과 같아야 해서 바꾸지 않는다). 그래서 1·2단계 `ELSE` 행에도 기본값 표시가 붙어 3행 → 5행이다 [T8:S4 guard]. `ClassifierGuardTargetTests`의 숫자 3을 5로 고친다(`human-signoff.md` 승인 결과 juhan 1·3). G2·G3는 같은 실행 안의 비교라 그대로 통과한다 [T8:S5]. `SIGNOFF`·`inferred`를 쓰는 G2·G3 표본은 더하지 않는다(제안, 같은 질문).
 
 ### 4.11 Core 공개 API (제안)
 
@@ -578,7 +578,7 @@ inferred 4: current_actor
 4. `examples/.gitattributes`(`* -text`)를 같이 넣는다. 없으면 `core.autocrlf=true` clone에서 `expected/classification.json`이 2,619바이트에서 2,712바이트로(T-004 당시. T-007 뒤 table-compare는 2,642바이트), `answers.yaml`이 1,083바이트에서 1,095바이트로 바뀐다. 있으면 그대로다 [S7]. 골든 테스트가 바이트를 비교하므로 필요하다. T-002 승인 결정 10은 이 결정을 T-005로 미뤘다 [읽음]. 예제 파일을 처음 넣는 카드가 T-004가 됐다. → 승인 질문 11.
 5. `examples/`의 다른 파일(`case.yaml`, `intake.md`, `reference/`, `candidate/`)은 T-005가 만든다. T-005의 `case.yaml` 단계·답은 이 `answers.yaml`과 같아야 한다(T-005에서 테스트).
 6. 지시문 2절 10 "examples/는 합성 생성기로만 만든다"는 자료(`reference/`, `candidate/`)에 대한 것으로 본다. `answers.yaml`은 사람이 답한 질문지이고 `expected/`는 사람이 확정한 정답이다(지시문 12절) → 승인 질문 14.
-7. T-008 개정(초안): 아래 `answers.yaml` 블록 셋은 모든 단계의 `answers` 줄 끝에 `, human_signoff: no`를 더한 것이다. 그 밖의 줄(주석, 단계 이름, 다른 답)은 바이트 그대로다. `expected/classification.json` 블록 셋과 SHA-256 줄은 바꾸지 않았다. 스파이크 후보가 바꾼 `answers.yaml`에서 낸 바이트가 이 블록·SHA-256과 같았다 [T8:S3 classify]. 키를 더하지 않으면(지금 파일) 후보는 모든 `step` 행에 기본값 표시를 붙여 바이트가 달라진다 [T8:S3 head-answers]. 그래서 `answers.yaml`을 같이 바꾼다. 블록 = 파일 테스트 때문에 `examples/*/answers.yaml` 세 파일도 블록대로 바꿔야 한다(`human-signoff.md` 승인 질문, juhan 직접).
+7. T-008 개정(승인됨): 아래 `answers.yaml` 블록 셋은 모든 단계의 `answers` 줄 끝에 `, human_signoff: no`를 더한 것이다. 그 밖의 줄(주석, 단계 이름, 다른 답)은 바이트 그대로다. `expected/classification.json` 블록 셋과 SHA-256 줄은 바꾸지 않았다. 스파이크 후보가 바꾼 `answers.yaml`에서 낸 바이트가 이 블록·SHA-256과 같았다 [T8:S3 classify]. 키를 더하지 않으면(지금 파일) 후보는 모든 `step` 행에 기본값 표시를 붙여 바이트가 달라진다 [T8:S3 head-answers]. 그래서 `answers.yaml`을 같이 바꾼다. 블록 = 파일 테스트 때문에 `examples/*/answers.yaml` 세 파일도 블록대로 바꿔야 한다(`human-signoff.md` 승인 결과 juhan 1·3).
 
 요약 [S3]:
 

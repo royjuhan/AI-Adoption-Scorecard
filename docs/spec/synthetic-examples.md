@@ -290,10 +290,10 @@ examples/
 
 | 예제 | `inputs` | `compare` | `thresholds` |
 | --- | --- | --- | --- |
-| `table-compare` | `reference/*.csv`, `candidate/*.csv`, 키 `log_id` | `start_index` `tolerance: 0`, `length` `tolerance: 0`, `mean_value` `tolerance_pct: 1.0` | `accuracy_min: 85`, `missing_max: 5`, `time_must_drop: false` |
+| `table-compare` | `reference/*.csv`, `candidate/*.csv`, 키 `log_id`, 유형 열 `signal_type` | `start_index` `tolerance: 0`, `length` `tolerance: 0`, `mean_value` `tolerance_pct: 1.0` | `accuracy_min: 85`, `missing_max: 5`, `time_must_drop: false` |
 | `form-fill` | `reference/*.csv`, `candidate/*.csv`, 키 `order_id` | `item`(허용 오차 없음), `quantity` `tolerance: 0` | 같음 |
 | `mixed-exceptions` | 없음 | 없음 | 없음 |
-| `signoff-final` | `reference/*.csv`, `candidate/*.csv`, 키 `record_id` | `range_start` `tolerance: 0`, `range_end` `tolerance: 0`, `range_avg` `tolerance_pct: 1.0` | `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false` |
+| `signoff-final` | `reference/*.csv`, `candidate/*.csv`, 키 `record_id`, 유형 열 `record_kind` | `range_start` `tolerance: 0`, `range_end` `tolerance: 0`, `range_avg` `tolerance_pct: 1.0` | `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false` |
 
 - `compare` 모양은 지시문 12.1 예시(구간 시작·끝 0, `mean_value` 1.0%)를 따랐다 [읽음].
 - `accuracy_min: 85`: 90%와 100%가 모두 충족한다. 90에 두면 90.0이 경계에 걸린다. 경계는 판정 카드 단위 테스트로 본다. case-schema 4.5 "`table-compare`는 `accuracy_min`이 90 이하여야" [읽음]와 맞다.
@@ -549,7 +549,7 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 
 ### 7.2 table-compare
 
-`examples/table-compare/case.yaml` (SHA-256 `451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2`):
+`examples/table-compare/case.yaml` (SHA-256 `e99d669ab16b6eada60e31c794efaa8cd5baa23db34b2500a68b731914f8e5b1`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 table-compare.
@@ -569,6 +569,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: log_id
+  group: signal_type
 compare:
   - {field: start_index, tolerance: 0}
   - {field: length, tolerance: 0}
@@ -797,7 +798,7 @@ steps:
 
 T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 T-009 글머리, 근거와 질문은 `docs/spec/signoff-final.md`.
 
-`examples/signoff-final/case.yaml` (SHA-256 `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263`):
+`examples/signoff-final/case.yaml` (SHA-256 `e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
@@ -824,6 +825,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: record_id
+  group: record_kind
 compare:
   - {field: range_start, tolerance: 0}
   - {field: range_end, tolerance: 0}

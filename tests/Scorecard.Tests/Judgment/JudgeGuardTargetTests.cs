@@ -54,8 +54,9 @@ public partial class JudgeGuardTargetTests
         Assert.Equal(JudgmentJson.Render(JudgeSample()), bytes);
     }
 
-    // 4.12 표본 판정: 보류 ACCURACY(66.7% < 90), 시간 not_measured, 몰림 off(유형 열 없음), 다음 할 일 셋.
-    // 문장은 4.3·4.4 틀을 표본 값으로 채운 것이다. 표본이 바뀌어 판정 기능 일부만 쓰게 되면 여기서 알린다.
+    // 4.12·11.14 표본 판정: 보류 ACCURACY(66.7% < 90), 검토 항목 not_reviewed(5건: 불일치 4건, 추가 행 1건),
+    // 시간 not_measured, 몰림 off(표본에 inputs.group 없음), 다음 할 일 셋(T-012 키 이름).
+    // 문장은 11.4·11.5 틀을 표본 값으로 채운 것이다. 표본이 바뀌어 판정 기능 일부만 쓰게 되면 여기서 알린다.
     [Fact]
     public void Sample_judgment_matches_spec()
     {
@@ -66,9 +67,24 @@ public partial class JudgeGuardTargetTests
         Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindVerdict(JudgmentSpec.Accuracy, JudgmentInput.NotMet).Template, slots), judged.Reason);
         Assert.Equal(JudgmentInput.NotMeasured, JudgmentInput.CheckOf(judged, JudgmentSpec.Time).Result);
         Assert.Equal(JudgmentInput.Off, JudgmentInput.CheckOf(judged, JudgmentSpec.Focus).Result);
-        Assert.Equal(["measure_time", "review_mismatches", "add_type_column"], JudgmentInput.TodoKeys(judged));
+        Assert.Equal(JudgmentInput.NotReviewed, JudgmentInput.CheckOf(judged, JudgmentSpec.Unexplained).Result);
+        Assert.Equal(
+            JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Unexplained, JudgmentInput.NotReviewed).Template, new Dictionary<string, string> { ["items"] = "5", ["breakdown"] = "불일치 4건, 추가 행 1건" }),
+            JudgmentInput.CheckOf(judged, JudgmentSpec.Unexplained).Reason);
+        Assert.Equal(["measure_time", "review_items", "add_group"], JudgmentInput.TodoKeys(judged));
         Assert.Empty(judged.Defaults);
         Assert.Contains(judged.Checks, c => c.Reason.Contains("66.7", StringComparison.Ordinal));
+    }
+
+    // 11.14: 표본 출력 바이트의 SHA-256은 스펙 줄의 값이다(oracle이 낸 바이트, C# 엔진도 같아야 한다).
+    [Fact]
+    public void Sample_judgment_bytes_match_spec_hash()
+    {
+        var line = SpecDocument.Line(JudgmentSpec.Document, "- 출력 바이트가 바뀐다(SHA-256 ");
+        var hash = SpecDocument.CodeSpans(line)[0];
+
+        Assert.Matches("^[0-9a-f]{64}$", hash);
+        Assert.Equal(hash, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(JudgmentJson.Render(JudgeSample()))));
     }
 
     // 4.12 음성 대조(S6 a의 테스트 쪽 판): 문장 숫자를 현재 문화권으로 다시 쓰면 G2 R4(de-DE)가 잡는다.

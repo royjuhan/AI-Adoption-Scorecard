@@ -1,7 +1,7 @@
 # T-012 판정 보강 (추가 행·결과 쪽 중복·안 본 불일치·몰림 열)
 
 - 마일스톤: M1 끝 [재검토] 결과(2026-11-07, STATUS.md 재검토 기록)
-- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) 스펙·oracle
+- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) #14 머지. PR (b) 엔진·expected 진행 중
 
 ## 목표
 
@@ -21,7 +21,7 @@ M1 [재검토]의 막는 지적 1·2를 고친다. 결과 자료(AI 결과)의 �
 
 ## 폴더 범위
 
-PR (a): `docs/spec/`, `tools/oracle/`, `docs/STATUS.md`, 이 카드. PR (b): `docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/case.yaml`, `examples/*/expected/`, `docs/STATUS.md`, 이 카드.
+PR (a): `docs/spec/`, `tools/oracle/`, `docs/decisions/`, `docs/STATUS.md`, 이 카드. PR (b): `docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/case.yaml`, `examples/*/expected/`, `docs/STATUS.md`, 이 카드.
 
 ## 메모
 
@@ -46,3 +46,33 @@ PR (a): `docs/spec/`, `tools/oracle/`, `docs/STATUS.md`, 이 카드. PR (b): `do
 10. judgment.json schema_version 2.
 11. oracle 판 둘(ADR 0007). PR (b) 뒤 `judge_v1` 삭제.
 12. PR (a)는 새 표를 11절에만. 제자리 옮김은 PR (b).
+
+## PR (a) 리뷰 지적 (#14, 막는 지적 없음)
+
+- 다음 정리 카드로 넘긴다(oracle을 바꾸므로 PR (b)에 둘 수 없다. `oracle-and-expected`):
+  1. 결과 쪽 중복은 첫 행으로 대조해 맞는 답이 앞에 오면 일치로 센다. 줄 순서에 따라 정확도가 달라진다. `duplicate` 항목에 차이가 없다(metrics.md 12절). 안: 중복 키는 일치로 세지 않고 모든 행의 차이를 적는다.
+  2. `judge_v1` 삭제를 그 카드의 수용 기준에 넣는다(ADR 0007 결정 4).
+  3. 지시문 3.4 문구에 "아직 안 본 검토 항목 → 조건부"를 맞춘다(지금은 해석). metrics.json `items[].status` 값이 늘었는데 schema_version 1인 기준을 ADR 0004 쪽에 한 줄.
+- PR (b)에서 한다: 스펙 11절 상태 줄 "제안" → "채택"(judgment.md, case-schema.md, metrics.md).
+
+## PR (b) 바꾼 기존 테스트 (test-engineer)
+
+지운 테스트·Skip 없음. `[Fact]`·`[Theory]` 598 → 637. 이름을 바꾼 테스트 없음. 한 줄에 하나씩, 왜 바꿨나.
+
+- `KeyTests.Duplicate_keys_are_reported_from_the_second`: 결과 쪽 둘째 행은 `duplicate-key` 오류가 아니라 항목 `duplicate`다(metrics.md 12.2). 기준 쪽 세 단언은 그대로다. 뜻이 바뀐 것이지 약화가 아니다.
+- `CompareApiShapeTests.Constants_equal_spec_api_block`·`Constants_have_spec_values`: 상수 `ItemDuplicate` = `duplicate`가 는다(15 → 16, metrics.md 12.7 5).
+- `CaseApiShapeTests.Model_records_have_spec_shape`: `CaseInputs` 세 인자 생성의 `Group`이 null인지 본다(case-schema.md 10.3). 매개변수 넷은 새 `Case_inputs_has_optional_group`이 본다.
+- `CaseYamlTests.Case_data_keys_match_spec_table`: synthetic-examples.md 4.8 `inputs` 칸의 넷째 값 "유형 열 `x`"를 `Group`으로 읽는다(case-schema.md 10.5 5). 칸이 세 값이면 지금처럼 `Group` = null.
+- `JudgmentApiShapeTests.Constants_have_spec_values`: `JudgmentJson.SchemaVersion`이 2다(11.16, 질문 10).
+- `JudgmentApiShapeTests.Unexplained_keys_must_be_distinct_mismatch_keys`: 추가 행·중복 행 키도 받는다(11.9, 카드 수용 기준 1). 거절(일치 키·없는 키·두 번)은 그대로다.
+- `JudgmentJsonTests.Objects_follow_shape_block_order_with_integer_schema_version_first`: 첫 키 값이 2다(3.2 모양 블록도 2, 11.17 문서 2).
+- `JudgmentJsonTests`의 출력 모음: 검토 항목 셋(불일치·추가 행·중복 행)을 모두 가진 장면을 더했다. 모음을 쓰는 테스트가 그 장면도 본다.
+- `JudgmentJsonTests.Type_value_with_quote_and_emoji_is_escaped_in_json`, `CheckTableTests`의 FOCUS 장면: 몰림은 `inputs.group`만 본다(11.8 M-A). 장면에 `group` 한 줄을 넣는다.
+- `CheckTableTests`·`VerdictTableTests`·`TodoTests`·`UnexplainedTests`·`ThresholdDefaultTests`·`FocusTests`: 표 머리 행을 11절 것으로 바꿨다(11.17 test-engineer 1). 읽는 칸이 늘었다(순서, `inputs.group`, 추가 행·중복 행, 다음 할 일). 행 수는 모두 같거나 늘었다.
+- `VerdictTableTests` 우선순위 테스트: 11.10 표의 "다음 할 일" 칸을 판정 결과의 todo 키와 맞춘다.
+- `ThresholdDefaultTests`: 11.6 표에서 `UNEXPLAINED`가 순서 4·7 두 번 나온다. 근거 키 기준 테스트 이름·데이터는 그대로 두고(처음 순서), 순서 7은 새 테스트 둘이 본다.
+- `TodoTests`: 할 일 키 `review_mismatches` → `review_items`, `add_type_column` → `add_group`(질문 9).
+- `FocusTests`(메서드 이름 그대로): M-B(키·대조 밖 열 전부) → M-A(`inputs.group` 한 열, 기준 값만, 없으면 off + `add_group`). 열이 없는 경우는 대조 오류 `column`, 이름 충돌은 파서 오류 `conflict`로 본다(11.8, metrics.md 12.3).
+- `JudgmentGoldenTests.Example_table_matches_expected_file`: 11.12 예제 표(칸 `inputs.group`, `검토 항목`)를 읽는다. `Instructions_section_12_verdicts_hold`: 지시문 12절 표를 직접 읽는다(옛 7.1 표가 11.17 문서 1에서 지워진다).
+- `JudgeGuardTargetTests.Sample_judgment_matches_spec`: G2 표본 판정의 todo 키와 UNEXPLAINED 문장이 11.3·11.5 틀이다. 판정·근거 키는 그대로다.
+- `ErrorCodeTests.Any_error_means_no_metrics`: 결과 쪽 오류를 키 중복에서 빈 키(`empty-key`)로 바꿨다. 결과 쪽 중복은 이제 오류가 아니라 `duplicate` 항목이다(잠정 결정 2). 뜻(오류 하나면 지표 없음)은 같다.

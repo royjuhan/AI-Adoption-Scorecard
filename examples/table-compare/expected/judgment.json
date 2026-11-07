@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "table-compare",
   "verdict": "conditional",
   "rule": "FOCUS",
@@ -24,7 +24,7 @@
     {
       "rule": "UNEXPLAINED",
       "result": "not_reviewed",
-      "reason": "불일치 3건이 설명되는지 사람이 아직 보지 않았다."
+      "reason": "검토할 항목 4건(불일치 3건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
     },
     {
       "rule": "TIME",
@@ -39,8 +39,8 @@
   ],
   "todo": [
     {
-      "key": "review_mismatches",
-      "text": "불일치 3건을 보고 설명이 되는지 적는다."
+      "key": "review_items",
+      "text": "검토할 항목 4건(불일치 3건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     }
   ]
 }

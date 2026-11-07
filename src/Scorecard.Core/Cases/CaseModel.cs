@@ -38,7 +38,8 @@ public sealed record StepAnswers(
 public sealed record Answer<T>(T Value, bool IsDefault, bool IsInferred = false);
 
 // 대조 입력. 경로는 케이스 폴더 기준 상대 경로다. glob 문자는 그대로 둔다(해석은 T-006).
-public sealed record CaseInputs(string Reference, string Candidate, string Key);
+// Group은 몰림을 볼 기준 자료의 유형 열 이름이다(스펙 10절, T-012). 적지 않으면 null이다.
+public sealed record CaseInputs(string Reference, string Candidate, string Key, string? Group = null);
 
 // 비교 필드 하나. 허용 오차는 하나만 있거나 둘 다 없다.
 public sealed record CompareField(string Field, decimal? Tolerance, decimal? TolerancePct);

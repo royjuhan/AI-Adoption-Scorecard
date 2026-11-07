@@ -22,7 +22,7 @@ public sealed record CompareResult(CompareMetrics? Metrics, IReadOnlyList<CaseEr
 }
 
 // metrics.json 하나의 내용(스펙 3.2). Status가 not_verified면 Key·Counts·퍼센트는 null, 목록은 비어 있다.
-// Items는 모든 항목이다(기준 순서, 그다음 추가 항목은 결과 순서). JSON에는 차이가 있는 항목만 쓴다.
+// Items는 모든 항목이다(기준 순서, 그다음 결과 쪽 추가·중복 항목은 결과 순서, 스펙 12.2). JSON에는 차이가 있는 항목만 쓴다.
 public sealed record CompareMetrics(
     string Case,
     string Status,
@@ -36,7 +36,8 @@ public sealed record CompareMetrics(
     IReadOnlyList<FieldSummary> Fields,
     IReadOnlyList<CompareItem> Items);
 
-// 항목 셈(스펙 4.4). Reference = Match + Mismatch + Missing, Candidate = Match + Mismatch + Extra.
+// 항목 셈(스펙 4.4). Reference = Match + Mismatch + Missing, Candidate = Match + Mismatch + Extra + 중복 행(12.2).
+// 중복 행 수는 Items의 duplicate 수다. 셈 키를 따로 두지 않는다.
 // Within: 일치 항목 중 허용 오차 안의 차이가 하나 이상 있는 항목 수.
 public sealed record CompareCounts(int Reference, int Candidate, int Match, int Mismatch, int Missing, int Extra, int Within);
 
@@ -45,7 +46,8 @@ public sealed record FieldSummary(
     string Field, string Kind, decimal? Tolerance, decimal? TolerancePct,
     int Compared, int Outside, int Within, int NotNumber);
 
-// 항목 하나. Status: match, mismatch, missing, extra. 없는 쪽은 null.
+// 항목 하나. Status: match, mismatch, missing, extra, duplicate. 없는 쪽은 null.
+// duplicate는 결과 쪽 같은 키의 둘째 행부터다. Reference는 그 키의 기준 행(없으면 null), Differences는 비어 있다(12.2).
 // Differences: 차이가 있는 compare 필드(compare 순서). 정규화 뒤 같은 텍스트, 숫자로 같은 값은 넣지 않는다.
 public sealed record CompareItem(
     string Key, string Status, CsvRow? Reference, CsvRow? Candidate, IReadOnlyList<FieldDifference> Differences);

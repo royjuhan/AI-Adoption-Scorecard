@@ -53,7 +53,8 @@ public partial class JudgmentApiShapeTests
         }
     }
 
-    // 판정 값 넷 = 0절의 넷 = 4.3 판정 칸. 근거 키 일곱 = 4.3 근거 키 칸(표 순서).
+    // 판정 값 넷 = 0절의 넷 = 11.4 판정 칸. 근거 키 일곱 = 11.4 근거 키 칸(표 순서, 처음 나오는 순서).
+    // T-012(11.2·11.16): judgment.json schema_version은 2다. 확인 결과의 뜻과 다음 할 일 키가 바뀌었다(ADR 0004 결정 2).
     [Fact]
     public void Constants_have_spec_values()
     {
@@ -70,7 +71,8 @@ public partial class JudgmentApiShapeTests
                 JudgmentEngine.RuleTime, JudgmentEngine.RuleFocus, JudgmentEngine.RulePass,
             ]);
         Assert.Equal("judgment.json", JudgmentJson.FileName);
-        Assert.Equal(1, JudgmentJson.SchemaVersion);
+        Assert.Equal(JudgmentSpec.SchemaVersion, JudgmentJson.SchemaVersion);
+        Assert.Equal(2, JudgmentJson.SchemaVersion);
     }
 
     // 공개 메서드 둘의 서명. Judge의 시간·사람 입력은 선택 인자다(null이 기본).
@@ -210,24 +212,28 @@ public partial class JudgmentApiShapeTests
         }
     }
 
-    // 5절·4.9: 사람 입력 키가 불일치 항목(값 불일치·누락)의 키가 아니거나 중복이면 ArgumentException.
-    // 일치 항목의 키, 추가 행의 키, 없는 키, 중복 키. 불일치가 없는 장면에 키를 넣어도 그렇다.
+    // 5절·11.9: 사람 입력 키가 검토 항목(불일치·추가 행·중복 행, 11.3)의 키가 아니거나 중복이면 ArgumentException.
+    // 차이 없는 일치 항목의 키, 없는 키, 중복 키. 불일치가 없는 장면에 키를 넣어도 그렇다.
+    // T-012(카드 수용 기준 1): 추가 행 키와 결과 쪽 중복 행 키는 받는다. T-011은 추가 행 키도 거절했다.
     [Fact]
     public void Unexplained_keys_must_be_distinct_mismatch_keys()
     {
-        var scene = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Spread)
-            with
+        var plain = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Spread);
+        var duplicated = plain.Rows[^1];
+        var scene = plain with
         {
             Extras = [new SceneRow("x0001", ["a"], SceneRow.Match)],
+            Duplicates = [duplicated],
         };
         var definition = scene.Definition;
         var metrics = scene.Metrics();
         var bad = scene.BadKeys;
-        var match = scene.Rows.First(r => !r.IsBad).Key;
+        var match = scene.Rows.First(r => !r.IsBad && r.Key != duplicated.Key).Key;
         Assert.Equal(2, bad.Length);
+        Assert.False(duplicated.IsBad);
 
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, [match]));
-        Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, ["x0001"]));
+        Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, ["x0001", "x0001"]));
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, ["no-such-key"]));
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, [bad[0], bad[0]]));
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, [bad[0], match]));
@@ -235,8 +241,13 @@ public partial class JudgmentApiShapeTests
         var clean = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NoneResult, JudgmentInput.Off, JudgmentInput.Few);
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(clean.Definition, clean.Metrics(), null, [clean.Rows[0].Key]));
 
-        // 바른 입력은 예외가 없다(빈 통과 방지).
-        Assert.Equal(JudgmentInput.Found, JudgmentInput.CheckOf(JudgmentEngine.Judge(definition, metrics, null, bad), JudgmentSpec.Unexplained).Result);
+        // 바른 입력은 예외가 없다(빈 통과 방지). 불일치 키, 추가 행 키, 중복 행 키(일치하는 기준 키), 셋을 섞은 것.
+        foreach (IReadOnlyList<string> keys in new[] { bad, ["x0001"], [duplicated.Key], [bad[0], "x0001", duplicated.Key] })
+        {
+            var judged = JudgmentEngine.Judge(definition, metrics, null, keys);
+            Assert.Equal(JudgmentInput.Found, JudgmentInput.CheckOf(judged, JudgmentSpec.Unexplained).Result);
+            Assert.Equal((JudgmentEngine.VerdictHold, JudgmentEngine.RuleUnexplained), (judged.Verdict, judged.Rule));
+        }
     }
 
     // const 줄이 속한 클래스. 블록에서 그 줄 앞의 마지막 "public static class X" 줄.

@@ -3,17 +3,18 @@ using Scorecard.Tests.Classification;
 
 namespace Scorecard.Tests.Judgment;
 
-// 스펙 4.1·4.3 판정 표와 6.5 우선순위(잠정 결정 1·2). 카드 수용 기준 2.
-// 판정 표를 위에서부터 보고 처음 걸리는 행이 판정이다. 보류 → 조건부 → 통과. 문장은 표의 틀을 4.5 값으로 채운 것이다.
+// 스펙 4.1·11.4 판정 표와 11.10 우선순위(T-011 잠정 결정 1·2, T-012 잠정 결정 4). 카드 수용 기준 2.
+// 판정 표를 위에서부터 보고 처음 걸리는 행이 판정이다. 보류 → 조건부 → 통과. 문장은 표의 틀을 4.5·11.6 값으로 채운 것이다.
+// T-012: 사람이 아직 보지 않은 검토 항목은 조건부 UNEXPLAINED(순서 7, FOCUS 뒤). 통과는 순서 8.
 // 장면의 문턱은 모두 적는다(기본값 표시는 ThresholdDefaultTests가 본다).
 [Trait("Spec", "judgment")]
 public class VerdictTableTests
 {
-    // 4.3 표의 (근거 키, 걸리는 결과). PASS의 결과 칸은 —다.
+    // 11.4 표의 (근거 키, 확인 결과). PASS의 결과 칸은 —다.
     public static TheoryData<string, string> VerdictRowKeys =>
         ClassificationInput.TheoryPairs(JudgmentSpec.VerdictRows().Select(r => (r.Rule, r.Result ?? JudgmentSpec.None)));
 
-    // 6.5 표의 행 번호.
+    // 11.10 표의 행 번호.
     public static TheoryData<int> PriorityRows => new(Enumerable.Range(0, JudgmentSpec.Table(JudgmentSpec.PriorityHeader).Count));
 
     // 표 모양: 순서는 1부터 늘어나고, 같은 순서의 행은 근거 키가 같다. 근거 키 일곱이 모두 있고 PASS가 마지막이다.
@@ -36,7 +37,7 @@ public class VerdictTableTests
         Assert.All(rows.Where(r => r.Verdict == JudgmentSpec.Hold), r => Assert.True(r.Order < firstConditional));
     }
 
-    // 4.3: 행마다 그 행에 걸리는 장면의 판정·근거 키·판정 문장. 확인 결과도 그 행의 결과다.
+    // 11.4: 행마다 그 행에 걸리는 장면의 판정·근거 키·판정 문장. 확인 결과도 그 행의 결과다.
     [Theory]
     [MemberData(nameof(VerdictRowKeys))]
     public void Each_verdict_row_gives_its_verdict_rule_and_sentence(string rule, string result)
@@ -65,8 +66,8 @@ public class VerdictTableTests
         }
     }
 
-    // 6.5: 확인 다섯의 결과 조합을 내는 장면에서 확인 다섯이 표와 같고, 판정·근거 키가 표와 같다.
-    // 판정 문장은 4.3 표에서 그 근거 키·결과의 틀이다.
+    // 11.10: 확인 다섯의 결과 조합을 내는 장면에서 확인 다섯이 표와 같고, 판정·근거 키·다음 할 일이 표와 같다.
+    // 판정 문장은 11.4 표에서 그 근거 키·결과의 틀이다. 장면은 문턱을 모두 적어 confirm_thresholds가 없다.
     [Theory]
     [MemberData(nameof(PriorityRows))]
     public void Priority_table_row_gives_its_verdict(int index)
@@ -82,9 +83,34 @@ public class VerdictTableTests
 
         var result = cells[6] == JudgmentSpec.PassRule ? null : JudgmentInput.CheckOf(judged, cells[6]).Result;
         Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindVerdict(cells[6], result).Template, scene.Slots()), judged.Reason);
+        Assert.Equal(JudgmentSpec.List(JudgmentSpec.Table(JudgmentSpec.PriorityHeader)[index][7]), JudgmentInput.TodoKeys(judged));
     }
 
-    // 6.5 표가 판정 넷 가운데 미검증 밖의 셋과 근거 키 여섯(미검증 밖)을 모두 쓴다(빈 통과 방지).
+    // 11.4 순서 7(T-012 잠정 결정 4): 사람이 안 본 검토 항목은 FOCUS 바로 뒤, PASS 바로 앞의 조건부다. 보류가 아니다.
+    // 몰림·시간이 걸리면 그 근거 키가 먼저다(11.4 셋째 글머리).
+    [Fact]
+    public void Not_reviewed_items_are_conditional_after_focus_and_before_pass()
+    {
+        var rows = JudgmentSpec.VerdictRows();
+        var notReviewed = JudgmentSpec.FindVerdict(JudgmentSpec.Unexplained, JudgmentInput.NotReviewed);
+        var found = JudgmentSpec.FindVerdict(JudgmentSpec.Unexplained, JudgmentInput.Found);
+
+        Assert.Equal(JudgmentSpec.Conditional, notReviewed.Verdict);
+        Assert.Equal(JudgmentSpec.Hold, found.Verdict);
+        Assert.Equal(JudgmentSpec.FindVerdict(JudgmentSpec.Focus, JudgmentInput.Found).Order + 1, notReviewed.Order);
+        Assert.Equal(rows[^1].Order - 1, notReviewed.Order);
+        Assert.True(found.Order < notReviewed.Order);
+
+        var focus = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Found).Judge();
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleFocus), (focus.Verdict, focus.Rule));
+        var time = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.NotMet, JudgmentInput.Spread).Judge();
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleTime), (time.Verdict, time.Rule));
+        var alone = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Met, JudgmentInput.Spread).Judge();
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleUnexplained), (alone.Verdict, alone.Rule));
+    }
+
+    // 11.10 표가 판정 넷 가운데 미검증 밖의 셋과 근거 키 여섯(미검증 밖)을 모두 쓴다(빈 통과 방지).
+    // UNEXPLAINED는 보류(found)와 조건부(not_reviewed) 둘 다 나온다(T-012).
     [Fact]
     public void Priority_table_covers_every_measured_rule()
     {
@@ -96,6 +122,8 @@ public class VerdictTableTests
         Assert.Equal(
             new[] { JudgmentSpec.Pass, JudgmentSpec.Conditional, JudgmentSpec.Hold }.Order(StringComparer.Ordinal),
             rows.Select(r => r[5]).Distinct().Order(StringComparer.Ordinal));
+        Assert.Contains(rows, r => r[6] == JudgmentSpec.Unexplained && r[5] == JudgmentSpec.Conditional);
+        Assert.Contains(rows, r => r[6] == JudgmentSpec.Unexplained && r[5] == JudgmentSpec.Hold);
     }
 
     // 4.1 5(잠정 결정 2): 정확도는 충족하나 누락률이 문턱을 넘으면 보류(MISSING)다. 조건부·통과가 아니다.
@@ -118,7 +146,7 @@ public class VerdictTableTests
         Assert.Equal((JudgmentEngine.VerdictHold, JudgmentEngine.RuleAccuracy), (judged.Verdict, judged.Rule));
     }
 
-    // 4.3 행(근거 키, 결과)에 걸리는 장면.
+    // 11.4 행(근거 키, 결과)에 걸리는 장면.
     internal static JudgmentScene SceneFor(string rule, string result) => (rule, result) switch
     {
         (JudgmentSpec.Accuracy, JudgmentInput.NotMet) => JudgmentInput.Checks(JudgmentInput.NotMet, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Spread),
@@ -127,7 +155,8 @@ public class VerdictTableTests
         (JudgmentSpec.Time, JudgmentInput.NotMeasured) => JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NoneResult, JudgmentInput.NotMeasured, JudgmentInput.Few),
         (JudgmentSpec.Time, JudgmentInput.NotMet) => JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NoneResult, JudgmentInput.NotMet, JudgmentInput.Few),
         (JudgmentSpec.Focus, JudgmentInput.Found) => JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Found),
+        (JudgmentSpec.Unexplained, JudgmentInput.NotReviewed) => JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NotReviewed, JudgmentInput.Off, JudgmentInput.Spread),
         (JudgmentSpec.PassRule, JudgmentSpec.None) => JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NoneResult, JudgmentInput.Off, JudgmentInput.Few),
-        _ => throw new ArgumentOutOfRangeException(nameof(rule), $"{rule} {result}", "4.3 표에 이 행의 장면이 없다. 표가 바뀌었으면 장면을 더한다."),
+        _ => throw new ArgumentOutOfRangeException(nameof(rule), $"{rule} {result}", "11.4 표에 이 행의 장면이 없다. 표가 바뀌었으면 장면을 더한다."),
     };
 }

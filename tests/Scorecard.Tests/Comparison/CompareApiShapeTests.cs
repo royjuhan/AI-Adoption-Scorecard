@@ -41,7 +41,8 @@ public partial class CompareApiShapeTests
         var spec = ConstLine().Matches(block)
             .Select(m => (Owner: OwnerOf(block, m.Index), Name: m.Groups["name"].Value, Value: m.Groups["value"].Value.Trim('"')))
             .ToArray();
-        Assert.Equal(15, spec.Length);
+        // T-012(12.2·12.7 5): ItemDuplicate 하나가 늘어 16개다.
+        Assert.Equal(16, spec.Length);
 
         foreach (var owner in new[] { typeof(CompareEngine), typeof(MetricsJson) })
         {
@@ -58,15 +59,15 @@ public partial class CompareApiShapeTests
         }
     }
 
-    // 상수 값. 3.2 속성 표·4.4 미검증 표·4.5와 같은 글자다(컴파일 시점에도 이름이 있어야 한다).
+    // 상수 값. 3.2 속성 표·4.4 미검증 표·4.5와 같은 글자다(컴파일 시점에도 이름이 있어야 한다). T-012: duplicate(12.2).
     [Fact]
     public void Constants_have_spec_values()
     {
         Assert.Equal(
-            ["measured", "not_verified", "no_inputs", "no_compare_fields", "match", "mismatch", "missing", "extra", "number", "text", "within", "outside", "not_number"],
+            ["measured", "not_verified", "no_inputs", "no_compare_fields", "match", "mismatch", "missing", "extra", "duplicate", "number", "text", "within", "outside", "not_number"],
             [
                 CompareEngine.StatusMeasured, CompareEngine.StatusNotVerified, CompareEngine.ReasonNoInputs, CompareEngine.ReasonNoCompareFields,
-                CompareEngine.ItemMatch, CompareEngine.ItemMismatch, CompareEngine.ItemMissing, CompareEngine.ItemExtra,
+                CompareEngine.ItemMatch, CompareEngine.ItemMismatch, CompareEngine.ItemMissing, CompareEngine.ItemExtra, CompareEngine.ItemDuplicate,
                 CompareEngine.KindNumber, CompareEngine.KindText, CompareEngine.ResultWithin, CompareEngine.ResultOutside, CompareEngine.ResultNotNumber,
             ]);
         Assert.Equal("metrics.json", MetricsJson.FileName);

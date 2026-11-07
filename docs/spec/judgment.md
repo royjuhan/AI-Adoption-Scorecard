@@ -1,7 +1,7 @@
 # judgment (T-011 스펙: 판정)
 
 - 상태: 채택됨(2026-11-07, 리드가 추천안 1~12 채택. ADR 0005 결정 3. 기록은 카드 "잠정 결정"과 `docs/STATUS.md`). 이전 상태: 초안. ADR 0005 결정 3에 따라 승인 질문은 juhan에게 묻지 않고 추천안을 채택한다. 추천안은 회귀를 막는 쪽(기존 expected 바이트 유지, 기존 테스트 축소 없음)으로 골랐다. 질문과 채택 기록은 문서 끝.
-- T-012 개정(제안, 2026-11-07. 문서 끝 11절): 검토 항목(불일치 + 추가 행 + 결과 쪽 중복 행), 사람이 아직 보지 않은 검토 항목은 조건부 `UNEXPLAINED`, 몰림 M-A(`inputs.group`), judgment.json `schema_version` 2. PR (a)는 옛 표·블록을 그대로 두고 11절에 새 표·블록을 둔다. 제자리로 옮기는 것은 PR (b)다(11.17). 옛 절 머리에 "T-012 개정" 글머리로 옮길 곳을 적었다.
+- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 문서 끝 11절. 검토 항목(불일치 + 추가 행 + 결과 쪽 중복 행), 사람이 아직 보지 않은 검토 항목은 조건부 `UNEXPLAINED`, 몰림 M-A(`inputs.group`), judgment.json `schema_version` 2. PR (a)는 옛 표·블록을 그대로 두고 11절에 새 표·블록을 둔다. 제자리로 옮기는 것은 PR (b)다(11.17). 옛 절 머리에 "T-012 개정" 글머리로 옮길 곳을 적었다.
 - 작업 카드: `docs/tasks/T-011-judgment.md`. 판정 카드는 T-010에서 T-011로 번호가 바뀌었다(ADR 0005 결정 1).
 - 출발점: 지시문 3.4 판정 문장·3.5 4구역·6구역·12절 표 [읽음], `metrics.md` 3.1(`CsvRow`)·4.8 권고·11절·승인 질문 16 [읽음], `case-schema.md` 4.5(`thresholds`)·승인 질문 11 [읽음], `synthetic-examples.md` 4.7 [읽음], `signoff-final.md` [읽음], ADR 0004 결정 2·6과 expected 변경 규칙 [읽음], `src/Scorecard.Core/Comparison/` [읽음].
 - 작성: prototyper, 2026-11-07
@@ -66,7 +66,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "<케이스 이름>",
   "verdict": "pass | conditional | hold | not_verified",
   "rule": "NOT_VERIFIED | ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | PASS",
@@ -423,7 +423,7 @@ public static class JudgmentEngine
 public static class JudgmentJson
 {
     public const string FileName = "judgment.json";
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     // 3.2·3.3 바이트 규칙.
     public static byte[] Render(JudgmentResult result);
@@ -619,11 +619,11 @@ public sealed record JudgmentResult(
 
 ### 7.2 table-compare
 
-`examples/table-compare/expected/judgment.json` (SHA-256 `1c32a9c92311e43d19a01633a171240b3b4fa215adcafe7f4d470dc45b4f5c57`):
+`examples/table-compare/expected/judgment.json` (SHA-256 `b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "table-compare",
   "verdict": "conditional",
   "rule": "FOCUS",
@@ -648,7 +648,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "not_reviewed",
-      "reason": "불일치 3건이 설명되는지 사람이 아직 보지 않았다."
+      "reason": "검토할 항목 4건(불일치 3건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
     },
     {
       "rule": "TIME",
@@ -663,8 +663,8 @@ public sealed record JudgmentResult(
   ],
   "todo": [
     {
-      "key": "review_mismatches",
-      "text": "불일치 3건을 보고 설명이 되는지 적는다."
+      "key": "review_items",
+      "text": "검토할 항목 4건(불일치 3건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     }
   ]
 }
@@ -672,11 +672,11 @@ public sealed record JudgmentResult(
 
 ### 7.3 form-fill
 
-`examples/form-fill/expected/judgment.json` (SHA-256 `08cb0cac5df480e2611d2d92dbfca31cc2ebd6f3fcb9430d98d35343b74a0186`):
+`examples/form-fill/expected/judgment.json` (SHA-256 `06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "form-fill",
   "verdict": "pass",
   "rule": "PASS",
@@ -701,7 +701,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "none",
-      "reason": "불일치가 없다."
+      "reason": "검토할 항목(불일치·추가 행·중복 행)이 없다."
     },
     {
       "rule": "TIME",
@@ -722,11 +722,11 @@ public sealed record JudgmentResult(
 
 - `inputs`·`thresholds`가 없다. 문턱 셋이 기본값이다. 판정 문장은 문턱을 읽지 않아 표시가 없고, `defaults`와 `confirm_thresholds`에 남는다. `time_must_drop` 기본값이 `true`라 `measure_time`이 나온다.
 
-`examples/mixed-exceptions/expected/judgment.json` (SHA-256 `85e5da47de436644228ca4f1d75ac086891d1739a34c93f441bee71afdc9df11`):
+`examples/mixed-exceptions/expected/judgment.json` (SHA-256 `12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "mixed-exceptions",
   "verdict": "not_verified",
   "rule": "NOT_VERIFIED",
@@ -765,11 +765,11 @@ public sealed record JudgmentResult(
 
 ### 7.5 signoff-final
 
-`examples/signoff-final/expected/judgment.json` (SHA-256 `84da5aa2d9aaa6ead84c767235495d96189636987bb78ac24b62ddeda607871b`):
+`examples/signoff-final/expected/judgment.json` (SHA-256 `4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "signoff-final",
   "verdict": "hold",
   "rule": "ACCURACY",
@@ -794,7 +794,7 @@ public sealed record JudgmentResult(
     {
       "rule": "UNEXPLAINED",
       "result": "not_reviewed",
-      "reason": "불일치 4건이 설명되는지 사람이 아직 보지 않았다."
+      "reason": "검토할 항목 5건(불일치 4건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
     },
     {
       "rule": "TIME",
@@ -804,13 +804,13 @@ public sealed record JudgmentResult(
     {
       "rule": "FOCUS",
       "result": "spread",
-      "reason": "불일치 4건이 한 값에 몰린 열이 없다(본 열: record_kind)."
+      "reason": "불일치 4건이 record_kind 열의 한 값에 몰리지 않았다."
     }
   ],
   "todo": [
     {
-      "key": "review_mismatches",
-      "text": "불일치 4건을 보고 설명이 되는지 적는다."
+      "key": "review_items",
+      "text": "검토할 항목 5건(불일치 4건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     }
   ]
 }
@@ -914,7 +914,7 @@ ADR 0005 결정 3: T-010 뒤 카드의 승인 질문은 juhan에게 묻지 않�
 
 ## 11. T-012 개정 (판정 보강)
 
-- 상태: 제안(2026-11-07, prototyper). ADR 0005 결정 3에 따라 리드가 추천안을 채택한다. 질문은 11.19, 채택 기록은 11.20.
+- 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. ADR 0005 결정 3에 따라 리드가 추천안을 채택한다. 질문은 11.19, 채택 기록은 11.20.
 - 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 1·2(`docs/STATUS.md` 재검토 기록) [읽음]. `metrics.md` 4.4 "추가 행을 판정에 쓸지는 판정 카드가 정한다" [읽음]. 이 문서 4.8 M-A 행과 M-B 위험 글머리 [읽음].
 - 확인 대상 커밋: `5f0df03`(main `0f9e810` + 재검토 기록·카드). `src/`·`tests/`·`examples/`는 `0f9e810`과 같다.
 - 근거: oracle(`tools/oracle/`, 이 절과 `metrics.md` 12절·`case-schema.md` 10절의 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). 이 절의 블록·SHA-256·문장은 oracle이 실제로 낸 것이다. C# 엔진의 출력은 아직 없다(**미확인**, PR (b)). 스파이크 폴더는 두지 않았다.

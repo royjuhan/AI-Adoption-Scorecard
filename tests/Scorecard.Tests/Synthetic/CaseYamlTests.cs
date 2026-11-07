@@ -60,7 +60,7 @@ public class CaseYamlTests
         Assert.Equal(expected, ClassificationJson.Render(StepClassifier.Classify(SyntheticInput.CaseOf(example))));
     }
 
-    // 4.8 표: inputs·compare·thresholds. before·after·ai_usage는 넣지 않는다.
+    // 4.8 표: inputs·compare·thresholds. before·after·ai_usage는 넣지 않는다. T-012: inputs 칸의 유형 열 = inputs.group.
     [Theory]
     [MemberData(nameof(SyntheticInput.AllExampleNames), MemberType = typeof(SyntheticInput))]
     public void Case_data_keys_match_spec_table(string example)
@@ -127,9 +127,13 @@ public class CaseYamlTests
         CaseInputs? inputs = null;
         if (cells[1] != SyntheticSpec.None)
         {
+            // T-012(case-schema.md 10.5 5): 넷째 값 "유형 열 `x`"가 있으면 inputs.group이다. 없으면 Group = null.
             var spans = SpecDocument.CodeSpans(cells[1]);
-            Assert.True(spans.Length == 3 && cells[1].Contains($"키 `{spans[2]}`", StringComparison.Ordinal), $"4.8 '{example}' inputs 칸 '{cells[1]}'");
-            inputs = new CaseInputs(spans[0], spans[1], spans[2]);
+            Assert.True(
+                spans.Length is 3 or 4 && cells[1].Contains($"키 `{spans[2]}`", StringComparison.Ordinal) &&
+                (spans.Length == 3 || cells[1].EndsWith($", 유형 열 `{spans[3]}`", StringComparison.Ordinal)),
+                $"4.8 '{example}' inputs 칸 '{cells[1]}'");
+            inputs = new CaseInputs(spans[0], spans[1], spans[2], spans.Length == 4 ? spans[3] : null);
         }
 
         var compare = new List<CompareField>();

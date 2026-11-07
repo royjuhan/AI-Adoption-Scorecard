@@ -196,12 +196,12 @@ public static class SyntheticGenerator
         var sign = rng.NextBelow(2) == 0 ? 1 : -1;
         var delta = (long)tolerance + 1 + rng.NextBelow(IntegerMismatchSpread);
         var c = r + (sign * delta);
-        if (c < col.Min || c > col.Max)
+        if (!InRange(col, c))
         {
             c = r - (sign * delta);
         }
 
-        if (c < col.Min || c > col.Max)
+        if (!InRange(col, c))
         {
             throw Error($"정수 열 {col.Name}: 범위 {col.Min} ~ {col.Max} 안에서 불일치 값을 만들 수 없다(기준 {value}, 차이 {delta}).");
         }
@@ -210,12 +210,13 @@ public static class SyntheticGenerator
     }
 
     // 소수: 부호, 배수 2 + NextBelow(3). 기준 × (1 ± p × 배수 / 100)을 자릿수로 반올림한다(0에서 먼 쪽).
+    // 범위를 벗어나면 부호를 뒤집는다(ScaleInRange). 허용 오차 안이면 예외다.
     private static string MismatchDecimal(SyntheticColumn col, decimal pct, string value, SplitMix64 rng)
     {
         var r = ParseDecimal(value);
         var sign = rng.NextBelow(2) == 0 ? 1 : -1;
         var factor = DecimalMismatchFactorMin + rng.NextBelow(DecimalMismatchFactorCount);
-        var c = Math.Round(r * (1 + (sign * pct * factor / 100m)), col.Scale, MidpointRounding.AwayFromZero);
+        var c = ScaleInRange(col, "불일치 값", r, sign * pct * factor / 100m);
         if (Math.Abs(c - r) * 100m <= pct * Math.Abs(r))
         {
             throw Error($"소수 열 {col.Name}: 불일치 값이 허용 오차 {pct}% 안에 든다({value} → {Text(c, col.Scale)}).");
@@ -232,7 +233,7 @@ public static class SyntheticGenerator
         return col.Choices[(i + 1 + rng.NextBelow(n - 1)) % n];
     }
 
-    // 4.5의 5. 부호, n = 1 + NextBelow(4). 기준 × (1 ± p × n / 1000)을 반올림한다.
+    // 4.5의 5. 부호, n = 1 + NextBelow(4). 기준 × (1 ± p × n / 1000)을 반올림한다. 범위를 벗어나면 부호를 뒤집는다(ScaleInRange).
     // 기준과 같거나 차이가 p/2를 넘으면 예외다. 경계값(허용 오차와 꼭 같은 차이)은 심지 않는다.
     private static string Within(SyntheticColumn col, CompareField field, string value, SplitMix64 rng)
     {
@@ -240,7 +241,7 @@ public static class SyntheticGenerator
         var pct = field.TolerancePct!.Value;
         var sign = rng.NextBelow(2) == 0 ? 1 : -1;
         var tenths = WithinTenthsMin + rng.NextBelow(WithinTenthsCount);
-        var c = Math.Round(r * (1 + (sign * pct * tenths / 1000m)), col.Scale, MidpointRounding.AwayFromZero);
+        var c = ScaleInRange(col, "허용오차 안 값", r, sign * pct * tenths / 1000m);
         if (c == r || Math.Abs(c - r) * 200m > pct * Math.Abs(r))
         {
             throw Error($"소수 열 {col.Name}: 허용 오차 {pct}%의 절반 안에서 다른 값을 만들 수 없다({value} → {Text(c, col.Scale)}).");
@@ -249,15 +250,36 @@ public static class SyntheticGenerator
         return Text(c, col.Scale);
     }
 
+    // 4.5의 4·5. 기준 × (1 + 비율)을 자릿수로 반올림한다(0에서 먼 쪽). 열 범위(4.4)를 벗어나면 비율의 부호를 뒤집는다.
+    // 뒤집어도 벗어나면 예외다. 수열을 더 쓰지 않는다. 그래서 뽑는 횟수·순서는 그대로다.
+    private static decimal ScaleInRange(SyntheticColumn col, string what, decimal r, decimal ratio)
+    {
+        var c = Math.Round(r * (1 + ratio), col.Scale, MidpointRounding.AwayFromZero);
+        if (InRange(col, c))
+        {
+            return c;
+        }
+
+        var flipped = Math.Round(r * (1 - ratio), col.Scale, MidpointRounding.AwayFromZero);
+        if (!InRange(col, flipped))
+        {
+            throw Error($"소수 열 {col.Name}: 범위 {col.Min} ~ {col.Max} 안에서 {what}을 만들 수 없다(기준 {Text(r, col.Scale)} → {Text(c, col.Scale)} 또는 {Text(flipped, col.Scale)}).");
+        }
+
+        return flipped;
+    }
+
+    private static bool InRange(SyntheticColumn col, decimal value) => value >= col.Min && value <= col.Max;
+
     // 4.3 칸 읽기, 4.6 case.yaml과 계획 맞추기, 5절 예외 표. 메시지는 어느 필드·값인지 적는다.
     private static void Validate(string key, IReadOnlyList<CompareField> compare, SyntheticPlan plan)
     {
         AtLeast(plan.Rows, 1, "기준 건수");
-        AtLeast(plan.KeyDigits, 1, "키 자릿수");
         AtLeast(plan.Missing, 0, "누락");
         AtLeast(plan.Extra, 0, "추가");
         AtLeast(plan.Within, 0, "허용오차 안 차이");
 
+        // 키 자릿수. 기준+추가는 1건 이상이라 0자리 이하도 여기서 막힌다.
         var lastKey = plan.Rows + plan.Extra;
         if (Text(lastKey).Length > plan.KeyDigits)
         {
@@ -320,8 +342,15 @@ public static class SyntheticGenerator
             }
         }
 
-        foreach (var name in plan.MismatchColumns)
+        // 4.3 값 불일치 열: 열마다 한 행. 같은 열을 두 번 적지 않는다.
+        for (var m = 0; m < plan.MismatchColumns.Count; m++)
         {
+            var name = plan.MismatchColumns[m];
+            if (IndexOf(plan.MismatchColumns, name) != m)
+            {
+                throw Error($"값 불일치 열이 두 번 나온다: {name}. 열마다 한 행이다.");
+            }
+
             if (IndexOf(compare, name) < 0)
             {
                 throw Error($"값 불일치 열은 compare 필드여야 한다: {name}");

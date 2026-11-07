@@ -5,7 +5,7 @@ namespace Scorecard.Core.Synthetic;
 
 // 합성 CSV 바이트. docs/spec/synthetic-examples.md 3.3.
 // 머리 행 하나 + 행. 구분자 ','. 따옴표를 쓰지 않는다. 줄바꿈 "\n", 마지막 줄 뒤에도 "\n" 하나.
-// 값은 ASCII 인쇄 문자(0x20~0x7E)만 쓰고 ','·'"'·빈 값이 없다. 그래서 UTF-8 바이트 = ASCII 바이트이고 BOM이 없다.
+// 값은 ASCII 인쇄 문자(0x20~0x7E)만 쓰고 ','·'"'·빈 값·앞뒤 공백이 없다. 그래서 UTF-8 바이트 = ASCII 바이트이고 BOM이 없다.
 // 규칙에 맞지 않는 값은 ArgumentException이다. 고쳐 쓰지 않는다.
 public static class SyntheticCsv
 {
@@ -35,13 +35,13 @@ public static class SyntheticCsv
         return Encoding.ASCII.GetBytes(text.ToString());
     }
 
-    // 칸 하나가 3.3 값 규칙에 맞는지 본다. 빈 값도 받지 않는다.
+    // 칸 하나가 3.3 값 규칙에 맞는지 본다. 빈 값과 앞뒤 공백도 받지 않는다(가운데 공백은 된다).
     public static void CheckCell(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (value.Length == 0 || value.Any(ch => ch < 0x20 || ch > 0x7E || ch is ',' or '"'))
+        if (value.Length == 0 || value[0] == ' ' || value[^1] == ' ' || value.Any(ch => ch < 0x20 || ch > 0x7E || ch is ',' or '"'))
         {
-            throw new ArgumentException($"CSV 값은 ASCII 인쇄 문자만 쓰고 빈 값·','·'\"'가 없어야 한다: '{Show(value)}'", nameof(value));
+            throw new ArgumentException($"CSV 값은 ASCII 인쇄 문자만 쓰고 빈 값·앞뒤 공백·','·'\"'가 없어야 한다: '{Show(value)}'", nameof(value));
         }
     }
 

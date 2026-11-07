@@ -9,8 +9,8 @@ namespace Scorecard.Tests.Classification;
 [Trait("Spec", "classification")]
 public class BranchExampleTests
 {
-    // 지시문 3.3 분기 7개. 6.1 표가 모두 1개 이상 다뤄야 한다(스펙 8절).
-    private static readonly string[] Branches = ["Q1", "Q2", "Q3", "Q4", "ELSE", "PARTIAL", "GATE"];
+    // 지시문 3.3 분기 8개(T-008: SIGNOFF). 6.1 표가 모두 1개 이상 다뤄야 한다(스펙 8절).
+    private static readonly string[] Branches = ["SIGNOFF", "Q1", "Q2", "Q3", "Q4", "ELSE", "PARTIAL", "GATE"];
 
     // 6.1 표를 편 것. "a / b / c" 대안은 하나씩 따로. (바꾼 답, 기대 행 "② ELSE + ④ PARTIAL").
     public static TheoryData<string, string> Examples => ClassificationInput.TheoryPairs(ReadExamples());

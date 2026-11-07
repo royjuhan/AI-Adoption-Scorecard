@@ -43,7 +43,7 @@ internal static class ClassificationInput
         return data;
     }
 
-    // 4.4 표 순서의 키 9개.
+    // 4.4 표 순서의 키 10개.
     public static string[] Keys => DefaultRow.ReadAll().Select(r => r.Key).ToArray();
 
     // 4.4 표의 열거 선택지.
@@ -74,6 +74,7 @@ internal static class ClassificationInput
         },
         "failure_impact" => a with { FailureImpact = new(value, isDefault) },
         "existing_feature" => a with { ExistingFeature = new(value, isDefault) },
+        "human_signoff" => a with { HumanSignoff = new(value, isDefault) },
         _ => throw new ArgumentOutOfRangeException(nameof(key), key, "4.4 표에 없는 키"),
     };
 
@@ -119,11 +120,11 @@ internal static class ClassificationInput
     // 행을 "② ELSE" 모양으로.
     public static string[] RowLabels(StepClassification s) => s.Rows.Select(r => $"{r.Assignee} {r.Rule}").ToArray();
 
-    // 스펙 4.5 조합: 입력 5 × 기준 3 × 빈도 4 × 건수 4 × 영향 3 × 기존 기능 3 = 2,160개. 나머지 답은 기준 답.
+    // 스펙 4.5 조합: 입력 5 × 기준 3 × 빈도 4 × 건수 4 × 영향 3 × 기존 기능 3 × 서명 2 = 4,320개. 나머지 답은 기준 답.
     public static IReadOnlyList<StepAnswers> AllCombinations()
     {
         var (inputs, rules, frequencies) = (Choices("input_kind"), Choices("rule_expressible"), Choices("frequency"));
-        var (impacts, existing) = (Choices("failure_impact"), Choices("existing_feature"));
+        var (impacts, existing, signoffs) = (Choices("failure_impact"), Choices("existing_feature"), Choices("human_signoff"));
         var all =
             from ik in inputs
             from re in rules
@@ -131,6 +132,7 @@ internal static class ClassificationInput
             from bs in BatchSizes
             from fi in impacts
             from ef in existing
+            from hs in signoffs
             select With(Base, [
                 ("input_kind", ik),
                 ("rule_expressible", re),
@@ -138,6 +140,7 @@ internal static class ClassificationInput
                 ("batch_size", bs.ToString(CultureInfo.InvariantCulture)),
                 ("failure_impact", fi),
                 ("existing_feature", ef),
+                ("human_signoff", hs),
             ]);
         return all.ToArray();
     }
@@ -163,10 +166,10 @@ internal static class ClassificationInput
         Assert.Contains("(모두 직접 쓴 값)", line, StringComparison.Ordinal);
         Assert.Equal(Keys, pairs.Select(p => p.Key));
 
-        // 시작 값은 아무것이나 좋다. 9개를 모두 덮어쓴다.
+        // 시작 값은 아무것이나 좋다. 10개를 모두 덮어쓴다.
         var start = new StepAnswers(
             new("?", true), new("?", true), new("?", true), new(0, true), new(0m, true),
-            new("?", true), new(null, true), new("?", true), new("?", true));
+            new("?", true), new(null, true), new("?", true), new("?", true), new("?", true));
         var answers = With(start, pairs);
         Assert.Empty(DefaultKeys(answers));
         return answers;

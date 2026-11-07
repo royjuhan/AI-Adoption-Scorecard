@@ -57,7 +57,8 @@ public class CaseApiShapeTests
             CurrentActor: new Answer<string>("human", true),
             MinutesPerItem: new Answer<decimal?>(null, true),
             FailureImpact: new Answer<string>("internal_rework", true),
-            ExistingFeature: new Answer<string>("unknown", true));
+            ExistingFeature: new Answer<string>("unknown", true),
+            HumanSignoff: new Answer<string>("no", true));
         var step = new CaseStep(Number: 1, Name: "s", Answers: answers);
         var definition = new CaseDefinition(
             Name: "a",

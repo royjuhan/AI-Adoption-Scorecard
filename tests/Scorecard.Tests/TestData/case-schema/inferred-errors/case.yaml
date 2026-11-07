@@ -1,0 +1,16 @@
+# 합성 오류 예시. 실제 업무·값 없음. 추정 답 목록(inferred)의 오류를 섞었다.
+name: inferred-errors
+task: 추정 답 목록 오류 합성 예시
+steps:
+  - name: 답 키가 아님
+    answers: {frequency: weekly, batch_size: 10, human_signoff: no}
+    inferred: [frequency, freq, Batch_size, name]
+  - name: 중복
+    answers: {frequency: weekly, human_signoff: no}
+    inferred: [frequency, frequency]
+  - name: 값 없음
+    answers: {frequency: weekly, minutes_per_item: ~, human_signoff: no}
+    inferred: [batch_size, minutes_per_item, ~]
+  - name: 목록 아님
+    answers: {human_signoff: no}
+    inferred: human_signoff

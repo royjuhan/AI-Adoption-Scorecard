@@ -65,6 +65,7 @@ public class ClassificationApiShapeTests
             Number: 1,
             Name: "s",
             Defaults: ["minutes_per_item"],
+            Inferred: [],
             Checks: ["measure_minutes_per_item"],
             AiOveruseCandidate: false,
             Rows: [row]);

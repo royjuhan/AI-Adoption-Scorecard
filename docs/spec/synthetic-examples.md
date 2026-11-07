@@ -1,7 +1,7 @@
 # synthetic-examples (T-005 스펙)
 
 - 상태: 승인됨(2026-11-07, 질문 9 외 제안대로. 9는 테스트로 진행하고 원칙 문구는 사람 답 대기). 7절 예제 파일도 제안대로 확정. 승인 결과는 문서 끝.
-- T-008 개정(초안, 사람 승인 전, 2026-11-07): 7.2~7.4 `case.yaml` 블록의 모든 `answers` 줄 끝에 `, human_signoff: no`를 더하고 SHA-256 줄을 맞췄다(ADR 0003). 그 밖의 블록(CSV, `intake.md`)과 생성기는 그대로다. 문서 끝 "T-008 개정".
+- T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 7.2~7.4 `case.yaml` 블록의 모든 `answers` 줄 끝에 `, human_signoff: no`를 더하고 SHA-256 줄을 맞췄다(ADR 0003). 그 밖의 블록(CSV, `intake.md`)과 생성기는 그대로다. 문서 끝 "T-008 개정".
 - 작업 카드: `docs/tasks/T-005-synthetic-examples.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `8a3afa0`
@@ -864,7 +864,7 @@ steps:
 - 리뷰 1회차(2026-11-07): 4.5 4·5에 "소수도 열 범위를 벗어나면 부호를 뒤집는다"를 더했다(리드). 범위 안 값은 바뀌지 않아 7절 블록 바이트는 그대로다.
 - 승인 결정 9 확정(2026-11-07, juhan 카드 선택): 테스트로만 검사한다. 지시문 2절 10을 "pre-commit 또는 테스트에서"로 고쳤다.
 
-## T-008 개정 (초안, 사람 승인 전)
+## T-008 개정 (승인됨, 2026-11-07)
 
 - 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"(예제 3종은 모든 단계 `human_signoff: no`, expected 바이트 그대로) [읽음].
 - 바꾼 곳: 머리 상태 글머리, 4.8 글머리, 7.1 글머리, 7.2~7.4 `case.yaml` 블록과 SHA-256 줄(table-compare `451a22ac…`, form-fill `9660f3cb…`, mixed-exceptions `96f04387…`).

@@ -21,7 +21,7 @@ public class ConditionTableTests
     {
         var rules = ClassificationSpec.Conditions().Select(c => c.Rule).Distinct().ToArray();
 
-        Assert.Equal(["Q1", "Q2", "Q3", "Q4", "PARTIAL", "GATE", ClassificationSpec.OveruseRule, ClassificationSpec.CheckExistingRule], rules);
+        Assert.Equal(["SIGNOFF", "Q1", "Q2", "Q3", "Q4", "PARTIAL", "GATE", ClassificationSpec.OveruseRule, ClassificationSpec.CheckExistingRule], rules);
     }
 
     // 표의 키·값이 case-schema 4.4 표에 있는 키·선택지다. 비교는 =, in, < 세 가지다.

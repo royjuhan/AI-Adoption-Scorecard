@@ -1,7 +1,7 @@
 # case-schema (T-003 스펙)
 
 - 상태: 승인됨 (2026-11-06, juhan "제안대로"). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
-- T-008 개정(초안, 사람 승인 전, 2026-11-07): 10번째 답 `human_signoff`(ADR 0003)와 단계 항목 `inferred`(ADR 0004 결정 2, 질문 16 해석 A). 바뀐 곳: 4.4, 4.9, 4.12, 새 4.13, 6.1·6.2 글, 새 6.7, 7.2, 문서 끝 "T-008 개정". 질문과 스파이크 결과는 `docs/spec/human-signoff.md`.
+- T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 10번째 답 `human_signoff`(ADR 0003)와 단계 항목 `inferred`(ADR 0004 결정 2, 질문 16 해석 A). 바뀐 곳: 4.4, 4.9, 4.12, 새 4.13, 6.1·6.2 글, 새 6.7, 7.2, 문서 끝 "T-008 개정". 질문과 스파이크 결과는 `docs/spec/human-signoff.md`.
 - 작업 카드: `docs/tasks/T-003-case-schema.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
@@ -849,7 +849,7 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
 13. G2·G3 등록은 4.11 그대로. 샘플 `TestData/guard/case-valid/`, `case-invalid/`.
 14. Core 공개 API는 4.12 그대로. test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
 
-## T-008 개정 (초안, 사람 승인 전)
+## T-008 개정 (승인됨, 2026-11-07)
 
 - 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"·"규칙", ADR 0004 결정 2·질문 16 해석 A [읽음].
 - 확인 대상 커밋 `32f7692`. 스파이크 `spikes/T-008/`(머지 대상 아님). 결과와 질문은 `docs/spec/human-signoff.md`.

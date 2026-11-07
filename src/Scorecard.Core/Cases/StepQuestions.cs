@@ -1,6 +1,6 @@
 namespace Scorecard.Core.Cases;
 
-// 단계마다 묻는 질문 9개(지시문 3.2). 키·선택지·범위·기본값을 이 파일 한 곳에만 둔다.
+// 단계마다 적는 답 10개(지시문 3.2). 키·선택지·범위·기본값을 이 파일 한 곳에만 둔다.
 // 원본은 docs/spec/case-schema.md 4.4 표다. 값을 바꾸려면 스펙 표를 먼저 고친다.
 // CaseDefaultsTests가 스펙 표를 읽어 파서 결과와 대조한다(승인 결정 5, 지시문 13절).
 internal static class StepQuestions
@@ -27,6 +27,9 @@ internal static class StepQuestions
 
     public static readonly EnumQuestion ExistingFeature = new("existing_feature", ["yes", "no", "unknown"], "unknown");
 
+    // 사람이 최종 확인·서명하는 단계인가. 단계마다 묻지 않고 서명 단계를 한 번 물어 채운다(ADR 0003). 기본값은 no.
+    public static readonly EnumQuestion HumanSignoff = new("human_signoff", ["yes", "no"], "no");
+
     // answers 매핑에 쓸 수 있는 키. 표 순서다. 위 필드보다 뒤에 두어야 초기화 순서가 맞다.
     public static readonly string[] Keys =
     [
@@ -39,6 +42,7 @@ internal static class StepQuestions
         MinutesPerItem.Key,
         FailureImpact.Key,
         ExistingFeature.Key,
+        HumanSignoff.Key,
     ];
 }
 

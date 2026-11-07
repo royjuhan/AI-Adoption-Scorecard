@@ -1,7 +1,7 @@
 # classification (T-004 스펙)
 
 - 상태: 승인됨(2026-11-07, 15문항 모두 제안대로). 7절 예제 초안도 제안대로 확정. 승인 결과는 문서 끝.
-- T-008 개정(초안, 사람 승인 전, 2026-11-07): 트리 맨 앞 `SIGNOFF`(ADR 0003)와 추정 표시(ADR 0004 결정 2). 바뀐 곳은 문서 끝 "T-008 개정"에 모았다. 질문과 스파이크 결과는 `docs/spec/human-signoff.md`. `expected/classification.json` 3개는 바이트 그대로다 [T8:S3].
+- T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 트리 맨 앞 `SIGNOFF`(ADR 0003)와 추정 표시(ADR 0004 결정 2). 바뀐 곳은 문서 끝 "T-008 개정"에 모았다. 질문과 스파이크 결과는 `docs/spec/human-signoff.md`. `expected/classification.json` 3개는 바이트 그대로다 [T8:S3].
 - 작업 카드: `docs/tasks/T-004-classification.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `cbbfdb6`
@@ -1049,7 +1049,7 @@ steps:
 - 14: 7.2~7.4 블록을 정답으로 확정. 이 카드에 한해 test-engineer가 `examples/`에 블록을 바이트 그대로 옮긴다.
 - 15: 4.11 API 그대로. test-engineer 단계의 컴파일 실패를 실패 테스트로 본다.
 
-## T-008 개정 (초안, 사람 승인 전)
+## T-008 개정 (승인됨, 2026-11-07)
 
 - 작업 카드 `docs/tasks/T-008-human-signoff.md`. 결정 출발점: ADR 0003 "결정"·"규칙"·"결정이 같이 바꾸는 곳", ADR 0004 결정 2·질문 2 [읽음].
 - 확인 대상 커밋 `32f7692`. 스파이크 `spikes/T-008/`(머지 대상 아님). 결과와 질문은 `docs/spec/human-signoff.md`.

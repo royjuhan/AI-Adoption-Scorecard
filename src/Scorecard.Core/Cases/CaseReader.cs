@@ -30,7 +30,8 @@ internal sealed class CaseReader(ErrorSink errors)
     private static readonly string[] RootKeys =
         ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "thresholds"];
 
-    private static readonly string[] StepKeys = ["name", "answers"];
+    // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
+    private static readonly string[] StepKeys = ["name", "answers", "inferred"];
     private static readonly string[] InputKeys = ["reference", "candidate", "key"];
     private static readonly string[] CompareKeys = ["field", "tolerance", "tolerance_pct"];
     private static readonly string[] ThresholdKeys = ["accuracy_min", "missing_max", "time_must_drop"];
@@ -113,29 +114,36 @@ internal sealed class CaseReader(ErrorSink errors)
                 Add(stepFields["name"], ErrorCode.Duplicate, namePath, $"단계 이름이 중복된다 (처음: {first})");
             }
 
-            var answers = ReadAnswers(stepFields, YamlTree.ChildPath(path, "answers"));
-            steps.Add(new CaseStep(number, name ?? string.Empty, answers));
+            var answersPath = YamlTree.ChildPath(path, "answers");
+            var answerFields = AnswerFields(stepFields, answersPath);
+            var answers = ReadAnswers(answerFields, answersPath);
+            var inferred = ReadInferred(stepFields, path, answerFields, answersPath);
+            steps.Add(new CaseStep(number, name ?? string.Empty, MarkInferred(answers, inferred)));
         }
 
         return steps;
     }
 
-    // answers가 없거나 null이면 9개 모두 기본값이다(스펙 4.4).
-    private StepAnswers ReadAnswers(Dictionary<string, YamlNode> stepFields, string path)
+    // answers 매핑의 키. 없거나 null이면 빈 매핑이다. 매핑이 아니면 type 오류를 적고 빈 매핑.
+    private Dictionary<string, YamlNode> AnswerFields(Dictionary<string, YamlNode> stepFields, string path)
     {
-        var answers = new Dictionary<string, YamlNode>(StringComparer.Ordinal);
-        if (TryGetPresent(stepFields, "answers", out var node))
+        if (!TryGetPresent(stepFields, "answers", out var node))
         {
-            if (node is YamlMapping map)
-            {
-                answers = Fields(map, StepQuestions.Keys, path);
-            }
-            else
-            {
-                TypeError(node, path, MustBeMapping);
-            }
+            return new Dictionary<string, YamlNode>(StringComparer.Ordinal);
         }
 
+        if (node is YamlMapping map)
+        {
+            return Fields(map, StepQuestions.Keys, path);
+        }
+
+        TypeError(node, path, MustBeMapping);
+        return new Dictionary<string, YamlNode>(StringComparer.Ordinal);
+    }
+
+    // answers가 없거나 null이면 10개 모두 기본값이다(스펙 4.4).
+    private StepAnswers ReadAnswers(Dictionary<string, YamlNode> answers, string path)
+    {
         return new StepAnswers(
             EnumAnswer(answers, StepQuestions.InputKind, path),
             EnumAnswer(answers, StepQuestions.RuleExpressible, path),
@@ -145,8 +153,88 @@ internal sealed class CaseReader(ErrorSink errors)
             EnumAnswer(answers, StepQuestions.CurrentActor, path),
             MeasureAnswer(answers, StepQuestions.MinutesPerItem, path),
             EnumAnswer(answers, StepQuestions.FailureImpact, path),
-            EnumAnswer(answers, StepQuestions.ExistingFeature, path));
+            EnumAnswer(answers, StepQuestions.ExistingFeature, path),
+            EnumAnswer(answers, StepQuestions.HumanSignoff, path));
     }
+
+    // 스펙 4.13 inferred: AI가 추정한 답의 키 목록. 없거나 null이면 추정 답이 없다. 목록이 아니면 type.
+    // 원소는 answers 표의 키다(서수 비교, 따옴표 상관없음). null 원소는 required, 키가 아니면 enum.
+    // 같은 키가 둘이면 둘째부터 duplicate.
+    // 적은 키는 answers에 값이 있어야 한다(값이 없는 답은 기본값이지 추정이 아니다).
+    // 없거나 null이면 required(그 원소 위치, 경로는 그 답). 값이 있지만 잘못된 답은 그 답의 오류만 낸다.
+    // 돌려주는 집합은 찾기에만 쓴다. 출력 순서는 4.4 표 순서다(StepClassifier가 정한다).
+    private HashSet<string> ReadInferred(
+        Dictionary<string, YamlNode> stepFields, string stepPath, Dictionary<string, YamlNode> answerFields, string answersPath)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        if (!TryGetPresent(stepFields, "inferred", out var node))
+        {
+            return keys;
+        }
+
+        var path = YamlTree.ChildPath(stepPath, "inferred");
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, path, MustBeList);
+            return keys;
+        }
+
+        var firstNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var item = sequence.Items[i];
+            var itemPath = YamlTree.ItemPath(path, i + 1);
+            if (item is YamlScalar { IsNull: true })
+            {
+                Add(item, ErrorCode.Required, itemPath, EmptyValue);
+                continue;
+            }
+
+            var key = Choice(item, itemPath, StepQuestions.Keys);
+            if (key is null)
+            {
+                continue;
+            }
+
+            if (!firstNumbers.TryAdd(key, i + 1))
+            {
+                var first = YamlTree.ItemPath(path, firstNumbers[key]);
+                Add(item, ErrorCode.Duplicate, itemPath, $"추정 답 키가 중복된다 (처음: {first})");
+                continue;
+            }
+
+            if (!TryGetPresent(answerFields, key, out _))
+            {
+                Add(item, ErrorCode.Required, YamlTree.ChildPath(answersPath, key), "inferred에 적은 답은 answers에 값이 있어야 한다");
+                continue;
+            }
+
+            keys.Add(key);
+        }
+
+        return keys;
+    }
+
+    // inferred에 적은 답에 IsInferred를 단다. 값과 IsDefault는 그대로다.
+    private static StepAnswers MarkInferred(StepAnswers a, HashSet<string> keys) =>
+        keys.Count == 0
+            ? a
+            : a with
+            {
+                InputKind = Mark(a.InputKind, StepQuestions.InputKind.Key, keys),
+                RuleExpressible = Mark(a.RuleExpressible, StepQuestions.RuleExpressible.Key, keys),
+                Frequency = Mark(a.Frequency, StepQuestions.Frequency.Key, keys),
+                BatchSize = Mark(a.BatchSize, StepQuestions.BatchSize.Key, keys),
+                ExceptionRate = Mark(a.ExceptionRate, StepQuestions.ExceptionRate.Key, keys),
+                CurrentActor = Mark(a.CurrentActor, StepQuestions.CurrentActor.Key, keys),
+                MinutesPerItem = Mark(a.MinutesPerItem, StepQuestions.MinutesPerItem.Key, keys),
+                FailureImpact = Mark(a.FailureImpact, StepQuestions.FailureImpact.Key, keys),
+                ExistingFeature = Mark(a.ExistingFeature, StepQuestions.ExistingFeature.Key, keys),
+                HumanSignoff = Mark(a.HumanSignoff, StepQuestions.HumanSignoff.Key, keys),
+            };
+
+    private static Answer<T> Mark<T>(Answer<T> answer, string key, HashSet<string> keys) =>
+        keys.Contains(key) ? answer with { IsInferred = true } : answer;
 
     // 답이 없거나 null이면 기본값, IsDefault true. 값을 쓰면 IsDefault false.
     // 값이 잘못되면 오류를 적는다. 그때 모델은 버려지므로 Value는 쓰이지 않는다.

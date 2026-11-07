@@ -1,6 +1,8 @@
 # metrics (T-006 스펙: 대조와 지표)
 
 - 상태: 초안. 사람 승인 전. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
+- 반영한 사람 결정: metrics.json 첫 키 `"schema_version": 1`(정수). juhan 결정, 2026-11-07, 리드 전달(3.2).
+- 진행 순서(리드 전달): 지금은 스펙·스파이크만. Core 구현과 `expected/metrics.json` 커밋은 T-007 머지 뒤에 한다(7.1, 8절).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
 - 작성: prototyper, 2026-11-07
 - 확인 대상 커밋: `src/`·`tests/`·`examples/`는 `7735f8a`. 스파이크 clone의 HEAD(이 문서·스파이크 작업 중 커밋 포함)는 `summary.txt`의 `repo HEAD` 줄에 있다.
@@ -35,6 +37,7 @@
 | 리드 지시: 오류 모델과 메시지 | 4.7 | 14 |
 | 리드 지시: G1 충돌, 결정론, Core API | 4.10, 4.11 | 1, 19 |
 | 메모: T-004·T-005 예제 파일은 바꾸지 않는다 | 7.1 | 17 |
+| juhan 결정: metrics.json 첫 키 `schema_version` | 3.2, 3.3 | — (결정됨) |
 
 범위 밖:
 
@@ -77,6 +80,7 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 
 ```json
 {
+  "schema_version": 1,
   "case": "<케이스 이름>",
   "compare": {
     "status": "measured | not_verified",
@@ -101,12 +105,14 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 ```
 
 - 위 블록은 모양 설명이다. 실제 바이트는 7절 블록처럼 배열 원소도 한 줄에 하나다.
+- 첫 키는 `schema_version`이다. 값은 정수 `1`. juhan 결정(2026-11-07, 리드 전달): 처음부터 버전을 넣는다. 미검증 모양에도 있다. 속성을 빼거나 이름·뜻을 바꾸는 카드가 값을 올리고 `expected/metrics.json`을 같이 고친다(그 변경은 juhan 직접 승인).
 - 지표는 `compare` 아래에 둔다. 판정 카드가 시간 지표·판정을 같은 파일의 다른 속성으로 더할 수 있게 하려는 것이다(11절).
 
 속성 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 순서는 파일 안 순서(table-compare에서 처음 나오는 순서)다. `[]`는 배열 원소다.
 
 | 속성 | 형식 | 뜻 |
 | --- | --- | --- |
+| `schema_version` | 정수 | 파일 모양 버전. 지금 `1`. 늘 첫 키 |
 | `case` | 문자열 | `case.yaml`의 `name` |
 | `compare` | 객체 | 대조 결과 |
 | `compare.status` | 문자열 | `measured`(대조함) 또는 `not_verified`(미검증, 4.4) |
@@ -155,13 +161,16 @@ Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 - 칸 값은 문자열로 쓴다. 숫자 칸도 정규화한 텍스트 그대로다(`1e3`은 `1e3`). 숫자로 바꿔 쓰지 않는다.
 - 쓰지 않는 것: 절대 경로, 입력 해시, 정규화 전 원문, `compare`에 없는 열(`signal_type`), 차이 없는 일치 항목, 오류. → 승인 질문 15, 16.
 - 오류가 있으면 metrics.json이 없다(3.1). 오류를 어디에 어떻게 보일지는 Cli(M2)가 정한다.
-- 미검증 모양(mixed-exceptions): `status`·`reason`만 값이 있고 `key`·`counts`·퍼센트는 null, 배열은 `[]`다(7.4) [P:json empty-arrays].
+- 미검증 모양(mixed-exceptions): `schema_version`·`case` 다음 `compare` 안에서 `status`·`reason`만 값이 있고 `key`·`counts`·퍼센트는 null, 배열은 `[]`다(7.4) [P:json empty-arrays].
 
 ### 3.3 바이트 규칙
 
-`docs/spec/classification.md` 3.3과 같다. `Utf8JsonWriter`, 들여쓰기 2칸, 줄바꿈 `\n`(CR 0개), 끝에 `\n` 하나, UTF-8(BOM 없음), `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` [S3 json-check].
+바이트 규칙은 `docs/spec/classification.md` 3.3 표와 같다: `Utf8JsonWriter`(리플렉션 직렬화 없음), 들여쓰기 2칸, 줄바꿈 `\n`(CR 0개), 끝에 `\n` 하나, UTF-8(BOM 없음), `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` [S3 json-check].
 
-- 숫자는 `decimal` 그대로 쓴다(`WriteNumber(decimal)`). 자릿수가 남는다: `90.0`, `1.0`, `1.50`, `0` [P:json decimal]. 퍼센트는 늘 소수 한 자리다(4.8).
+- 같은 것은 바이트 규칙뿐이다. 최상위 키는 파일마다 다르다. metrics.json은 `schema_version` → `case` → `compare`(3.2)다.
+- classification.json(T-004)은 지금 첫 키가 `case`다 [읽음 classification.md 3.2]. T-007(별개 카드)에서 첫 키 `"schema_version": 1`을 갖게 된다(리드 전달). T-007 뒤에는 두 파일 모두 첫 키가 정수 `schema_version`이고, 바이트 규칙은 위 표 그대로다. 이 카드는 classification.json을 바꾸지 않는다.
+
+- `schema_version`은 정수(`WriteNumber(int)`)로 `1`이다. 그 밖의 숫자는 `decimal` 그대로 쓴다(`WriteNumber(decimal)`). 자릿수가 남는다: `90.0`, `1.0`, `1.50`, `0` [P:json decimal]. 퍼센트는 늘 소수 한 자리다(4.8).
 - 이스케이프는 classification.md 3.3 표와 같다. 키에 큰따옴표, 역슬래시, 탭, U+2028, U+1F600, `<>&'+`, 백틱을 넣으면 차례로 `\"`, `\\`, `\t`, `\u2028`, `\uD83D\uDE00`, 그대로, 그대로가 된다 [P:json escape key].
 - 빈 배열은 `[]`다(한 줄) [P:json empty-arrays].
 - 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [P:culture]. Python 독립 구현(`spikes/T-006/xcheck/compare.py`, 이 문서 3·4절만 보고 짰다)이 예제 3종에서 같은 바이트를 냈다 [S3 det-cmp python].
@@ -555,6 +564,7 @@ public static class CompareInputs
 public static class MetricsJson
 {
     public const string FileName = "metrics.json";
+    public const int SchemaVersion = 1; // 첫 키 "schema_version"(3.2)
 
     // 3.2·3.3 바이트 규칙.
     public static byte[] Render(CompareMetrics metrics);
@@ -714,9 +724,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 2. 사람이 이 문서를 승인할 때 블록 내용을 확정한다. 고치면 prototyper가 스파이크를 다시 돌려 블록을 맞춘다.
 3. 승인 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/expected/metrics.json`으로 옮긴다. 테스트가 블록·SHA-256 줄·파일이 같은지 본다(T-004·T-005 방식). CLAUDE.md 에이전트 폴더 제한에 `examples/`가 없다 [읽음]. 카드 폴더 범위에는 있다 [읽음 카드]. → 승인 질문 17.
 4. 기존 테스트 `Example_folder_has_exactly_the_planned_files`가 예제 폴더 파일 목록을 고정해 둬서, `expected/metrics.json`을 넣으면 3건 실패한다 [S7a]. 목록에 `expected/metrics.json`을 더하면 통과한다 [S7b]. 이 테스트의 뜻은 "계획한 파일만 있다"이다. 계획에 새 파일을 더하는 변경이다. PR 본문에 적는다.
-5. T-004·T-005 예제 파일은 바꾸지 않는다(카드 메모). `examples/.gitattributes`(`* -text`)가 새 파일에도 걸린다. `core.autocrlf=true` clone에서 이 파일이 없으면 table-compare `metrics.json`이 4,291바이트에서 4,490바이트로 바뀌고, 있으면 그대로다 [S7 eol].
+5. T-004·T-005 예제 파일은 바꾸지 않는다(카드 메모). `examples/.gitattributes`(`* -text`)가 새 파일에도 걸린다. `core.autocrlf=true` clone에서 이 파일이 없으면 table-compare `metrics.json`이 4,314바이트에서 4,514바이트로 바뀌고, 있으면 그대로다 [S7 eol].
 6. 실제 값 패턴 검사(`ExamplePatternTests`)가 새 파일도 본다. 걸린 것이 없다 [S7b pattern].
 7. mixed-exceptions에도 `expected/metrics.json`을 둔다(미검증 모양). 지시문 5절 "expected/에는 classification.json, metrics.json, report-outline.json" [읽음].
+8. 순서(리드 전달): Core 구현과 `expected/metrics.json` 커밋은 T-007 머지 뒤에 한다. 이 절의 블록·SHA-256과 S7(예제 폴더 테스트)은 T-007 전 `main`(`7735f8a`의 `src/`·`tests/`·`examples/`) 기준이다. T-007 머지 뒤 prototyper가 스파이크를 다시 돌려 S5·S7·S8이 그대로인지 확인한다(9절 10).
+9. `expected/metrics.json`을 새로 넣는 것은 expected 변경이다. 상시 승인에서 빠졌으므로 juhan이 직접 승인한다(승인 질문 17).
 
 예제 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `—`는 null이다.
 
@@ -730,10 +742,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 ### 7.2 table-compare
 
-`examples/table-compare/expected/metrics.json` (SHA-256 `40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db`):
+`examples/table-compare/expected/metrics.json` (SHA-256 `d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "table-compare",
   "compare": {
     "status": "measured",
@@ -936,10 +949,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 ### 7.3 form-fill
 
-`examples/form-fill/expected/metrics.json` (SHA-256 `84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5`):
+`examples/form-fill/expected/metrics.json` (SHA-256 `6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "form-fill",
   "compare": {
     "status": "measured",
@@ -991,10 +1005,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 ### 7.4 mixed-exceptions
 
-`examples/mixed-exceptions/expected/metrics.json` (SHA-256 `cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce`):
+`examples/mixed-exceptions/expected/metrics.json` (SHA-256 `372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65`):
 
 ```json
 {
+  "schema_version": 1,
   "case": "mixed-exceptions",
   "compare": {
     "status": "not_verified",
@@ -1030,7 +1045,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | 오류 코드(4.7) | 머리 행 `\| 코드 \| 언제 \| 위치 \| 메시지 \|`. 표의 코드마다 그 오류를 내는 입력이 하나 이상. 오류 순서. 모두 모음 | 2 |
 | 퍼센트(4.8) | 머리 행 `\| 일치 \| 기준 행 \| 정확도(%) \|`. 결과 소수 자릿수 1 | 1 |
 | 미검증(4.4) | `no_inputs`(폴더 없어도), `no_compare_fields`, `file`·`no-rows` 오류 | 1 |
-| JSON(3.2·3.3) | 머리 행 `\| 속성 \| 형식 \| 뜻 \|`. table-compare 경로 순서 = 표. 미검증 경로. BOM·CR 없음, 끝 `\n`, 이스케이프, decimal 자릿수 | 1 |
+| JSON(3.2·3.3) | 머리 행 `\| 속성 \| 형식 \| 뜻 \|`. table-compare 경로 순서 = 표. 미검증 경로. 첫 키 `schema_version` = 정수 1(`MetricsJson.SchemaVersion`). BOM·CR 없음, 끝 `\n`, 이스케이프, decimal 자릿수 | 1 |
 | 골든 | `examples/<예제>/` → `CaseParser.ParseDirectory` → `CompareDirectory` → `Render`가 `expected/metrics.json`과 바이트까지 같다. 예제 3종 | 1 |
 | 예제 표(7.1) | 머리 행 `\| 예제 \| 상태 \| 기준 행 \| …`. `expected/metrics.json`의 값이 표와 같다 | 1 |
 | 스펙 블록 = 예제 파일 | 7.2~7.4 블록, SHA-256 줄, 파일이 같다 | 1 |
@@ -1040,6 +1055,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 | 예제 폴더 파일 | `Example_folder_has_exactly_the_planned_files`에 `expected/metrics.json` 추가 | 1 |
 
 - 표 이름(머리 행)이 이 문서에 정확히 한 번 나와야 한다. `SpecDocument.Table`이 그렇게 검사한다 [읽음]. G2 표의 머리 행은 classification.md·synthetic-examples.md와 같은 글자다. 문서마다 한 번이라 괜찮다.
+- 시작 시점: T-007 머지 뒤(리드 전달). 그 전에는 테스트·구현·`examples/` 파일을 만들지 않는다.
 - 실패 테스트 먼저: test-engineer 단계에서는 `Scorecard.Core.Comparison`이 없어 새 테스트가 컴파일되지 않는다. T-003 승인 결정 14와 같이 이 상태를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
 - 골든 테스트는 `examples/` 파일이 있어야 돈다. 파일이 없으면 실패해야 한다(빈 통과 금지).
 
@@ -1054,6 +1070,7 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 7. 매우 큰 자료의 메모리 사용량. 10만 행까지만 쟀다.
 8. 판정 카드가 metrics.json을 읽을지, `CompareResult`를 다시 만들지(11절).
 9. Windows에서 만든 metrics.json의 SHA-256이 7.2~7.4와 같은지. 같은 바이트면 같아야 한다.
+10. T-007 머지 뒤의 결과. T-007이 classification.json·예제 테스트·G2 대상 목록을 바꾸면 S5(`Real_targets_use_case_samples_not_basic`)·S7(`Example_folder_has_exactly_the_planned_files`)의 실패 모양이 달라질 수 있다. metrics.json 바이트는 T-007과 상관없어야 한다(이 카드의 입력은 `case.yaml`·CSV뿐이다).
 
 ## 10. 스파이크 단계 목록
 
@@ -1086,7 +1103,11 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
 
 ## 사람 승인 필요
 
-질문마다 prototyper의 제안을 적었다. "제안대로"로 답할 수 있다. 질문 17은 예제 정답 확정이라 사람이 직접 봐야 한다.
+질문마다 prototyper의 제안을 적었다. "제안대로"로 답할 수 있다.
+
+- **juhan 직접 승인 필요**: 질문 17(`expected/metrics.json` 추가 = expected 변경, 기존 테스트 `Example_folder_has_exactly_the_planned_files` 변경, CLAUDE.md 에이전트 폴더 제한 예외), 질문 18(기존 테스트 `Real_targets_use_case_samples_not_basic` 변경). expected 변경·테스트 완화(변경)·원칙 예외는 상시 승인에서 빠졌다(리드 전달). 질문 15(metrics.json 모양)는 expected 바이트를 정하므로 질문 17과 같이 본다.
+- 나머지 질문(1~14, 16, 19)은 ADR·원칙 변경이 아니다. 상시 승인 범위인지는 리드가 판단한다.
+- 이미 결정됨(질문 아님): metrics.json 첫 키 `"schema_version": 1`(juhan, 2026-11-07).
 
 1. **파일을 누가 읽나(2절, 4.11).** Core가 읽으면 glob 규칙이 Core에 있고, 부르는 쪽이 바이트를 넘기면 Core가 순수 함수다.
    - 제안: 둘 다(안 C). `CompareDirectory`(Core가 케이스 폴더에서 찾아 읽음) = `CompareInputs.Read` + `Compare`(순수 함수, 바이트). 읽기만 한다. Core가 파일을 읽는 것은 `CaseParser.ParseDirectory`와 같고 G1과 충돌하지 않는다(통과 확인). 입력 해시는 metrics.json에 넣지 않고 평가서 카드가 같은 바이트로 기록한다(지시문 2절 2).
@@ -1116,17 +1137,19 @@ candidate/a.csv:1: column label: 머리 행에 열이 없다
     - 제안: `inputs` 없음 → `not_verified`/`no_inputs`, `compare` 빔 → `not_verified`/`no_compare_fields`(둘 다 파일을 읽지 않음). `inputs`를 적었는데 파일이 없거나 기준 데이터 행이 0이면 오류(`file`, `no-rows`). 결과 자료가 머리 행뿐이면 오류가 아니라 모두 누락.
 14. **오류 모델(4.7).**
     - 제안: `CaseError`를 그대로 쓴다(`Source` = 상대 파일 경로 또는 패턴, `Path` = 열 이름). 코드 13개(4.7 표). 모두 모아 한 번에 보인다(치명 오류가 난 파일만 그 파일의 나머지를 건너뜀). 순서는 기준 → 결과, 파일 경로, 줄·열. 오류가 하나라도 있으면 지표를 내지 않는다. 오류 수 상한은 두지 않는다(T-003처럼 뒤 카드로 미룬다).
-15. **metrics.json 형식(3.2, 3.3).**
-    - 제안: 3.2 속성 표 그대로. 지표는 `compare` 아래. `items`는 차이가 있는 항목만(값 불일치·누락·추가·허용오차 안 차이), 칸 값은 정규화한 텍스트 문자열. 경로는 상대 경로만. 입력 해시·원문·`compare`에 없는 열은 넣지 않는다. 바이트 규칙은 classification.md 3.3과 같다. 골든 테스트는 바이트로 비교한다.
+15. **metrics.json 형식(3.2, 3.3).** (expected 바이트를 정한다. 질문 17과 같이 juhan이 본다)
+    - 제안: 3.2 속성 표 그대로. 첫 키 `schema_version: 1`(결정됨). 지표는 `compare` 아래. `items`는 차이가 있는 항목만(값 불일치·누락·추가·허용오차 안 차이), 칸 값은 정규화한 텍스트 문자열. 경로는 상대 경로만. 입력 해시·원문·`compare`에 없는 열은 넣지 않는다. 바이트 규칙은 classification.md 3.3과 같다. 골든 테스트는 바이트로 비교한다.
 16. **판정 카드가 쓸 정보(`signal_type` 같은 다른 열).** table-compare의 "조건부"는 불일치가 `irregular`에 몰린 것에서 나와야 한다(T-005 4.7).
     - 제안: 이 카드에서는 metrics.json에 넣지 않는다. 메모리 결과 `CsvRow`가 모든 열을 갖고 있다. 어느 열로 몰림을 볼지(`case.yaml`에 키를 더할지)와 metrics.json에 무엇을 더할지는 판정 카드가 정한다. 더하면 그 카드에서 `expected/metrics.json`을 같이 고친다.
-17. **예제 3종 `expected/metrics.json` 확정 (사람이 직접 확인).** 7.2~7.4 블록은 초안이다. 확인할 점:
+17. **예제 3종 `expected/metrics.json` 확정. juhan 직접 승인 필요(expected 변경, 기존 테스트 변경, 폴더 제한 예외).** 7.2~7.4 블록은 초안이다. 확인할 점:
     - table-compare: 30/30, 일치 27(허용오차 안 차이 4), 값 불일치 2(`log07` 평균, `log08` 길이), 누락 1(`log27`), 추가 1(`log31`), 정확도 90.0, 누락률 3.3. `items` 8개.
     - form-fill: 20/20 모두 일치, 100.0·0.0, `items` `[]`.
     - mixed-exceptions: `not_verified`/`no_inputs`, 나머지 null·`[]`.
     - 옮기기: 확정 뒤 test-engineer가 블록을 바이트 그대로 `examples/<예제>/expected/metrics.json`으로 옮긴다(CLAUDE.md 폴더 제한에 `examples/`가 없어 이 카드에 한해 허용 필요). `Example_folder_has_exactly_the_planned_files`의 파일 목록에 `expected/metrics.json`을 더한다(PR 본문에 적음).
+    - 셋 다 첫 키가 `"schema_version": 1`이다.
+    - 시점: T-007 머지 뒤에 옮기고 커밋한다(리드 전달).
     - 제안: 위 초안대로 확정하고, test-engineer가 옮기는 것과 파일 목록 테스트 변경을 허용한다.
-18. **G2·G3 등록(4.10).**
+18. **G2·G3 등록(4.10). juhan 직접 승인 필요(기존 테스트 변경).**
     - 제안: `compare-case-valid`(샘플 `case-valid`, 출력 `metrics.json`)와 `compare-invalid`(새 샘플, 출력 `compare-errors.txt`)를 `GuardTargets`에 더한다. `case-valid`에 T-005 고정 계획의 `reference/rows.csv`·`candidate/rows.csv`를 더한다(test-engineer, `tests/`). `Real_targets_use_case_samples_not_basic`는 "`basic`이 없다 + `case-valid`가 있다 + 샘플 폴더가 있다"로 고친다. 뜻은 같다. PR 본문에 적고 reviewer가 확인한다.
 19. **Core 공개 API와 진행 순서(4.11).**
-    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 10개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다.
+    - 제안: 4.11 그대로(`CompareEngine`, `CompareInputs`, `MetricsJson`, 레코드 10개. 규칙은 `internal` `CompareRules.cs` 한 파일). test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다(T-003 승인 결정 14와 같음). PR 본문에 적는다. 시작은 T-007 머지 뒤다(리드 전달).

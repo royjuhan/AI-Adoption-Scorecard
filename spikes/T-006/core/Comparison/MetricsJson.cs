@@ -4,13 +4,17 @@ using System.Text.Json;
 
 namespace Scorecard.Core.Comparison;
 
-// metrics.json 바이트. docs/spec/metrics.md 3.2·3.3. 바이트 규칙은 classification.md 3.3과 같다.
+// metrics.json 바이트. docs/spec/metrics.md 3.2·3.3. 바이트 규칙(도구·들여쓰기·줄바꿈·인코딩·이스케이프)은 classification.md 3.3과 같다.
+// 최상위 키는 schema_version(첫 키, 정수) → case → compare 순서다.
 // Utf8JsonWriter로 속성 순서를 직접 정한다. 들여쓰기 2칸, "\n", UnsafeRelaxedJsonEscaping, UTF-8(BOM 없음), 끝에 "\n".
 // 항목(items)은 차이가 있는 것만 쓴다: 값 불일치, 누락, 추가, 허용 오차 안의 차이가 있는 일치.
 // 경로는 케이스 폴더 기준 상대 경로뿐이다. 입력 해시·정규화 전 원문·compare에 없는 열은 쓰지 않는다.
 public static class MetricsJson
 {
     public const string FileName = "metrics.json";
+
+    // 파일 모양의 버전. 첫 키로 쓴다(스펙 3.2, juhan 결정 2026-11-07). 모양을 바꾸면 올린다.
+    public const int SchemaVersion = 1;
 
     private static readonly JsonWriterOptions Options = new()
     {
@@ -27,6 +31,7 @@ public static class MetricsJson
         using (var w = new Utf8JsonWriter(buffer, Options))
         {
             w.WriteStartObject();
+            w.WriteNumber("schema_version", SchemaVersion);
             w.WriteString("case", metrics.Case);
             w.WriteStartObject("compare");
             w.WriteString("status", metrics.Status);

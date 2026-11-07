@@ -1,15 +1,15 @@
 dotnet SDK: 10.0.114
 python: Python 3.13.18
-repo HEAD: e50c7b5
-spec(작업 트리) sha256: 52d4f7dab8c1eb96
-[s0-clone] HEAD=e50c7b5
+repo HEAD: 9f30e14
+spec(작업 트리) sha256: d4aa91953a4cb029
+[s0-clone] HEAD=9f30e14
 [s1-base-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s1-base-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
     Passed!  - Failed:     0, Passed:   830, Skipped:     0, Total:   830, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s2-files] CompareEngine.cs CompareInputs.cs CompareRules.cs ComparisonModel.cs CsvText.cs MetricsJson.cs 
 [s2-core-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s2-core-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 156 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 163 ms - Scorecard.Tests.dll (net10.0)
 [s2-core-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
 [s2-core-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
     Passed!  - Failed:     0, Passed:   830, Skipped:     0, Total:   830, Duration: 3 s - Scorecard.Tests.dll (net10.0)
@@ -74,7 +74,7 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     TYPEREF-NS YamlDotNet.Core.Events
 [s3-refs-diff] 0 줄: 
 [s3-run-table-compare] rc=0 cmd: tool run examples/table-compare <작업>/ex/table-compare/expected/metrics.json
-    SHA table-compare metrics.json 40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db bytes=4291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA table-compare metrics.json d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT table-compare status=measured reason=null key=log_id ref-files=[reference/logs.csv] cand-files=[candidate/logs.csv]
     RESULT table-compare counts=ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3
     RESULT table-compare field start_index kind=number tol=0 pct=null compared=29 outside=0 within=0 not-number=0
@@ -89,24 +89,24 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     RESULT table-compare item log27 missing ref=reference/logs.csv:28 cand=null 
     RESULT table-compare item log31 extra ref=null cand=candidate/logs.csv:26 
 [s3-run-form-fill] rc=0 cmd: tool run examples/form-fill <작업>/ex/form-fill/expected/metrics.json
-    SHA form-fill metrics.json 84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5 bytes=929 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA form-fill metrics.json 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT form-fill status=measured reason=null key=order_id ref-files=[reference/orders.csv] cand-files=[candidate/orders.csv]
     RESULT form-fill counts=ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0
     RESULT form-fill field item kind=text tol=null pct=null compared=20 outside=0 within=0 not-number=0
     RESULT form-fill field quantity kind=number tol=0 pct=null compared=20 outside=0 within=0 not-number=0
 [s3-run-mixed-exceptions] rc=0 cmd: tool run examples/mixed-exceptions <작업>/ex/mixed-exceptions/expected/metrics.json
-    SHA mixed-exceptions metrics.json cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce bytes=291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA mixed-exceptions metrics.json 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT mixed-exceptions status=not_verified reason=no_inputs key=null ref-files=[] cand-files=[]
     RESULT mixed-exceptions counts=null accuracy=null missing-rate=null
-[s3-json-check] table-compare bytes=4291 lines=199 cr=0 first3=7b0a20 last=0a non-ascii=0
-[s3-json-check] form-fill bytes=929 lines=48 cr=0 first3=7b0a20 last=0a non-ascii=0
-[s3-json-check] mixed-exceptions bytes=291 lines=15 cr=0 first3=7b0a20 last=0a non-ascii=0
+[s3-json-check] table-compare bytes=4314 lines=200 cr=0 first3=7b0a20 last=0a non-ascii=0
+[s3-json-check] form-fill bytes=952 lines=49 cr=0 first3=7b0a20 last=0a non-ascii=0
+[s3-json-check] mixed-exceptions bytes=314 lines=16 cr=0 first3=7b0a20 last=0a non-ascii=0
 [s3-sha] metrics.json SHA-256:
-    84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5  ./form-fill/expected/metrics.json
-    cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce  ./mixed-exceptions/expected/metrics.json
-    40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db  ./table-compare/expected/metrics.json
+    6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc  ./form-fill/expected/metrics.json
+    372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65  ./mixed-exceptions/expected/metrics.json
+    d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84  ./table-compare/expected/metrics.json
 [s3-det-again-table-compare] rc=0 cmd: tool run examples/table-compare <작업>/again/table-compare.json
-    SHA table-compare table-compare.json 40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db bytes=4291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA table-compare table-compare.json d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT table-compare status=measured reason=null key=log_id ref-files=[reference/logs.csv] cand-files=[candidate/logs.csv]
     RESULT table-compare counts=ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3
     RESULT table-compare field start_index kind=number tol=0 pct=null compared=29 outside=0 within=0 not-number=0
@@ -121,7 +121,7 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     RESULT table-compare item log27 missing ref=reference/logs.csv:28 cand=null 
     RESULT table-compare item log31 extra ref=null cand=candidate/logs.csv:26 
 [s3-det-moved-table-compare] rc=0 cmd: dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run <작업>/moved/a/b/table-compare <작업>/moved-out/table-compare.json
-    SHA table-compare table-compare.json 40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db bytes=4291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA table-compare table-compare.json d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT table-compare status=measured reason=null key=log_id ref-files=[reference/logs.csv] cand-files=[candidate/logs.csv]
     RESULT table-compare counts=ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3
     RESULT table-compare field start_index kind=number tol=0 pct=null compared=29 outside=0 within=0 not-number=0
@@ -136,7 +136,7 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     RESULT table-compare item log27 missing ref=reference/logs.csv:28 cand=null 
     RESULT table-compare item log31 extra ref=null cand=candidate/logs.csv:26 
 [s3-det-de-table-compare] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run examples/table-compare <작업>/de/table-compare.json
-    SHA table-compare table-compare.json 40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db bytes=4291 cr=0 bom=False last-lf=True culture=de-DE(1,5)
+    SHA table-compare table-compare.json d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84 bytes=4314 cr=0 bom=False last-lf=True culture=de-DE(1,5)
     RESULT table-compare status=measured reason=null key=log_id ref-files=[reference/logs.csv] cand-files=[candidate/logs.csv]
     RESULT table-compare counts=ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 accuracy=90.0 missing-rate=3.3
     RESULT table-compare field start_index kind=number tol=0 pct=null compared=29 outside=0 within=0 not-number=0
@@ -153,19 +153,19 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
 [s3-xcheck-table-compare] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/table-compare <작업>/py/table-compare.json
 [s3-det-cmp] table-compare again: same moved: same de: same python: same
 [s3-det-again-form-fill] rc=0 cmd: tool run examples/form-fill <작업>/again/form-fill.json
-    SHA form-fill form-fill.json 84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5 bytes=929 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA form-fill form-fill.json 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT form-fill status=measured reason=null key=order_id ref-files=[reference/orders.csv] cand-files=[candidate/orders.csv]
     RESULT form-fill counts=ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0
     RESULT form-fill field item kind=text tol=null pct=null compared=20 outside=0 within=0 not-number=0
     RESULT form-fill field quantity kind=number tol=0 pct=null compared=20 outside=0 within=0 not-number=0
 [s3-det-moved-form-fill] rc=0 cmd: dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run <작업>/moved/a/b/form-fill <작업>/moved-out/form-fill.json
-    SHA form-fill form-fill.json 84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5 bytes=929 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA form-fill form-fill.json 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT form-fill status=measured reason=null key=order_id ref-files=[reference/orders.csv] cand-files=[candidate/orders.csv]
     RESULT form-fill counts=ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0
     RESULT form-fill field item kind=text tol=null pct=null compared=20 outside=0 within=0 not-number=0
     RESULT form-fill field quantity kind=number tol=0 pct=null compared=20 outside=0 within=0 not-number=0
 [s3-det-de-form-fill] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run examples/form-fill <작업>/de/form-fill.json
-    SHA form-fill form-fill.json 84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5 bytes=929 cr=0 bom=False last-lf=True culture=de-DE(1,5)
+    SHA form-fill form-fill.json 6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc bytes=952 cr=0 bom=False last-lf=True culture=de-DE(1,5)
     RESULT form-fill status=measured reason=null key=order_id ref-files=[reference/orders.csv] cand-files=[candidate/orders.csv]
     RESULT form-fill counts=ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 accuracy=100.0 missing-rate=0.0
     RESULT form-fill field item kind=text tol=null pct=null compared=20 outside=0 within=0 not-number=0
@@ -173,15 +173,15 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
 [s3-xcheck-form-fill] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/form-fill <작업>/py/form-fill.json
 [s3-det-cmp] form-fill again: same moved: same de: same python: same
 [s3-det-again-mixed-exceptions] rc=0 cmd: tool run examples/mixed-exceptions <작업>/again/mixed-exceptions.json
-    SHA mixed-exceptions mixed-exceptions.json cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce bytes=291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA mixed-exceptions mixed-exceptions.json 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT mixed-exceptions status=not_verified reason=no_inputs key=null ref-files=[] cand-files=[]
     RESULT mixed-exceptions counts=null accuracy=null missing-rate=null
 [s3-det-moved-mixed-exceptions] rc=0 cmd: dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run <작업>/moved/a/b/mixed-exceptions <작업>/moved-out/mixed-exceptions.json
-    SHA mixed-exceptions mixed-exceptions.json cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce bytes=291 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA mixed-exceptions mixed-exceptions.json 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT mixed-exceptions status=not_verified reason=no_inputs key=null ref-files=[] cand-files=[]
     RESULT mixed-exceptions counts=null accuracy=null missing-rate=null
 [s3-det-de-mixed-exceptions] rc=0 cmd: env SPIKE_KEEP_CULTURE=1 LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false dotnet <작업>/artifacts/bin/CompareSpike/release/CompareSpike.dll run examples/mixed-exceptions <작업>/de/mixed-exceptions.json
-    SHA mixed-exceptions mixed-exceptions.json cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce bytes=291 cr=0 bom=False last-lf=True culture=de-DE(1,5)
+    SHA mixed-exceptions mixed-exceptions.json 372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65 bytes=314 cr=0 bom=False last-lf=True culture=de-DE(1,5)
     RESULT mixed-exceptions status=not_verified reason=no_inputs key=null ref-files=[] cand-files=[]
     RESULT mixed-exceptions counts=null accuracy=null missing-rate=null
 [s3-xcheck-mixed-exceptions] rc=0 cmd: python3 -I <작업>/c/spikes/T-006/xcheck/compare.py examples/mixed-exceptions <작업>/py/mixed-exceptions.json
@@ -413,7 +413,7 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     PROBE json decimal scale=1 -0.5 -0.5
     PROBE json decimal scale=0 79228162514264337593543950335 79228162514264337593543950335
     PROBE json escape key "key": "키\"\\\t\u2028\uD83D\uDE00<>&'+`",
-    PROBE json empty-arrays {\n  "case": "x",\n  "compare": {\n    "status": "not_verified",\n    "reason": "no_inputs",\n    "key": null,\n    "reference_files": [],\n    "candidate_files": [],\n    "counts": null,\n    "accuracy_pct": null,\n    "missing_rate_pct": null,\n    "fields": [],\n    "items": []\n  }\n}\n
+    PROBE json empty-arrays {\n  "schema_version": 1,\n  "case": "x",\n  "compare": {\n    "status": "not_verified",\n    "reason": "no_inputs",\n    "key": null,\n    "reference_files": [],\n    "candidate_files": [],\n    "counts": null,\n    "accuracy_pct": null,\n    "missing_rate_pct": null,\n    "fields": [],\n    "items": []\n  }\n}\n
     PROBE not-verified no-inputs status=not_verified reason=no_inputs
     PROBE not-verified no-inputs directory not read status=not_verified reason=no_inputs
     PROBE not-verified no-compare-fields status=not_verified reason=no_compare_fields
@@ -423,9 +423,9 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     PROBE example table-compare ref=30 cand=30 match=27 mismatch=2 missing=1 extra=1 within=4 acc=90.0 miss=3.3
     PROBE example form-fill ref=20 cand=20 match=20 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0
     PROBE example mixed-exceptions status=not_verified reason=no_inputs
-    PROBE culture table-compare 7 cultures distinct-sha=1 40150ae4160c44f3
-    PROBE culture form-fill 7 cultures distinct-sha=1 84300fe2f8eda6d4
-    PROBE culture mixed-exceptions 7 cultures distinct-sha=1 cda477c47f0695d5
+    PROBE culture table-compare 7 cultures distinct-sha=1 d250fbeeb8bbed24
+    PROBE culture form-fill 7 cultures distinct-sha=1 6dd5b7c6868ed30a
+    PROBE culture mixed-exceptions 7 cultures distinct-sha=1 372e25df94129fd6
     PROBE eol table-compare crlf both-same=True candidate-only-same=True
     PROBE eol table-compare cr both-same=True candidate-only-same=True
     PROBE eol table-compare bom both-same=True candidate-only-same=True
@@ -454,8 +454,8 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     PROBE alt item=cell accuracy=94.4
     PROBE alt denominator=both-present accuracy=93.1
     PROBE alt denominator=reference+extra accuracy=87.1
-    TIMING compare rows=10000 bytes=456138 ms=89 json-bytes=4447334 ref=10000 cand=10000 match=10000 mismatch=0 missing=0 extra=0 within=10000 acc=100.0 miss=0.0
-    TIMING compare rows=100000 bytes=4561798 ms=692 json-bytes=44662946 ref=100000 cand=100000 match=100000 mismatch=0 missing=0 extra=0 within=100000 acc=100.0 miss=0.0
+    TIMING compare rows=10000 bytes=456138 ms=83 json-bytes=4447357 ref=10000 cand=10000 match=10000 mismatch=0 missing=0 extra=0 within=10000 acc=100.0 miss=0.0
+    TIMING compare rows=100000 bytes=4561798 ms=693 json-bytes=44662969 ref=100000 cand=100000 match=100000 mismatch=0 missing=0 extra=0 within=100000 acc=100.0 miss=0.0
 [s5-guard-samples] rc=0 cmd: tool guard-samples tests/Scorecard.Tests/TestData/guard/case-valid
     SHA guard reference/rows.csv 66d83729d31403dec9e866a9911c17c3850f980937966de966e9dd2caf8b693f bytes=216
     SHA guard candidate/rows.csv 9be987a92902a672ad3c8735a3f1467ce2b5a20088d89011163f11385e3d9943 bytes=216
@@ -467,25 +467,25 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     RESULT guard planted within:mean: r09 r11
 [s5a-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s5a-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    [xUnit.net 00:00:02.85]     Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [FAIL]
+    [xUnit.net 00:00:01.59]     Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [FAIL]
       Failed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [6 ms]
        Assert.Equal() Failure: Collections differ
     Actual:   OrderedIterator<string, string> ["case-invalid", "case-valid", "compare-invalid"]
          at Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic() in <작업>/c/tests/Scorecard.Tests/Guards/CoreGuardTargetTests.cs:line 74
-    Failed!  - Failed:     1, Passed:   833, Skipped:     0, Total:   834, Duration: 4 s - Scorecard.Tests.dll (net10.0)
+    Failed!  - Failed:     1, Passed:   833, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s5b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s5b-format] rc=0 cmd: dotnet format AIAdoptionScorecard.sln --verify-no-changes
 [s5b-g2g3] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G2|Rule=G3 --logger console;verbosity=normal
-      Passed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [10 ms]
-      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-invalid") [30 ms]
-      Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [20 ms]
-      Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [8 ms]
-      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-case-valid") [4 ms]
+      Passed Scorecard.Tests.Guards.GuardTargetAdapterTests.Real_targets_use_case_samples_not_basic [3 ms]
+      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-invalid") [89 ms]
+      Passed Scorecard.Tests.Guards.CoreImmutabilityGuardTests.Core_target_leaves_input_unchanged(name: "compare-case-valid") [12 ms]
+      Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [9 ms]
+      Passed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [6 ms]
     Total tests: 32
 [s5b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 4 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s5-run-case-valid] rc=0 cmd: tool run tests/Scorecard.Tests/TestData/guard/case-valid <작업>/ex/guard/case-valid-metrics.json
-    SHA case-valid case-valid-metrics.json a5a1d281e9f351906bbb4cd8013a55e3d614399c5014fb03aee97f8f69fb3830 bytes=3780 cr=0 bom=False last-lf=True culture=(1.5)
+    SHA case-valid case-valid-metrics.json c5906d4588c34913613ffd6885c9d15cb4b24101a5300b0ad0ad771705ca00ae bytes=3803 cr=0 bom=False last-lf=True culture=(1.5)
     RESULT case-valid status=measured reason=null key=row_id ref-files=[reference/rows.csv] cand-files=[candidate/rows.csv]
     RESULT case-valid counts=ref=12 cand=12 match=8 mismatch=3 missing=1 extra=1 within=2 accuracy=66.7 missing-rate=8.3
     RESULT case-valid field start kind=number tol=0 pct=null compared=11 outside=1 within=0 not-number=0
@@ -510,14 +510,14 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
 [s6a-variant] 바뀐 줄 수: 1
 [s6a-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s6a-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 158 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 166 ms - Scorecard.Tests.dll (net10.0)
 [s6a-g2] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~CoreDeterminismGuardTests --logger console;verbosity=normal
-    [xUnit.net 00:00:00.76]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
-    [xUnit.net 00:00:00.76]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.76]       Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
-    [xUnit.net 00:00:00.76]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
-    [xUnit.net 00:00:00.76]       Collection: ["G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [48 ms]
+    [xUnit.net 00:00:00.71]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
+    [xUnit.net 00:00:00.71]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.71]       Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
+    [xUnit.net 00:00:00.71]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
+    [xUnit.net 00:00:00.71]       Collection: ["G2 R4 문화권: out/compare-errors.txt 크기, SHA-256 다름"]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [37 ms]
        Assert.Empty() Failure: Collection was not empty
     Collection: ["G2 R4 문화권: out/compare-errors.txt 추가", "G2 R4 문화권: out/metrics.json 삭제"]
       Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [6 ms]
@@ -526,15 +526,15 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
 [s6b-variant] 바뀐 줄 수: 1
 [s6b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s6b-g1] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter Rule=G1
-    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 170 ms - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:    61, Skipped:     0, Total:    61, Duration: 157 ms - Scorecard.Tests.dll (net10.0)
 [s6b-g2] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~CoreDeterminismGuardTests --logger console;verbosity=normal
-    [xUnit.net 00:00:00.68]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
-    [xUnit.net 00:00:00.68]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.68]       Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
-    [xUnit.net 00:00:00.69]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
+    [xUnit.net 00:00:00.69]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [FAIL]
     [xUnit.net 00:00:00.69]       Assert.Empty() Failure: Collection was not empty
-    [xUnit.net 00:00:00.69]       Collection: ["G2 R3 다른 경로: out/compare-errors.txt SHA-256 다름"]
-      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [32 ms]
+    [xUnit.net 00:00:00.69]       Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
+    [xUnit.net 00:00:00.70]     Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [FAIL]
+    [xUnit.net 00:00:00.70]       Assert.Empty() Failure: Collection was not empty
+    [xUnit.net 00:00:00.70]       Collection: ["G2 R3 다른 경로: out/compare-errors.txt SHA-256 다름"]
+      Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-case-valid") [30 ms]
        Assert.Empty() Failure: Collection was not empty
     Collection: ["G2 R3 다른 경로: out/metrics.json SHA-256 다름"]
       Failed Scorecard.Tests.Guards.CoreDeterminismGuardTests.Core_target_is_deterministic(name: "compare-invalid") [13 ms]
@@ -542,9 +542,9 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     Total tests: 6
 [s6-restore-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s7a-test] rc=1 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    [xUnit.net 00:00:01.05]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [FAIL]
-    [xUnit.net 00:00:01.06]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [FAIL]
-    [xUnit.net 00:00:01.06]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "table-compare") [FAIL]
+    [xUnit.net 00:00:01.50]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [FAIL]
+    [xUnit.net 00:00:01.51]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "form-fill") [FAIL]
+    [xUnit.net 00:00:01.51]     Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "table-compare") [FAIL]
       Failed Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(example: "mixed-exceptions") [5 ms]
        Assert.Equal() Failure: Collections differ
          at Scorecard.Tests.Synthetic.ExampleFileTests.Example_folder_has_exactly_the_planned_files(String example) in <작업>/c/tests/Scorecard.Tests/Synthetic/ExampleFileTests.cs:line 81
@@ -555,11 +555,11 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
 [s7b-variant] ExampleFileTests 바뀐 줄 수: 1
 [s7b-build] rc=0 cmd: dotnet build AIAdoptionScorecard.sln -c Release -warnaserror
 [s7b-test] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release
-    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 4 s - Scorecard.Tests.dll (net10.0)
+    Passed!  - Failed:     0, Passed:   834, Skipped:     0, Total:   834, Duration: 3 s - Scorecard.Tests.dll (net10.0)
 [s7b-pattern] rc=0 cmd: dotnet test AIAdoptionScorecard.sln --no-build -c Release --filter FullyQualifiedName~ExamplePatternTests|FullyQualifiedName~Example_text_files --logger console;verbosity=normal
     Total tests: 8
-[s7-eol] plain/metrics.json original=4291 autocrlf-clone=4490 same=no
-[s7-eol] attr/metrics.json original=4291 autocrlf-clone=4291 same=yes
+[s7-eol] plain/metrics.json original=4314 autocrlf-clone=4514 same=no
+[s7-eol] attr/metrics.json original=4314 autocrlf-clone=4314 same=yes
 [s8-spec] rc=0 cmd: tool spec <작업>/c/docs/spec/metrics.md <작업>/ex
     SPEC pattern rows=12
     SPEC match rows=14
@@ -569,10 +569,10 @@ spec(작업 트리) sha256: 52d4f7dab8c1eb96
     SPEC percent rows=18
     SPEC error-code rows=13 core=13
     SPEC example rows=3
-    SPEC property rows=43 walked=43
-    BLOCK table-compare blocks=1 block-equal=True sha-line=True sha=40150ae4160c44f30a9a8c961ad23ad01ae14b02f56f1214981296d83ce0d2db
-    BLOCK form-fill blocks=1 block-equal=True sha-line=True sha=84300fe2f8eda6d4744ddf3bfc221f9be60bacf5dd8d553e28eb0a41362a5bd5
-    BLOCK mixed-exceptions blocks=1 block-equal=True sha-line=True sha=cda477c47f0695d5f1de863227d8b43a6c92c3dd93b0410bf8f081098ae585ce
+    SPEC property rows=44 walked=44
+    BLOCK table-compare blocks=1 block-equal=True sha-line=True sha=d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84
+    BLOCK form-fill blocks=1 block-equal=True sha-line=True sha=6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc
+    BLOCK mixed-exceptions blocks=1 block-equal=True sha-line=True sha=372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65
     BLOCK guard compare-invalid errors-block-equal=True blocks=6
     BLOCK guard compare-invalid sample-blocks=5 sample-files=5
     SPEC summary diffs=0

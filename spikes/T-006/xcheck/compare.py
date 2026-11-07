@@ -154,7 +154,7 @@ def main(case_dir, out):
                 'accuracy_pct': Raw(pct(match, len(ref))), 'missing_rate_pct': Raw(pct(missing, len(ref))),
                 'fields': fields, 'items': items}
     Path(out).parent.mkdir(parents=True, exist_ok=True)
-    Path(out).write_bytes((dump({'case': name, 'compare': body}) + '\n').encode('utf-8'))
+    Path(out).write_bytes((dump({'schema_version': 1, 'case': name, 'compare': body}) + '\n').encode('utf-8'))
     print('ok')
 
 

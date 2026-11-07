@@ -549,7 +549,7 @@ public sealed record SyntheticRow(string Key, IReadOnlyList<string> Values, stri
 
 ### 7.2 table-compare
 
-`examples/table-compare/case.yaml` (SHA-256 `451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2`):
+`examples/table-compare/case.yaml` (SHA-256 `e99d669ab16b6eada60e31c794efaa8cd5baa23db34b2500a68b731914f8e5b1`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 table-compare.
@@ -569,6 +569,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: log_id
+  group: signal_type
 compare:
   - {field: start_index, tolerance: 0}
   - {field: length, tolerance: 0}
@@ -797,7 +798,7 @@ steps:
 
 T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 T-009 글머리, 근거와 질문은 `docs/spec/signoff-final.md`.
 
-`examples/signoff-final/case.yaml` (SHA-256 `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263`):
+`examples/signoff-final/case.yaml` (SHA-256 `e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348`):
 
 ```yaml
 # 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
@@ -824,6 +825,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: record_id
+  group: record_kind
 compare:
   - {field: range_start, tolerance: 0}
   - {field: range_end, tolerance: 0}

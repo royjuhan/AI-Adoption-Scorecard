@@ -15,6 +15,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: log_id
+  group: signal_type
 compare:
   - {field: start_index, tolerance: 0}
   - {field: length, tolerance: 0}

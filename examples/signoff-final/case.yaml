@@ -22,6 +22,7 @@ inputs:
   reference: reference/*.csv
   candidate: candidate/*.csv
   key: record_id
+  group: record_kind
 compare:
   - {field: range_start, tolerance: 0}
   - {field: range_end, tolerance: 0}

@@ -167,10 +167,11 @@ public sealed class ErrorCodeTests : IDisposable
     }
 
     // 오류가 하나라도 있으면 지표를 내지 않는다(3.1). 결과 쪽 오류 하나여도 같다.
+    // T-012: 결과 쪽 키 중복은 오류가 아니라 duplicate 항목이라(metrics.md 12.2), 결과 쪽 빈 키로 오류를 만든다.
     [Fact]
     public void Any_error_means_no_metrics()
     {
-        var result = CompareInput.Run(Definition, CompareInput.GoodCsv, "id,n,t\nk1,1,a\nk1,1,a\n");
+        var result = CompareInput.Run(Definition, CompareInput.GoodCsv, "id,n,t\nk1,1,a\n,1,a\n");
 
         Assert.Null(result.Metrics);
         Assert.False(result.IsValid);

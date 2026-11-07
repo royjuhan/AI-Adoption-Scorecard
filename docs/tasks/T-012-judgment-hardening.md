@@ -75,3 +75,4 @@ PR (a): `docs/spec/`, `tools/oracle/`, `docs/decisions/`, `docs/STATUS.md`, 이 
 - `FocusTests`(메서드 이름 그대로): M-B(키·대조 밖 열 전부) → M-A(`inputs.group` 한 열, 기준 값만, 없으면 off + `add_group`). 열이 없는 경우는 대조 오류 `column`, 이름 충돌은 파서 오류 `conflict`로 본다(11.8, metrics.md 12.3).
 - `JudgmentGoldenTests.Example_table_matches_expected_file`: 11.12 예제 표(칸 `inputs.group`, `검토 항목`)를 읽는다. `Instructions_section_12_verdicts_hold`: 지시문 12절 표를 직접 읽는다(옛 7.1 표가 11.17 문서 1에서 지워진다).
 - `JudgeGuardTargetTests.Sample_judgment_matches_spec`: G2 표본 판정의 todo 키와 UNEXPLAINED 문장이 11.3·11.5 틀이다. 판정·근거 키는 그대로다.
+- `ErrorCodeTests.Any_error_means_no_metrics`: 결과 쪽 오류를 키 중복에서 빈 키(`empty-key`)로 바꿨다. 결과 쪽 중복은 이제 오류가 아니라 `duplicate` 항목이다(잠정 결정 2). 뜻(오류 하나면 지표 없음)은 같다.

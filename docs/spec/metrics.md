@@ -2,6 +2,7 @@
 
 - 상태: 승인됨(2026-11-07, 20문항 모두 제안대로). 승인 결과는 문서 끝. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
 - T-009 개정(승인됨, 2026-11-07, `signoff-final.md` 승인 결과): 4번째 공개 예제 `signoff-final`. 7.1 예제 표 1행·항목 10, 새 6.5·7.5. 대조 규칙(3·4절)과 Core는 그대로다. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
+- T-012 개정(제안, 2026-11-07. 문서 끝 12절): 결과 쪽 키 중복은 대조 오류가 아니라 항목 `duplicate`다. `inputs.group` 열은 기준 파일에서 확인한다. metrics.json 속성과 `schema_version` 1, 예제 4종 `expected/metrics.json` 바이트는 그대로다. 제자리로 옮기는 것은 PR (b)다(12.7).
 - 반영한 사람 결정: ADR 0004(2026-11-07 juhan 승인). 결정 2: metrics.json 첫 키 `"schema_version": 1`(정수)(3.2). 결정 3·6: 명령 넷과 내부 명령, `--json` 출력, 오류 JSON, 종료 코드 0/2/1(3.4). expected 변경 규칙·상시 승인 예외(7.1, 승인 질문 머리말).
 - 진행 순서: T-007은 PR #7로 머지됐다(main `38a507c`). Core 구현과 `expected/metrics.json` 커밋은 이 스펙의 승인 뒤에 한다. expected는 juhan이 직접 확정한다(7.1, 8절, 승인 질문 15·17·18).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
@@ -72,12 +73,16 @@
 
 ### 3.1 메모리 결과
 
+- T-012 개정(제안): 항목 순서에 결과 쪽 `duplicate`가 든다(12.2).
+
 `CompareResult(Metrics, Errors)` 하나. 오류가 하나라도 있으면 `Metrics`는 null이다(`CaseParseResult`와 같은 모양). 오류가 있으면 지표를 내지 않는다(4.7).
 
 - `CompareMetrics`: 3.2의 내용과 같다. 다른 점은 `Items`에 모든 항목(차이 없는 일치 포함)이 있다는 것과, 항목의 `CsvRow`가 그 행의 머리 행·칸 전부(정규화 뒤, `compare`에 없는 열 포함)를 가진다는 것이다. 판정 카드가 `signal_type` 같은 열을 쓸 수 있다(승인 질문 16).
 - 항목 순서: 기준 항목(기준 파일 경로 서수 → 줄 순서), 그다음 추가 항목(결과 파일 경로 서수 → 줄 순서) [P:key multi-file-order].
 
 ### 3.2 metrics.json
+
+- T-012 개정(제안): `items[].status` 값 `duplicate`, `counts.candidate`의 중복 행. 속성은 그대로다(12.4).
 
 Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 
@@ -284,6 +289,8 @@ T-005 예제 CSV(synthetic-examples.md 3.3)는 ASCII, BOM 없음, LF, 따옴표 
 
 ### 4.3 키
 
+- T-012 개정(제안): 결과 쪽 같은 키는 오류가 아니라 항목 `duplicate`다. 기준 쪽은 그대로 `duplicate-key`다(12.2).
+
 - 키 열은 머리 행에서 `inputs.key`와 같은 이름(정규화 뒤 서수)이다. 없으면 `column` 오류(양쪽 모두).
 - 키 값은 정규화(4.6) 뒤 서수로 비교한다. 앞뒤 공백은 뗀다 [P:key trim-matches]. 대소문자, NFC·NFD는 다른 키다 [P:key case-differs, nfc-vs-nfd]. 숫자로 보지 않는다: `1`과 `1.0`은 다른 키다 [P:key numeric-text-key]. 다른 키면 누락 1 + 추가 1이 된다.
 - 빈 키(정규화 뒤 빈 문자열, 공백만 포함)는 `empty-key` 오류다. 기준·결과 모두 [P:key empty-key, space-key, empty-key-candidate].
@@ -292,6 +299,8 @@ T-005 예제 CSV(synthetic-examples.md 3.3)는 ASCII, BOM 없음, LF, 따옴표 
 - → 승인 질문 5.
 
 ### 4.4 항목과 셈
+
+- T-012 개정(제안): 용어 `duplicate`(결과 쪽 같은 키의 둘째 이후 행)가 는다. 정확도·누락률 셈은 그대로다(12.2).
 
 T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3%)을 맞추는 읽기는 P2뿐이다 [읽음 synthetic-examples.md 4.7].
 
@@ -458,6 +467,8 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 - NFC `가`(U+AC00)와 NFD `가`(U+1100 U+1161)는 다르다. `é`도 같다 [P:text nfc-vs-nfd].
 
 ### 4.7 오류
+
+- T-012 개정(제안): `column`·`duplicate-column`이 기준 쪽 `inputs.group` 열도 본다. `duplicate-key`는 기준 쪽만이다(12.2, 12.3). 코드 13개는 그대로다.
 
 오류 하나는 `CaseError(Source, Line, Column, Code, Path, Message)`다(case-schema 4.9를 그대로 쓴다). 문자열 형식도 같다: `<Source>:<Line>:<Column>: <Code> <Path>: <Message>`. 열이 0이면 `<Source>:<Line>:`, 줄도 0이면 `<Source>:`, 경로가 비면 `<Code>: <Message>`.
 
@@ -1414,3 +1425,224 @@ T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 항목 10, �
 - 바꾼 곳: 머리 글머리, 새 6.5, 7.1 항목 10·예제 표 1행, 새 7.5.
 - 바꾸지 않은 곳: 1~5절(대조 규칙, 오류, 퍼센트, API), 6.1~6.4, 7.2~7.4 블록·SHA-256 줄, 8~11절, Core.
 - 7절 제목("예제 3종")은 그대로 두었다. 테스트가 읽지 않는다. 승인 뒤 리드가 "4종"으로 고쳐도 된다(`signoff-final.md` 리드 질문 L5).
+
+## 12. T-012 개정 (결과 쪽 키 중복과 `inputs.group`)
+
+- 상태: 제안(2026-11-07, prototyper). 질문은 `judgment.md` 11.19의 2·3·7이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
+- 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 1(결과 자료의 결함이 판정에 닿지 않는다) [읽음]. 4.4 "추가 … 판정에 쓸지는 판정 카드가 정한다"의 답은 `judgment.md` 11.3이다.
+- 근거: oracle `tools/oracle/compare.py`(이 절 글만 보고 고쳤다. `src/`는 읽지 않았다). 이 절의 블록·SHA-256은 oracle이 낸 것이다 `[T12:O]`. C# 엔진은 PR (b)다(**미확인**).
+- 바꾸는 곳(PR (b)에서 제자리로 옮긴다. 12.7): 3.1 항목 순서, 3.2 속성 표 뜻 칸 셋, 4.3 중복 글머리, 4.4 용어 표, 4.7 오류 표 세 행의 "언제", 4.11 상수 하나, 8절 표 "키" 행.
+- 바꾸지 않는 곳: metrics.json 속성 이름·순서·형식과 `schema_version` 1, 오류 코드 13개와 메시지, 정확도·누락률 셈, 예제 4종 `expected/metrics.json` 바이트, 6.4 `compare-invalid`(결과 쪽 중복이 없다), G2·G3 대상.
+
+### 12.1 왜 바꾸나
+
+- 결과 자료는 AI가 만든 것이다. 같은 키를 두 번 내는 것은 결과의 결함이다. 지금은 `duplicate-key` 대조 오류(종료 2)라 판정까지 가지 않는다.
+- 오류로 멈추면 사용자는 결과 파일을 고쳐야 평가를 받는다. 고치면 결함이 사라져 평가가 결함을 보지 못한다. 항목으로 세면 판정의 검토 항목(`judgment.md` 11.3)에 닿는다.
+- 기준 자료는 사람이 확정한 정답이다. 기준 쪽 중복은 자료 오류로 그대로 둔다.
+
+### 12.2 결과 쪽 키 중복 = 항목 `duplicate`
+
+- 기준 쪽: 지금처럼 `duplicate-key` 오류다(4.3).
+- 결과 쪽: 오류가 아니다. 같은 키가 결과 쪽(모든 결과 파일을 합쳐서, 정규화 뒤 서수)에 두 번 이상 나오면 첫 행(결과 파일 경로 서수 → 줄)으로 대조한다. 둘째 행부터 하나씩 항목 `duplicate`다.
+- `duplicate` 항목: `key`, `status` = `duplicate`, `reference` = 그 키의 기준 행 위치(기준에 없는 키면 null), `candidate` = 그 행 위치, `differences` = `[]`. 둘째 행부터는 값을 대조하지 않는다. 값이 기준과 같아도 `duplicate`다.
+- 첫 행이 기준에 없는 키면 첫 행은 `extra`, 둘째 행부터 `duplicate`(`reference` null)다.
+- 항목 순서(3.1 보강): 기준 항목(기준 파일 경로 서수 → 줄), 그다음 결과 쪽 항목(`extra`·`duplicate`, 결과 파일 경로 서수 → 줄). 결과 쪽 중복이 없으면 지금 순서와 같다.
+- 셈: `counts.candidate`는 결과 데이터 행 전부(중복 행 포함)다. 결과 행 = 일치 + 값 불일치 + 추가 + 중복 행. 새 셈 키를 두지 않는다. 중복 행 수는 `items`의 `duplicate` 수다. `fields[].compared`(일치 + 값 불일치)와 정확도·누락률은 그대로다.
+- 빈 키: 기준·결과 모두 지금처럼 `empty-key` 오류다. 키가 없는 행은 사람이 키로 가리킬 수 없다(`judgment.md` 11.18 4).
+- 열·형식 오류(`column`, `field-count`, `csv-syntax` 등)는 결과 쪽도 그대로 오류다.
+- `CompareEngine.ItemDuplicate` = `duplicate`(`judgment.md` 11.16).
+- → `judgment.md` 질문 2.
+
+### 12.3 `inputs.group` 열 확인
+
+- `inputs.group`(`case-schema.md` 10절)이 있으면 대조가 기준 파일마다 머리 행에서 그 열을 찾는다. 찾는 순서는 키 열 → `compare` 필드 → group 열이다(4.7 "같으면 찾은 순서").
+- 없으면 `column`(경로 = 그 열 이름, 위치 = 파일:머리 행 줄). 둘 이상이면 `duplicate-column`(위치 = 둘째 칸). 메시지는 4.7 표 그대로다. 그 파일의 데이터 행은 보지 않는다(4.7 그대로).
+- 머리 행만 있는 기준 파일도 본다(머리 행이 있으므로).
+- 결과 파일은 보지 않는다. 결과 자료에 그 열이 없어도 된다.
+- 그 열의 값은 비교하지 않고 metrics.json에 쓰지 않는다. 메모리 결과 `CsvRow`에는 지금처럼 모든 열이 있다. 판정이 그 칸을 읽는다(`judgment.md` 11.8).
+- 열 이름이 키·`compare` 필드와 같으면 파서 오류라(`case-schema.md` 10.2) 대조까지 오지 않는다.
+- → `judgment.md` 질문 7.
+
+### 12.4 metrics.json
+
+- 속성 이름·순서·형식은 그대로다. `schema_version`도 1 그대로다. 속성을 빼거나 이름·뜻을 바꾸지 않았다. 값 `duplicate`가 늘고, `counts.candidate`가 중복 행도 센다(결과 행 수라는 뜻은 같다).
+- 결과 쪽 중복이 없는 자료는 바이트가 같다. 예제 4종이 그렇다(12.6).
+- 읽는 쪽 주의: `items[].status`를 넷으로 가정한 코드는 `duplicate`를 다뤄야 한다. 판정(`judgment.md` 11.3)이 다룬다. 스킬 `/scorecard`가 이 값을 읽는지는 **미확인**(M2-7).
+- 3.2 속성 표 뜻 칸(PR (b)에서 고친다): `compare.counts.candidate` "결과 행 수 = 일치 + 값 불일치 + 추가 + 중복 행", `compare.items[].status` "`match`, `mismatch`, `missing`, `extra`, `duplicate`", `compare.items[].reference` "기준 행 위치. 추가 항목과 기준에 없는 키의 중복 항목이면 null". 3.2 "`items`에 쓰는 항목" 글머리에 중복을 더한다.
+- 대안(추천하지 않음): `counts.duplicate` 키를 더한다. 예제 4종 metrics.json 바이트가 모두 바뀌고 `schema_version`을 올려야 한다. 수는 `items`에서 셀 수 있다.
+- → `judgment.md` 질문 3.
+
+### 12.5 예시 `compare-duplicate`
+
+합성 예시. 실제 값 없음. 파일 셋. 테스트로 옮길 때는 메모리 바이트로 넘긴다(8절 방식).
+
+`compare-duplicate/case.yaml`:
+
+```yaml
+# 합성 예시. 실제 업무·값 없음. 결과 쪽 키 중복과 inputs.group(T-012)을 보인다.
+name: compare-duplicate
+task: 결과 쪽 키 중복 합성 예시
+steps:
+  - name: 한 단계
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: row_id
+  group: kind
+compare:
+  - {field: value, tolerance: 0}
+thresholds:
+  accuracy_min: 50
+  missing_max: 50
+  time_must_drop: false
+```
+
+`compare-duplicate/reference/rows.csv`:
+
+```csv
+row_id,kind,value
+r1,a,10
+r2,a,20
+r3,b,30
+r4,b,40
+```
+
+`compare-duplicate/candidate/rows.csv`:
+
+```csv
+row_id,value
+r1,10
+r2,21
+r2,20
+r5,50
+r3,30
+r5,55
+```
+
+`compare-duplicate` metrics.json (SHA-256 `e67012f2423a068b3b409ca9c38fab7993527c54e5fa7bafb8e86a9d30bedb50`):
+
+```json
+{
+  "schema_version": 1,
+  "case": "compare-duplicate",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "row_id",
+    "reference_files": [
+      "reference/rows.csv"
+    ],
+    "candidate_files": [
+      "candidate/rows.csv"
+    ],
+    "counts": {
+      "reference": 4,
+      "candidate": 6,
+      "match": 2,
+      "mismatch": 1,
+      "missing": 1,
+      "extra": 1,
+      "within": 0
+    },
+    "accuracy_pct": 50.0,
+    "missing_rate_pct": 25.0,
+    "fields": [
+      {
+        "field": "value",
+        "kind": "number",
+        "tolerance": 0,
+        "tolerance_pct": null,
+        "compared": 3,
+        "outside": 1,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "r2",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/rows.csv",
+          "line": 3
+        },
+        "candidate": {
+          "file": "candidate/rows.csv",
+          "line": 3
+        },
+        "differences": [
+          {
+            "field": "value",
+            "result": "outside",
+            "reference": "20",
+            "candidate": "21"
+          }
+        ]
+      },
+      {
+        "key": "r4",
+        "status": "missing",
+        "reference": {
+          "file": "reference/rows.csv",
+          "line": 5
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "r2",
+        "status": "duplicate",
+        "reference": {
+          "file": "reference/rows.csv",
+          "line": 3
+        },
+        "candidate": {
+          "file": "candidate/rows.csv",
+          "line": 4
+        },
+        "differences": []
+      },
+      {
+        "key": "r5",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/rows.csv",
+          "line": 5
+        },
+        "differences": []
+      },
+      {
+        "key": "r5",
+        "status": "duplicate",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/rows.csv",
+          "line": 7
+        },
+        "differences": []
+      }
+    ]
+  }
+}
+```
+
+- `r2`: 첫 행(3줄, `21`)으로 대조해 값 불일치다. 둘째 행(4줄, `20`)은 기준과 같은 값이지만 `duplicate`다.
+- `r5`: 기준에 없다. 첫 행(5줄)은 `extra`, 둘째 행(7줄)은 `duplicate`이고 `reference`가 null이다.
+- `r4`: 누락. 셈: 기준 4, 결과 6(= 일치 2 + 값 불일치 1 + 추가 1 + 중복 2), 정확도 50.0, 누락률 25.0.
+- 결과 파일에 `kind` 열이 없어도 된다(12.3). 판정은 `judgment.md` 11.9 블록이다.
+
+### 12.6 예제 4종
+
+- 결과 쪽 중복이 없다. `expected/metrics.json` 4개는 바이트 그대로다.
+- table-compare·signoff-final `case.yaml`에 `group` 줄을 더한 사본(`judgment.md` 11.12)에서도 oracle이 7.2·7.5와 같은 바이트를 냈다 [T12:O]. 유형 열(`signal_type`, `record_kind`)이 기준 파일에 한 번씩 있다.
+
+### 12.7 PR (b)에서 옮길 곳
+
+1. 3.1 둘째 글머리(항목 순서)를 12.2의 순서로.
+2. 3.2 속성 표 뜻 칸 셋과 "`items`에 쓰는 항목" 글머리(12.4).
+3. 4.3 중복 글머리: "같은 쪽에 같은 키" → "기준 쪽에 같은 키가 두 번 이상이면 `duplicate-key`. 결과 쪽은 12.2". 4.4 용어 표에 `duplicate` 행.
+4. 4.7 오류 표: `column` 언제 "머리 행에 키 열이나 `compare` 필드 열이 없음(기준 쪽은 `inputs.group` 열도)", `duplicate-column` 언제 "쓰는 열(키·`compare`, 기준 쪽은 group)", `duplicate-key` 언제 "기준 쪽에 같은 키".
+5. 4.11 `CompareEngine`에 `ItemDuplicate`.
+6. 8절 표 "키(4.3)" 행: 결과 쪽 중복은 `duplicate` 항목(메모리 테스트, 12.5 블록 = 엔진 출력).
+7. 이 절은 T-012 기록으로 남긴다. 12.5 블록은 옮기지 않는다. 테스트는 그 머리글 아래 블록을 읽으면 된다.

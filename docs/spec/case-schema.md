@@ -2,6 +2,7 @@
 
 - 상태: 승인됨 (2026-11-06, juhan "제안대로"). 본문과 맨 끝 "사람 승인 결과"가 다르면 승인 결과가 우선한다.
 - T-008 개정(승인됨, 2026-11-07. 승인 결과는 `docs/spec/human-signoff.md` 끝): 10번째 답 `human_signoff`(ADR 0003)와 단계 항목 `inferred`(ADR 0004 결정 2, 질문 16 해석 A). 바뀐 곳: 4.4, 4.9, 4.12, 새 4.13, 6.1·6.2 글, 새 6.7, 7.2, 문서 끝 "T-008 개정". 질문과 스파이크 결과는 `docs/spec/human-signoff.md`.
+- T-012 개정(제안, 2026-11-07. 문서 끝 10절): `inputs`에 선택 키 `group`(몰림을 볼 기준 자료 열). 검사는 `required`·`type`·`conflict`, 오류 코드 17개는 그대로다. 제자리로 옮기는 것은 PR (b)다(10.5).
 - 작업 카드: `docs/tasks/T-003-case-schema.md`
 - 작성: prototyper, 2026-11-06
 - 확인 대상 커밋: `abd34d0`
@@ -172,6 +173,8 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 
 ### 4.5 inputs, compare, thresholds
 
+- T-012 개정(제안): `inputs`에 선택 키 `group`이 는다(10.1, 10.2).
+
 `inputs` (있으면 세 키 모두 필수):
 
 | 키 | 형식 | 규칙 |
@@ -264,6 +267,8 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 
 ### 4.9 오류
 
+- T-012 개정(제안): `conflict`에 경우 하나(`inputs.group`이 `key`·`compare` 필드와 같음)가 는다(10.2).
+
 오류 하나는 `CaseError(Source, Line, Column, Code, Path, Message)`다.
 
 - `Source`: 파일 이름. `ParseDirectory`는 늘 `case.yaml`. 절대 경로를 쓰지 않는다 [P:missing-file].
@@ -343,6 +348,8 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 - → 승인 질문 12·13.
 
 ### 4.12 Core 공개 API (제안)
+
+- T-012 개정(제안): `CaseInputs`에 매개변수 `string? Group = null`이 는다(10.3).
 
 네임스페이스 `Scorecard.Core.Cases`. 스파이크 C와 같은 모양이다(`spikes/T-003/core/C-events/CaseModel.cs`).
 
@@ -856,3 +863,64 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
 - 바꾼 곳: 4.4(제목, 단계 항목 표 `inferred` 행, `answers` 표 끝 `human_signoff` 행, 글머리 둘), 4.9(`enum`·`required`·`duplicate` 행의 T-008 경우. 코드 수 17개는 그대로), 4.12(`StepAnswers` 10번째 답, `Answer<T>.IsInferred`), 새 4.13, 6.1 표 1행·글머리, 6.2 글, 새 6.7, 7.2 표 3행.
 - 바꾸지 않은 곳: 6.1 블록(= `valid-full` = `guard/case-valid`), 오류 코드 표의 코드 목록, 4.3 최상위 필드.
 - 위 승인 결과 5("기본값 표는 4.4에만")는 그대로다. `human_signoff` 행도 4.4 표에만 있다.
+
+## 10. T-012 개정 (`inputs.group`)
+
+- 상태: 제안(2026-11-07, prototyper). 질문은 `judgment.md` 11.19의 6·7·8이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
+- 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 2(M-B 자동 유형 열이 우연 몰림을 잡는다)와 `judgment.md` 4.8 M-A 행 [읽음].
+- 근거: oracle `tools/oracle/oracle_case.py`(이 절 글만 보고 고쳤다). C# 파서는 PR (b)다(**미확인**).
+- 바꾸는 곳(PR (b)에서 제자리로. 10.5): 4.5 `inputs` 표와 머리 글, 4.9 `conflict` 행의 "언제", 4.12 `CaseInputs`, 7.2 표.
+- 바꾸지 않는 곳: 4.3 최상위 키, 오류 코드 17개와 메시지 글, 4.4 답 10개, 6.1 블록(= `valid-full` = `guard/case-valid`. `group` 없음).
+
+### 10.1 키
+
+- `inputs`에 선택 키 `group` 하나를 더한다. 뜻: 몰림을 볼 기준 자료의 유형 열 이름(`judgment.md` 11.8).
+- `reference`·`candidate`·`key` 셋은 지금처럼 필수다. `group`은 없어도 된다(키 없음·null = 적지 않음).
+- 4.5 `inputs` 표에 더할 행(PR (b)): 키 `group`, 형식 문자열, 규칙 "선택. 비어 있지 않음. `key`·`compare` 필드와 다른 이름(`conflict`)". 표 머리 글 "있으면 세 키 모두 필수"는 "있으면 `reference`·`candidate`·`key`는 필수, `group`은 선택"이 된다.
+- 형식 규칙은 `key`와 같다(스칼라 문자열, 앞뒤 공백만이면 빈 값).
+- 파서는 그 열이 자료에 있는지 보지 않는다(CSV를 읽지 않는다). 대조가 본다(`metrics.md` 12.3).
+
+### 10.2 검사와 오류
+
+테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 표본은 `examples/table-compare/case.yaml`(키 `log_id`, `compare` 필드 `start_index`·`length`·`mean_value`)의 `  key: log_id` 줄 바로 뒤에 "줄"을 넣은 것이다. `(줄 없음)`은 아무것도 넣지 않은 것이다.
+
+| inputs.group 줄 | 결과 | 코드 | 메시지 |
+| --- | --- | --- | --- |
+| `group: signal_type` | 받음 | — | — |
+| (줄 없음) | 받음 | — | — |
+| `group: null` | 받음 | — | — |
+| `group: Log_id` | 받음 | — | — |
+| `group: ""` | 오류 | `required` | `값이 비어 있다` |
+| `group: "  "` | 오류 | `required` | `값이 비어 있다` |
+| `group: [signal_type]` | 오류 | `type` | `스칼라 값이어야 한다` |
+| `group: {a: b}` | 오류 | `type` | `스칼라 값이어야 한다` |
+| `group: log_id` | 오류 | `conflict` | `group은 key·compare 필드와 다른 열을 쓴다` |
+| `group: length` | 오류 | `conflict` | `group은 key·compare 필드와 다른 열을 쓴다` |
+
+- 위치: 그 값(4.9 "그 값"). 경로: `inputs.group`.
+- `conflict`는 4.9 표의 코드 그대로다. "언제"에 경우가 하나 는다: "`inputs.group`이 `key` 또는 `compare` 필드와 같음(T-012)". 코드 수 17개는 그대로다.
+- 비교는 서수다. `Log_id`는 `log_id`와 다르다(그 열이 자료에 없으면 대조의 `column` 오류다).
+- `group: null`·줄 없음은 `Group` = null이다. 예제 form-fill·mixed-exceptions가 그렇다.
+- `compare`가 비어 있으면 미검증이라 `group`은 쓰이지 않는다. 그래도 위 검사는 한다.
+- 순서·모으기는 4.9 그대로다(줄·열, 같은 위치는 찾은 순서). `conflict`는 `compare`를 다 읽은 뒤 찾는다.
+
+### 10.3 Core API
+
+```csharp
+public sealed record CaseInputs(string Reference, string Candidate, string Key, string? Group = null);
+```
+
+- 기본값 매개변수라 기존 세 인자 생성 코드가 그대로 컴파일된다. 레코드 같음 비교에 `Group`이 든다.
+
+### 10.4 예제와 표본
+
+- 예제 `case.yaml` 둘에 한 줄씩 더한다(`judgment.md` 11.12): table-compare `  group: signal_type`, signoff-final `  group: record_kind`. 바이트·SHA-256은 그 표에 있다.
+- `TestData/case-schema/valid-full`과 `guard/case-valid`는 바꾸지 않는다(6.1 블록과 같아야 한다).
+
+### 10.5 PR (b)에서 옮길 곳
+
+1. 4.5 `inputs` 표에 `group` 행과 머리 글(10.1).
+2. 4.9 표 `conflict` 행의 "언제"(10.2).
+3. 4.12 블록의 `CaseInputs`(10.3).
+4. 7.2 파서 테스트 표에 10.2 표(머리 행 그대로 읽는다).
+5. `synthetic-examples.md` 4.8 표 `inputs` 칸 끝에 ", 유형 열 `signal_type`"(table-compare), ", 유형 열 `record_kind`"(signoff-final). `CaseYamlTests.Case_data_keys_match_spec_table`이 이 칸으로 `CaseInputs`를 만든다. 7.2·7.5 `case.yaml` 블록·SHA-256 줄. `signoff-final.md` 파일 표 `case.yaml` 행(`e11e7b68…`, 2,616).

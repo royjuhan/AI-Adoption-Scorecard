@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# 잡 나눔(tools/ci/README.md "잡과 신뢰"):
+# - head 코드를 돌리는 잡: build-test, mutation(Stryker가 head 테스트를 돈다), test-run(head dotnet test), oracle-head.
+#   이 잡들의 결과 파일은 head 코드가 위조할 수 있다(남은 위험. 머지 전 리드가 tools/ci/lead_check.py로 따로 돈다).
+# - head 코드를 하나도 돌리지 않는 잡: oracle(base oracle이 head 예제를 읽기만 한다), regression-guard.
+#   regression-guard는 dotnet을 깔지 않고 빌드·테스트도 하지 않는다. base 도구(python)로 git 개체와 결과 파일만 읽는다.
+# - 모든 잡이 git을 GIT_NO_REPLACE_OBJECTS=1로 돈다(.git/refs/replace를 쓰지 않는다).
 jobs:
   build-test:
     strategy:
@@ -23,3 +29,374 @@ jobs:
       - run: dotnet restore AIAdoptionScorecard.sln
       - run: dotnet build AIAdoptionScorecard.sln --no-restore -c Release -warnaserror
       - run: dotnet test AIAdoptionScorecard.sln --no-build -c Release -- RunConfiguration.TreatNoTestsAsError=true
+
+  # 바뀐 src/**/*.cs만 Stryker.NET으로 head·base 양쪽에서 돌린다(ADR 0005 원문 2). 규칙: tools/ci/README.md
+  # head 코드를 돌린다(Stryker가 head 테스트를 돈다). mutation.json은 head 코드가 위조할 수 있다.
+  mutation:
+    runs-on: ubuntu-latest
+    # mutation.py 전체 100분(--budget-minutes), 한 번 실행 50분. 넘으면 status: timeout으로 mutation.json을 쓴다.
+    timeout-minutes: 120
+    env:
+      # base: PR이면 base 브랜치 끝 커밋, main push면 push 전 끝 커밋(event.before).
+      # 비었거나 0 40개·저장소에 없으면 head의 첫 부모(HEAD~1)로 정한다(tools/ci/cigit.py, 아래 "base 도구 꺼내기"와 같은 규칙).
+      # head: checkout한 커밋(github.sha). PR이면 GitHub가 만든 병합 커밋(refs/pull/N/merge)이다.
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      # 검증 도구는 base 커밋의 것을 돈다(PR이 도구를 약하게 바꿔 자기 PR을 통과시키지 못하게). tools/ci/README.md "도구 출처".
+      # base에 없으면 head의 것(부트스트랩: base main에 tools/ci가 없는 T-010 PR).
+      - name: base 도구 꺼내기
+        run: |
+          set -euo pipefail
+          base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
+          dest="$RUNNER_TEMP/base-tools"
+          rm -rf "$dest" && mkdir -p "$dest"
+          if git cat-file -e "$base:tools/ci/regression_guard.py" 2>/dev/null; then
+            git archive "$base" tools/ci | tar -x -C "$dest"
+            echo "CI_TOOLS=$dest/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=base" >> "$GITHUB_ENV"
+          else
+            echo "CI_TOOLS=$GITHUB_WORKSPACE/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=head" >> "$GITHUB_ENV"
+          fi
+          if git cat-file -e "$base:.github/workflows/ci.yml" 2>/dev/null; then
+            git archive "$base" .github/workflows/ci.yml | tar -x -C "$dest"
+          fi
+          if git cat-file -e "$base:tools/oracle/check.py" 2>/dev/null; then
+            git archive "$base" tools/oracle | tar -x -C "$dest"
+            echo "CI_ORACLE=$dest/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=base" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$base" >> "$GITHUB_ENV"
+          else
+            echo "CI_ORACLE=$GITHUB_WORKSPACE/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=head" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          fi
+          echo "CI_TOOLS_REV=$base" >> "$GITHUB_ENV"
+          echo "도구 출처: base $base, tools/ci는 $( [ -f "$dest/tools/ci/regression_guard.py" ] && echo base || echo head ), tools/oracle은 $( [ -f "$dest/tools/oracle/check.py" ] && echo base || echo head )"
+      # Stryker 버전은 base 커밋의 .config/dotnet-tools.json(없으면 head)으로 mutation.py가 worktree마다 restore한다.
+      - name: mutation 측정
+        env:
+          PY: ${{ steps.py.outputs.python-path }}
+        run: '"$PY" -I -B "$CI_TOOLS/mutation.py" --repo . --base "$CI_BASE" --head HEAD --out mutation.json --work "$RUNNER_TEMP/mutation" --budget-minutes 100'
+      - name: mutation.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-result
+          path: mutation.json
+          if-no-files-found: warn
+      - name: Stryker 보고서·로그 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: |
+            ${{ runner.temp }}/mutation/out/**/reports/mutation-report.json
+            ${{ runner.temp }}/mutation/logs/*.log
+          if-no-files-found: ignore
+
+  # tools/oracle/(Python 독립 구현)이 예제 expected/와 같은 바이트를 내는지 본다(ADR 0005 원문 3).
+  # base 커밋의 oracle로 head의 예제를 읽기만 한다. head 코드를 돌리지 않는다. head oracle은 oracle-head 잡이 따로 본다.
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # base: PR이면 base 브랜치 끝 커밋, main push면 push 전 끝 커밋(event.before).
+      # 비었거나 0 40개·저장소에 없으면 head의 첫 부모(HEAD~1)로 정한다(tools/ci/cigit.py, 아래 "base 도구 꺼내기"와 같은 규칙).
+      # head: checkout한 커밋(github.sha). PR이면 GitHub가 만든 병합 커밋(refs/pull/N/merge)이다.
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+    steps:
+      - id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # 검증 도구는 base 커밋의 것을 돈다(PR이 도구를 약하게 바꿔 자기 PR을 통과시키지 못하게). tools/ci/README.md "도구 출처".
+      # base에 없으면 head의 것(부트스트랩: base main에 tools/ci가 없는 T-010 PR).
+      - name: base 도구 꺼내기
+        run: |
+          set -euo pipefail
+          base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
+          dest="$RUNNER_TEMP/base-tools"
+          rm -rf "$dest" && mkdir -p "$dest"
+          if git cat-file -e "$base:tools/ci/regression_guard.py" 2>/dev/null; then
+            git archive "$base" tools/ci | tar -x -C "$dest"
+            echo "CI_TOOLS=$dest/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=base" >> "$GITHUB_ENV"
+          else
+            echo "CI_TOOLS=$GITHUB_WORKSPACE/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=head" >> "$GITHUB_ENV"
+          fi
+          if git cat-file -e "$base:.github/workflows/ci.yml" 2>/dev/null; then
+            git archive "$base" .github/workflows/ci.yml | tar -x -C "$dest"
+          fi
+          if git cat-file -e "$base:tools/oracle/check.py" 2>/dev/null; then
+            git archive "$base" tools/oracle | tar -x -C "$dest"
+            echo "CI_ORACLE=$dest/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=base" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$base" >> "$GITHUB_ENV"
+          else
+            echo "CI_ORACLE=$GITHUB_WORKSPACE/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=head" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          fi
+          echo "CI_TOOLS_REV=$base" >> "$GITHUB_ENV"
+          echo "도구 출처: base $base, tools/ci는 $( [ -f "$dest/tools/ci/regression_guard.py" ] && echo base || echo head ), tools/oracle은 $( [ -f "$dest/tools/oracle/check.py" ] && echo base || echo head )"
+      - name: oracle 대조(base oracle)
+        env:
+          PY: ${{ steps.py.outputs.python-path }}
+        run: |
+          set -uo pipefail
+          echo "oracle: $CI_ORACLE_SOURCE ($CI_ORACLE_REV)"
+          status=0
+          "$PY" -I -B "$CI_ORACLE/check.py" --repo "$GITHUB_WORKSPACE" --json "$RUNNER_TEMP/oracle.json" || status=1
+          tree=$(git rev-parse "$CI_ORACLE_REV:tools/oracle")
+          printf '{"schema_version": 1, "source": "%s", "rev": "%s", "tree": "%s"}\n' "$CI_ORACLE_SOURCE" "$CI_ORACLE_REV" "$tree" > "$RUNNER_TEMP/oracle-source.json"
+          exit $status
+      - name: oracle.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-result
+          path: |
+            ${{ runner.temp }}/oracle.json
+            ${{ runner.temp }}/oracle-source.json
+          if-no-files-found: warn
+
+  # tools/oracle이 바뀐 PR에서 head oracle도 head 예제와 같은 바이트를 내는지 본다. head 코드를 돌린다.
+  # 바뀌지 않았거나 base에 oracle이 없으면(부트스트랩: oracle 잡이 이미 head oracle로 돈다) 아무것도 하지 않는다.
+  # regression-guard가 이 잡 결과(--job oracle-head=…)를 본다.
+  oracle-head:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: head oracle 대조(tools/oracle이 바뀐 PR만)
+        run: |
+          set -uo pipefail
+          base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
+          if ! git cat-file -e "$base:tools/oracle/check.py" 2>/dev/null; then
+            echo "부트스트랩: base에 oracle이 없다. oracle 잡이 head oracle로 돈다"; exit 0
+          fi
+          if git diff --quiet "$base" HEAD -- tools/oracle; then
+            echo "tools/oracle 변경 없음"; exit 0
+          fi
+          python3 tools/oracle/check.py --repo . --json "$RUNNER_TEMP/oracle-head.json"
+      - name: oracle-head.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-head-result
+          path: ${{ runner.temp }}/oracle-head.json
+          if-no-files-found: ignore
+
+  # base·head에서 같은 명령으로 dotnet test를 돌려 TRX를 비교할 자료(testrun.json)를 만든다. head 코드를 돌린다.
+  # testrun.json은 head 코드가 위조할 수 있다. regression-guard가 이 잡 결과(--job test-run=…)와 testrun.json을 본다.
+  test-run:
+    runs-on: ubuntu-latest
+    # testrun.py 한쪽 18분 × 2(base·head) = 36분 + 준비.
+    timeout-minutes: 45
+    env:
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      # 검증 도구는 base 커밋의 것을 돈다(PR이 도구를 약하게 바꿔 자기 PR을 통과시키지 못하게). tools/ci/README.md "도구 출처".
+      # base에 없으면 head의 것(부트스트랩: base main에 tools/ci가 없는 T-010 PR).
+      - name: base 도구 꺼내기
+        run: |
+          set -euo pipefail
+          base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
+          dest="$RUNNER_TEMP/base-tools"
+          rm -rf "$dest" && mkdir -p "$dest"
+          if git cat-file -e "$base:tools/ci/regression_guard.py" 2>/dev/null; then
+            git archive "$base" tools/ci | tar -x -C "$dest"
+            echo "CI_TOOLS=$dest/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=base" >> "$GITHUB_ENV"
+          else
+            echo "CI_TOOLS=$GITHUB_WORKSPACE/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=head" >> "$GITHUB_ENV"
+          fi
+          if git cat-file -e "$base:.github/workflows/ci.yml" 2>/dev/null; then
+            git archive "$base" .github/workflows/ci.yml | tar -x -C "$dest"
+          fi
+          if git cat-file -e "$base:tools/oracle/check.py" 2>/dev/null; then
+            git archive "$base" tools/oracle | tar -x -C "$dest"
+            echo "CI_ORACLE=$dest/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=base" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$base" >> "$GITHUB_ENV"
+          else
+            echo "CI_ORACLE=$GITHUB_WORKSPACE/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=head" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          fi
+          echo "CI_TOOLS_REV=$base" >> "$GITHUB_ENV"
+          echo "도구 출처: base $base, tools/ci는 $( [ -f "$dest/tools/ci/regression_guard.py" ] && echo base || echo head ), tools/oracle은 $( [ -f "$dest/tools/oracle/check.py" ] && echo base || echo head )"
+      - name: test-run(base·head에서 같은 명령으로 dotnet test, TRX)
+        env:
+          PY: ${{ steps.py.outputs.python-path }}
+        run: '"$PY" -I -B "$CI_TOOLS/testrun.py" --repo . --base "$CI_BASE" --head HEAD --out "$RUNNER_TEMP/testrun.json" --work "$RUNNER_TEMP/testrun"'
+      # head의 tools/ci가 바뀌었으면 head 것의 단위 테스트도 돈다(head 코드). regression-guard 잡에서는 돌리지 않는다.
+      - name: 자기 검사(head tools/ci가 바뀌었으면)
+        if: env.CI_TOOLS_SOURCE == 'base'
+        run: |
+          if git diff --quiet "$CI_TOOLS_REV" HEAD -- tools/ci; then echo "tools/ci 변경 없음"; exit 0; fi
+          python3 -m unittest discover -s tools/ci -t tools/ci -p "test_*.py" -v
+      - name: testrun.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testrun-result
+          path: ${{ runner.temp }}/testrun.json
+          if-no-files-found: warn
+      - name: test-run 로그 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testrun-logs
+          path: ${{ runner.temp }}/testrun/logs/*.log
+          if-no-files-found: ignore
+
+  # PR base 대비 회귀 신호를 막는다(ADR 0005 원문 1). 다른 잡이 실패해도 결과 파일을 읽고 판단한다.
+  # head 코드를 하나도 돌리지 않는다(T-010 재리뷰 B4): dotnet을 깔지 않고, 빌드·테스트·head 스크립트를 돌리지 않는다.
+  # python은 checkout 전에 깔고 절대 경로로 부른다(-I: 현재 폴더·PYTHON* 환경 변수를 보지 않는다).
+  # base 커밋의 tools/ci를 돌린다(--require-base-tools).
+  regression-guard:
+    needs: [mutation, oracle, oracle-head, test-run]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # base: PR이면 base 브랜치 끝 커밋, main push면 push 전 끝 커밋(event.before).
+      # 비었거나 0 40개·저장소에 없으면 head의 첫 부모(HEAD~1)로 정한다(tools/ci/cigit.py, 아래 "base 도구 꺼내기"와 같은 규칙).
+      # head: checkout한 커밋(github.sha). PR이면 GitHub가 만든 병합 커밋(refs/pull/N/merge)이다.
+      CI_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+    steps:
+      - id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # 검증 도구는 base 커밋의 것을 돈다(PR이 도구를 약하게 바꿔 자기 PR을 통과시키지 못하게). tools/ci/README.md "도구 출처".
+      # base에 없으면 head의 것(부트스트랩: base main에 tools/ci가 없는 T-010 PR).
+      - name: base 도구 꺼내기
+        run: |
+          set -euo pipefail
+          base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
+          dest="$RUNNER_TEMP/base-tools"
+          rm -rf "$dest" && mkdir -p "$dest"
+          if git cat-file -e "$base:tools/ci/regression_guard.py" 2>/dev/null; then
+            git archive "$base" tools/ci | tar -x -C "$dest"
+            echo "CI_TOOLS=$dest/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=base" >> "$GITHUB_ENV"
+          else
+            echo "CI_TOOLS=$GITHUB_WORKSPACE/tools/ci" >> "$GITHUB_ENV"
+            echo "CI_TOOLS_SOURCE=head" >> "$GITHUB_ENV"
+          fi
+          if git cat-file -e "$base:.github/workflows/ci.yml" 2>/dev/null; then
+            git archive "$base" .github/workflows/ci.yml | tar -x -C "$dest"
+          fi
+          if git cat-file -e "$base:tools/oracle/check.py" 2>/dev/null; then
+            git archive "$base" tools/oracle | tar -x -C "$dest"
+            echo "CI_ORACLE=$dest/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=base" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$base" >> "$GITHUB_ENV"
+          else
+            echo "CI_ORACLE=$GITHUB_WORKSPACE/tools/oracle" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_SOURCE=head" >> "$GITHUB_ENV"
+            echo "CI_ORACLE_REV=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          fi
+          echo "CI_TOOLS_REV=$base" >> "$GITHUB_ENV"
+          echo "도구 출처: base $base, tools/ci는 $( [ -f "$dest/tools/ci/regression_guard.py" ] && echo base || echo head ), tools/oracle은 $( [ -f "$dest/tools/oracle/check.py" ] && echo base || echo head )"
+      # 부트스트랩(base에 tools/ci가 없는 T-010 PR)에서는 head의 단위 테스트다. 그때만 head 코드가 이 잡에서 돈다.
+      - name: 자기 검사(돌릴 tools/ci의 단위 테스트)
+        working-directory: ${{ runner.temp }}
+        env:
+          PY: ${{ steps.py.outputs.python-path }}
+        run: '"$PY" -I -B -m unittest discover -s "$CI_TOOLS" -t "$CI_TOOLS" -p "test_*.py" -v'
+      - name: mutation 결과 받기
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mutation-result
+          path: ${{ runner.temp }}/ci-results/mutation
+      - name: oracle 결과 받기
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: oracle-result
+          path: ${{ runner.temp }}/ci-results/oracle
+      - name: test-run 결과 받기
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: testrun-result
+          path: ${{ runner.temp }}/ci-results/testrun
+      - name: regression-guard
+        env:
+          PY: ${{ steps.py.outputs.python-path }}
+          MUTATION_RESULT: ${{ needs.mutation.result }}
+          ORACLE_RESULT: ${{ needs.oracle.result }}
+          TESTRUN_RESULT: ${{ needs.test-run.result }}
+          ORACLE_HEAD_RESULT: ${{ needs.oracle-head.result }}
+          R: ${{ runner.temp }}/ci-results
+        run: >-
+          "$PY" -I -B "$CI_TOOLS/regression_guard.py" --repo "$GITHUB_WORKSPACE" --base "$CI_BASE" --head HEAD
+          --require-base-tools
+          --mutation "$R/mutation/mutation.json"
+          --oracle "$R/oracle/oracle.json"
+          --oracle-source "$R/oracle/oracle-source.json"
+          --testrun "$R/testrun/testrun.json"
+          --job "test-run=$TESTRUN_RESULT"
+          --job "oracle-head=$ORACLE_HEAD_RESULT"
+          --json-out "$RUNNER_TEMP/regression-guard.json"
+      - name: regression-guard.json 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-guard-result
+          path: ${{ runner.temp }}/regression-guard.json
+          if-no-files-found: warn

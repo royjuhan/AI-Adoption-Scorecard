@@ -1,0 +1,91 @@
+# 0005. 완전 자동 진행 모드: 사람 승인 대신 CI와 독립 검증
+
+- 날짜: 2026-11-07
+- 상태: 결정(juhan 지시, 2026-11-07 14:47). 적용은 T-010(자동 진행 준비 카드)이 머지된 뒤 카드부터.
+- 작성: 리드
+- 관련: 지시문 2절 4·5·11, 13절, 14절 6~8, `CLAUDE.md` 절대 원칙·작업 흐름, ADR 0004 "사람 결정"(상시 승인 예외, expected 변경 규칙)
+
+## 지시 원문 (juhan, 2026-11-07 14:47)
+
+```text
+운영 방식 변경: 완전 자동 진행 모드. ADR 0005로 기록하고, T-009가 끝나면 T-010부터 적용해.
+목표: 내가 승인하지 않아도 카드가 계속 돈다. 회귀는 사람이 아니라 CI와 독립 검증이 막는다.
+토큰은 충분하니 검증에는 아끼지 말고 써.
+
+[T-010 자동 진행 준비] 이 카드까지만 지금처럼 승인받는다.
+1. CI에 regression-guard 잡을 추가한다. PR base 대비 아래가 있으면 실패. 단, 괄호 안 증거가 있으면 통과.
+   - tests/ 파일 삭제, Skip 추가, [Fact]/[Theory] 수 감소, guard 샘플 목록 축소
+     (mutation 잡에서 바뀐 코드의 mutation score가 base 이상이면 통과)
+   - examples/**/expected/** 기존 파일 수정·삭제
+     (커밋 메시지가 "expected migration:"이고 oracle 잡이 같은 바이트를 재현하면 통과)
+2. mutation 잡: Stryker.NET으로 PR에서 바뀐 src 파일만 돌린다. 점수를 STATUS.md에 기록한다.
+3. oracle: tools/oracle/에 Python 독립 구현을 둔다(metrics.md의 xcheck를 옮기고 분류도 추가).
+   prototyper만 고친다. src/를 읽지 않고 스펙만 보고 짠다.
+   oracle 잡은 모든 예제에서 expected와 같은 바이트를 내는지 본다.
+4. CoreGuardTargetTests를 정확한 목록 비교로 되돌린다.
+5. .claude/settings.json의 permissions.allow에 dotnet, git, gh pr 명령을 등록한다. main 직접 push는 등록하지 않는다.
+6. docs/STATUS.md를 만든다: 머지된 카드, 잠정 결정, 원칙 변경, 재검토 기록,
+   테스트 수·mutation 점수 추이, 카드별 토큰. 머지할 때마다 갱신한다.
+
+[T-010 이후 규칙]
+- 모든 승인 질문(스펙, expected 변경, 테스트 축소, 지시문 2절 원칙 변경 포함)은 묻지 않고 추천안을 채택한다.
+  카드와 STATUS.md에 한 줄씩 적는다. 원칙 변경은 ADR로 남기고 STATUS.md 맨 위에 표시한다.
+- 단, "회사 자료 금지" 원칙은 바꾸지 않는다(제안도 하지 않는다). 공개 저장소에 들어간 자료는 되돌릴 수 없다.
+- PR: CI(ubuntu·windows·regression-guard·mutation·oracle)가 녹색이고 reviewer 차단 지적이 없으면 auto-merge.
+- 마일스톤 게이트에서는 멈추지 않는다. 아래 [재검토]를 한 번 돌리고 결과를 STATUS.md에 적은 뒤 계속한다.
+- 카드가 끝나면 묻지 말고 다음 카드로 넘어간다.
+
+[재검토] 리뷰 루프 3회 초과, 같은 CI 실패 2회 연속, 마일스톤 끝에 돌린다. 멈추지 않는다.
+1. 카드 브랜치를 마지막 녹색 커밋으로 되돌린다.
+2. 회귀 확인: main에서 전체 테스트·mutation·oracle을 다시 돌린다.
+   main이 깨졌으면 git bisect로 처음 깨진 커밋을 찾고, 그걸 되돌리는 카드를 먼저 연다.
+3. 전제 확인: 이 카드를 본 적 없는 새 reviewer를 띄워 카드 목표·스펙·실패 증거만 주고 묻는다.
+   스펙이 틀렸나, 테스트가 틀렸나, 접근이 틀렸나, 지시문 목표(단순한 사용, 엔진에 AI 없음)와 어긋났나.
+   근거와 함께 답하게 한다.
+4. 답에 따라 스펙 수정(잠정 결정) / 접근 변경 / 카드 쪼개기 중 하나를 골라 스펙 단계부터 다시 한다.
+5. 같은 카드가 재검토를 2번 거쳤는데도 안 되면 STATUS.md에 "보류"로 적고, 의존하지 않는 다음 카드로 넘어간다.
+
+내가 STATUS.md의 잠정 결정을 뒤집으면, 그 결정에 기대 머지된 것부터 되돌린다.
+```
+
+## 결정
+
+1. **카드 번호.** T-010은 "자동 진행 준비" 카드다(`docs/tasks/T-010-auto-mode.md`). 원문 1~6을 담는다. 판정 카드는 T-011로 옮긴다(`docs/tasks/T-011-judgment.md`).
+2. **적용 시점.** T-010까지는 지금처럼 juhan이 승인한다(ADR 0004 "상시 승인 예외"). T-010이 머지되면 그 뒤 카드부터 아래 규칙을 쓴다.
+3. **승인 질문.** T-010 뒤에는 스펙 질문, expected 변경, 테스트 축소, 지시문 2절 원칙 변경을 juhan에게 묻지 않는다. 추천안을 채택하고 다음 두 곳에 한 줄씩 적는다.
+   - 카드의 "잠정 결정" 절.
+   - `docs/STATUS.md`의 "잠정 결정" 표.
+   - 원칙 변경은 ADR을 새로 쓰고 STATUS.md 맨 위 "원칙 변경"에 둔다.
+4. **바꾸지 않는 원칙.** 지시문 2절 8(번들에 실제 자료 없음)과 2절 10(공개 저장소에 회사 자료 없음)은 이 ADR로도 바꾸지 않는다. 바꾸자는 제안도 하지 않는다. 13절의 "실제 측정 파일·품번·이름을 넣지 않는다"도 같다.
+5. **회귀를 막는 것.** 사람 대신 다음 CI 잡이 막는다(T-010이 만든다).
+   - ubuntu·windows `build-test`
+   - `regression-guard`
+   - `mutation`(Stryker.NET)
+   - `oracle`(`tools/oracle/`), `oracle-head`(PR이 `tools/oracle/`을 바꿀 때)
+   - `test-run`(base·head `dotnet test` 결과. `regression-guard`가 판정한다)
+   - 머지 전 리드가 main 쪽 도구로 돌리는 `tools/ci/lead_check.py`(PR의 `ci.yml`과 상관없다)
+   - 각 잡의 규칙은 원문 1~3이다. 자세한 동작은 `tools/ci/README.md`에 적는다.
+6. **머지.** 다음이 모두 맞으면 리드가 머지한다. CI 잡이 모두 녹색이다. main 쪽 도구로 돌린 `tools/ci/lead_check.py`가 종료 0이다. lead_check가 민감한 경로(`.github/`·`tools/`·`.config/`·`.claude/`·`docs/decisions/`·`CLAUDE.md`·지시문·`global.json`)를 적었으면, 이 카드를 본 적 없는 reviewer가 diff 전문을 보고 막는 지적이 없다. reviewer에게 막는 지적이 없다. 머지 방식은 지금처럼 merge commit이다(`expected migration:` 커밋이 남게 한다).
+7. **게이트와 재검토.** 마일스톤 게이트(G1 등)에서 멈추지 않는다. [재검토]를 한 번 돌려 결과를 STATUS.md에 적고 계속한다. [재검토]의 조건과 절차는 원문 그대로다.
+8. **뒤집기.** juhan이 STATUS.md의 잠정 결정을 뒤집으면, 그 결정에 기대 머지된 커밋부터 되돌린다. 그래서 잠정 결정마다 그 결정이 들어간 PR 번호를 적는다.
+9. **oracle은 prototyper만 고친다.** oracle은 `src/`를 읽지 않고 스펙만 보고 짠다. 다른 에이전트는 `tools/oracle/`을 고치지 않는다. 에이전트 폴더 제한(CLAUDE.md)에 `tools/oracle/`을 prototyper 몫으로 더한다.
+
+## 결정이 같이 바꾸는 곳 (T-010에서 리드가 고친다)
+
+- 지시문 2절 제목 "(바꾸려면 사람에게 묻는다)": ADR 0005 뒤에는 ADR로 바꾼다. 2절 8·10은 바꾸지 않는다고 적는다.
+- 지시문 2절 4 "사람 게이트 3곳", 2절 5 "reviewer의 확인", 2절 11 "기대값을 먼저": CI 잡과 STATUS.md 기록이 사람 확인을 대신한다고 적는다.
+- 지시문 13절 "사람 게이트를 건너뛰지 않는다", 14절 6~8: ADR 0005 뒤에는 [재검토]로 대신한다고 적는다.
+- CLAUDE.md 절대 원칙 "expected/ 변경, 테스트 삭제·완화, ADR 결정, 지시문 2절 원칙 변경은 매번 사람에게 묻는다"와 작업 흐름의 [사람 …] 단계.
+- 위 바꿈은 juhan 지시 원문이 직접 정한 것이다. T-010 PR에서 juhan에게 보고한다.
+
+## 남은 위험 (적어 둔다)
+
+- mutation 점수 비교는 바뀐 파일에서만 한다. 바뀌지 않은 파일의 테스트를 지우면 점수가 그대로일 수 있다. 그래서 테스트 수 감소는 mutation 증거가 있어도 STATUS.md에 적는다.
+- oracle과 엔진이 같은 스펙을 같은 방식으로 잘못 읽으면 둘 다 틀린 바이트를 낸다. 독립 구현은 이것을 줄일 뿐 없애지 못한다.
+- GitHub `pull_request`는 PR 쪽 `ci.yml`을 돌린다. PR이 `ci.yml`을 고치면(예: 가드 단계에 `|| true`) 가드가 실패해도 잡이 녹색이 된다. 대책(T-010 리뷰 B5): 리드가 머지 전에 main 쪽 도구로 `tools/ci/lead_check`를 직접 돌린다. `.github/`·`tools/`·`.config/`·`.claude/`·`CLAUDE.md`·지시문·기존 ADR을 바꾼 PR은 이 카드를 본 적 없는 reviewer가 diff 전문을 본다.
+- PR 코드가 도는 잡(test-run, mutation, oracle-head, build-test)의 결과 파일은 PR 코드가 꾸밀 수 있다. 가드 잡 자체는 PR 코드를 돌리지 않는다(T-010 리뷰 B4). 같은 단계 안의 위조(예: head 테스트가 base TRX를 head 결과 폴더에 복사)는 lead_check도 못 막는다(T-010 3차 리뷰 n8). 뒤 카드에서 보강한다(T-010 카드 남은 일).
+- lead_check도 PR 코드를 리드 컴퓨터에서 리드 환경 변수로 돌린다. 프로세스 그룹을 벗어난 프로세스는 남을 수 있다. 일회용 컨테이너에서 돌린다.
+- 서버(GitHub 브랜치 보호)가 강제하는 필수 체크는 `build-test` 둘뿐이다. 나머지 잡과 lead_check는 리드가 머지 전에 확인한다. juhan이 첫 PR 실행 뒤 필수 체크를 더할 수 있다.
+- 초안 ADR과 그 결정은 같은 PR에 둔다. 머지된 ADR을 고치면 `ci-changed`가 새 ADR을 요구한다.
+- 이름·수가 같은 테스트 완화, 스펙을 어기는 동작 변경과 거기에 맞춘 테스트 수정은 어떤 잡도 못 본다. reviewer만 본다.
+- auto-merge 뒤의 잘못은 juhan이 STATUS.md를 읽을 때 드러난다. 그래서 STATUS.md는 머지마다 갱신한다.

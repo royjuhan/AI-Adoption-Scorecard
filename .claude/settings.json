@@ -1,17 +1,93 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(dotnet:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git cat-file:*)",
+      "Bash(git worktree:*)",
+      "Bash(git stash:*)",
+      "Bash(git restore:*)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)",
+      "Bash(git grep:*)",
+      "Bash(git blame:*)",
+      "Bash(git config --get:*)",
+      "Bash(git remote -v:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git revert:*)",
+      "Bash(git archive:*)",
+      "Bash(git describe:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git clean -n:*)",
+      "Bash(git bisect start:*)",
+      "Bash(git bisect good:*)",
+      "Bash(git bisect bad:*)",
+      "Bash(git bisect reset:*)",
+      "Bash(git bisect log:*)",
+      "Bash(git push -u origin claude/*)",
+      "Bash(git push origin claude/*)",
+      "Bash(git push -u origin task/*)",
+      "Bash(git push origin task/*)",
+      "Bash(gh pr:*)"
+    ],
+    "deny": [
+      "Bash(git push origin main)",
+      "Bash(git push origin main *)",
+      "Bash(git push -u origin main)",
+      "Bash(git push -u origin main *)",
+      "Bash(git push *main*)",
+      "Bash(git push *+*)",
+      "Bash(git push *--force*)",
+      "Bash(git push *-f*)",
+      "Bash(git push *--delete*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git push *--all*)",
+      "Bash(git push * :*)",
+      "Bash(git push)",
+      "Bash(git push origin)",
+      "Bash(git push origin HEAD*)",
+      "Bash(git -C *)",
+      "Bash(git -c *)",
+      "Bash(git --git-dir*)",
+      "Bash(git --work-tree*)",
+      "Bash(git bisect run*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "jq -r '.tool_input.file_path' | grep -E '\\.cs$' | xargs -r -I{} dotnet format AIAdoptionScorecard.sln --include {} --no-restore" }
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | grep -E '\\.cs$' | xargs -r -I{} dotnet format AIAdoptionScorecard.sln --include {} --no-restore"
+          }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "dotnet test --nologo -v q >/dev/null 2>&1 || { echo 'dotnet test failed' >&2; exit 2; }" }
+          {
+            "type": "command",
+            "command": "dotnet test --nologo -v q >/dev/null 2>&1 || { echo 'dotnet test failed' >&2; exit 2; }"
+          }
         ]
       }
     ]

@@ -109,7 +109,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 - `schema_version`은 `WriteNumber(int)`로 `1`. 문턱 숫자는 `decimal` 그대로 `WriteNumber(decimal)`. 자릿수가 남는다: `85`, `1.0`, `66.6`, `0.0` [T11:P:decimals].
 - 문장 안의 숫자도 `decimal`을 `InvariantCulture`로 쓴 글자다. 퍼센트는 대조 결과 값(`metrics.md` 4.8, 늘 소수 한 자리)을 그대로 쓴다. 문턱은 `case.yaml` 글자 그대로다(`85`는 `85`, `90.0`은 `90.0`).
-- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`, 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다 [T11:P:escape]. T-011a에서 고쳤다: 이전 글이 글자 그대로라고 적었지만 classification.md 3.3 표와 `UnsafeRelaxedJsonEscaping` 동작은 서로게이트 쌍이다(oracle 확인).
+- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`다 [T11:P:escape]. 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다(`classification.md` 3.3 [P:escape]). T-011a에서 고쳤다: 이전 글은 글자 그대로라고 적었다.
 - 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [T11:S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [T11:S3 culture]. Python 독립 구현이 예제 4종과 G2 표본에서 같은 바이트를 냈다 [T11:S3 xcheck].
 
 ### 3.4 명령과 AI용 입구 (ADR 0004 적용)
@@ -372,7 +372,7 @@ M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확
 | `judge-case-valid` | `case-valid` (기존. 바꾸지 않는다) | `CaseParser.ParseDirectory` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null) → 출력 폴더의 `judgment.json` 한 파일 |
 
 - 표본 판정: 보류 `ACCURACY`(66.7% < 90), 시간 `not_measured`, 몰림 `off`(유형 열 없음), 다음 할 일 셋 [T11:S3 judge-case-valid]. 숫자가 문장에 들어가므로 문화권(R4)을 본다.
-- 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 샘플 목록(중복 뺀 것)이 `case-invalid`, `case-valid`, `compare-invalid` 그대로라 `Real_targets_use_case_samples_not_basic`(T-010이 정확한 목록 비교로 되돌림)을 고치지 않고 통과한다.
+- 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 기준선 `bf2568e`의 `Real_targets_use_case_samples_not_basic`은 샘플 목록(중복 뺀 것)만 봐서, 고치지 않고 통과했다. 그 뒤 T-010 리뷰(`9ae47a2`)가 이 테스트에 `이름=샘플` 쌍의 정확한 목록 비교를 더했다 [읽음 `CoreGuardTargetTests.cs`]. 그래서 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록 `case-invalid`, `case-valid`, `compare-invalid`는 그대로다.
 - 판정 오류 표본은 없다. 판정에는 입력 오류가 없다(대조 오류는 `compare-invalid`가 본다. 인자 예외는 5절).
 - 음성 대조 [T11:S6]: (a) 문장 숫자를 `CultureInfo.CurrentCulture`로 쓰면 빌드·G1은 통과하고 G2가 `G2 R4 문화권: out/judgment.json SHA-256 다름`으로 잡는다(`Core_target_is_deterministic(judge-case-valid)` 1건 실패). (b) 판정 안에서 `DateTime.Now`를 읽으면 G1(D1)이 잡는다(`Core_has_no_clock_random_or_environment_references` 1건 실패).
 
@@ -810,13 +810,13 @@ public sealed record JudgmentResult(
 | 스펙 블록 = 예제 파일 | 7.2~7.5 블록, SHA-256 줄, 파일이 같다 | 1, 4 |
 | 결정론 | de-DE·tr-TR로 바꿔도 같은 바이트(`try/finally`). 같은 입력 두 번. 입력 metrics.json 바이트 그대로 | — |
 | 예외(5절) | 인자 예외 4종 | — |
-| G2·G3 | `GuardTargets`에 `judge-case-valid`(4.12). 샘플 목록 테스트는 그대로 | — |
+| G2·G3 | `GuardTargets`에 `judge-case-valid`(4.12). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록은 그대로 | — |
 | 예제 폴더 파일 | `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/judgment.json` 추가 | 1 |
 
 - 표 이름(머리 행)이 이 문서에 정확히 한 번 나와야 한다. `SpecDocument.Table`이 그렇게 검사한다 [읽음]. `| 속성 | 형식 | 뜻 |`와 G2 표 머리 행은 `metrics.md`와 같은 글자다. 문서마다 한 번이라 괜찮다.
 - 실패 테스트 먼저: test-engineer 단계에서는 `Scorecard.Core.Judgment`가 없어 새 테스트가 컴파일되지 않는다. T-003 승인 결정 14와 같이 이 상태를 "실패하는 테스트"로 보고, 같은 브랜치에서 core-dev가 구현한다.
 - 골든 테스트는 `examples/` 파일이 있어야 돈다. 파일이 없으면 실패해야 한다(빈 통과 금지).
-- 기존 테스트는 지우거나 완화하지 않는다. 고치는 것은 `Example_folder_has_exactly_the_planned_files` 목록 한 줄뿐이다(계획에 파일을 더함).
+- 기존 테스트는 지우거나 완화하지 않는다. 고치는 것은 둘이다. `Example_folder_has_exactly_the_planned_files` 목록에 `expected/judgment.json` 한 줄(계획에 파일을 더함), `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍(대상을 더함). 둘 다 축소가 아니다.
 
 ## 9. 미확인 목록
 
@@ -870,8 +870,8 @@ ADR 0005 결정 3: T-010 뒤 카드의 승인 질문은 juhan에게 묻지 않�
    - 추천: 보류 `ACCURACY`(80.0% < 95%). 누락률 5.0% > 2%도 `not_met`으로 남는다.
 10. **Core 공개 API와 진행 순서(4.13).** ADR 0004 기준: 리드.
     - 추천: 4.13 그대로. 규칙은 `internal` `JudgmentRules.cs` 한 파일. 기존 Core 파일은 바꾸지 않는다. test-engineer 단계의 컴파일 실패를 "실패하는 테스트"로 본다(T-003 승인 결정 14).
-11. **G2·G3 등록(4.12).** ADR 0004 기준: 리드(기존 테스트를 바꾸지 않는다).
-    - 추천: `judge-case-valid`(샘플 `case-valid`). 새 샘플이 없어 샘플 목록 테스트를 고치지 않는다. 판정 오류 표본은 두지 않는다.
+11. **G2·G3 등록(4.12).** ADR 0004 기준: 리드(기존 테스트를 지우거나 완화하지 않는다).
+    - 추천: `judge-case-valid`(샘플 `case-valid`). 새 샘플이 없어 샘플 목록은 그대로다. `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 판정 오류 표본은 두지 않는다.
 12. **문장 틀과 다음 할 일 문구(4.3·4.4·4.7).** ADR 0004 기준: 리드.
     - 추천: 표 그대로. 미검증의 "무엇을 재면 되는지"는 `add_data`·`add_compare`·`measure_time` 문구로 적는다. 문구를 바꾸면 이 표와 expected를 같이 고치고 oracle이 같은 바이트를 내야 한다.
 

@@ -142,11 +142,12 @@ internal static class JudgmentRules
         return scale == 0 ? digits : digits[..^scale] + "." + digits[^scale..];
     }
 
-    // decimal의 정수 부분(96비트)을 scale 자리 소수로 맞춘 값.
-    private static BigInteger Mantissa(decimal value, int scale)
+    // decimal의 정수 가수(96비트, 부호 포함)를 scale 자리 소수로 맞춘 값. value = 결과 / 10^scale이다.
+    // scale은 value.Scale 이상이어야 한다. 반올림이 없다.
+    public static BigInteger Mantissa(decimal value, int scale)
     {
         var bits = decimal.GetBits(value);
         var mantissa = (new BigInteger((uint)bits[2]) << 64) | (new BigInteger((uint)bits[1]) << 32) | new BigInteger((uint)bits[0]);
-        return mantissa * BigInteger.Pow(10, scale - value.Scale);
+        return (value < 0 ? -mantissa : mantissa) * BigInteger.Pow(10, scale - value.Scale);
     }
 }

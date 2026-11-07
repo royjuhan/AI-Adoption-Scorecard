@@ -1,3 +1,4 @@
+using System.Numerics;
 using Scorecard.Core.Cases;
 using Scorecard.Core.Comparison;
 using static Scorecard.Core.Judgment.JudgmentRules;
@@ -237,20 +238,15 @@ public static class JudgmentEngine
         todo.Add(new JudgmentTodo(TodoConfirmThresholds, ConfirmThresholdsText(text)));
     }
 
-    // count × 100과 threshold × reference의 부호. 문턱 쪽 곱이 decimal 범위를 넘으면 문턱 쪽이 더 멀다(문턱 부호대로).
+    // count × 100과 threshold × reference의 부호(4.4). decimal 곱은 29자리를 넘으면 반올림·넘침이 있어 쓰지 않는다.
+    // 정수 셈으로 정확히 비교한다. threshold = 가수 / 10^자릿수라 양쪽에 10^자릿수를 곱한다.
+    // count × 100 × 10^자릿수 ↔ 가수 × reference. 곱이 커도 넘치지 않아 예외가 없다(잠정 결정 17).
     private static int CompareScaled(int count, decimal threshold, int reference)
     {
-        decimal right;
-        try
-        {
-            right = threshold * reference;
-        }
-        catch (OverflowException)
-        {
-            return threshold > 0 ? -1 : 1;
-        }
-
-        return (count * 100m).CompareTo(right);
+        var scale = threshold.Scale;
+        var left = new BigInteger(count) * 100 * BigInteger.Pow(10, scale);
+        var right = Mantissa(threshold, scale) * reference;
+        return left.CompareTo(right);
     }
 
     // 4.4 TIME: process + review < before. 합이 decimal 범위를 넘으면 줄지 않았다(not_met). 예외를 내보내지 않는다.

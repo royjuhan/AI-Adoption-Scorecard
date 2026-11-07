@@ -15,6 +15,9 @@ internal static class SpecDocument
     // T-005 합성 예제 스펙(스펙 8절). 표·블록·SHA-256 줄을 읽는 규칙은 아래 Table·CodeBlocks·Line과 같다.
     public const string SyntheticExamplesPath = "docs/spec/synthetic-examples.md";
 
+    // T-006 대조 스펙(스펙 8절). 표·블록·SHA-256 줄을 읽는 규칙은 아래 Table·CodeBlocks·Line과 같다.
+    public const string MetricsPath = "docs/spec/metrics.md";
+
     // 4.4 기본값 표의 머리 행. 스펙이 "표 모양을 바꾸지 않는다"고 정했다(승인 결정 5).
     public const string DefaultsTableHeader = "| 키 | 질문 | 형식 | 선택지·범위 | 기본값 |";
 

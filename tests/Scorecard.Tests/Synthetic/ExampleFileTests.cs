@@ -68,6 +68,7 @@ public class ExampleFileTests
 
     // 3.2·4.12: 예제 폴더의 파일 = T-004 파일(answers.yaml, expected/classification.json) + 7.1 표의 파일.
     // .gitkeep이 없고(승인 결정 12), expected/에 새 파일이 없고, 자료 없는 예제에는 reference/·candidate/가 없다.
+    // T-006(metrics.md 7.1 4, 승인 질문 17): 계획에 expected/metrics.json을 더한다. 세 예제 모두(미검증 모양 포함).
     [Theory]
     [MemberData(nameof(SyntheticInput.AllExampleNames), MemberType = typeof(SyntheticInput))]
     public void Example_folder_has_exactly_the_planned_files(string example)
@@ -76,7 +77,7 @@ public class ExampleFileTests
         var actual = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(root, f).Replace(Path.DirectorySeparatorChar, '/'))
             .Order(StringComparer.Ordinal);
-        var expected = SyntheticInput.ClassificationFiles.Concat(SyntheticSpec.FilesOf(example)).Order(StringComparer.Ordinal);
+        var expected = SyntheticInput.ClassificationFiles.Concat(SyntheticSpec.FilesOf(example)).Append("expected/metrics.json").Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, actual);
     }

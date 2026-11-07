@@ -66,3 +66,9 @@ PR (a): `tools/oracle/`, `.github/workflows/`, `tools/ci/`, `docs/decisions/`, `
 15. 인자 확인 시점: 음수 시간은 `time_must_drop`과 상관없이 예외. 사람 입력 키는 미검증에도 확인.
 16. 미검증 + 시간 입력: `time_must_drop: true`면 `measure_time`. 받은 시간은 보지 않는다.
 17. 문턱 곱 넘침: 예외 없이 부호대로 비교(파서를 거치면 생기지 않는다).
+
+## 남은 일 (PR #13 뒤)
+
+- TIME 확인의 `process + review < before`는 decimal 덧셈이라 29자리 가까운 값에서 반올림될 수 있다. 실제 분 단위 값에서는 생기지 않는다. M2 `measure` 카드에서 정확한 셈으로 맞춘다.
+- 값 표시 64자 자르기가 서로게이트 쌍을 반으로 자를 수 있다(기존 `CompareRules.Show`). 정리 카드.
+- 잠정 결정 14(머리 행만 있는 기준 파일): `CompareMetrics`에 파일별 머리 행을 더해 oracle·스펙과 맞춘다.

@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-07 | 0006 | `oracle-head` 잡과 lead_check가 head `selftest.py`도 돌린다. guard가 잡 넷(mutation, oracle, oracle-head, test-run) 결과를 모두 본다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-011a |
 | 2026-11-07 | 0005 | 승인 질문을 묻지 않고 추천안 채택(T-010 뒤). 사람 게이트 대신 CI 잡(build-test, regression-guard, mutation, oracle)과 [재검토]. 지시문 2절 4·5·11, 13절, 14절 6~8, CLAUDE.md. 2절 8·10(실제 자료·회사 자료 금지)은 바꾸지 않는다 | juhan 지시 | #11 |
 | 2026-11-07 | 0004 | 사용을 단순하게(입구 둘·엔진 하나·HTML 한 장·명령 넷·AI용 JSON 입구). 2절 1·3·6·7 | juhan 승인 | #6 |
 | 2026-11-07 | 0003 | 질문 `human_signoff`, 트리 맨 앞 `SIGNOFF` | juhan 승인 | #6, #9 |

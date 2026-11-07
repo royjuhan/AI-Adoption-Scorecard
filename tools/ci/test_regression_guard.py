@@ -1856,5 +1856,265 @@ class TestLeadCheckHelpers(unittest.TestCase):
             shutil.rmtree(root, ignore_errors=True)
 
 
+# ---------------------------------------------------------------- T-011a: oracle selftest, guard --job
+
+
+def workflow_text() -> str | None:
+    path = repo_file(".github", "workflows", "ci.yml")
+    if path is None:
+        return None
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def workflow_job(text: str, name: str) -> str:
+    """ci.yml에서 잡 하나. 두 칸 들여쓴 `name:` 줄부터 다음 잡 줄 앞까지."""
+    lines = text.split("\n")
+    start = lines.index(f"  {name}:")
+    end = next((i for i in range(start + 1, len(lines)) if re.fullmatch(r"  [A-Za-z0-9_-]+:\s*", lines[i])), len(lines))
+    return "\n".join(lines[start:end])
+
+
+def workflow_step_run(job: str, name_prefix: str) -> str:
+    """잡 안의 `- name: <name_prefix>…` 단계의 `run: |` 블록(들여쓰기를 뗀 셸 글)."""
+    lines = job.split("\n")
+    k = next(i for i, line in enumerate(lines) if line.strip().startswith(f"- name: {name_prefix}"))
+    dash = len(lines[k]) - len(lines[k].lstrip())
+    end = next((i for i in range(k + 1, len(lines)) if lines[i].strip() and len(lines[i]) - len(lines[i].lstrip()) <= dash), len(lines))
+    r = next(i for i in range(k + 1, end) if lines[i].strip() == "run: |")
+    indent = len(lines[r]) - len(lines[r].lstrip())
+    body = []
+    for line in lines[r + 1:end]:
+        if line.strip() and len(line) - len(line.lstrip()) <= indent:
+            break
+        body.append(line)
+    return textwrap.dedent("\n".join(body)).strip("\n") + "\n"
+
+
+FAKE_ORACLE_CHECK = """
+    import os, pathlib, sys
+    pathlib.Path(os.environ["RUNNER_TEMP"], "ran-check").write_text(" ".join(sys.argv[1:]), encoding="utf-8")
+    out = sys.argv[sys.argv.index("--json") + 1]
+    pathlib.Path(out).write_text('{{"files": []}}\\n', encoding="utf-8")
+    sys.exit({code})
+"""
+
+FAKE_ORACLE_SELFTEST = """
+    import os, pathlib, sys
+    pathlib.Path(os.environ["RUNNER_TEMP"], "ran-selftest").write_text(" ".join(sys.argv[1:]), encoding="utf-8")
+    sys.exit({code})
+"""
+
+
+def write_fake_oracle(root: str, check_code: int = 0, selftest_code: int | None = 0) -> None:
+    """tools/oracle/check.py·selftest.py 가짜. 돌았으면 RUNNER_TEMP에 표시 파일을 남긴다. selftest_code None이면 selftest가 없다."""
+    folder = os.path.join(root, "tools", "oracle")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "check.py"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(textwrap.dedent(FAKE_ORACLE_CHECK.format(code=check_code)).lstrip("\n"))
+    selftest = os.path.join(folder, "selftest.py")
+    if selftest_code is None:
+        if os.path.exists(selftest):
+            os.remove(selftest)
+    else:
+        with open(selftest, "w", encoding="utf-8", newline="\n") as f:
+            f.write(textwrap.dedent(FAKE_ORACLE_SELFTEST.format(code=selftest_code)).lstrip("\n"))
+
+
+class TestOracleHeadWorkflow(unittest.TestCase):
+    """T-011a: ci.yml oracle-head 단계의 셸을 그대로 꺼내 임시 저장소에서 돌린다.
+
+    tools/oracle이 바뀐 PR이면 head check.py와 head selftest.py를 둘 다 돌리고, 하나라도 실패하면 단계(잡)가 실패한다.
+    음성 대조: head selftest가 실패하는 변경 → 종료 1.
+    """
+
+    def setUp(self) -> None:
+        text = workflow_text()
+        if text is None:
+            self.skipTest("ci.yml을 찾지 못함(저장소 밖에서 돌림)")
+        if shutil.which("bash") is None:
+            self.skipTest("bash 없음")
+        self.script = workflow_step_run(workflow_job(text, "oracle-head"), "head oracle")
+        self.repo = TempRepo()
+        self.tmp = tempfile.mkdtemp(prefix="oracle-head-")
+        # 단계는 PATH의 python3를 부른다. 이 테스트를 도는 python으로 고정한다.
+        bin_dir = os.path.join(self.tmp, "bin")
+        os.makedirs(bin_dir)
+        os.symlink(sys.executable, os.path.join(bin_dir, "python3"))
+        self.path_env = bin_dir + os.pathsep + os.environ.get("PATH", "")
+        self.script_path = os.path.join(self.tmp, "step.sh")
+        with open(self.script_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(self.script)
+
+    def tearDown(self) -> None:
+        if hasattr(self, "repo"):
+            self.repo.close()
+            shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def run_step(self, base: str) -> tuple[int, str, set[str]]:
+        runner_temp = tempfile.mkdtemp(dir=self.tmp)
+        env = dict(os.environ, CI_BASE=base, RUNNER_TEMP=runner_temp, GIT_NO_REPLACE_OBJECTS="1", PATH=self.path_env,
+                   PYTHONDONTWRITEBYTECODE="1")
+        # GitHub의 기본 셸(ubuntu, shell 없음)은 bash -e {0}다.
+        proc = subprocess.run(["bash", "--noprofile", "--norc", "-e", self.script_path], cwd=self.repo.root, env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ran = {name for name in ("ran-check", "ran-selftest") if os.path.exists(os.path.join(runner_temp, name))}
+        if "ran-selftest" in ran:
+            with open(os.path.join(runner_temp, "ran-selftest"), encoding="utf-8") as f:
+                self.assertEqual(f.read(), "--repo .")
+        return proc.returncode, proc.stdout.decode("utf-8", "replace"), ran
+
+    def base_with_oracle(self, selftest_code: int = 0) -> str:
+        write_fake_oracle(self.repo.root, selftest_code=selftest_code)
+        self.repo.write("docs/a.md", "하나\n")
+        return self.repo.commit("base")
+
+    def test_script_runs_check_and_selftest(self) -> None:
+        self.assertIn("tools/oracle/check.py", self.script)
+        self.assertIn("tools/oracle/selftest.py", self.script)
+
+    def test_unchanged_oracle_runs_nothing(self) -> None:
+        base = self.base_with_oracle(selftest_code=1)  # 돌면 실패할 selftest
+        self.repo.write("docs/a.md", "둘\n")
+        self.repo.commit("T-099: 문서만")
+        code, out, ran = self.run_step(base)
+        self.assertEqual(code, 0, out)
+        self.assertIn("tools/oracle 변경 없음", out)
+        self.assertEqual(ran, set())
+
+    def test_bootstrap_without_base_oracle_runs_nothing(self) -> None:
+        self.repo.write("docs/a.md", "하나\n")
+        base = self.repo.commit("base")
+        write_fake_oracle(self.repo.root, selftest_code=1)
+        self.repo.commit("T-099: oracle 처음")
+        code, out, ran = self.run_step(base)
+        self.assertEqual(code, 0, out)
+        self.assertIn("부트스트랩", out)
+        self.assertEqual(ran, set())
+
+    def test_changed_oracle_passes_when_both_pass(self) -> None:
+        base = self.base_with_oracle()
+        self.repo.write("tools/oracle/README.md", "고침\n")
+        self.repo.commit("T-099: oracle 고침")
+        code, out, ran = self.run_step(base)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(ran, {"ran-check", "ran-selftest"})
+
+    def test_negative_failing_head_selftest_fails_the_step(self) -> None:
+        # 음성 대조: head selftest가 실패하는 변경. CI_BASE가 비어도(HEAD^1) 같다.
+        base = self.base_with_oracle()
+        write_fake_oracle(self.repo.root, selftest_code=1)
+        self.repo.commit("T-099: selftest가 실패하게")
+        for ci_base in (base, ""):
+            code, out, ran = self.run_step(ci_base)
+            self.assertEqual(code, 1, out)
+            self.assertIn("selftest.py 실패", out)
+            self.assertEqual(ran, {"ran-check", "ran-selftest"})
+
+    def test_failing_check_still_runs_selftest(self) -> None:
+        base = self.base_with_oracle()
+        write_fake_oracle(self.repo.root, check_code=1)
+        self.repo.commit("T-099: check가 실패하게")
+        code, out, ran = self.run_step(base)
+        self.assertEqual(code, 1, out)
+        self.assertIn("check.py 실패", out)
+        self.assertEqual(ran, {"ran-check", "ran-selftest"})
+
+    def test_deleted_selftest_fails(self) -> None:
+        base = self.base_with_oracle()
+        write_fake_oracle(self.repo.root, selftest_code=None)
+        self.repo.commit("T-099: selftest 지움")
+        code, out, ran = self.run_step(base)
+        self.assertEqual(code, 1, out)
+        self.assertIn("selftest.py가 없다", out)
+        self.assertEqual(ran, {"ran-check"})
+
+    def test_base_oracle_job_runs_check_only(self) -> None:
+        # 결정한 해석 10: oracle 잡(head 코드 없음)은 base check.py만 돈다. base selftest는 돌리지 않는다.
+        job = workflow_job(workflow_text() or "", "oracle")
+        code_lines = "\n".join(line for line in job.split("\n") if not line.strip().startswith("#"))
+        self.assertIn('"$CI_ORACLE/check.py"', code_lines)
+        self.assertNotIn("selftest", code_lines)
+
+
+class TestGuardJobsWiring(GuardRepoTestCase):
+    """T-011a(T-010 3차 리뷰 막지 않는 지적 4): guard가 기다리는 잡마다 --job 결과를 받는다. lead_check도 같은 잡."""
+
+    def test_workflow_passes_every_needed_job(self) -> None:
+        text = workflow_text()
+        if text is None:
+            self.skipTest("ci.yml을 찾지 못함(저장소 밖에서 돌림)")
+        job = workflow_job(text, "regression-guard")
+        needs = [n.strip() for n in re.search(r"needs: \[([^\]]*)\]", job).group(1).split(",")]
+        self.assertEqual(sorted(needs), sorted(lead_check.GUARD_JOBS))
+        for name in needs:
+            hits = re.findall(rf'--job "{re.escape(name)}=\$([A-Z_]+)"', job)
+            self.assertEqual(len(hits), 1, f"--job {name}")
+            self.assertRegex(job, rf"\n\s+{hits[0]}: \$\{{\{{ needs\.{re.escape(name)}\.result \}}\}}\n")
+
+    def test_lead_check_job_args(self) -> None:
+        args = lead_check.guard_job_args({"mutation": True, "oracle": False, "oracle-head": True})
+        self.assertEqual(args, ["--job", "mutation=success", "--job", "oracle=failure", "--job", "oracle-head=success",
+                                "--job", "test-run=failure"])
+
+    def test_failed_oracle_or_mutation_job_fails_guard(self) -> None:
+        self.repo.commit("빈 커밋")
+        common = ["--repo", self.repo.root, "--base", self.base, "--summary", ""]
+        all_ok = {name: True for name in lead_check.GUARD_JOBS}
+        for name in lead_check.GUARD_JOBS:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(rg.main(common + lead_check.guard_job_args({**all_ok, name: False})), 1, name)
+            self.assertIn(f"[FAIL] job-result: {name} 잡 결과가 failure", out.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(rg.main(common + lead_check.guard_job_args(all_ok)), 0)
+
+
+class TestLeadCheckHeadOracle(unittest.TestCase):
+    """T-011a: lead_check의 head oracle 단계도 check.py와 selftest.py를 둘 다 돈다(ci.yml oracle-head와 같다)."""
+
+    def setUp(self) -> None:
+        self.root = tempfile.mkdtemp(prefix="lc-oracle-")
+        self.tree = os.path.join(self.root, "tree")
+        self.work = os.path.join(self.root, "work")
+        os.makedirs(self.work)
+        self.env = dict(os.environ, RUNNER_TEMP=self.work, PYTHONDONTWRITEBYTECODE="1")
+        self.steps: list[tuple[str, int | None, str]] = []
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def step(self, name: str, code: int | None, detail: str, ok_codes: tuple[int, ...] = (0,)) -> bool:
+        self.steps.append((name, code, detail))
+        return code in ok_codes
+
+    def run_oracle(self, check_code: int = 0, selftest_code: int | None = 0) -> bool:
+        write_fake_oracle(self.tree, check_code, selftest_code)
+        self.steps = []
+        for name in ("ran-check", "ran-selftest"):
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(os.path.join(self.work, name))
+        return lead_check.run_head_oracle(sys.executable, self.tree, self.work, os.path.join(self.work, "logs"), self.env, self.step)
+
+    def test_both_pass(self) -> None:
+        self.assertTrue(self.run_oracle())
+        self.assertEqual([c for _, c, _ in self.steps], [0, 0])
+        self.assertTrue(os.path.exists(os.path.join(self.work, "ran-selftest")))
+
+    def test_negative_failing_selftest(self) -> None:
+        self.assertFalse(self.run_oracle(selftest_code=1))
+        self.assertEqual([c for _, c, _ in self.steps], [0, 1])
+        self.assertIn("selftest", self.steps[1][0])
+
+    def test_failing_check_still_runs_selftest(self) -> None:
+        self.assertFalse(self.run_oracle(check_code=1))
+        self.assertEqual([c for _, c, _ in self.steps], [1, 0])
+
+    def test_missing_selftest_fails(self) -> None:
+        self.assertFalse(self.run_oracle(selftest_code=None))
+        self.assertEqual(self.steps[1][1], None)
+        self.assertIn("selftest.py가 없다", self.steps[1][2])
+
+
 if __name__ == "__main__":
     unittest.main()

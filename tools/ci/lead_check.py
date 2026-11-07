@@ -20,11 +20,12 @@ PR의 ci.yml은 PR이 고칠 수 있다(예: guard 줄 끝에 `|| true`를 붙�
    docs/decisions/**, global.json)의 변경을 적는다. 있으면 리드는 전체 diff를 새 reviewer에게 보낸다.
 4. head 코드를 돌리지 않는 단계: base tools/ci 단위 테스트, base oracle(head 예제를 읽기만 한다).
 5. head 코드를 돌리는 단계: build(-warnaserror), test-run(base·head dotnet test, TRX), mutation(바뀐 src가 있을 때만
-   Stryker), head oracle(tools/oracle이 바뀌었을 때), head tools/ci 단위 테스트(tools/ci가 바뀌었을 때).
+   Stryker), head oracle check.py·selftest.py(tools/oracle이 바뀌었을 때. ci.yml oracle-head와 같다),
+   head tools/ci 단위 테스트(tools/ci가 바뀌었을 때).
    리드 저장소가 아니라 작업 폴더의 일회용 저장소(git init + fetch)에서 돈다. 단계마다 새 세션(프로세스 그룹)으로
    돌리고 끝나면 그룹을 죽인다. 결과 파일은 단계가 끝나자마자 메모리에 읽어 둔다.
 6. base regression_guard: 4에서 메모리에 꺼내 둔 도구를 새 폴더에 다시 쓰고(blob id 확인), 리드 저장소의 git 개체와
-   메모리의 결과로 돈다(--require-base-tools).
+   메모리의 결과로 돈다(--require-base-tools). 단계 결과는 --job mutation·oracle·oracle-head·test-run으로 넘긴다.
 
 종료 코드: 0 모두 통과, 1 하나라도 실패, 2 실행할 수 없음(커밋 없음, 병합 충돌 등).
 
@@ -53,6 +54,9 @@ import cigit  # noqa: E402
 
 GUARD_SCRIPT = "tools/ci/regression_guard.py"
 ORACLE_CHECK = "tools/oracle/check.py"
+ORACLE_SELFTEST = "tools/oracle/selftest.py"
+# regression_guard에 --job 이름=결과로 넘기는 잡. ci.yml regression-guard 잡의 needs와 같다(단위 테스트가 대조한다).
+GUARD_JOBS = ("mutation", "oracle", "oracle-head", "test-run")
 TOOL_PATHS = ("tools/ci", "tools/oracle", ".github/workflows/ci.yml")
 SOLUTION = "AIAdoptionScorecard.sln"
 SENSITIVE_PREFIXES = (".github/", "tools/", ".config/", ".claude/", "docs/decisions/")
@@ -168,6 +172,33 @@ def read_bytes(path: str) -> bytes | None:
             return f.read()
     except OSError:
         return None
+
+
+def guard_job_args(results: dict[str, bool]) -> list[str]:
+    """regression_guard의 --job 인자. GUARD_JOBS마다 하나. results에 없는 잡은 failure다."""
+    args: list[str] = []
+    for name in GUARD_JOBS:
+        args += ["--job", f"{name}={'success' if results.get(name) else 'failure'}"]
+    return args
+
+
+def run_head_oracle(py: str, tree: str, work: str, logs: str, env: dict[str, str], step) -> bool:
+    """tools/oracle이 바뀐 PR의 head oracle 단계(ci.yml oracle-head와 같다). head 코드를 돌린다.
+
+    check.py(head 예제 재현)와 selftest.py(스펙 표 대조·음성 대조·결정론)를 둘 다 돈다. head에 selftest.py가 없으면
+    실패다. 하나라도 실패하면 False.
+    """
+    oracle = os.path.join(tree, "tools", "oracle")
+    code = run_step([py, "-I", "-B", os.path.join(oracle, "check.py"), "--repo", tree, "--json", os.path.join(work, "oracle-head.json")],
+                    work, os.path.join(logs, "oracle-head.log"), env, isolate=True)
+    ok = step("oracle-head(head oracle check.py, tools/oracle 바뀜)", code, "로그 logs/oracle-head.log")
+    selftest = os.path.join(oracle, "selftest.py")
+    if os.path.isfile(selftest):
+        code = run_step([py, "-I", "-B", selftest, "--repo", tree], work, os.path.join(logs, "oracle-head-selftest.log"), env, isolate=True)
+        detail = "로그 logs/oracle-head-selftest.log"
+    else:
+        code, detail = None, f"head에 {ORACLE_SELFTEST}가 없다"
+    return step("oracle-head(head oracle selftest.py, tools/oracle 바뀜)", code, detail) and ok
 
 
 def make_sandbox(repo: str, base: str, tip: str, head: str, folder: str) -> str:
@@ -298,9 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         changed = {c.path for c in cigit.diff_changes(repo, base, head, None, renames=False)}
         oracle_head_ok = True
         if oracle_source == "base" and any(p.startswith("tools/oracle/") for p in changed):
-            code = run_step([py, "-I", "-B", os.path.join(build_tree, "tools", "oracle", "check.py"), "--repo", build_tree, "--json",
-                             os.path.join(work, "oracle-head.json")], work, os.path.join(logs, "oracle-head.log"), head_env, isolate=True)
-            oracle_head_ok = step("oracle-head(head oracle, tools/oracle 바뀜)", code, "로그 logs/oracle-head.log")
+            oracle_head_ok = run_head_oracle(py, build_tree, work, logs, head_env, step)
         if tools_source == "base" and any(p.startswith("tools/ci/") for p in changed):
             head_ci = os.path.join(build_tree, "tools", "ci")
             code = run_step([py, "-I", "-B", "-m", "unittest", "discover", "-s", head_ci, "-t", head_ci, "-p", "test_*.py"], build_tree,
@@ -343,8 +372,8 @@ def main(argv: list[str] | None = None) -> int:
     cmd = [py, "-I", "-B", os.path.join(tools2, "tools", "ci", "regression_guard.py"), "--repo", repo, "--base", base, "--head", head,
            "--require-base-tools", "--mutation", os.path.join(results, "mutation.json"), "--oracle", os.path.join(results, "oracle.json"),
            "--oracle-source", os.path.join(results, "oracle-source.json"), "--testrun", os.path.join(results, "testrun.json"),
-           "--json-out", guard_json, "--summary", "",
-           "--job", f"test-run={'success' if testrun_ok else 'failure'}", "--job", f"oracle-head={'success' if oracle_head_ok else 'failure'}"]
+           "--json-out", guard_json, "--summary", ""]
+    cmd += guard_job_args({"mutation": mutation_ok, "oracle": oracle_ok, "oracle-head": oracle_head_ok, "test-run": testrun_ok})
     for c in cards:
         cmd += ["--card", c]
     guard_env = dict(plain_env, MUTATION_RESULT="success" if mutation_ok else "failure", ORACLE_RESULT="success" if oracle_ok else "failure")

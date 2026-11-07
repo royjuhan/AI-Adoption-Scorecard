@@ -45,3 +45,11 @@
 10. Core API·진행 순서: judgment.md 4.13 그대로. 규칙은 `internal` `JudgmentRules.cs` 한 파일.
 11. G2·G3: `judge-case-valid`(샘플 `case-valid`). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 한 쌍을 더한다(축소 아님).
 12. 문장 틀·다음 할 일 문구: judgment.md 표 그대로.
+
+## PR (b)에 넘기는 것 (T-011a oracle 보고)
+
+- 스펙이 덜 정한 곳 셋. oracle은 범위 밖으로 멈춘다. 엔진은 아래 잠정 해석을 따르고, 테스트는 예제·합성 장면이 닿는 곳만 고정한다.
+  1. 값 표시(64자 초과·제어 문자): metrics.md 4.7과 같은 Core `CompareRules` 표시를 그대로 쓴다.
+  2. 시간 합이 decimal 범위를 넘을 때 문장의 `{total}`: 정하지 않는다(판정은 `not_met`). 뒤 카드.
+  3. 미검증인데 시간이 들어온 경우의 `measure_time`: 정하지 않는다. M2 `measure` 카드에서 정한다.
+- 예제 4종으로 `check.py`가 보는 판정은 NOT_VERIFIED·ACCURACY·FOCUS·PASS뿐이다. MISSING·UNEXPLAINED·TIME과 기본값 표시는 테스트(합성)로 본다.

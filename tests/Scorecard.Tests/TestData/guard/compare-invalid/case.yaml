@@ -1,0 +1,13 @@
+# 합성 오류 예시. 실제 업무·값 없음. 대조 입력 오류(숫자 아님·키 중복·빈 키·칸 수·따옴표·열 없음)를 섞었다.
+name: compare-invalid
+task: 대조 오류 합성 예시
+steps:
+  - name: 한 단계
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: row_id
+compare:
+  - {field: start, tolerance: 0}
+  - {field: mean, tolerance_pct: 1.0}
+  - {field: label}

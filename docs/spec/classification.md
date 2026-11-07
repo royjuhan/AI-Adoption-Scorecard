@@ -1,4 +1,4 @@
-# classification (T-004 스펙 초안)
+# classification (T-004 스펙)
 
 - 상태: 승인됨(2026-11-07, 15문항 모두 제안대로). 7절 예제 초안도 제안대로 확정. 승인 결과는 문서 끝.
 - 작업 카드: `docs/tasks/T-004-classification.md`
@@ -340,7 +340,7 @@ public sealed record ClassificationRow(
 
 - 조건 값·문장 틀·문구는 `internal` 상수 한 파일(예: `ClassificationRules.cs`)에 둔다(4.9).
 - 질문 키 순서는 Core의 `StepQuestions.Keys`를 쓴다(T-003). 새로 적지 않는다.
-- `FileName`은 스파이크 후보에 없다. 테스트·Cli가 같은 이름을 쓰게 하려고 더한 제안이다(**미확인**: 실험 안 함).
+- `FileName`은 스파이크 후보에 없다. 테스트·Cli가 같은 이름을 쓰게 하려고 더했다. 구현과 테스트(`ClassificationApiShapeTests`)로 확인했다.
 - → 승인 질문 15.
 
 ## 5. 예외
@@ -839,7 +839,7 @@ steps:
 
 1. GitHub ubuntu·windows 러너에서 분류·골든·G2·G3 테스트가 녹색인지. windows 러너의 `core.autocrlf`(T-002 미확인 그대로).
 2. publish 단일 exe(`win-x64`)에서 `System.Text.Json`·`JavaScriptEncoder` 동작.
-3. `ClassificationJson.FileName` 상수(4.11). 스파이크에 없다.
+3. (해결) `ClassificationJson.FileName` 상수(4.11). 구현·테스트로 확인.
 4. 12.1 7단계 차이를 메울 질문·규칙(6.3). 사람 판단.
 5. M2 `interview --answers`가 이 `answers.yaml` 모양을 그대로 쓸 수 있는지. 지시문 3.1은 "입력은 무엇, 거기서 무엇을, 결과는 어디로"로 단계를 만든다고 한다 [읽음]. 그 질문의 답을 파일에 둘지는 M2에서 정한다.
 6. 평가서가 확인 항목·기본값을 어떤 문구로 보일지.

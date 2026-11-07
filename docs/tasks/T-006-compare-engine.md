@@ -21,7 +21,7 @@
 
 ## 샘플 자료
 
-T-005가 만든 예제 3종의 `case.yaml`·`reference/`·`candidate/`. `expected/metrics.json`은 사람이 확정한 뒤 커밋한다(지시문 14절 8). 상시 승인(2026-11-07)으로 추천값을 확정값으로 쓴다.
+T-005가 만든 예제 3종의 `case.yaml`·`reference/`·`candidate/`. `expected/metrics.json`은 사람이 확정한 뒤 커밋한다(지시문 14절 8). expected는 상시 승인 범위 밖이다. juhan이 직접 확정한다(2026-11-07 사람 결정). Core 구현과 `expected/metrics.json` 커밋은 T-007 머지 뒤에 한다(T-007은 PR #7로 머지됨).
 
 ## 메모
 
@@ -30,3 +30,5 @@ T-005가 만든 예제 3종의 `case.yaml`·`reference/`·`candidate/`. `expecte
 - 판정(통과·조건부·실패)과 "특정 유형에만 몰림"은 판정 카드 몫이다. 이 카드는 대조와 지표만. `metrics.json`에 무엇을 넣을지 스펙에서 정한다(`docs/spec/metrics.md`).
 - 숫자 비교는 decimal, InvariantCulture. 퍼센트 반올림 규칙을 정한다.
 - T-004·T-005 예제 파일은 바꾸지 않는다.
+- metrics.json 첫 키는 `"schema_version": 1`(정수)이다(ADR 0004 결정 2). 처음부터 넣는다.
+- 같은 입력이면 `--json` 출력이 바이트까지 같아야 한다(ADR 0004). metrics.json 바이트 규칙이 그 바탕이다.

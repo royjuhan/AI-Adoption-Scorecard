@@ -1,7 +1,7 @@
 # T-012 판정 보강 (추가 행·결과 쪽 중복·안 본 불일치·몰림 열)
 
 - 마일스톤: M1 끝 [재검토] 결과(2026-11-07, STATUS.md 재검토 기록)
-- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) 스펙·oracle
+- 상태: 스펙 채택(ADR 0005 결정 3). PR (a) #14 머지. PR (b) 엔진·expected 진행 중
 
 ## 목표
 
@@ -21,7 +21,7 @@ M1 [재검토]의 막는 지적 1·2를 고친다. 결과 자료(AI 결과)의 �
 
 ## 폴더 범위
 
-PR (a): `docs/spec/`, `tools/oracle/`, `docs/STATUS.md`, 이 카드. PR (b): `docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/case.yaml`, `examples/*/expected/`, `docs/STATUS.md`, 이 카드.
+PR (a): `docs/spec/`, `tools/oracle/`, `docs/decisions/`, `docs/STATUS.md`, 이 카드. PR (b): `docs/spec/`, `src/Scorecard.Core/`, `tests/`, `examples/*/case.yaml`, `examples/*/expected/`, `docs/STATUS.md`, 이 카드.
 
 ## 메모
 
@@ -46,3 +46,11 @@ PR (a): `docs/spec/`, `tools/oracle/`, `docs/STATUS.md`, 이 카드. PR (b): `do
 10. judgment.json schema_version 2.
 11. oracle 판 둘(ADR 0007). PR (b) 뒤 `judge_v1` 삭제.
 12. PR (a)는 새 표를 11절에만. 제자리 옮김은 PR (b).
+
+## PR (a) 리뷰 지적 (#14, 막는 지적 없음)
+
+- 다음 정리 카드로 넘긴다(oracle을 바꾸므로 PR (b)에 둘 수 없다. `oracle-and-expected`):
+  1. 결과 쪽 중복은 첫 행으로 대조해 맞는 답이 앞에 오면 일치로 센다. 줄 순서에 따라 정확도가 달라진다. `duplicate` 항목에 차이가 없다(metrics.md 12절). 안: 중복 키는 일치로 세지 않고 모든 행의 차이를 적는다.
+  2. `judge_v1` 삭제를 그 카드의 수용 기준에 넣는다(ADR 0007 결정 4).
+  3. 지시문 3.4 문구에 "아직 안 본 검토 항목 → 조건부"를 맞춘다(지금은 해석). metrics.json `items[].status` 값이 늘었는데 schema_version 1인 기준을 ADR 0004 쪽에 한 줄.
+- PR (b)에서 한다: 스펙 11절 상태 줄 "제안" → "채택"(judgment.md, case-schema.md, metrics.md).

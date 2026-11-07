@@ -391,7 +391,7 @@ public sealed record StepAnswers(
 // T-008: IsInferred는 선택 인자(기본 false). 기존 2인자 생성은 그대로 컴파일된다 [T8:S2].
 public sealed record Answer<T>(T Value, bool IsDefault, bool IsInferred = false);
 
-public sealed record CaseInputs(string Reference, string Candidate, string Key);
+public sealed record CaseInputs(string Reference, string Candidate, string Key, string? Group = null);
 public sealed record CompareField(string Field, decimal? Tolerance, decimal? TolerancePct);
 public sealed record CaseThresholds(decimal? AccuracyMin, decimal? MissingMax, bool? TimeMustDrop);
 ```

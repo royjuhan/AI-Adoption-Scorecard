@@ -290,10 +290,10 @@ examples/
 
 | 예제 | `inputs` | `compare` | `thresholds` |
 | --- | --- | --- | --- |
-| `table-compare` | `reference/*.csv`, `candidate/*.csv`, 키 `log_id` | `start_index` `tolerance: 0`, `length` `tolerance: 0`, `mean_value` `tolerance_pct: 1.0` | `accuracy_min: 85`, `missing_max: 5`, `time_must_drop: false` |
+| `table-compare` | `reference/*.csv`, `candidate/*.csv`, 키 `log_id`, 유형 열 `signal_type` | `start_index` `tolerance: 0`, `length` `tolerance: 0`, `mean_value` `tolerance_pct: 1.0` | `accuracy_min: 85`, `missing_max: 5`, `time_must_drop: false` |
 | `form-fill` | `reference/*.csv`, `candidate/*.csv`, 키 `order_id` | `item`(허용 오차 없음), `quantity` `tolerance: 0` | 같음 |
 | `mixed-exceptions` | 없음 | 없음 | 없음 |
-| `signoff-final` | `reference/*.csv`, `candidate/*.csv`, 키 `record_id` | `range_start` `tolerance: 0`, `range_end` `tolerance: 0`, `range_avg` `tolerance_pct: 1.0` | `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false` |
+| `signoff-final` | `reference/*.csv`, `candidate/*.csv`, 키 `record_id`, 유형 열 `record_kind` | `range_start` `tolerance: 0`, `range_end` `tolerance: 0`, `range_avg` `tolerance_pct: 1.0` | `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false` |
 
 - `compare` 모양은 지시문 12.1 예시(구간 시작·끝 0, `mean_value` 1.0%)를 따랐다 [읽음].
 - `accuracy_min: 85`: 90%와 100%가 모두 충족한다. 90에 두면 90.0이 경계에 걸린다. 경계는 판정 카드 단위 테스트로 본다. case-schema 4.5 "`table-compare`는 `accuracy_min`이 90 이하여야" [읽음]와 맞다.

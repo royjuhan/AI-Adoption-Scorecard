@@ -39,7 +39,7 @@
 | --- | --- | --- | --- |
 | `answers.yaml` | `2ff0c4aa01110f300d2eeb92a1e78b70803b8d5be80e7f12d8aec9843416b7fa` | 2,109 | classification 7.5 |
 | `expected/classification.json` | `fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f` | 4,201 | classification 7.5 |
-| `case.yaml` | `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263` | 2,595 | synthetic-examples 7.5 |
+| `case.yaml` | `e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348` | 2,616 | synthetic-examples 7.5 |
 | `intake.md` | `2066d6823ed5c93ab6c36af39534d34cdeb42c8469bcb185d6cdc93ce52a654e` | 1,025 | synthetic-examples 7.5 |
 | `reference/records.csv` | `95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771` | 633 | synthetic-examples 7.5 |
 | `candidate/records.csv` | `5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4` | 636 | synthetic-examples 7.5 |

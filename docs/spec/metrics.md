@@ -575,6 +575,7 @@ public static class CompareEngine
     public const string ItemMismatch = "mismatch";
     public const string ItemMissing = "missing";
     public const string ItemExtra = "extra";
+    public const string ItemDuplicate = "duplicate";
     public const string KindNumber = "number";
     public const string KindText = "text";
     public const string ResultWithin = "within";

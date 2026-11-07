@@ -66,7 +66,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "<케이스 이름>",
   "verdict": "pass | conditional | hold | not_verified",
   "rule": "NOT_VERIFIED | ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | PASS",
@@ -423,7 +423,7 @@ public static class JudgmentEngine
 public static class JudgmentJson
 {
     public const string FileName = "judgment.json";
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     // 3.2·3.3 바이트 규칙.
     public static byte[] Render(JudgmentResult result);

@@ -2,19 +2,19 @@ using Scorecard.Tests.Classification;
 
 namespace Scorecard.Tests.Judgment;
 
-// 스펙 4.4 확인 다섯, 4.5 숫자(focus_min), 6.1 문턱 경계(잠정 결정 1·5). 카드 수용 기준 2.
+// 스펙 11.5 확인 다섯(4.4를 대신한다), 4.5 숫자(focus_min), 6.1 문턱 경계(잠정 결정 1·5). 카드 수용 기준 2.
 // 확인 문장은 표의 틀을 4.5 값으로 채운 것이다. 문턱 비교는 셈(counts)으로 한다. 표시 퍼센트로 비교하지 않는다(4.1 4).
 [Trait("Spec", "judgment")]
 public class CheckTableTests
 {
-    // 4.4 표의 (확인, 결과).
+    // 11.5 표의 (확인, 결과).
     public static TheoryData<string, string> CheckRowKeys =>
         ClassificationInput.TheoryPairs(JudgmentSpec.CheckRows().Select(r => (r.Check, r.Result)));
 
     // 6.1 표의 행 번호.
     public static TheoryData<int> BoundaryRows => new(Enumerable.Range(0, JudgmentSpec.Table(JudgmentSpec.BoundaryHeader).Count));
 
-    // 4.4 확인 순서: ACCURACY → MISSING → UNEXPLAINED → TIME → FOCUS(표에서 처음 나오는 순서). 판정 결과의 checks 순서와 같다.
+    // 11.5 확인 순서: ACCURACY → MISSING → UNEXPLAINED → TIME → FOCUS(표에서 처음 나오는 순서). 판정 결과의 checks 순서와 같다.
     [Fact]
     public void Check_order_is_first_appearance_in_table()
     {
@@ -26,7 +26,7 @@ public class CheckTableTests
         Assert.Equal(JudgmentSpec.CheckOrder(), judged.Checks.Select(c => c.Rule));
     }
 
-    // 4.4: 행마다 그 결과를 내는 장면에서 그 확인의 결과와 확인 문장이 표와 같다.
+    // 11.5: 행마다 그 결과를 내는 장면에서 그 확인의 결과와 확인 문장이 표와 같다.
     [Theory]
     [MemberData(nameof(CheckRowKeys))]
     public void Each_check_row_gives_its_result_and_sentence(string check, string result)
@@ -40,7 +40,7 @@ public class CheckTableTests
         Assert.Equal(JudgmentSpec.Fill(row.Template, scene.Slots()), actual.Reason);
     }
 
-    // 장면의 다른 확인 결과도 4.4 표에 있는 결과다(표 밖의 결과 글자를 내지 않는다).
+    // 장면의 다른 확인 결과도 11.5 표에 있는 결과다(표 밖의 결과 글자를 내지 않는다).
     [Theory]
     [MemberData(nameof(CheckRowKeys))]
     public void Every_check_result_is_a_table_result(string check, string result)
@@ -52,6 +52,7 @@ public class CheckTableTests
     }
 
     // 4.5 숫자 표: focus_min = 2. 불일치 focus_min−1건이 한 값이면 few, focus_min건이면 found.
+    // T-012: 몰림은 inputs.group에 적은 열만 본다(11.8). 장면에 group: grp를 적는다.
     [Fact]
     public void Focus_min_is_the_smallest_mismatch_count_for_focus()
     {
@@ -66,7 +67,10 @@ public class CheckTableTests
                 Extras: [],
                 AccuracyMin: "0",
                 MissingMax: "100",
-                TimeMustDrop: "false");
+                TimeMustDrop: "false")
+            {
+                Group = JudgmentInput.Group,
+            };
 
             Assert.Equal(expected, JudgmentInput.CheckOf(scene.Judge(), JudgmentSpec.Focus).Result);
         }
@@ -106,6 +110,7 @@ public class CheckTableTests
     // 누락률: 1 × 100 = 100 > 33.333333333333333333333333333 × 3 = 99.999999999999999999999999999 → not_met, 보류.
     //   decimal 곱은 100으로 반올림된다.
     // 반대쪽(…666, …334)은 정확한 셈으로도 met이다. 고친 엔진이 너무 엄하게 되지 않는지 본다.
+    // T-012: 불일치 1건은 검토 항목이다. 사람이 보고 모두 설명했다([])고 두어 문턱 비교만 판정을 정하게 한다(안 보면 조건부 UNEXPLAINED).
     [Theory]
     [InlineData(3, 2, 0, "66.666666666666666666666666667", "100", "not_met", "met", "hold", "ACCURACY")]
     [InlineData(3, 2, 0, "66.666666666666666666666666666", "100", "met", "met", "pass", "PASS")]
@@ -121,7 +126,8 @@ public class CheckTableTests
             Extras: [],
             AccuracyMin: accuracyMin,
             MissingMax: missingMax,
-            TimeMustDrop: "false");
+            TimeMustDrop: "false",
+            Unexplained: []);
 
         var judged = scene.Judge();
         var slots = scene.Slots();

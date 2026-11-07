@@ -80,7 +80,25 @@ public class CaseApiShapeTests
         Assert.Null(definition.Steps[0].Answers.MinutesPerItem.Value);
         Assert.Equal("x", Assert.Single(definition.Compare).Field);
         Assert.Equal("k", definition.Inputs?.Key);
+        Assert.Null(definition.Inputs?.Group);
         Assert.True(definition.Thresholds.TimeMustDrop);
+    }
+
+    // T-012(10.3): CaseInputs 넷째 위치 매개변수 Group(string?, 기본값 null). 세 인자 생성은 그대로 컴파일되고 Group = null이다.
+    // 레코드 같음 비교에 Group이 든다.
+    [Fact]
+    public void Case_inputs_has_optional_group()
+    {
+        var withGroup = new CaseInputs(Reference: "r/*.csv", Candidate: "c/*.csv", Key: "k", Group: "g");
+        var parameters = typeof(CaseInputs).GetConstructor([typeof(string), typeof(string), typeof(string), typeof(string)])!.GetParameters();
+
+        Assert.Equal(["Reference", "Candidate", "Key", "Group"], parameters.Select(p => p.Name));
+        Assert.True(parameters[3].HasDefaultValue);
+        Assert.Null(parameters[3].DefaultValue);
+        Assert.Equal("g", withGroup.Group);
+        Assert.Equal(new CaseInputs("r/*.csv", "c/*.csv", "k", null), new CaseInputs("r/*.csv", "c/*.csv", "k"));
+        Assert.NotEqual(withGroup, new CaseInputs("r/*.csv", "c/*.csv", "k"));
+        Assert.Equal(withGroup, new CaseInputs("r/*.csv", "c/*.csv", "k") with { Group = "g" });
     }
 
     // 레코드라서 값으로 비교된다.

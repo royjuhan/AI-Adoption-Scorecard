@@ -5,7 +5,8 @@ using Scorecard.Tests.Comparison;
 
 namespace Scorecard.Tests.Judgment;
 
-// 스펙 3.2·3.3 judgment.json(잠정 결정 7). 카드 수용 기준 4. ADR 0004 결정 2: 첫 키 "schema_version" = 정수 1.
+// 스펙 3.2·3.3 judgment.json(잠정 결정 7). 카드 수용 기준 4. ADR 0004 결정 2: 첫 키 "schema_version" = 정수.
+// T-012(11.2·11.12): schema_version 1 → 2. 확인 결과의 뜻과 다음 할 일 키가 바뀌었다. 속성 이름·순서는 그대로다.
 // 바이트 규칙은 classification.md 3.3·metrics.md 3.3과 같다: UTF-8(BOM 없음), LF, 들여쓰기 2칸, 끝에 \n 하나, UnsafeRelaxedJsonEscaping.
 // 쓰지 않는 것: 절대 경로, 입력 해시, 대조 셈(counts), 시간 값 원본, 사람 입력 원본.
 [Trait("Spec", "judgment")]
@@ -23,7 +24,7 @@ public class JudgmentJsonTests
         ["객체 배열"] = e => e.ValueKind == JsonValueKind.Array && e.EnumerateArray().All(x => x.ValueKind == JsonValueKind.Object),
     };
 
-    // 출력 모음: 공개 예제 4종 + 판정 표의 장면 일곱 + 기본값 장면 + 미검증 no_compare_fields.
+    // 출력 모음: 공개 예제 4종 + 판정 표의 장면(11.4 미검증 밖 행) + 기본값 장면 + 미검증 no_compare_fields + 검토 항목 셋이 있는 장면.
     private static IEnumerable<(string Label, byte[] Bytes)> Outputs()
     {
         foreach (var example in ClassificationInput.Examples)
@@ -38,6 +39,12 @@ public class JudgmentJsonTests
 
         yield return ("defaults", new JudgmentScene(Columns: [], Rows: JudgmentInput.Rows(40, mismatch: 2), Extras: [], null, null, null).Render());
         yield return ("no_compare_fields", JudgmentJson.Render(JudgmentInput.JudgeNotVerified(JudgmentInput.NoCompareCase())));
+
+        var rows = JudgmentInput.Rows(20, mismatch: 1);
+        yield return ("review_items", new JudgmentScene(Columns: [], Rows: rows, Extras: [new SceneRow(JudgmentInput.ExtraKey(0), [], SceneRow.Match)], "0", "100", "false")
+        {
+            Duplicates = [rows[^1]],
+        }.Render());
     }
 
     // 속성 표의 경로 순서 = table-compare 출력을 걸으며 처음 만난 경로 순서(배열 원소는 []).
@@ -83,7 +90,7 @@ public class JudgmentJsonTests
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
     }
 
-    // 값의 글자: verdict는 판정 넷, rule은 4.3 근거 키, checks[].rule·result는 4.4 표, todo[].key는 4.7 표의 키.
+    // 값의 글자: verdict는 판정 넷, rule은 11.4 근거 키, checks[].rule·result는 11.5 표, todo[].key는 11.7 표의 키.
     [Fact]
     public void String_values_come_from_spec_tables()
     {
@@ -104,7 +111,8 @@ public class JudgmentJsonTests
         }
     }
 
-    // 첫 키는 "schema_version", 값은 정수 1(JudgmentJson.SchemaVersion). 객체 속성 이름·순서는 3.2 모양 블록과 같다.
+    // 첫 키는 "schema_version", 값은 정수 2(JudgmentJson.SchemaVersion, T-012). 객체 속성 이름·순서는 3.2 모양 블록과 같다.
+    // 3.2 모양 블록의 schema_version도 2다(11.17 문서 2).
     [Fact]
     public void Objects_follow_shape_block_order_with_integer_schema_version_first()
     {
@@ -114,13 +122,13 @@ public class JudgmentJsonTests
         var check = Names(shape.RootElement.GetProperty("checks")[0]);
         var todo = Names(shape.RootElement.GetProperty("todo")[0]);
         Assert.Equal(["schema_version", "case", "verdict", "rule", "reason", "thresholds", "defaults", "checks", "todo"], top);
-        Assert.Equal(1, shape.RootElement.GetProperty("schema_version").GetInt32());
-        Assert.Equal(1, JudgmentJson.SchemaVersion);
+        Assert.Equal(JudgmentSpec.SchemaVersion, shape.RootElement.GetProperty("schema_version").GetInt32());
+        Assert.Equal(JudgmentSpec.SchemaVersion, JudgmentJson.SchemaVersion);
 
         foreach (var (label, bytes) in Outputs())
         {
             var text = CompareInput.Text(bytes);
-            Assert.True(text.StartsWith("{\n  \"schema_version\": 1,\n  \"case\": ", StringComparison.Ordinal), $"{label}의 첫 키가 \"schema_version\": 1이 아니다.");
+            Assert.True(text.StartsWith("{\n  \"schema_version\": 2,\n  \"case\": ", StringComparison.Ordinal), $"{label}의 첫 키가 \"schema_version\": 2가 아니다.");
             using var json = JsonDocument.Parse(bytes);
             var root = json.RootElement;
             Assert.True(top.SequenceEqual(Names(root)), label);
@@ -156,7 +164,10 @@ public class JudgmentJsonTests
             AccuracyMin: "0",
             MissingMax: "100",
             TimeMustDrop: "false",
-            Unexplained: []);
+            Unexplained: [])
+        {
+            Group = JudgmentInput.Group,
+        };
 
         var judged = scene.Judge();
         var text = CompareInput.Text(JudgmentJson.Render(judged));

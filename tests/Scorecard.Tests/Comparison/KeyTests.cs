@@ -4,7 +4,8 @@ namespace Scorecard.Tests.Comparison;
 
 // 스펙 4.3 키(승인 질문 5). 카드 수용 기준 2(키 중복, 빈 키).
 // 키는 정규화(앞뒤 공백) 뒤 서수 비교. 대소문자·NFC/NFD·숫자 모양은 다른 키다.
-// 빈 키는 empty-key, 같은 쪽 중복은 둘째부터 duplicate-key(처음 위치를 메시지에). 기준·결과 모두.
+// 빈 키는 empty-key(기준·결과 모두). 기준 쪽 중복은 둘째부터 duplicate-key(처음 위치를 메시지에).
+// T-012(12.2): 결과 쪽 중복은 오류가 아니라 항목 duplicate다(DuplicateTests).
 [Trait("Spec", "metrics")]
 public class KeyTests
 {
@@ -13,15 +14,18 @@ public class KeyTests
     private static readonly Scorecard.Core.Cases.CaseDefinition Definition = CompareInput.Case(CompareInput.TextCase);
 
     // 중복 4종: 같은 파일, 결과 쪽, 공백을 떼고 같아진 키, 셋째 중복도 처음 위치를 가리킨다. 파일 사이는 MultiFileTests.
+    // T-012(metrics.md 12.2): 결과 쪽 둘째 행은 오류가 아니라 항목 duplicate다. 첫 행으로 대조해 k1은 일치다.
     [Fact]
     public void Duplicate_keys_are_reported_from_the_second()
     {
         CompareInput.AssertErrors(
             CompareInput.Run(Definition, "id,v\nk1,a\nk2,b\nk1,c\n", "id,v\nk1,a\n"),
             "reference/a.csv:4:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
-        CompareInput.AssertErrors(
-            CompareInput.Run(Definition, "id,v\nk1,a\n", "id,v\nk1,a\nk1,a\n"),
-            "candidate/a.csv:3:1: duplicate-key id: 키가 중복된다: k1 (처음: candidate/a.csv:2)");
+        var candidateSide = CompareInput.Measured(CompareInput.Run(Definition, "id,v\nk1,a\n", "id,v\nk1,a\nk1,a\n"));
+        Assert.Equal(
+            ["k1 match reference/a.csv:2 candidate/a.csv:2", "k1 duplicate reference/a.csv:2 candidate/a.csv:3"],
+            candidateSide.Items.Select(i => $"{i.Key} {i.Status} {i.Reference?.File}:{i.Reference?.Line} {i.Candidate?.File}:{i.Candidate?.Line}"));
+        Assert.Equal("ref=1 cand=2 match=1 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0", CompareInput.Counts(candidateSide));
         CompareInput.AssertErrors(
             CompareInput.Run(Definition, "id,v\nk1,a\n k1 ,b\n", "id,v\nk1,a\n"),
             "reference/a.csv:3:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");

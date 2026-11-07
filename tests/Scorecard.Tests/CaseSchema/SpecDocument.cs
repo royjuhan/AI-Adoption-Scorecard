@@ -122,6 +122,34 @@ internal static class SpecDocument
         return matches[0];
     }
 
+    // prefix로 시작하는 줄(문서에 하나여야 한다, Line과 같다) 바로 뒤의 코드 블록 하나. 줄은 LF로 잇고 끝에 LF 하나(CodeBlocks와 같다).
+    // 그 줄과 블록 사이에는 빈 줄만 올 수 있다. 블록이 제목 아래 어디로 옮겨져도 SHA-256 줄과 함께 있으면 찾는다(T-012).
+    public static string BlockAfter(string relativePath, string prefix)
+    {
+        var lines = File.ReadAllLines(RepoRoot.Combine(relativePath));
+        Line(relativePath, prefix);
+        var at = Array.FindIndex(lines, l => l.TrimStart().StartsWith(prefix, StringComparison.Ordinal)) + 1;
+        while (at < lines.Length && lines[at].Trim().Length == 0)
+        {
+            at++;
+        }
+
+        Assert.True(at < lines.Length && lines[at].StartsWith("```", StringComparison.Ordinal), $"{relativePath}에서 '{prefix}' 줄 뒤에 코드 블록이 없다.");
+        var block = new System.Text.StringBuilder();
+        for (var i = at + 1; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith("```", StringComparison.Ordinal))
+            {
+                return block.ToString();
+            }
+
+            block.Append(lines[i]).Append('\n');
+        }
+
+        Assert.Fail($"{relativePath}에서 '{prefix}' 줄 뒤의 코드 블록이 닫히지 않았다.");
+        return string.Empty;
+    }
+
     // 줄 안의 `코드` 조각을 차례로. 백틱 짝이 맞지 않으면 실패한다.
     public static string[] CodeSpans(string line)
     {

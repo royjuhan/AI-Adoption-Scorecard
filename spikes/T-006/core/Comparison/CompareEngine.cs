@@ -57,6 +57,15 @@ public static class CompareEngine
         var candidateFiles = sources.Candidate.OrderBy(f => f.Path, StringComparer.Ordinal).ToArray();
         CheckOverlap(referenceFiles, candidateFiles, errors);
 
+        // 한쪽에 파일이 하나도 없으면 file 오류(CompareInputs.Read와 같은 줄).
+        foreach (var (side, files, pattern) in new[] { (0, referenceFiles, inputs.Reference), (1, candidateFiles, inputs.Candidate) })
+        {
+            if (files.Length == 0)
+            {
+                errors.Add(side, -1, new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "일치하는 파일이 없다"));
+            }
+        }
+
         var reference = ReadSide(0, referenceFiles, inputs.Key, definition.Compare, checkNumbers: true, errors);
         var candidate = ReadSide(1, candidateFiles, inputs.Key, definition.Compare, checkNumbers: false, errors);
         if (errors.Count == 0 && reference.Count == 0)

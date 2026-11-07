@@ -132,7 +132,7 @@ public static class CompareInputs
         }
         catch (DirectoryNotFoundException)
         {
-            errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, "폴더가 없다: " + (relative.Length == 0 ? "." : relative.TrimEnd('/'))));
+            errors.Add(new CaseError(pattern, 0, 0, CompareRules.CodeFile, string.Empty, relative.Length == 0 ? "케이스 폴더가 없다" : "폴더가 없다: " + relative.TrimEnd('/')));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

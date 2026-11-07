@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 # 잡 나눔(tools/ci/README.md "잡과 신뢰"):
-# - head 코드를 돌리는 잡: build-test, mutation(Stryker가 head 테스트를 돈다), test-run(head dotnet test), oracle-head.
+# - head 코드를 돌리는 잡: build-test, mutation(Stryker가 head 테스트를 돈다), test-run(head dotnet test),
+#   oracle-head(head tools/oracle의 check.py·selftest.py).
 #   이 잡들의 결과 파일은 head 코드가 위조할 수 있다(남은 위험. 머지 전 리드가 tools/ci/lead_check.py로 따로 돈다).
 # - head 코드를 하나도 돌리지 않는 잡: oracle(base oracle이 head 예제를 읽기만 한다), regression-guard.
 #   regression-guard는 dotnet을 깔지 않고 빌드·테스트도 하지 않는다. base 도구(python)로 git 개체와 결과 파일만 읽는다.
@@ -181,8 +182,11 @@ jobs:
             ${{ runner.temp }}/oracle-source.json
           if-no-files-found: warn
 
-  # tools/oracle이 바뀐 PR에서 head oracle도 head 예제와 같은 바이트를 내는지 본다. head 코드를 돌린다.
+  # tools/oracle이 바뀐 PR에서 head oracle을 본다. head 코드를 돌린다.
+  # (1) head check.py가 head 예제와 같은 바이트를 낸다. (2) head selftest.py(스펙 표 대조·음성 대조·결정론)가 통과한다.
+  # 둘 다 돌리고, 하나라도 실패하거나 head에 selftest.py가 없으면 잡이 실패한다.
   # 바뀌지 않았거나 base에 oracle이 없으면(부트스트랩: oracle 잡이 이미 head oracle로 돈다) 아무것도 하지 않는다.
+  # base selftest는 어디서도 돌리지 않는다(tools/ci/README.md "결정한 해석" 10).
   # regression-guard가 이 잡 결과(--job oracle-head=…)를 본다.
   oracle-head:
     runs-on: ubuntu-latest
@@ -198,7 +202,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: head oracle 대조(tools/oracle이 바뀐 PR만)
+      - name: head oracle 대조·자기 점검(tools/oracle이 바뀐 PR만)
         run: |
           set -uo pipefail
           base=$(git rev-parse --verify --quiet "${CI_BASE:-none}^{commit}" || git rev-parse HEAD^1)
@@ -208,7 +212,16 @@ jobs:
           if git diff --quiet "$base" HEAD -- tools/oracle; then
             echo "tools/oracle 변경 없음"; exit 0
           fi
-          python3 tools/oracle/check.py --repo . --json "$RUNNER_TEMP/oracle-head.json"
+          status=0
+          echo "head oracle check.py"
+          python3 -I -B tools/oracle/check.py --repo . --json "$RUNNER_TEMP/oracle-head.json" || { echo "::error::head oracle check.py 실패"; status=1; }
+          if [ -f tools/oracle/selftest.py ]; then
+            echo "head oracle selftest.py"
+            python3 -I -B tools/oracle/selftest.py --repo . || { echo "::error::head oracle selftest.py 실패"; status=1; }
+          else
+            echo "::error::head에 tools/oracle/selftest.py가 없다"; status=1
+          fi
+          exit $status
       - name: oracle-head.json 올리기
         if: always()
         uses: actions/upload-artifact@v4
@@ -297,6 +310,7 @@ jobs:
           if-no-files-found: ignore
 
   # PR base 대비 회귀 신호를 막는다(ADR 0005 원문 1). 다른 잡이 실패해도 결과 파일을 읽고 판단한다.
+  # needs의 잡마다 --job 이름=결과를 넘긴다. success가 아니면 guard가 job-result FAIL을 낸다(단위 테스트가 대조한다).
   # head 코드를 하나도 돌리지 않는다(T-010 재리뷰 B4): dotnet을 깔지 않고, 빌드·테스트·head 스크립트를 돌리지 않는다.
   # python은 checkout 전에 깔고 절대 경로로 부른다(-I: 현재 폴더·PYTHON* 환경 변수를 보지 않는다).
   # base 커밋의 tools/ci를 돌린다(--require-base-tools).
@@ -390,8 +404,10 @@ jobs:
           --oracle "$R/oracle/oracle.json"
           --oracle-source "$R/oracle/oracle-source.json"
           --testrun "$R/testrun/testrun.json"
-          --job "test-run=$TESTRUN_RESULT"
+          --job "mutation=$MUTATION_RESULT"
+          --job "oracle=$ORACLE_RESULT"
           --job "oracle-head=$ORACLE_HEAD_RESULT"
+          --job "test-run=$TESTRUN_RESULT"
           --json-out "$RUNNER_TEMP/regression-guard.json"
       - name: regression-guard.json 올리기
         if: always()

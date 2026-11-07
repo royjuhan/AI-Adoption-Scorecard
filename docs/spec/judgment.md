@@ -1,6 +1,6 @@
 # judgment (T-011 스펙: 판정)
 
-- 상태: 초안(2026-11-07). ADR 0005 결정 3에 따라 승인 질문은 juhan에게 묻지 않고 추천안을 채택한다. 추천안은 회귀를 막는 쪽(기존 expected 바이트 유지, 기존 테스트 축소 없음)으로 골랐다. 질문과 채택 기록은 문서 끝.
+- 상태: 채택됨(2026-11-07, 리드가 추천안 1~12 채택. ADR 0005 결정 3. 기록은 카드 "잠정 결정"과 `docs/STATUS.md`). 이전 상태: 초안. ADR 0005 결정 3에 따라 승인 질문은 juhan에게 묻지 않고 추천안을 채택한다. 추천안은 회귀를 막는 쪽(기존 expected 바이트 유지, 기존 테스트 축소 없음)으로 골랐다. 질문과 채택 기록은 문서 끝.
 - 작업 카드: `docs/tasks/T-011-judgment.md`. 판정 카드는 T-010에서 T-011로 번호가 바뀌었다(ADR 0005 결정 1).
 - 출발점: 지시문 3.4 판정 문장·3.5 4구역·6구역·12절 표 [읽음], `metrics.md` 3.1(`CsvRow`)·4.8 권고·11절·승인 질문 16 [읽음], `case-schema.md` 4.5(`thresholds`)·승인 질문 11 [읽음], `synthetic-examples.md` 4.7 [읽음], `signoff-final.md` [읽음], ADR 0004 결정 2·6과 expected 변경 규칙 [읽음], `src/Scorecard.Core/Comparison/` [읽음].
 - 작성: prototyper, 2026-11-07
@@ -109,7 +109,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 - `schema_version`은 `WriteNumber(int)`로 `1`. 문턱 숫자는 `decimal` 그대로 `WriteNumber(decimal)`. 자릿수가 남는다: `85`, `1.0`, `66.6`, `0.0` [T11:P:decimals].
 - 문장 안의 숫자도 `decimal`을 `InvariantCulture`로 쓴 글자다. 퍼센트는 대조 결과 값(`metrics.md` 4.8, 늘 소수 한 자리)을 그대로 쓴다. 문턱은 `case.yaml` 글자 그대로다(`85`는 `85`, `90.0`은 `90.0`).
-- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`, 이모지는 `😀`이다 [T11:P:escape].
+- 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`, 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다 [T11:P:escape]. T-011a에서 고쳤다: 이전 글이 글자 그대로라고 적었지만 classification.md 3.3 표와 `UnsafeRelaxedJsonEscaping` 동작은 서로게이트 쌍이다(oracle 확인).
 - 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [T11:S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [T11:S3 culture]. Python 독립 구현이 예제 4종과 G2 표본에서 같은 바이트를 냈다 [T11:S3 xcheck].
 
 ### 3.4 명령과 AI용 입구 (ADR 0004 적용)

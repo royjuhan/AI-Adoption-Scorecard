@@ -4,7 +4,7 @@
 #   python3 tools/oracle/check.py [--repo <루트>] [--json <보고서 경로>]
 #
 # examples/ 아래 예제 폴더마다 expected/classification.json, expected/metrics.json을 독립 구현으로 다시 만들어
-# 바이트로 비교한다. 줄마다 하나:
+# 바이트로 비교한다. expected/judgment.json은 어느 예제에든 하나라도 있을 때만 대상이다(그때는 모든 예제). 줄마다 하나:
 #   MATCH <상대 경로> <sha256>
 #   DIFF <상대 경로> expected=<sha256> oracle=<sha256 또는 error>
 #   MISSING <상대 경로> oracle=<sha256 또는 error>
@@ -24,10 +24,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from classify import classification_bytes  # noqa: E402
 from compare import metrics_bytes  # noqa: E402
+from judge import judgment_bytes  # noqa: E402
 from oracle_common import OracleError, ordinal_key, sha256_hex, utf8_stdio  # noqa: E402
 
-# 대상 파일 종류. examples에 expected가 아예 없는 종류(report-outline.json 등)는 대상이 아니다.
+# 늘 보는 종류. 예제마다 expected 파일이 있어야 한다(없으면 MISSING).
 TARGETS = ('classification.json', 'metrics.json')
+# 있을 때만 보는 종류. 어느 예제에든 expected 파일이 하나라도 있으면 모든 예제에서 본다(없는 예제는 MISSING).
+# 하나도 없으면 대상이 아니다(보고에 나오지 않는다). judgment.json은 T-011 PR (b)에서 test-engineer가 넣는다.
+# examples에 expected가 아예 없고 oracle도 만들지 못하는 종류(report-outline.json 등)는 대상이 아니다.
+OPTIONAL_TARGETS = ('judgment.json',)
 
 
 def _is_file(folder: Path, name: str) -> bool:
@@ -68,7 +73,19 @@ def build_metrics(example: Path) -> bytes:
     return metrics_bytes(example)
 
 
-BUILDERS = {'classification.json': build_classification, 'metrics.json': build_metrics}
+def build_judgment(example: Path) -> bytes:
+    """judgment.md 8절 골든과 같다: 시간·사람 입력 없음(null)."""
+    return judgment_bytes(example)
+
+
+BUILDERS = {'classification.json': build_classification, 'metrics.json': build_metrics,
+            'judgment.json': build_judgment}
+
+
+def targets(examples: Path, folders: list) -> tuple:
+    """이번에 볼 종류. TARGETS 전부 + OPTIONAL_TARGETS 가운데 어느 예제에든 expected가 있는 것."""
+    present = [t for t in OPTIONAL_TARGETS if any(_is_file(examples / name / 'expected', t) for name in folders)]
+    return TARGETS + tuple(present)
 
 
 def check(repo: Path):
@@ -77,10 +94,11 @@ def check(repo: Path):
         raise SystemExit(f'oracle: examples 폴더가 없다: {examples}')
     with os.scandir(examples) as it:
         folders = sorted((e.name for e in it if e.is_dir(follow_symlinks=False)), key=ordinal_key)
+    kinds = targets(examples, folders)
     results = []
     for name in folders:
         example = examples / name
-        for target in TARGETS:
+        for target in kinds:
             rel = f'examples/{name}/expected/{target}'
             expected_path = example / 'expected' / target
             expected = expected_path.read_bytes() if _is_file(example / 'expected', target) else None

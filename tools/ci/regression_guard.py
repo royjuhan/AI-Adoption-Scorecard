@@ -20,7 +20,7 @@
      tools/oracle/**과 기존 expected를 같은 PR에서 바꾸면 base oracle이 재현할 때만 통과(oracle-and-expected).
      "expected migration:" 커밋은 examples/**/expected/**와 docs/spec/**만 바꾼다(migration-commit-scope).
      docs/spec/**에서는 json·yaml·csv 코드 블록 안과 SHA-256 값만 바꾼다.
-  잡 결과: --job 이름=결과로 받은 잡(test-run, oracle-head)이 success가 아니면 막는다(job-result).
+  잡 결과: --job 이름=결과로 받은 잡(CI는 mutation, oracle, oracle-head, test-run)이 success가 아니면 막는다(job-result).
 
 이 스크립트와 tools/oracle은 CI에서 base 커밋의 것을 돈다(.github/workflows/ci.yml). --require-base-tools면
 돌고 있는 이 폴더의 파일이 base 커밋의 tools/ci와 같은지 스스로 확인한다. regression-guard 잡은 head 코드를

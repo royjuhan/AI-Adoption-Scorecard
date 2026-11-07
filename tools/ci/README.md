@@ -9,7 +9,7 @@ ADR 0005 결정 5(사람 승인 대신 CI와 독립 검증)의 잡과 도구다.
 | `build-test` | 예 | ubuntu·windows 빌드(`-warnaserror`)·테스트 | — | 빌드·테스트 실패 |
 | `mutation` | 예(Stryker가 head 테스트를 돈다) | 바뀐 `src/**/*.cs`만 Stryker.NET으로 head·base 양쪽에서 잰다 | `mutation-result/mutation.json`, `mutation-reports/` | Stryker 실행 오류·시간 초과. 점수가 내려간 것만으로는 실패하지 않는다 |
 | `oracle` | 아니오 | base 커밋의 `tools/oracle/check.py`가 head 예제 `expected/`를 읽어 같은 바이트를 내는지 본다 | `oracle-result/`(`oracle.json`, `oracle-source.json`) | 하나라도 match가 아님 |
-| `oracle-head` | 예(tools/oracle이 바뀐 PR만) | head `tools/oracle`로도 head 예제를 재현하는지 본다 | `oracle-head-result/oracle-head.json` | head oracle이 match가 아님 |
+| `oracle-head` | 예(tools/oracle이 바뀐 PR만) | head `tools/oracle`의 `check.py`로 head 예제를 재현하는지, head `selftest.py`(스펙 표 대조·음성 대조·결정론)가 통과하는지 본다 | `oracle-head-result/oracle-head.json` | head `check.py`가 match가 아님, head `selftest.py` 실패, head에 `selftest.py`가 없음 |
 | `test-run` | 예 | base·head에서 같은 명령으로 `dotnet test`(TRX)를 돌린다(`testrun.py`). head `tools/ci`가 바뀌었으면 head 단위 테스트도 | `testrun-result/testrun.json`, `testrun-logs/` | TRX를 못 얻음(빌드 실패, 시간 초과), head 단위 테스트 실패 |
 | `regression-guard` | **아니오** | base 도구(python)로 git 개체와 앞 잡의 결과 파일만 읽어 회귀 신호를 보고, 신호가 있으면 증거를 요구한다 | `regression-guard-result/regression-guard.json` | 아래 규칙 위반, 자기 검사 실패 |
 
@@ -126,6 +126,14 @@ python3 "$CI_ORACLE/check.py" --repo . --json oracle.json   # CI_ORACLE = base �
 - 출처: 잡이 `oracle-source.json` = `{"schema_version": 1, "source": "base | head", "rev": "<oracle을 꺼낸 커밋>", "tree": "<그 커밋의 tools/oracle 트리 id>"}`을 같이 올린다. regression-guard는 base에 oracle이 있으면 `source: base`, `rev` = base, `tree` = base의 `tools/oracle`일 때만 oracle.json을 증거로 쓴다.
 - `oracle` 잡은 head 코드를 돌리지 않는다(base oracle이 head 파일을 읽기만 한다). 부트스트랩(base에 oracle 없음)일 때만 head oracle이 돈다.
 - `tools/oracle`이 바뀐 PR은 `oracle-head` 잡이 head oracle로도 돌린다(`oracle-head.json`). head 코드라 따로 잡을 둔다. guard는 이 잡의 결과만 본다(`--job oracle-head=…`, 녹색이어야 통과). head oracle 결과를 증거로 쓰지 않는다.
+- `oracle-head` 잡은 head `check.py` 다음에 head `selftest.py`도 돈다(T-011 수용 기준 7). 앞이 실패해도 뒤를 돌리고, 하나라도 실패하면 잡이 실패한다. head에 `selftest.py`가 없어도 실패다(지워서 피하지 못하게).
+
+```
+python3 -I -B tools/oracle/check.py --repo . --json "$RUNNER_TEMP/oracle-head.json"
+python3 -I -B tools/oracle/selftest.py --repo .     # 계약: 종료 0 = 모든 점검 통과, 그 밖 = 실패
+```
+
+- base `selftest.py`는 어디서도 돌리지 않는다(아래 "결정한 해석" 10).
 - 그래서 oracle을 고쳐야 재현되는 expected는 두 PR로 나눈다: (1) oracle만 고침(ADR·STATUS 원칙 변경 행, 기존 expected는 head oracle로도 match), (2) 머지 뒤 expected 추가·migration(이제 base oracle이 재현).
 - `tools/oracle/`은 prototyper만 고친다(ADR 0005 결정 9). 이 폴더의 잡은 `check.py`를 부르기만 한다.
 - `oracle.json`은 실패해도 올린다(`if: always()`). regression-guard가 파일별 결과를 읽는다.
@@ -149,7 +157,7 @@ python3 "$CI_ORACLE/check.py" --repo . --json oracle.json   # CI_ORACLE = base �
 
 `needs: [mutation, oracle, oracle-head, test-run]`, `if: always()`. 앞 잡이 실패해도 돈다. 세 artifact(mutation, oracle, testrun)를 `continue-on-error`로 받고, 없으면 "증거 없음"으로 본다. head 코드를 돌리지 않는다(위 "잡과 신뢰"). 순서: `setup-python` → checkout → base 도구 꺼내기 → 자기 검사 → artifact 받기 → `regression_guard.py --require-base-tools`.
 
-- 앞 잡의 결과: `mutation`·`oracle`은 이유 줄에 적는다(`MUTATION_RESULT`·`ORACLE_RESULT`). `test-run`·`oracle-head`는 `--job 이름=결과`로 넘기고, `success`가 아니면 `job-result` FAIL이다(증거로 넘어가지 않는다). `test-run` 잡이 빨갛다는 것은 TRX를 못 얻었거나 head `tools/ci` 단위 테스트가 실패했다는 뜻이다.
+- 앞 잡의 결과: `needs`의 잡 넷(`mutation`, `oracle`, `oracle-head`, `test-run`)을 모두 `--job 이름=결과`로 넘긴다. `success`가 아니면 `job-result` FAIL이다(증거로 넘어가지 않는다). `mutation`·`oracle` 결과는 이유 줄에도 적는다(`MUTATION_RESULT`·`ORACLE_RESULT`). `test-run` 잡이 빨갛다는 것은 TRX를 못 얻었거나 head `tools/ci` 단위 테스트가 실패했다는 뜻이다. `oracle-head` 잡이 빨갛다는 것은 head `check.py`나 head `selftest.py`가 실패했다는 뜻이다. 단위 테스트가 `needs`와 `--job` 줄, 환경 변수(`needs.<잡>.result`)를 대조한다(T-011a).
 - 카드 번호(`test-run-renamed`): `--card`(여러 번)와 `GITHUB_HEAD_REF`(PR 브랜치 이름, 예 `task/T-012-…`), 범위 안 병합이 아닌 커밋 제목에서 `T-숫자 3자리 이상`을 찾는다.
 
 ### C. CI 도구·원칙 파일 변경 (`ci-changed`, 증거: ADR)
@@ -172,7 +180,8 @@ python3 "$CI_ORACLE/check.py" --repo . --json oracle.json   # CI_ORACLE = base �
 
 ### 잡 결과 (`job-result`)
 
-- `--job 이름=결과`로 받은 잡(CI는 `test-run`, `oracle-head`)이 `success`가 아니면 FAIL이다. 증거로 넘어가지 않는다.
+- `--job 이름=결과`로 받은 잡(CI·`lead_check.py`는 `mutation`, `oracle`, `oracle-head`, `test-run`)이 `success`가 아니면 FAIL이다. 증거로 넘어가지 않는다.
+- `mutation`·`oracle`은 T-011a에서 더했다(T-010 3차 리뷰 막지 않는 지적 4). 두 잡이 빨가면 "CI 잡 모두 녹색" 머지 조건으로 이미 막히므로 막는 범위는 같다. guard 결과 하나(`regression-guard.json`)만 봐도 알 수 있게 하려는 것이다. 잡이 `skipped`·`cancelled`여도 FAIL이다(닫힌 쪽으로 실패).
 
 ### A. 테스트 쪽 신호 (증거: mutation)
 
@@ -274,8 +283,8 @@ python3 -I "$T/tools/ci/lead_check.py" --repo . --base origin/main --head origin
 1. base(기본 `origin/main`)와 head를 커밋 SHA로 고정한다. head가 base를 품지 않으면 GitHub처럼 병합 커밋을 만든다(`git merge-tree --write-tree` + `commit-tree`, 고정 이름·시각이라 SHA가 늘 같다. ref·작업 트리는 건드리지 않는다).
 2. 도구: base 커밋의 `tools/ci`·`.github/workflows/ci.yml`·`tools/oracle`을 `git archive`로 메모리(tar 바이트)에 꺼낸다. base에 없으면 head 커밋의 것(부트스트랩). head 트리도 메모리에 꺼낸다. 모두 head 코드가 돌기 전이다.
 3. head 코드를 돌리지 않는 단계: base `tools/ci` 단위 테스트, base oracle(head 예제를 읽기만 한다).
-4. head 코드를 돌리는 단계는 작업 폴더의 일회용 저장소(`git init` + base·head만 `fetch`, `refs/lead-check/*`)에서 돈다: 빌드(Release `-warnaserror`), `tools/oracle`이 바뀌었으면 head oracle, `tools/ci`가 바뀌었으면 head 단위 테스트, base `testrun.py`(base·head `dotnet test`), base `mutation.py`(바뀐 src가 있을 때만 Stryker). 단계마다 새 세션(프로세스 그룹)으로 돌리고 끝나면 그룹을 죽인다(`MSBUILDDISABLENODEREUSE=1`). 결과 파일은 단계가 끝나자마자 메모리에 읽는다.
-5. base `regression_guard.py`: 2의 tar 바이트를 새 폴더(`tools-2-<시각>`)에 다시 풀고 blob id가 처음과 같은지 본 뒤, 리드 저장소의 git 개체와 메모리의 결과 파일로 `--require-base-tools`로 돈다. 단계 결과는 `--job test-run=…`·`--job oracle-head=…`, `MUTATION_RESULT`·`ORACLE_RESULT`로 넘긴다.
+4. head 코드를 돌리는 단계는 작업 폴더의 일회용 저장소(`git init` + base·head만 `fetch`, `refs/lead-check/*`)에서 돈다: 빌드(Release `-warnaserror`), `tools/oracle`이 바뀌었으면 head oracle `check.py`·`selftest.py`(`oracle-head` 잡과 같다, `run_head_oracle`), `tools/ci`가 바뀌었으면 head 단위 테스트, base `testrun.py`(base·head `dotnet test`), base `mutation.py`(바뀐 src가 있을 때만 Stryker). 단계마다 새 세션(프로세스 그룹)으로 돌리고 끝나면 그룹을 죽인다(`MSBUILDDISABLENODEREUSE=1`). 결과 파일은 단계가 끝나자마자 메모리에 읽는다.
+5. base `regression_guard.py`: 2의 tar 바이트를 새 폴더(`tools-2-<시각>`)에 다시 풀고 blob id가 처음과 같은지 본 뒤, 리드 저장소의 git 개체와 메모리의 결과 파일로 `--require-base-tools`로 돈다. 단계 결과는 `--job mutation=…`·`--job oracle=…`·`--job oracle-head=…`·`--job test-run=…`(`GUARD_JOBS`, ci.yml `needs`와 같다)과 `MUTATION_RESULT`·`ORACLE_RESULT`로 넘긴다.
 
 - 모든 git 호출은 `GIT_NO_REPLACE_OBJECTS=1`이다. python은 `-I -B`로 부른다.
 - 시간(이 환경, 4코어): T-010 PR(부트스트랩, 바뀐 src 없음) 약 1분. 바뀐 src가 있으면 Stryker 시간(위 mutation 표)이 더해진다.
@@ -292,6 +301,13 @@ python3 -I "$T/tools/ci/lead_check.py" --repo . --base origin/main --head origin
 7. test-run의 이름 비교는 base 통과 이름이 head 통과 이름에 모두(중복 수까지) 있어야 한다. 테스트 이름만 바꿔도, theory 인자(스펙 표에서 읽는 행 등)를 바꿔도 base 이름이 빠지므로 A 신호다. 통과하는 길은 둘이다: src를 같이 바꿔 mutation 증거를 낸다, 또는 클래스별 통과 수가 그대로일 때 STATUS.md "잠정 결정"에 카드 행을 더한다(`test-run-renamed` WARN). 의도한 축소인지 사람이 볼 수 있게 이름을 하나씩 적는다.
 8. `test-run`·`test-run-failed`·`job-result`·`ci-changed`·`ci-tamper`·`oracle-source`·`migration-commit-scope`는 mutation 증거로 넘어가지 않는다. mutation이 증명하는 것(바뀐 src의 테스트 강도)과 상관없는 신호다.
 9. 새 ADR 행의 번호 확인은 파일 이름 앞 숫자가 행 안에 따로 서 있는지만 본다(`0006`이 `10006`에 섞이면 세지 않는다).
+10. `selftest.py`는 head 것만, `tools/oracle`이 바뀐 PR에서만 돈다(`oracle-head` 잡, `lead_check.py`). base `selftest.py`를 head 예제에 돌리지 않는다(T-011a). 이유:
+    - `selftest.py`가 보는 것은 "oracle 코드가 스펙 표·TestData와 맞나"다. base selftest는 base oracle을 본다. base oracle은 그 PR이 머지될 때 `oracle-head`와 main push에서 이미 점검을 받았다. head oracle이 맞는지는 알려 주지 않는다.
+    - head 예제를 base oracle이 재현하는지는 `oracle` 잡(base `check.py`)이 이미 본다. 증거(`expected-*`, `oracle-and-expected`)도 그 결과만 쓴다. base selftest가 더하는 믿음은 없다.
+    - `tools/oracle`이 바뀐 PR에서는 base selftest가 head 스펙(새 표)을 옛 oracle로 대조하므로 바른 변경에서도 실패한다. 막는 점검으로 쓸 수 없다.
+    - `tools/oracle`이 안 바뀐 PR에서는 base selftest = head selftest(같은 바이트)다. 새로 잡는 것은 "스펙 표·TestData·예제 입력이 바뀌었는데 oracle은 그대로"뿐이다. 그런데 `selftest.py`는 예제 입력의 글자(`rec07,steady,814,` 등)와 TestData 경로를 고정해 둔다. test-engineer·prototyper의 바른 변경이 `tools/oracle` 변경(= `ci-changed`, ADR)을 기다리게 된다. 비용이 크고 잡는 범위가 좁다. 아래 "알려진 한계"에 남긴다.
+    - 단위 테스트가 `oracle` 잡에 `selftest`가 없음을 확인한다. 바꾸려면 이 항목과 테스트를 같이 고친다.
+11. `selftest.py`가 head에 없으면 `oracle-head`가 실패한다. 파일을 지우거나 옮겨 점검을 피하지 못하게 한다. 이름을 바꾸려면 `ci.yml`·`lead_check.py`를 같이 고친다(`ci-changed`).
 
 ## 알려진 한계
 
@@ -303,6 +319,8 @@ python3 -I "$T/tools/ci/lead_check.py" --repo . --base origin/main --head origin
 - test-run 이름 비교는 `testName`만 본다. 같은 이름의 테스트를 다른 내용으로 바꾸면 통과다(위). src도 바뀐 PR이면 `tests-changed-with-src` WARN으로 파일을 적을 뿐이다(재현 n3c). reviewer가 본다.
 - 이름 변경 출구(`test-run-renamed`)는 클래스별 통과 수만 본다. 한 클래스에서 테스트 하나를 지우고 다른 이름의 약한 테스트를 더하면 수가 같아 STATUS.md 행 하나로 통과한다. WARN 줄에 빠진 이름이 모두 나오므로 리드·reviewer가 본다.
 - oracle을 고쳐야 재현되는 expected는 PR 둘로 나눠야 한다(위 oracle).
+- `oracle-head` 잡의 head `selftest.py`는 head 코드다. PR이 selftest를 늘 0으로 끝나게 고치면 잡은 녹색이다. 정직한 oracle 변경의 실수를 잡는 점검이지 증거가 아니다. 믿음은 base oracle(`oracle` 잡), `oracle-and-expected`, `ci-changed`(ADR), 새 reviewer의 전체 diff 검토에서 온다.
+- `tools/oracle`이 안 바뀐 PR에서는 selftest가 돌지 않는다. 그래서 스펙 표(`classification.md`·`metrics.md`의 selftest 대상 표)를 고치고 oracle을 안 고친 PR은 바뀐 행이 예제 expected에 닿지 않으면 CI가 못 본다(C# 테스트는 스펙 표를 읽으므로 Core와 같이 고치면 통과한다). reviewer가 `docs/spec/` diff를 본다(결정한 해석 10).
 - 부트스트랩(T-010 PR)은 독립 검사가 아니다. guard 잡의 자기 검사와 `lead_check.py`가 head의 `tools/ci`를 돈다.
 - `csharp_scan.py`는 C# 컴파일러가 아니다. 테스트 코드에 쓰는 문법만 다룬다. 프로젝트가 정의하는 기호(`DEBUG` 등)는 모른다. 모르는 기호의 `#if` 구역은 센다(대신 `#if` 자체가 Skip 표시로 걸린다).
 - GuardTargets는 `class GuardTargets` 안 `All = [ … ]`(또는 `new GuardTarget[] { … }`)의 `new(…)`에서 첫 두 인자가 문자열 리터럴일 때만 센다. 상수·`nameof`로 바꾸면 0개로 보여 `guard-shrunk`로 걸린다.
@@ -318,6 +336,7 @@ python3 -I "$T/tools/ci/lead_check.py" --repo . --base origin/main --head origin
 export PYTHONDONTWRITEBYTECODE=1
 python3 -m unittest discover -s tools/ci -p "test_*.py"
 python3 tools/oracle/check.py --repo . --json oracle.json
+python3 tools/oracle/selftest.py --repo .                                                         # oracle-head 잡과 같다
 python3 tools/ci/testrun.py --base origin/main --head HEAD --out testrun.json --work /tmp/testrun      # worktree를 만든다
 python3 tools/ci/mutation.py --base origin/main --head HEAD --out mutation.json --work /tmp/mutation   # worktree를 만든다
 python3 tools/ci/regression_guard.py --base origin/main --head HEAD \

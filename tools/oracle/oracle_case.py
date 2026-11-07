@@ -71,12 +71,21 @@ class CompareField:
 
 
 @dataclass(frozen=True)
+class Thresholds:
+    """case-schema 4.5 thresholds. 적지 않은 키(또는 null)는 None. 판정(judgment.md 4.2)이 기본값을 정한다."""
+    accuracy_min_text: str | None  # case.yaml에 쓴 숫자 글 그대로(judgment.md 3.2 "값 그대로(자릿수 유지)")
+    missing_max_text: str | None
+    time_must_drop: bool | None
+
+
+@dataclass(frozen=True)
 class Case:
     name: str
     task: str
     steps: list
     inputs: Inputs | None
     compare: list = field(default_factory=list)
+    thresholds: Thresholds | None = None  # thresholds 키가 없거나 null이면 None
 
 
 class _Reader:
@@ -221,14 +230,16 @@ def parse_case(data: bytes, source: str) -> Case:
         if compare and inputs is None:
             r.fail(compare_node, 'inputs', 'compare가 있으면 inputs가 있어야 한다')
 
+    thresholds = None
     thresholds_node = root.get('thresholds')
     if thresholds_node is not None and not (isinstance(thresholds_node, Scalar) and thresholds_node.is_null):
         m = r.mapping(thresholds_node, 'thresholds', THRESHOLD_KEYS)
-        r.number(m.get('accuracy_min'), 'thresholds.accuracy_min', Decimal(0), Decimal(100))
-        r.number(m.get('missing_max'), 'thresholds.missing_max', Decimal(0), Decimal(100))
-        r.boolean(m.get('time_must_drop'), 'thresholds.time_must_drop')
+        acc, _ = r.number(m.get('accuracy_min'), 'thresholds.accuracy_min', Decimal(0), Decimal(100))
+        miss, _ = r.number(m.get('missing_max'), 'thresholds.missing_max', Decimal(0), Decimal(100))
+        drop = r.boolean(m.get('time_must_drop'), 'thresholds.time_must_drop')
+        thresholds = Thresholds(acc, miss, drop)
 
-    return Case(name, task, steps, inputs, compare)
+    return Case(name, task, steps, inputs, compare, thresholds)
 
 
 def _answers(r: _Reader, step_map: Mapping, p: str) -> dict:

@@ -35,6 +35,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-008 human_signoff·inferred | #9 | 2026-11-07 | 1196 | — | expected 그대로 |
 | T-009 예제 signoff-final | #10 | 2026-11-07 | 1282 | — | expected 2개 추가, 정확도 80.0 |
 | T-010 자동 진행 준비 | #11 | 2026-11-07 | 1282 | 해당 없음(src 변경 없음) | juhan 승인 머지. CI 잡 7개, lead_check, tools/ci 단위 테스트 143개 |
+| T-011a 판정 oracle·selftest CI | #12 | 2026-11-07 | 1282 | 해당 없음(src 변경 없음) | ADR 0006. oracle selftest 848, 판정 블록 4개 일치 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 

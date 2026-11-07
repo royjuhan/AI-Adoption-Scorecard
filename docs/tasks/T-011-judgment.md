@@ -53,3 +53,8 @@ PR (a): `tools/oracle/`, `.github/workflows/`, `tools/ci/`, `docs/decisions/`, `
   2. 시간 합이 decimal 범위를 넘을 때 문장의 `{total}`: 정하지 않는다(판정은 `not_met`). 뒤 카드.
   3. 미검증인데 시간이 들어온 경우의 `measure_time`: 정하지 않는다. M2 `measure` 카드에서 정한다.
 - 예제 4종으로 `check.py`가 보는 판정은 NOT_VERIFIED·ACCURACY·FOCUS·PASS뿐이다. MISSING·UNEXPLAINED·TIME과 기본값 표시는 테스트(합성)로 본다.
+
+## T-011a 리뷰의 막지 않는 지적 (PR #12 뒤)
+
+- PR (b)에서 고친다(prototyper, docs/spec): judgment.md 375·813·819·874의 "`Real_targets_use_case_samples_not_basic`을 고치지 않는다"를 "쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다"로. judgment.md 3.3 근거 표기를 `classification.md 3.3 [P:escape]`로. PR (b)에 judgment.json 이모지 이스케이프 C# 테스트 하나.
+- PR (b) 뒤 정리 PR로 미룬다(oracle 변경과 expected를 같은 PR에 두지 않는다. 지시문·ci.yml은 새 ADR이 필요하다): oracle README 130줄 이모지 글, selftest `EXAMPLE_NAMES` 고정 목록, ci.yml 313·tools/ci README 160 "단위 테스트가 대조한다" 문구, 지시문 5절 목록에 `judgment.json`.

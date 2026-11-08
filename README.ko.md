@@ -19,7 +19,8 @@
 
 ## 5분 예제
 
-미정 (M2: `examples/table-compare`).
+`dotnet run --project src/Scorecard.Cli -- check examples/table-compare --json`이 예제를 대조하고 판정한다(결과는 `examples/table-compare/out/`).
+명령은 `start`, `open`, `check`, `build` 넷이다. 묻지 않는다. `--json`이면 JSON 문서 하나를 낸다. `docs/spec/json-output.md` 참고.
 
 ## 사례
 

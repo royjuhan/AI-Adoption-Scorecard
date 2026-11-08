@@ -21,8 +21,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
-- 진행 중: ADR 0010 방향 수정(문서만). T-014 문장 결과 검증(빈 곳 2)은 #17·#18로 끝났다.
-- 다음: lead_check mutation 재사용(juhan 결정(2026-11-08): CI mutation 결과 재사용, ADR 0010 PR 뒤 ci-dev 카드로) → M2-1 명령 틀(start·open·check·build, `--json`) → M2-2 스킬 `/scorecard` → M2-3 HTML 스코어카드 → M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
+- 진행 중: M2-1 명령 틀. ADR 0010(#20), lead_check 재사용(#21, ADR 0011), sweeper(#22, ADR 0012)는 끝났다.
+- 다음: M2-1 명령 틀(start·open·check·build, `--json`) → M2-2 스킬 `/scorecard` → M2-3 HTML 스코어카드 → M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
 - 기록: `docs/cases-public/README.md`의 공개 고객 사례 회사 이름은 juhan 직접 지시(2026-11-07 15:19)로 이 파일에만 둔다. 회사 자료(2절 10)가 아니라 공개된 사례의 이름이다. `examples/`·테스트·스펙에는 넣지 않는다. 2절 8·10과 13절은 그대로다.
@@ -49,6 +49,9 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-013 정리(결과 쪽 중복, oracle 판 하나, 지시문 5절·3.4) | #16 | 2026-11-08 | 1664 | CompareEngine 94.74%(+0.30), JudgmentEngine 85.71%(−2.29, 새 정의 검사 예외 메시지 생존) | ADR 0008. 자동 머지(CI 7개 녹색, lead_check 종료 0, 새 reviewer 전체 diff 막는 지적 없음). expected 그대로 |
 | T-014a 문장 결과 검증 스펙·oracle | #17 | 2026-11-08 | 1664 | 해당 없음(src는 주석 절 번호만) | ADR 0009. squash 머지(옛 커밋의 회사 이름이 main 기록에 남지 않게). 리뷰 3회 같은 갈래 → [재검토]로 가림 확인 구조 규칙. oracle selftest 1746, 12 MATCH. 새 reviewer 전체 diff 막는 지적 없음 |
 | T-014b 문장 결과 검증 엔진·예제 reply-drafts | #18 | 2026-11-08 | 1995 | ScoreSheet 77.34%(새), SyntheticReplies 74.14%(새), CompareEngine 91.81%(−2.93), CompareRules 85.71%(−2.53), JudgmentEngine 88.04%(+2.33), 합계 base 92.66% → head 91.22% | 자동 머지(CI 7개 녹색, lead_check 종료 0, 리뷰 3회차 막는 지적 없음). 새 expected 3개(reply-drafts), 기존 12개 그대로. oracle 15 MATCH |
+| ADR 0010 방향 수정 | #20 | 2026-11-08 | 1995 | 해당 없음(문서만) | 리뷰 1회 막는 지적 없음 |
+| T-016 lead_check CI mutation 재사용 | #21 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0011. tools/ci 단위 테스트 168. 리뷰 1회 막는 지적 없음 |
+| T-017 sweeper | #22 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0012. 스펙 6개 200줄 이내 + `docs/spec/data/`, `spikes/` 삭제. 테스트 삭제 0. 리뷰 1회 막는 지적 없음 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 
@@ -58,6 +61,19 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | T-018 M2-1 | 1 출력 폴더 | 기본 `<케이스>/out`, `--out`은 케이스 폴더 밖이나 기본값과 같은 폴더. 같은 이름 파일은 덮어쓰고 다른 파일은 그대로, 오류면 아무것도 쓰지 않는다. `/examples/*/out/`는 gitignore | T-018 |
+| 2026-11-08 | T-018 M2-1 | 2 도움말 | 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령 `classify`·`compare`·`judge`는 숨긴다. `help --json`은 명령 넷 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 3 사용자 명령 `--json` | 결과 객체 `schema_version` 1·`command`·`files`(출력 폴더 기준 상대 경로). 숫자·판정은 파일에만. 넓히는 일은 `report.md`(M2-3) | T-018 |
+| 2026-11-08 | T-018 M2-1 | 4 내부 명령 | 파일을 쓰지 않고 결과 문서를 표준 출력에 쓴다(`--json`이 없어도). `--json`은 오류 모양만 바꾼다 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 5 `open`·`build` | `open`은 출력 폴더의 결과 파일 목록만 알린다(HTML은 M2-3). `build`는 입력 오류 `unavailable`(2, 번들은 M2-4) | T-018 |
+| 2026-11-08 | T-018 M2-1 | 6 `start` 입력 | `--answers` 필수, 케이스 폴더는 있어야 한다, `case.yaml`은 읽지 않는다 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 7 Cli 오류 코드 | `argument`·`file`·`output`·`unavailable`(2), `internal`(1, 메시지는 예외 타입 이름). 인자 오류 `path`는 인자 이름. Core 오류는 그대로 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 8 인자 해석 | 직접 짠다. 지시문 4절 System.CommandLine은 G1 N6 제3자 허용 목록이 필요해 쓰지 않는다 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 9 G1 N6 Cli 허용 목록 | `Scorecard.Core` 한 이름(같은 저장소, Core는 N1~N6·D1·R1 검사를 받는다). `Allow_list_is_chosen_per_dll` 단언을 맞췄다. 제3자 패키지는 없다 | T-018 |
+| 2026-11-08 | T-018 M2-1 | 10 `--review`·`--times`·입력 사본·SHA-256 | 이 카드에서 받지 않는다("이 명령에 없는 옵션이다"). 파일 모양이 정해지는 카드(M2-3 결과 객체 쪽)로. `docs/LATER.md` | T-018 |
+| 2026-11-08 | T-018 M2-1 | 11 JSON 쓰기 자리 | 오류 JSON·결과 객체는 Cli(판정 없음). 스코어카드 결과 객체는 M2-3에서 Core(ADR 0004 결정 6 규칙 8) | T-018 |
+| 2026-11-08 | T-018 M2-1 | 12 G2·G3 | 명령 대상 셋 `cli-start-text-check-valid`, `cli-check-case-valid`, `cli-check-case-invalid`(기존 샘플). 표준 출력은 `stdout.json` | T-018 |
+| 2026-11-08 | T-017 sweeper | 카드 5(트리 전용 할 일 키 `confirm_existing_feature` 빼기)를 언제 | M2-2로 미룸. 동작 변경이라 oracle·expected를 같이 바꿔야 한다. M2-2의 classification.json 변경(source·rule_opinion, expected migration)과 한 번에 | #22 |
 | 2026-11-07 | T-011 | 1 판정 표와 우선순위 | 미검증 → 정확도 미달 보류 → 누락률 초과 보류 → 설명 안 되는 불일치 보류 → 시간 조건부 → 몰림 조건부 → 통과. 문턱 비교는 셈 | #12 (a)·(b) |
 | 2026-11-07 | T-011 | 2 정확도 충족·누락률 초과 | 보류(`MISSING`) | #12 (a)·(b) |
 | 2026-11-07 | T-011 | 3 문턱 기본값 | 95·2·`true`(12.1 값). 기본값이면 표시 + `confirm_thresholds` | #12 (a)·(b) |

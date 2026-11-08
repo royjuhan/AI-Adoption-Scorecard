@@ -28,6 +28,16 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 
 - juhan의 M2 넷(ADR 0010 B-12)에 없다. 지시문 3.1·3.5의 `open --excel`은 그대로 두었다.
 
+## M2-1(T-018)에서 미룬 것
+
+- `--review`·`--times` 파일 입력. ADR 0010 번호 표는 `--review`를 M2-1에 두지만 파일 모양 스펙이 없다. 결과 객체가 정해지는 M2-3 쪽 카드에서 모양과 함께 넣는다(STATUS 잠정 결정 T-018 10).
+- `check`의 자료 읽기 전용 사본과 입력 SHA-256(지시문 2절 2, 3.1). `start`가 답 파일 사본을 케이스 폴더에 남기는 일(시안 "남는 것 answers.yaml"). 스코어카드 7구역과 함께.
+- `open`의 HTML 스코어카드(M2-3). 지금은 결과 파일 목록만 알린다.
+- `build`의 추천·"이 단계 만들까요?"·예/아니오/나중에를 받는 길(#20 지적, ADR 0004 표의 `--step <번호>`)과 번들·`export-check.md`(M2-4). 지금은 `unavailable`(2).
+- 지시문 4절 CLI 행 "System.CommandLine"과 다르다(인자 해석을 직접 짰다, 잠정 결정 T-018 8). 지시문 5절 `docs/spec/commands.md`는 만들지 않았다. 명령은 `json-output.md`에 있다.
+- `--out` 검사는 `Path.GetFullPath` 뒤 서수 비교다. 대소문자를 무시하는 파일 시스템(Windows·macOS)에서 `Expected`처럼 대소문자만 다른 경로를 케이스 폴더 밖으로 볼 수 있다. Windows 러너에서 확인할 것.
+- 지시문 2절 2 "출력은 항상 새 폴더에": 기본 `out/`을 명령마다 다시 쓴다(같은 이름은 덮어씀). 실행마다 새 폴더가 필요한지는 M2-3에서 스코어카드 결과와 함께 본다.
+
 ## T-014의 남은 일
 
 - `docs/tasks/T-014-text-result-check.md` "남은 일" 1~4. 요지: `case-schema.md` 표 옮기기, 지시문 12절 `reply-drafts` 행과 제목 "4종", 출처 표를 끝까지 못 읽었을 때 `blind` 검사 안 함(기록), -0 처리(기록).
@@ -61,6 +71,12 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #21 | `pull/<N>/merge`로 받으면 main이 움직였을 때 다른 병합 커밋이라 로컬 실행으로 간다(안전, 시간만 못 아낌). 문서에 한 줄 | ADR 0011 |
 | 2026-11-08 | #21 | reviewer.md 막는 지적 기준에 ADR·STATUS 기록이 없다. ADR 0010 해석으로 한 줄 | reviewer.md |
 | 2026-11-08 | #21 | `lead-check.json` `mutation_reuse.from`에 절대 경로(CI 도구용, 참고) | tools/ci/lead_check.py |
+| 2026-11-08 | #22 | sweeper가 `tests/`·`tools/oracle/`의 경로만 바꿨다(폴더 제한·ADR 0005 결정 9의 예외). ADR 0012에 한 줄 | ADR 0012 |
+| 2026-11-08 | #22 | classification.md 4.1 "`GATE`는 `SIGNOFF`가 아닌 모든 잎 뒤"에 `failure_impact` 조건이 빠졌다 | docs/spec/classification.md |
+| 2026-11-08 | #22 | cases-public README 3절 표: 24를 해소됨에 넣고 이유 칸에 "xlsx 읽기는 남는다" | docs/cases-public/README.md |
+| 2026-11-08 | #22 | 지시문 6절 cli-dev 템플릿 2항이 실제 파일과 다르다("exe 문답 없음" 빠짐) | 지시문 6절 |
+| 2026-11-08 | #22 | 테스트 주석이 지운 문서·옛 경로를 가리킨다(SignoffFinalExampleTests:9, CaseYamlTests:81, ClassificationInput:19, SpecDocument:5) | tests |
+| 2026-11-08 | #22 | guard-tests.md 0절의 `[S…]`·`[V…]` 태그, data 파일 글머리의 리뷰 이력 문구(테스트가 읽을 수 있어 그대로) | docs/spec |
 
 ## sweeper가 지운 스펙 절 (제목만)
 

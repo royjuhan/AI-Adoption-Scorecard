@@ -19,3 +19,6 @@ notebooks/**/.ipynb_checkpoints/
 
 # Python
 __pycache__/
+
+# 예제 폴더에서 돌린 명령의 기본 출력 폴더(json-output.md 4절)
+/examples/*/out/

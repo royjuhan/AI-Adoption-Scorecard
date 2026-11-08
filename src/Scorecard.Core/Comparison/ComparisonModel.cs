@@ -23,6 +23,7 @@ public sealed record CompareResult(CompareMetrics? Metrics, IReadOnlyList<CaseEr
 
 // metrics.json 하나의 내용(스펙 3.2). Status가 not_verified면 Key·Counts·퍼센트는 null, 목록은 비어 있다.
 // Items는 모든 항목이다(기준 순서, 그다음 결과 쪽 추가·중복 항목은 결과 순서, 스펙 12.2). JSON에는 차이가 있는 항목만 쓴다.
+// Checklist는 case.yaml checklist가 있을 때만, Scores는 scores가 있을 때만 있다(text-check.md 3.1, T-014).
 public sealed record CompareMetrics(
     string Case,
     string Status,
@@ -34,7 +35,9 @@ public sealed record CompareMetrics(
     decimal? AccuracyPct,
     decimal? MissingRatePct,
     IReadOnlyList<FieldSummary> Fields,
-    IReadOnlyList<CompareItem> Items);
+    IReadOnlyList<CompareItem> Items,
+    ChecklistSummary? Checklist = null,
+    ScoreSummary? Scores = null);
 
 // 항목 셈(스펙 4.4). Reference = Match + Mismatch + Missing, Candidate = Match + Mismatch + Extra + 중복 행(4.3).
 // 중복 행 수는 Items의 duplicate 수다. 셈 키를 따로 두지 않는다. 결과 쪽에 두 번 이상 나온 기준 키는 Mismatch다(13.2).
@@ -49,8 +52,10 @@ public sealed record FieldSummary(
 // 항목 하나. Status: match, mismatch, missing, extra, duplicate. 없는 쪽은 null.
 // duplicate는 결과 쪽 같은 키의 둘째 행부터다. Reference는 그 키의 기준 행(없으면 null), Differences는 그 행과 기준 행의 차이다(없으면 비어 있다, 13.2).
 // Differences: 차이가 있는 compare 필드(compare 순서). 정규화 뒤 같은 텍스트, 숫자로 같은 값은 넣지 않는다.
+// MissingItems: 그 결과 행에서 빠진 체크리스트 항목(checklist.items 순서, text-check.md 4.2). checklist가 없으면 null이다.
 public sealed record CompareItem(
-    string Key, string Status, CsvRow? Reference, CsvRow? Candidate, IReadOnlyList<FieldDifference> Differences);
+    string Key, string Status, CsvRow? Reference, CsvRow? Candidate, IReadOnlyList<FieldDifference> Differences,
+    IReadOnlyList<string>? MissingItems = null);
 
 // Result: within, outside, not_number. 값은 정규화한 칸 텍스트다.
 public sealed record FieldDifference(string Field, string Result, string Reference, string Candidate);

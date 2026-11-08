@@ -21,6 +21,11 @@ internal sealed class CaseReader(ErrorSink errors)
     private const string MustBeList = "목록이어야 한다";
     private const string MustBeScalar = "스칼라 값이어야 한다";
     private const string GroupPath = "inputs.group";
+    private const string RelativePathMessage = "케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\\' 없음)";
+
+    // text-check.md 4.1 scores.min·max 범위.
+    private const int ScoreBoundMin = 0;
+    private const int ScoreBoundMax = 100;
 
     // 끝은 \z로 묶는다. $는 끝 줄바꿈 앞에서도 맞는다(따옴표·블록 값의 "a\n").
     private static readonly Regex CaseNamePattern = new(@"^[a-z0-9]+(-[a-z0-9]+)*\z", RegexOptions.CultureInvariant);
@@ -28,15 +33,19 @@ internal sealed class CaseReader(ErrorSink errors)
     private static readonly Regex NumberPattern = new(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?\z", RegexOptions.CultureInvariant);
 
     // 각 매핑에 쓸 수 있는 키. 4.3·4.4·4.5 표 순서다.
+    // checklist·scores는 문장 결과 검증의 두 길이다(text-check.md 4.1, T-014).
     private static readonly string[] RootKeys =
-        ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "thresholds"];
+        ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "checklist", "scores", "thresholds"];
 
     // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
     private static readonly string[] StepKeys = ["name", "answers", "inferred"];
     // group은 선택 키다(스펙 10.1, T-012).
     private static readonly string[] InputKeys = ["reference", "candidate", "key", "group"];
     private static readonly string[] CompareKeys = ["field", "tolerance", "tolerance_pct"];
-    private static readonly string[] ThresholdKeys = ["accuracy_min", "missing_max", "time_must_drop"];
+    private static readonly string[] ThresholdKeys = ["accuracy_min", "missing_max", "time_must_drop", "score_gap_max"];
+    private static readonly string[] ChecklistKeys = ["text", "items"];
+    private static readonly string[] ChecklistItemKeys = ["item", "column", "any"];
+    private static readonly string[] ScoresKeys = ["sheet", "sources", "min", "max"];
     private static readonly string[] AiUsageChoices = ["build-time", "runtime", "hybrid"];
 
     // 오류가 있어도 끝까지 걷는다. 필수 값이 없으면 null이다. 모델은 오류가 없을 때만 쓴다.
@@ -63,10 +72,12 @@ internal sealed class CaseReader(ErrorSink errors)
         var inputs = ReadInputs(fields);
         var compare = ReadCompare(fields);
         CheckGroupConflict(inputs, compare);
+        var checklist = ReadChecklist(fields, inputs, compare);
+        var scores = ReadScores(fields);
         var thresholds = ReadThresholds(fields);
         return name is null || task is null
             ? null
-            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds);
+            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds, checklist, scores);
     }
 
     private IReadOnlyList<CaseStep> ReadSteps(Dictionary<string, YamlNode> fields, YamlMapping parent)
@@ -314,8 +325,8 @@ internal sealed class CaseReader(ErrorSink errors)
 
         // 있으면 reference·candidate·key는 필수다. 없으면 표 순서로 inputs 매핑 위치에 적는다. group은 선택이다(스펙 10.1).
         var inputFields = Fields(map, InputKeys, "inputs");
-        var reference = RequiredRelativePath(inputFields, map, "reference");
-        var candidate = RequiredRelativePath(inputFields, map, "candidate");
+        var reference = RequiredRelativePath(inputFields, map, "inputs", "reference");
+        var candidate = RequiredRelativePath(inputFields, map, "inputs", "candidate");
         var key = RequiredString(inputFields, map, "key", "inputs.key");
         var (group, groupNode) = OptionalGroup(inputFields);
         var inputs = reference is null || candidate is null || key is null ? null : new CaseInputs(reference, candidate, key, group);
@@ -361,16 +372,225 @@ internal sealed class CaseReader(ErrorSink errors)
         }
     }
 
-    private string? RequiredRelativePath(Dictionary<string, YamlNode> fields, YamlMapping parent, string key)
+    // 필수 경로 패턴(inputs.reference·candidate, scores.sheet·sources). 형식 규칙은 스펙 4.5, text-check.md 4.1.
+    private string? RequiredRelativePath(Dictionary<string, YamlNode> fields, YamlMapping parent, string parentPath, string key)
     {
-        var path = YamlTree.ChildPath("inputs", key);
+        var path = YamlTree.ChildPath(parentPath, key);
         var value = RequiredString(fields, parent, key, path);
         if (value is not null && !IsRelativePath(value))
         {
-            Add(fields[key], ErrorCode.Format, path, "케이스 폴더 기준 상대 경로를 '/'로 쓴다 ('..', ':', '\\' 없음)");
+            Add(fields[key], ErrorCode.Format, path, RelativePathMessage);
         }
 
         return value;
+    }
+
+    // text-check.md 4.1 checklist. 매핑이 아니면 type. inputs가 없으면 required(위치는 checklist 값, 경로 inputs).
+    // text는 필수이고 key·group·compare 필드와 같으면 conflict(위치는 text 값). items는 1개 이상.
+    private CaseChecklist? ReadChecklist(Dictionary<string, YamlNode> fields, InputsRead inputs, IReadOnlyList<CompareField> compare)
+    {
+        if (!TryGetPresent(fields, "checklist", out var node))
+        {
+            return null;
+        }
+
+        if (node is not YamlMapping map)
+        {
+            TypeError(node, "checklist", MustBeMapping);
+            return null;
+        }
+
+        if (!TryGetPresent(fields, "inputs", out _))
+        {
+            Add(node, ErrorCode.Required, "inputs", "checklist가 있으면 inputs가 있어야 한다");
+        }
+
+        var checklistFields = Fields(map, ChecklistKeys, "checklist");
+        var text = RequiredString(checklistFields, map, "text", "checklist.text");
+        if (text is not null
+            && (string.Equals(text, inputs.Key, StringComparison.Ordinal)
+                || string.Equals(text, inputs.Group, StringComparison.Ordinal)
+                || compare.Any(c => string.Equals(c.Field, text, StringComparison.Ordinal))))
+        {
+            Add(checklistFields["text"], ErrorCode.Conflict, "checklist.text", "checklist.text는 key·compare 필드·group과 다른 열을 쓴다");
+        }
+
+        var items = ReadChecklistItems(checklistFields, map);
+        return text is null || items is null ? null : new CaseChecklist(text, items);
+    }
+
+    // checklist.items. 항목마다 item(필수, 서수 중복 금지)과 column·any 가운데 꼭 하나.
+    private List<ChecklistItem>? ReadChecklistItems(Dictionary<string, YamlNode> fields, YamlMapping parent)
+    {
+        const string path = "checklist.items";
+        if (!fields.TryGetValue("items", out var node))
+        {
+            Add(parent, ErrorCode.Required, path, MissingField);
+            return null;
+        }
+
+        if (node is YamlScalar { IsNull: true })
+        {
+            Add(node, ErrorCode.Required, path, EmptyValue);
+            return null;
+        }
+
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, path, MustBeList);
+            return null;
+        }
+
+        if (sequence.Items.Count == 0)
+        {
+            Add(sequence, ErrorCode.Required, path, "항목이 1개 이상 있어야 한다");
+        }
+
+        var items = new List<ChecklistItem>();
+        var firstNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
+        var valid = sequence.Items.Count > 0;
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var number = i + 1;
+            var itemPath = YamlTree.ItemPath(path, number);
+            if (sequence.Items[i] is not YamlMapping item)
+            {
+                TypeError(sequence.Items[i], itemPath, MustBeMapping);
+                valid = false;
+                continue;
+            }
+
+            var itemFields = Fields(item, ChecklistItemKeys, itemPath);
+            var namePath = YamlTree.ChildPath(itemPath, "item");
+            var name = RequiredString(itemFields, item, "item", namePath);
+            if (name is not null && !firstNumbers.TryAdd(name, number))
+            {
+                var first = YamlTree.ItemPath(path, firstNumbers[name]);
+                Add(itemFields["item"], ErrorCode.Duplicate, namePath, $"체크리스트 항목이 중복된다 (처음: {first})");
+            }
+
+            var hasColumn = TryGetPresent(itemFields, "column", out _);
+            var hasAny = TryGetPresent(itemFields, "any", out var anyNode);
+            if (hasColumn && hasAny)
+            {
+                Add(item, ErrorCode.Conflict, itemPath, "column과 any 중 하나만 쓴다");
+            }
+            else if (!hasColumn && !hasAny)
+            {
+                Add(item, ErrorCode.Required, itemPath, "column 또는 any가 있어야 한다");
+            }
+
+            var column = hasColumn ? RequiredString(itemFields, item, "column", YamlTree.ChildPath(itemPath, "column")) : null;
+            var phrases = hasAny ? ReadPhrases(anyNode!, YamlTree.ChildPath(itemPath, "any")) : null;
+            if (name is null || hasColumn == hasAny || (hasColumn && column is null) || (hasAny && phrases is null))
+            {
+                valid = false;
+                continue;
+            }
+
+            items.Add(new ChecklistItem(name, column, phrases ?? []));
+        }
+
+        return valid ? items : null;
+    }
+
+    // any 문구 목록. 목록이 아니면 type, 비면 required. 문구는 비지 않은 문자열이다(required). 쓴 글 그대로 둔다.
+    private List<string>? ReadPhrases(YamlNode node, string path)
+    {
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, path, MustBeList);
+            return null;
+        }
+
+        if (sequence.Items.Count == 0)
+        {
+            Add(sequence, ErrorCode.Required, path, "문구가 1개 이상 있어야 한다");
+            return null;
+        }
+
+        var phrases = new List<string>();
+        var valid = true;
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var phrase = sequence.Items[i];
+            var phrasePath = YamlTree.ItemPath(path, i + 1);
+            var value = ScalarText(phrase, phrasePath);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                if (phrase is YamlScalar)
+                {
+                    Add(phrase, ErrorCode.Required, phrasePath, EmptyValue);
+                }
+
+                valid = false;
+                continue;
+            }
+
+            phrases.Add(value);
+        }
+
+        return valid ? phrases : null;
+    }
+
+    // text-check.md 4.1 scores. sheet·sources는 inputs 경로와 같은 규칙. min·max는 0 이상 100 이하의 정수, min < max(아니면 max 값에 range).
+    private CaseScores? ReadScores(Dictionary<string, YamlNode> fields)
+    {
+        if (!TryGetPresent(fields, "scores", out var node))
+        {
+            return null;
+        }
+
+        if (node is not YamlMapping map)
+        {
+            TypeError(node, "scores", MustBeMapping);
+            return null;
+        }
+
+        var scoreFields = Fields(map, ScoresKeys, "scores");
+        var sheet = RequiredRelativePath(scoreFields, map, "scores", "sheet");
+        var sources = RequiredRelativePath(scoreFields, map, "scores", "sources");
+        var min = ScoreBound(scoreFields, map, "min");
+        var max = ScoreBound(scoreFields, map, "max");
+        if (min is { } low && max is { } high && low >= high)
+        {
+            Add(scoreFields["max"], ErrorCode.Range, "scores.max", Invariant($"범위 밖이다 (min보다 커야 한다): {high}"));
+            return null;
+        }
+
+        return sheet is null || sources is null || min is null || max is null ? null : new CaseScores(sheet, sources, min.Value, max.Value);
+    }
+
+    // scores.min·max 하나. 키가 없으면 부모 매핑 위치에, null이면 그 값 위치에 required.
+    private int? ScoreBound(Dictionary<string, YamlNode> fields, YamlMapping parent, string key)
+    {
+        var path = YamlTree.ChildPath("scores", key);
+        if (!fields.TryGetValue(key, out var node))
+        {
+            Add(parent, ErrorCode.Required, path, MissingField);
+            return null;
+        }
+
+        if (node is YamlScalar { IsNull: true })
+        {
+            Add(node, ErrorCode.Required, path, EmptyValue);
+            return null;
+        }
+
+        if (!PlainText(node, path, IntegerPattern, "정수가 아니다", out var text))
+        {
+            return null;
+        }
+
+        if (!long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value)
+            || value < ScoreBoundMin
+            || value > ScoreBoundMax)
+        {
+            Add(node, ErrorCode.Range, path, Invariant($"범위 밖이다 ({ScoreBoundMin} 이상 {ScoreBoundMax} 이하): {text}"));
+            return null;
+        }
+
+        return (int)value;
     }
 
     private IReadOnlyList<CompareField> ReadCompare(Dictionary<string, YamlNode> fields)
@@ -442,11 +662,18 @@ internal sealed class CaseReader(ErrorSink errors)
             return new CaseThresholds(null, null, null);
         }
 
+        // score_gap_max는 scores가 있을 때만 쓴다. 없으면 required(위치는 그 값, 경로 scores. text-check.md 4.1).
         var thresholdFields = Fields(map, ThresholdKeys, "thresholds");
+        if (TryGetPresent(thresholdFields, "score_gap_max", out var gapNode) && !TryGetPresent(fields, "scores", out _))
+        {
+            Add(gapNode, ErrorCode.Required, "scores", "score_gap_max가 있으면 scores가 있어야 한다");
+        }
+
         return new CaseThresholds(
             OptionalNumber(thresholdFields, "accuracy_min", "thresholds.accuracy_min", PercentMin, PercentMax),
             OptionalNumber(thresholdFields, "missing_max", "thresholds.missing_max", PercentMin, PercentMax),
-            OptionalBoolean(thresholdFields, "time_must_drop", "thresholds.time_must_drop"));
+            OptionalBoolean(thresholdFields, "time_must_drop", "thresholds.time_must_drop"),
+            OptionalNumber(thresholdFields, "score_gap_max", "thresholds.score_gap_max", PercentMin, PercentMax));
     }
 
     // 매핑의 키를 이름으로 모은다. 목록에 없는 키는 unknown-field(그 키 위치). 키 비교는 서수다.

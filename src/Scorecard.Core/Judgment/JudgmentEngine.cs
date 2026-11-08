@@ -10,6 +10,8 @@ namespace Scorecard.Core.Judgment;
 // 판정 표(4.3)를 위에서부터 보고 처음 걸리는 행에서 멈춘다: 보류 → 조건부 → 통과.
 // 검토 항목(4.9)은 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행이다. 몰림은 불일치만 본다.
 // 문턱 비교는 셈(counts)으로 한다. 표시 퍼센트로 비교하지 않는다. 나눗셈을 쓰지 않는다.
+// 점수표(text-check.md 5절)가 있으면 SCORE가 여섯째 확인이다. 판정은 순서 4 뒤에 SCORE 보류 두 행이 끼인다.
+// 대조가 미검증이고 점수표가 있으면(점수표만) 확인은 TIME, SCORE 둘이고 판정은 5.3 점수표만 행이다.
 // 순수 함수다. 파일·난수·시각·환경·현재 문화권을 쓰지 않는다. 입력을 바꾸지 않는다. 값·문장은 JudgmentRules에서 읽는다.
 public static class JudgmentEngine
 {
@@ -24,6 +26,8 @@ public static class JudgmentEngine
     public const string RuleTime = "TIME";
     public const string RuleFocus = "FOCUS";
     public const string RulePass = "PASS";
+    // T-014 근거 키. 스펙 API 블록(judgment.md 4.13)에 없어 공개하지 않는다(text-check.md 5절).
+    internal const string RuleScore = "SCORE";
 
     // 순수 함수. times: 재지 않았으면 null. unexplainedKeys: 사람이 아직 보지 않았으면 null. 키는 검토 항목(4.9)의 키다(4.9).
     // 대조 오류가 있으면(CompareResult.Metrics가 null) 부르는 쪽이 판정하지 않는다(5절).
@@ -38,6 +42,12 @@ public static class JudgmentEngine
         }
 
         CheckConsistent(definition, metrics, nameof(metrics));
+        var scoresOnly = metrics.Status == CompareEngine.StatusNotVerified && metrics.Scores is not null;
+        if (scoresOnly && unexplainedKeys is not null)
+        {
+            // text-check.md 5.3 끝 글머리: 점수표만에는 검토 항목이 없다.
+            throw new ArgumentException("점수표만인 판정은 검토 항목 키를 받지 않는다.", nameof(unexplainedKeys));
+        }
 
         if (times is not null && (times.BeforeMinutes < 0 || times.ProcessMinutes < 0 || times.ReviewMinutes < 0))
         {
@@ -52,25 +62,39 @@ public static class JudgmentEngine
             metrics.Items.Where(i => BadStatuses.Contains(i.Status)).ToArray());
         CheckUnexplainedKeys(unexplainedKeys, review.Items, nameof(unexplainedKeys));
 
-        var (thresholds, defaults) = ThresholdsOf(definition.Thresholds);
+        var (thresholds, defaults) = ThresholdsOf(definition.Thresholds, definition.Scores is not null);
+        if (scoresOnly)
+        {
+            // text-check.md 5.1: 점수표만은 이 길이 읽는 문턱만 defaults에 적는다.
+            return ScoresOnly(metrics, thresholds, defaults.Where(ScoresOnlyThresholds.Contains).ToArray(), times);
+        }
+
         return metrics.Status == CompareEngine.StatusNotVerified
             ? NotVerified(metrics, thresholds, defaults)
             : Measured(definition, metrics, thresholds, defaults, review, times, unexplainedKeys);
     }
 
     // 5절 "정의와 대조 결과"(T-013, 12.2): 대조 결과가 이 정의에서 나온 것인지 본다. 아니면 부르는 쪽 잘못이다(ArgumentException).
-    // inputs 없음 → 미검증 no_inputs. inputs가 있고 compare가 빔 → 미검증 no_compare_fields.
+    // inputs 없음 → 미검증 no_inputs. inputs가 있고 compare가 비고 checklist가 없음 → 미검증 no_compare_fields(text-check.md 5.6).
     // 그 밖 → measured, 키 열 = inputs.key, fields[]의 필드 이름(순서) = compare 필드 이름.
+    // checklist가 있으면 대조 결과의 checklist 문장 열·항목 이름(순서)이 같다. 없으면 대조 결과에 checklist가 없다.
+    // 점수표 집계는 정의에 scores가 있을 때만 있다(text-check.md 5.6).
     // inputs.group이 있으면 모든 기준 행 머리 행에 그 열이 꼭 한 번 있다. 문턱은 대조가 쓰지 않으므로 보지 않는다.
     private static void CheckConsistent(CaseDefinition definition, CompareMetrics metrics, string paramName)
     {
+        if ((metrics.Scores is null) != (definition.Scores is null))
+        {
+            throw new ArgumentException("대조 결과의 점수표 집계가 case.yaml scores와 맞지 않는다.", paramName);
+        }
+
         var inputs = definition.Inputs;
         var reason = inputs is null ? CompareEngine.ReasonNoInputs
-            : definition.Compare.Count == 0 ? CompareEngine.ReasonNoCompareFields
+            : definition.Compare.Count == 0 && definition.Checklist is null ? CompareEngine.ReasonNoCompareFields
             : null;
         if (reason is not null)
         {
-            if (metrics.Status != CompareEngine.StatusNotVerified || !string.Equals(metrics.Reason, reason, StringComparison.Ordinal))
+            if (metrics.Status != CompareEngine.StatusNotVerified || !string.Equals(metrics.Reason, reason, StringComparison.Ordinal)
+                || metrics.Checklist is not null)
             {
                 throw new ArgumentException($"대조 결과가 정의와 맞지 않는다: 미검증 {reason}이어야 한다.", paramName);
             }
@@ -91,6 +115,18 @@ public static class JudgmentEngine
         if (!metrics.Fields.Select(f => f.Field).SequenceEqual(definition.Compare.Select(c => c.Field), StringComparer.Ordinal))
         {
             throw new ArgumentException("대조 결과의 compare 필드가 case.yaml compare와 다르다.", paramName);
+        }
+
+        var sameChecklist = (definition.Checklist, metrics.Checklist) switch
+        {
+            (null, null) => true,
+            ({ } d, { } m) => string.Equals(d.Text, m.Text, StringComparison.Ordinal)
+                && d.Items.Select(i => i.Item).SequenceEqual(m.Entries.Select(e => e.Item), StringComparer.Ordinal),
+            _ => false,
+        };
+        if (!sameChecklist)
+        {
+            throw new ArgumentException("대조 결과의 체크리스트가 case.yaml checklist와 다르다.", paramName);
         }
 
         if (inputs.Group is { } group
@@ -125,8 +161,8 @@ public static class JudgmentEngine
         }
     }
 
-    // 4.2: 빈 키만 기본값. 기본값을 쓴 키는 4.2 표 순서로 적는다.
-    private static (JudgmentThresholds Thresholds, string[] Defaults) ThresholdsOf(CaseThresholds given)
+    // 4.2: 빈 키만 기본값. 기본값을 쓴 키는 4.2 표 순서로 적는다. scores가 있으면 score_gap_max를 그 뒤에 본다(text-check.md 5.1).
+    private static (JudgmentThresholds Thresholds, string[] Defaults) ThresholdsOf(CaseThresholds given, bool scores)
     {
         var defaults = new List<string>();
         T Pick<T>(T? value, string key, T fallback)
@@ -144,7 +180,8 @@ public static class JudgmentEngine
         var accuracyMin = Pick(given.AccuracyMin, KeyAccuracyMin, DefaultAccuracyMin);
         var missingMax = Pick(given.MissingMax, KeyMissingMax, DefaultMissingMax);
         var timeMustDrop = Pick(given.TimeMustDrop, KeyTimeMustDrop, DefaultTimeMustDrop);
-        return (new JudgmentThresholds(accuracyMin, missingMax, timeMustDrop), defaults.ToArray());
+        decimal? scoreGapMax = scores ? Pick(given.ScoreGapMax, KeyScoreGapMax, DefaultScoreGapMax) : null;
+        return (new JudgmentThresholds(accuracyMin, missingMax, timeMustDrop, scoreGapMax), defaults.ToArray());
     }
 
     // 4.3 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(4.6). 다음 할 일은 4.7.
@@ -206,26 +243,12 @@ public static class JudgmentEngine
             : unexplainedKeys.Count == 0 ? new JudgmentCheck(RuleUnexplained, Explained, UnexplainedExplainedCheck(itemsText, breakdown))
             : new JudgmentCheck(RuleUnexplained, Found, UnexplainedFoundCheck(itemsText, breakdown, unexplainedCount));
 
-        // 4.4 TIME(4.10): time_must_drop이 false면 시간을 받아도 보지 않는다. 합이 decimal 범위를 넘으면 not_met.
-        string? total = null;
-        JudgmentCheck time;
-        if (!t.TimeMustDrop)
-        {
-            time = new JudgmentCheck(RuleTime, Off, TimeOffCheck);
-        }
-        else if (times is null)
-        {
-            time = new JudgmentCheck(RuleTime, NotMeasured, Marked(TimeNotMeasuredCheck, KeyTimeMustDrop));
-        }
-        else
-        {
-            (var timeMet, total) = Total(times);
-            var sentence = TimeCheck(timeMet, Number(times.ProcessMinutes), Number(times.ReviewMinutes), total, Number(times.BeforeMinutes));
-            time = new JudgmentCheck(RuleTime, timeMet ? Met : NotMet, Marked(sentence, KeyTimeMustDrop));
-        }
-
+        var (time, total) = TimeOf(t, times, defaults);
         var focus = FocusOf(definition, metrics, review.Bad);
-        var checks = new[] { accuracy, missing, unexplained, time, focus.Check };
+        var score = metrics.Scores is { } scores ? ScoreOf(scores, t, defaults) : null;
+        JudgmentCheck[] checks = score is null
+            ? [accuracy, missing, unexplained, time, focus.Check]
+            : [accuracy, missing, unexplained, time, focus.Check, score.Check];
 
         // 4.3 판정 표. 처음 걸리는 행. 판정 문장은 그 행(순서)에 오기까지 읽은 문턱(4.6)이 기본값이면 표시를 붙인다.
         // 사람이 아직 보지 않은 검토 항목은 몰림·시간 뒤의 조건부다(순서 7). 보류가 아니다.
@@ -233,12 +256,14 @@ public static class JudgmentEngine
             !accuracyMet ? (VerdictHold, RuleAccuracy, AccuracyVerdict(Number(accuracyPct), Number(t.AccuracyMin)), OrderAccuracy)
             : !missingMet ? (VerdictHold, RuleMissing, MissingVerdict(Number(missingRatePct), Number(t.MissingMax)), OrderMissing)
             : unexplained.Result == Found ? (VerdictHold, RuleUnexplained, UnexplainedVerdict(unexplainedCount), OrderUnexplainedFound)
+            : score?.Check.Result == Revealed ? (VerdictHold, RuleScore, score.HoldVerdict, OrderScoreRevealed)
+            : score?.Check.Result == NotMet ? (VerdictHold, RuleScore, score.HoldVerdict, OrderScoreNotMet)
             : time.Result == NotMeasured ? (VerdictConditional, RuleTime, TimeNotMeasuredVerdict, OrderTime)
             : time.Result == NotMet ? (VerdictConditional, RuleTime, TimeNotMetVerdict(total!, Number(times!.BeforeMinutes)), OrderTime)
             : focus.Check.Result == Found ? (VerdictConditional, RuleFocus, FocusVerdict(badText, focus.Group!, focus.Value!), OrderFocus)
             : unexplained.Result == NotReviewed ? (VerdictConditional, RuleUnexplained, UnexplainedNotReviewedVerdict(itemsText, breakdown), OrderUnexplainedNotReviewed)
             : (VerdictPass, RulePass, PassVerdict, OrderPass);
-        if (ReadThresholds(order).Any(defaults.Contains))
+        if (ReadThresholds(order, score is not null).Any(defaults.Contains))
         {
             reason += DefaultMark;
         }
@@ -260,8 +285,110 @@ public static class JudgmentEngine
             todo.Add(new JudgmentTodo(TodoAddGroup, AddGroupText));
         }
 
+        if (score?.Check.Result == Revealed)
+        {
+            todo.Add(new JudgmentTodo(TodoRescoreBlind, RescoreBlindText));
+        }
+
         AddConfirmThresholds(todo, t, defaults);
         return new JudgmentResult(metrics.Case, verdict, rule, reason, t, defaults, checks, todo.ToArray());
+    }
+
+    // text-check.md 5.3 점수표만: 대조가 미검증이고 점수표가 있다. 확인은 TIME, SCORE 둘이다.
+    // 판정: SCORE 보류 두 행 → 대조할 열 없음(no_compare_fields, 조건부) → TIME 두 행(조건부) → PASS.
+    // 다음 할 일: add_compare(no_compare_fields), measure_time, rescore_blind, confirm_thresholds(이 길이 읽는 문턱만).
+    private static JudgmentResult ScoresOnly(CompareMetrics metrics, JudgmentThresholds t, string[] defaults, JudgmentTimes? times)
+    {
+        var (time, total) = TimeOf(t, times, defaults);
+        var score = ScoreOf(metrics.Scores!, t, defaults);
+        var noCompareFields = string.Equals(metrics.Reason, CompareEngine.ReasonNoCompareFields, StringComparison.Ordinal);
+
+        var (verdict, rule, reason, order) =
+            score.Check.Result == Revealed ? (VerdictHold, RuleScore, score.HoldVerdict, OrderScoreRevealed)
+            : score.Check.Result == NotMet ? (VerdictHold, RuleScore, score.HoldVerdict, OrderScoreNotMet)
+            : noCompareFields ? (VerdictConditional, RuleNotVerified, ScoresNoCompareFieldsVerdict, OrderNotVerified)
+            : time.Result == NotMeasured ? (VerdictConditional, RuleTime, ScoresTimeNotMeasuredVerdict, OrderTime)
+            : time.Result == NotMet ? (VerdictConditional, RuleTime, ScoresTimeNotMetVerdict(total!, Number(times!.BeforeMinutes)), OrderTime)
+            : (VerdictPass, RulePass, ScoresPassVerdict, OrderPass);
+        if (ScoresOnlyReadThresholds(order).Any(defaults.Contains))
+        {
+            reason += DefaultMark;
+        }
+
+        var todo = new List<JudgmentTodo>();
+        if (noCompareFields)
+        {
+            todo.Add(new JudgmentTodo(TodoAddCompare, AddCompareText));
+        }
+
+        if (time.Result == NotMeasured)
+        {
+            todo.Add(new JudgmentTodo(TodoMeasureTime, MeasureTimeText));
+        }
+
+        if (score.Check.Result == Revealed)
+        {
+            todo.Add(new JudgmentTodo(TodoRescoreBlind, RescoreBlindText));
+        }
+
+        AddConfirmThresholds(todo, t, defaults);
+        return new JudgmentResult(metrics.Case, verdict, rule, reason, t, defaults, [time, score.Check], todo.ToArray());
+    }
+
+    // 4.4 TIME(4.10): time_must_drop이 false면 시간을 받아도 보지 않는다. 합이 decimal 범위를 넘으면 not_met.
+    // Total은 시간을 쟀을 때 {total} 글이다.
+    private static (JudgmentCheck Check, string? Total) TimeOf(JudgmentThresholds t, JudgmentTimes? times, string[] defaults)
+    {
+        string Marked(string sentence) => defaults.Contains(KeyTimeMustDrop) ? sentence + DefaultMark : sentence;
+        if (!t.TimeMustDrop)
+        {
+            return (new JudgmentCheck(RuleTime, Off, TimeOffCheck), null);
+        }
+
+        if (times is null)
+        {
+            return (new JudgmentCheck(RuleTime, NotMeasured, Marked(TimeNotMeasuredCheck)), null);
+        }
+
+        var (met, total) = Total(times);
+        var sentence = TimeCheck(met, Number(times.ProcessMinutes), Number(times.ReviewMinutes), total, Number(times.BeforeMinutes));
+        return (new JudgmentCheck(RuleTime, met ? Met : NotMet, Marked(sentence)), total);
+    }
+
+    // text-check.md 5.2 SCORE. 가림이 깨지면 revealed(문턱을 읽지 않는다). 아니면 합·수 셈으로 견준다:
+    // ai.sum × human.ratings + gap × ai.ratings × human.ratings ≥ human.sum × ai.ratings 이면 met(같으면 met).
+    // 정수와 decimal 가수로 정확히 셈한다. 나눗셈이 없다. 문턱이 0이면(0, 0.0) 문턱 0 문장을 쓴다.
+    // HoldVerdict는 그 결과가 보류일 때(revealed, not_met)의 판정 문장이다.
+    private static ScoreResult ScoreOf(ScoreSummary scores, JudgmentThresholds t, string[] defaults)
+    {
+        if (scores.Blind.Status == ScoreSheet.BlindRevealed)
+        {
+            var findings = Number(scores.Blind.Findings.Count);
+            return new ScoreResult(new JudgmentCheck(RuleScore, Revealed, ScoreRevealedCheck(findings)), ScoreRevealedVerdict(findings));
+        }
+
+        var ai = scores.Sources.Single(s => s.Source == ScoreSheet.SourceAi);
+        var human = scores.Sources.Single(s => s.Source == ScoreSheet.SourceHuman);
+        var gap = t.ScoreGapMax ?? DefaultScoreGapMax;
+        var scale = gap.Scale;
+        var unit = BigInteger.Pow(10, scale);
+        var left = (new BigInteger(ai.Sum) * human.Ratings * unit) + (Mantissa(gap, scale) * ai.Ratings * human.Ratings);
+        var right = new BigInteger(human.Sum) * ai.Ratings * unit;
+        var met = left >= right;
+
+        var (aiMean, humanMean) = (Number(ai.Mean), Number(human.Mean));
+        var (aiRatings, humanRatings) = (Number(ai.Ratings), Number(human.Ratings));
+        var zero = gap == 0m;
+        var sentence = zero
+            ? ScoreZeroCheck(met, aiMean, aiRatings, humanMean, humanRatings)
+            : ScoreCheck(met, aiMean, aiRatings, humanMean, humanRatings, Number(gap));
+        if (defaults.Contains(KeyScoreGapMax))
+        {
+            sentence += DefaultMark;
+        }
+
+        var hold = zero ? ScoreZeroNotMetVerdict(aiMean, humanMean) : ScoreNotMetVerdict(aiMean, humanMean, Number(gap));
+        return new ScoreResult(new JudgmentCheck(RuleScore, met ? Met : NotMet, sentence), hold);
     }
 
     // 4.7 confirm_thresholds. {defaults}: 기본값을 쓴 키와 값을 4.2 순서로 ", "로 잇는다.
@@ -276,6 +403,7 @@ public static class JudgmentEngine
         {
             KeyAccuracyMin => Number(t.AccuracyMin),
             KeyMissingMax => Number(t.MissingMax),
+            KeyScoreGapMax => Number(t.ScoreGapMax ?? DefaultScoreGapMax),
             _ => Bool(t.TimeMustDrop),
         }));
         todo.Add(new JudgmentTodo(TodoConfirmThresholds, ConfirmThresholdsText(text)));
@@ -365,6 +493,8 @@ public static class JudgmentEngine
     }
 
     private sealed record FocusResult(JudgmentCheck Check, string? Group, string? Value);
+
+    private sealed record ScoreResult(JudgmentCheck Check, string HoldVerdict);
 
     // 4.9 검토 항목. Items: 검토 항목 전부(대조 항목 순서). Counts: ReviewItems 표 순서의 수. Bad: 불일치 항목(값 불일치·누락).
     private sealed record ReviewItemSet(CompareItem[] Items, int[] Counts, CompareItem[] Bad);

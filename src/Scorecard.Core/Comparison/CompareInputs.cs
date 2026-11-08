@@ -79,7 +79,8 @@ public static class CompareInputs
     }
 
     // 파일이 정해지기 전 오류는 Source = case.yaml, Path = inputs.reference·inputs.candidate다(4.7). 패턴 글자는 오류에 넣지 않는다.
-    private static List<SourceFile> ReadSide(string caseDirectory, string pattern, string fieldPath, List<CaseError> errors)
+    // 점수 파일(scores.sheet·scores.sources, text-check.md 4.5)도 같은 규칙으로 찾는다. 그때 Path는 scores.sheet·scores.sources다.
+    internal static List<SourceFile> ReadSide(string caseDirectory, string pattern, string fieldPath, List<CaseError> errors)
     {
         var files = new List<SourceFile>();
         CaseError InputsError(string message) => new(CaseParser.FileName, 0, 0, CompareRules.CodeFile, fieldPath, message);

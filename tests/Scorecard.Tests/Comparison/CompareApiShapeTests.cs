@@ -18,6 +18,11 @@ public partial class CompareApiShapeTests
     // 4.11의 공개 타입 전부: 정적 클래스 3개 + 레코드 10개. 규칙·CSV 읽기는 internal이다(4.9).
     private static readonly string[] PublicTypes =
     [
+        // T-014(text-check.md)
+        "BlindFinding",
+        "BlindMarks",
+        "ChecklistEntry",
+        "ChecklistSummary",
         "CompareCounts",
         "CompareEngine",
         "CompareInputs",
@@ -30,6 +35,12 @@ public partial class CompareApiShapeTests
         "FieldDifference",
         "FieldSummary",
         "MetricsJson",
+        "RaterSummary",
+        "ScoreBlind",
+        "ScoreCount",
+        "ScorePaired",
+        "ScoreSource",
+        "ScoreSummary",
         "SourceFile",
     ];
 

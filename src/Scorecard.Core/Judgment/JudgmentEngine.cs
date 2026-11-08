@@ -5,7 +5,7 @@ using static Scorecard.Core.Judgment.JudgmentRules;
 
 namespace Scorecard.Core.Judgment;
 
-// 판정. docs/spec/judgment.md 4.1~4.10과 4.3~4.9, 6.5, 지시문 3.4.
+// 판정. docs/spec/judgment.md 4.1~4.10, 6.5, 지시문 3.4.
 // 대조가 미검증이면 판정도 미검증이다. 아니면 확인 다섯(정확도, 누락률, 설명 안 되는 검토 항목, 시간, 몰림)을 모두 계산하고
 // 판정 표(4.3)를 위에서부터 보고 처음 걸리는 행에서 멈춘다: 보류 → 조건부 → 통과.
 // 검토 항목(4.9)은 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행이다. 몰림은 불일치만 본다.
@@ -147,7 +147,7 @@ public static class JudgmentEngine
         return (new JudgmentThresholds(accuracyMin, missingMax, timeMustDrop), defaults.ToArray());
     }
 
-    // 4.3 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(4.5). 다음 할 일은 4.7.
+    // 4.3 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(4.6). 다음 할 일은 4.7.
     private static JudgmentResult NotVerified(CompareMetrics metrics, JudgmentThresholds thresholds, string[] defaults)
     {
         // 미검증 이유는 CheckConsistent가 정의와 맞춰 보았다(no_inputs 또는 no_compare_fields, 5절).
@@ -227,7 +227,7 @@ public static class JudgmentEngine
         var focus = FocusOf(definition, metrics, review.Bad);
         var checks = new[] { accuracy, missing, unexplained, time, focus.Check };
 
-        // 4.3 판정 표. 처음 걸리는 행. 판정 문장은 그 행(순서)에 오기까지 읽은 문턱(4.5)이 기본값이면 표시를 붙인다.
+        // 4.3 판정 표. 처음 걸리는 행. 판정 문장은 그 행(순서)에 오기까지 읽은 문턱(4.6)이 기본값이면 표시를 붙인다.
         // 사람이 아직 보지 않은 검토 항목은 몰림·시간 뒤의 조건부다(순서 7). 보류가 아니다.
         var (verdict, rule, reason, order) =
             !accuracyMet ? (VerdictHold, RuleAccuracy, AccuracyVerdict(Number(accuracyPct), Number(t.AccuracyMin)), OrderAccuracy)

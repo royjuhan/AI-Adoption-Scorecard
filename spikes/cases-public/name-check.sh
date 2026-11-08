@@ -7,8 +7,8 @@ names="$(mktemp)"
 # 1절 표(## 1. ~ ## 2. 사이)만 본다: 둘째 칸 앞쪽의 한글이 아닌 글자(라틴 문자·공백·'·-)가 회사 이름이다.
 awk -F'|' '/^## 1\./ {on=1} /^## 2\./ {on=0} on && /^\| [0-9]+ \|/ {print $3}' "$readme" \
   | sed -E 's/^ +//; s/[가-힣].*$//; s/ +$//' | sort -u > "$names"
-# 출처 줄의 이름.
-printf '%s\n' Microsoft AWS "Google Cloud" Google OpenAI >> "$names"
+# 출처 줄의 이름(괄호 앞 영문). 이 파일에 이름을 적지 않는다.
+grep '^출처:' "$readme" | grep -oP '[A-Za-z][A-Za-z ]*?(?=( 고객 사례)?\()' | sed -E 's/ +$//' >> "$names"
 # 여러 낱말 이름은 3자 이상 낱말도 따로 본다.
 tr ' ' '\n' < "$names" | awk 'length($0) >= 3' >> "$names"
 sort -u -o "$names" "$names"

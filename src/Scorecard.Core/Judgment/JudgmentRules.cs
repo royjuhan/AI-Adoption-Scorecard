@@ -5,8 +5,8 @@ using Scorecard.Core.Comparison;
 namespace Scorecard.Core.Judgment;
 
 // 판정의 값·숫자·문장을 이 파일 한 곳에만 둔다(docs/spec/judgment.md 4.13, classification.md 4.9와 같은 방식).
-// 원본은 스펙 4.2 기본값 표, 4.5 숫자 표, 4.6 기본값 표시와 T-012 11절 표다:
-// 4.9 검토 항목, 4.3 판정 표, 4.4 확인 표, 4.5 읽은 문턱, 4.7 다음 할 일.
+// 원본은 스펙 4.2 기본값 표, 4.5 숫자 표, 4.6 기본값 표시 규칙과 아래 표다:
+// 4.9 검토 항목, 4.3 판정 표, 4.4 확인 표, 4.6 읽은 문턱, 4.7 다음 할 일.
 // 값을 바꾸려면 스펙 표를 먼저 고친다. 테스트가 스펙 표를 읽어 Core 동작과 대조한다.
 // 실행 중에 스펙 문서를 읽지 않는다. 비교는 서수, 숫자는 InvariantCulture다.
 internal static class JudgmentRules
@@ -21,7 +21,7 @@ internal static class JudgmentRules
     public const decimal DefaultMissingMax = 2m;
     public const bool DefaultTimeMustDrop = true;
 
-    // 4.5 몰림을 보는 최소 불일치 수.
+    // 4.8 몰림을 보는 최소 불일치 수.
     public const int FocusMin = 2;
 
     // 4.4 확인 결과.
@@ -59,7 +59,7 @@ internal static class JudgmentRules
     // 몰림 값을 읽는 기준 행의 항목 상태(4.8 규칙 3). 중복 항목도 기준 행을 가리키지만 같은 행이라 넣지 않는다.
     public static readonly string[] ReferenceRowStatuses = [CompareEngine.ItemMatch, CompareEngine.ItemMismatch, CompareEngine.ItemMissing];
 
-    // 4.3 판정 표의 순서. 4.5 읽은 문턱 표가 이 순서로 적는다(UNEXPLAINED는 4·7 두 곳).
+    // 4.3 판정 표의 순서. 4.6 읽은 문턱 표가 이 순서로 적는다(UNEXPLAINED는 4·7 두 곳).
     public const int OrderNotVerified = 1;
     public const int OrderAccuracy = 2;
     public const int OrderMissing = 3;
@@ -151,7 +151,7 @@ internal static class JudgmentRules
     public static string ConfirmThresholdsText(string defaults) =>
         $"문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.";
 
-    // 4.5 읽은 문턱: 판정 표의 순서마다 그 행에 오기까지 읽은 문턱(4.2 순서).
+    // 4.6 읽은 문턱: 판정 표의 순서마다 그 행에 오기까지 읽은 문턱(4.2 순서).
     // "정확도·누락률은 충족하나"로 시작하는 문장은 앞 문턱도 읽은 것으로 본다. 순서 7은 시간(순서 5)을 지나 왔다.
     public static string[] ReadThresholds(int order) => order switch
     {

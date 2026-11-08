@@ -2,9 +2,8 @@
 
 - 상태: 승인됨(2026-11-07, 20문항 모두 제안대로). 승인 결과는 문서 끝. 대조와 지표만 정한다. 판정(통과·조건부·보류·미검증)은 판정 카드에서 정한다(11절).
 - T-009 개정(승인됨, 2026-11-07, `signoff-final.md` 승인 결과): 4번째 공개 예제 `signoff-final`. 7.1 예제 표 1행·항목 10, 새 6.5·7.5. 대조 규칙(3·4절)과 Core는 그대로다. 기존 블록·SHA-256 줄은 그대로다. 문서 끝 "T-009 개정". 근거·질문·결과는 `docs/spec/signoff-final.md`.
-- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 문서 끝 12절. 결과 쪽 키 중복은 대조 오류가 아니라 항목 `duplicate`다. `inputs.group` 열은 기준 파일에서 확인한다. metrics.json 속성과 `schema_version` 1, 예제 4종 `expected/metrics.json` 바이트는 그대로다. 제자리로 옮기는 것은 PR (b)다(12.7).
-- T-012 개정(채택, 12절): 결과 쪽 키 중복은 항목 `duplicate`, `inputs.group` 열 확인. T-013에서 3·4·8절 제자리로 옮겼다.
-- T-013 개정(채택 대기, 13절): 결과 쪽에 두 번 이상 나온 기준 키는 값과 상관없이 값 불일치다. 중복 항목에 기준과의 차이를 적는다. `fields[].compared`는 기준에 키가 있는 결과 행 수다. 예제 4종 expected 바이트는 그대로다. 근거·질문은 13절.
+- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 문서 끝 12절. 결과 쪽 키 중복은 대조 오류가 아니라 항목 `duplicate`다. `inputs.group` 열은 기준 파일에서 확인한다. metrics.json 속성과 `schema_version` 1, 예제 4종 `expected/metrics.json` 바이트는 그대로다. T-013에서 3·4·8절 제자리로 옮겼다(12.7).
+- T-013 개정(채택, ADR 0005 결정 3, 13절): 결과 쪽에 두 번 이상 나온 기준 키는 값과 상관없이 값 불일치다. 중복 항목에 기준과의 차이를 적는다. `fields[].compared`는 기준에 키가 있는 결과 행 수다. 예제 4종 expected 바이트는 그대로다. 근거·질문은 13절.
 - 반영한 사람 결정: ADR 0004(2026-11-07 juhan 승인). 결정 2: metrics.json 첫 키 `"schema_version": 1`(정수)(3.2). 결정 3·6: 명령 넷과 내부 명령, `--json` 출력, 오류 JSON, 종료 코드 0/2/1(3.4). expected 변경 규칙·상시 승인 예외(7.1, 승인 질문 머리말).
 - 진행 순서: T-007은 PR #7로 머지됐다(main `38a507c`). Core 구현과 `expected/metrics.json` 커밋은 이 스펙의 승인 뒤에 한다. expected는 juhan이 직접 확정한다(7.1, 8절, 승인 질문 15·17·18).
 - 작업 카드: `docs/tasks/T-006-compare-engine.md`
@@ -75,7 +74,7 @@
 
 ### 3.1 메모리 결과
 
-- T-012 개정(제안): 항목 순서에 결과 쪽 `duplicate`가 든다(12.2).
+- T-012 개정(채택): 항목 순서에 결과 쪽 `duplicate`가 든다(12.2).
 
 `CompareResult(Metrics, Errors)` 하나. 오류가 하나라도 있으면 `Metrics`는 null이다(`CaseParseResult`와 같은 모양). 오류가 있으면 지표를 내지 않는다(4.7).
 
@@ -84,7 +83,7 @@
 
 ### 3.2 metrics.json
 
-- T-012 개정(제안): `items[].status` 값 `duplicate`, `counts.candidate`의 중복 행. 속성은 그대로다(12.4).
+- T-012 개정(채택): `items[].status` 값 `duplicate`, `counts.candidate`의 중복 행. 속성은 그대로다(12.4).
 
 Core가 바이트를 만든다(`MetricsJson.Render`). 모양:
 
@@ -291,7 +290,7 @@ T-005 예제 CSV(synthetic-examples.md 3.3)는 ASCII, BOM 없음, LF, 따옴표 
 
 ### 4.3 키
 
-- T-012 개정(제안): 결과 쪽 같은 키는 오류가 아니라 항목 `duplicate`다. 기준 쪽은 그대로 `duplicate-key`다(12.2).
+- T-012 개정(채택): 결과 쪽 같은 키는 오류가 아니라 항목 `duplicate`다. 기준 쪽은 그대로 `duplicate-key`다(12.2, T-013에서 13절이 대조 방법을 바꿨다).
 
 - 키 열은 머리 행에서 `inputs.key`와 같은 이름(정규화 뒤 서수)이다. 없으면 `column` 오류(양쪽 모두).
 - 키 값은 정규화(4.6) 뒤 서수로 비교한다. 앞뒤 공백은 뗀다 [P:key trim-matches]. 대소문자, NFC·NFD는 다른 키다 [P:key case-differs, nfc-vs-nfd]. 숫자로 보지 않는다: `1`과 `1.0`은 다른 키다 [P:key numeric-text-key]. 다른 키면 누락 1 + 추가 1이 된다.
@@ -308,7 +307,7 @@ T-005 예제 CSV(synthetic-examples.md 3.3)는 ASCII, BOM 없음, LF, 따옴표 
 
 ### 4.4 항목과 셈
 
-- T-012 개정(제안): 용어 `duplicate`(결과 쪽 같은 키의 둘째 이후 행)가 는다. 정확도·누락률 셈은 그대로다(12.2).
+- T-012 개정(채택): 용어 `duplicate`(결과 쪽 같은 키의 둘째 이후 행)가 는다. T-013(13절) 뒤: 결과 쪽에 두 번 이상 나온 기준 키는 값과 상관없이 값 불일치다. 정확도·누락률는 이 값 불일치를 센다(13.2).
 
 T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3%)을 맞추는 읽기는 P2뿐이다 [읽음 synthetic-examples.md 4.7].
 
@@ -477,7 +476,7 @@ T-005 4.7의 P2를 확정한다(제안). 12절 숫자 셋(결과 30건, 90%, 3.3
 
 ### 4.7 오류
 
-- T-012 개정(제안): `column`·`duplicate-column`이 기준 쪽 `inputs.group` 열도 본다. `duplicate-key`는 기준 쪽만이다(12.2, 12.3). 코드 13개는 그대로다.
+- T-012 개정(채택): `column`·`duplicate-column`이 기준 쪽 `inputs.group` 열도 본다. `duplicate-key`는 기준 쪽만이다(12.2, 12.3). 코드 13개는 그대로다.
 
 오류 하나는 `CaseError(Source, Line, Column, Code, Path, Message)`다(case-schema 4.9를 그대로 쓴다). 문자열 형식도 같다: `<Source>:<Line>:<Column>: <Code> <Path>: <Message>`. 열이 0이면 `<Source>:<Line>:`, 줄도 0이면 `<Source>:`, 경로가 비면 `<Code>: <Message>`.
 
@@ -1440,7 +1439,7 @@ T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 항목 10, �
 
 - 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. 질문은 `judgment.md` 11.19의 2·3·7이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
 - 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 1(결과 자료의 결함이 판정에 닿지 않는다) [읽음]. 4.4 "추가 … 판정에 쓸지는 판정 카드가 정한다"의 답은 `judgment.md` 11.3이다.
-- 근거: oracle `tools/oracle/compare.py`(이 절 글만 보고 고쳤다. `src/`는 읽지 않았다). 이 절의 블록·SHA-256은 oracle이 낸 것이다 `[T12:O]`. C# 엔진은 PR (b)다(**미확인**).
+- 근거: oracle `tools/oracle/compare.py`(이 절 글만 보고 고쳤다. `src/`는 읽지 않았다). 이 절의 블록·SHA-256은 oracle이 낸 것이다 `[T12:O]`. C# 엔진은 T-012b(#15)가 반영했다.
 - 바꾸는 곳(T-013에서 제자리로 옮겼다. 12.7): 3.1 항목 순서, 3.2 속성 표 뜻 칸 셋, 4.3 중복 글머리, 4.4 용어 표, 4.7 오류 표 세 행의 "언제", 4.11 상수 하나, 8절 표 "키" 행.
 - 바꾸지 않는 곳: metrics.json 속성 이름·순서·형식과 `schema_version` 1, 오류 코드 13개와 메시지, 정확도·누락률 셈, 예제 4종 `expected/metrics.json` 바이트, 6.4 `compare-invalid`(결과 쪽 중복이 없다), G2·G3 대상.
 
@@ -1479,7 +1478,7 @@ T-009(승인됨, juhan 확정 2026-11-07). 만드는 방법은 7.1 항목 10, �
 - 속성 이름·순서·형식은 그대로다. `schema_version`도 1 그대로다. 속성을 빼거나 이름·뜻을 바꾸지 않았다. 값 `duplicate`가 늘고, `counts.candidate`가 중복 행도 센다(결과 행 수라는 뜻은 같다).
 - 결과 쪽 중복이 없는 자료는 바이트가 같다. 예제 4종이 그렇다(12.6).
 - 읽는 쪽 주의: `items[].status`를 넷으로 가정한 코드는 `duplicate`를 다뤄야 한다. 판정(`judgment.md` 11.3)이 다룬다. 스킬 `/scorecard`가 이 값을 읽는지는 **미확인**(M2-7).
-- 3.2 속성 표 뜻 칸(PR (b)에서 고친다): `compare.counts.candidate` "결과 행 수 = 일치 + 값 불일치 + 추가 + 중복 행", `compare.items[].status` "`match`, `mismatch`, `missing`, `extra`, `duplicate`", `compare.items[].reference` "기준 행 위치. 추가 항목과 기준에 없는 키의 중복 항목이면 null". 3.2 "`items`에 쓰는 항목" 글머리에 중복을 더한다.
+- 3.2 속성 표 뜻 칸(T-012b에서 고쳤다): `compare.counts.candidate` "결과 행 수 = 일치 + 값 불일치 + 추가 + 중복 행", `compare.items[].status` "`match`, `mismatch`, `missing`, `extra`, `duplicate`", `compare.items[].reference` "기준 행 위치. 추가 항목과 기준에 없는 키의 중복 항목이면 null". 3.2 "`items`에 쓰는 항목" 글머리에 중복을 더한다.
 - 대안(추천하지 않음): `counts.duplicate` 키를 더한다. 예제 4종 metrics.json 바이트가 모두 바뀌고 `schema_version`을 올려야 한다. 수는 `items`에서 셀 수 있다.
 - → `judgment.md` 질문 3.
 
@@ -1641,7 +1640,7 @@ r5,55
 - `r2`: 결과 쪽에 두 번 나와 값 불일치다(T-013, 4.3). 기준 항목에는 대표 행(3줄, `21`)의 차이를 적는다. 둘째 행(4줄, `20`)은 기준과 같은 값이라 `duplicate` 항목의 `differences`가 `[]`다. 줄 순서를 바꾸면 차이가 `duplicate` 항목으로 옮긴다(13.3).
 - `r5`: 기준에 없다. 첫 행(5줄)은 `extra`, 둘째 행(7줄)은 `duplicate`이고 `reference`가 null이다.
 - `r4`: 누락. 셈: 기준 4, 결과 6(= 일치 2 + 값 불일치 1 + 추가 1 + 중복 2), 정확도 50.0, 누락률 25.0. `value`의 `compared`는 4다(`r1`·`r2` 두 행·`r3`. T-013 전 블록은 3이었다, 13.2).
-- 결과 파일에 `kind` 열이 없어도 된다(12.3). 판정은 `judgment.md` 11.9 블록이다.
+- 결과 파일에 `kind` 열이 없어도 된다(12.3). 판정은 `judgment.md` 6.4 블록이다.
 
 ### 12.6 예제 4종
 
@@ -1662,9 +1661,9 @@ r5,55
 
 ## 13. T-013 개정 (결과 쪽 중복의 셈)
 
-- 상태: 초안(2026-11-07, prototyper). ADR 0005 결정 3에 따라 리드가 추천안을 채택한다. 질문은 `judgment.md` 12.6의 1·2·3이다.
+- 상태: 채택(ADR 0005 결정 3). 2026-11-07, prototyper 초안. 질문은 `judgment.md` 12.6의 1·2·3이다.
 - 작업 카드: `docs/tasks/T-013-cleanup.md` 수용 기준 1. 출발점: T-012 PR (a) 리뷰 지적 1 [읽음 T-012 카드].
-- 근거: oracle `tools/oracle/compare.py`(이 절과 4.3 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). 이 절의 숫자·SHA-256은 oracle이 낸 것이다 `[T13:O]`. C# 엔진은 아직 옛 규칙이다(**미확인**, core-dev).
+- 근거: oracle `tools/oracle/compare.py`(이 절과 4.3 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). 이 절의 숫자·SHA-256은 oracle이 낸 것이다 `[T13:O]`.
 - 바꾼 곳: 4.3 결과 쪽 중복 글머리, 4.4 용어 표 값 불일치·중복 행과 필드별 셈 글머리, 3.2 속성 표 `fields[].compared`·`items[].differences` 뜻 칸, 12.5 블록(`compared` 3 → 4)과 SHA-256 줄.
 - 바꾸지 않은 곳: metrics.json 속성 이름·순서·형식과 `schema_version` 1, 오류 코드 13개, 정확도·누락률 셈, 예제 4종 expected 12개 바이트, `judgment.md` 6.4 `compare-duplicate` 판정 블록.
 

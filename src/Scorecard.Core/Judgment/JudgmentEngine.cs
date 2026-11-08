@@ -5,10 +5,10 @@ using static Scorecard.Core.Judgment.JudgmentRules;
 
 namespace Scorecard.Core.Judgment;
 
-// 판정. docs/spec/judgment.md 4.1~4.10과 T-012 11절(11.3~11.10), 지시문 3.4.
+// 판정. docs/spec/judgment.md 4.1~4.10과 4.3~4.9, 6.5, 지시문 3.4.
 // 대조가 미검증이면 판정도 미검증이다. 아니면 확인 다섯(정확도, 누락률, 설명 안 되는 검토 항목, 시간, 몰림)을 모두 계산하고
-// 판정 표(11.4)를 위에서부터 보고 처음 걸리는 행에서 멈춘다: 보류 → 조건부 → 통과.
-// 검토 항목(11.3)은 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행이다. 몰림은 불일치만 본다.
+// 판정 표(4.3)를 위에서부터 보고 처음 걸리는 행에서 멈춘다: 보류 → 조건부 → 통과.
+// 검토 항목(4.9)은 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행이다. 몰림은 불일치만 본다.
 // 문턱 비교는 셈(counts)으로 한다. 표시 퍼센트로 비교하지 않는다. 나눗셈을 쓰지 않는다.
 // 순수 함수다. 파일·난수·시각·환경·현재 문화권을 쓰지 않는다. 입력을 바꾸지 않는다. 값·문장은 JudgmentRules에서 읽는다.
 public static class JudgmentEngine
@@ -25,7 +25,7 @@ public static class JudgmentEngine
     public const string RuleFocus = "FOCUS";
     public const string RulePass = "PASS";
 
-    // 순수 함수. times: 재지 않았으면 null. unexplainedKeys: 사람이 아직 보지 않았으면 null. 키는 검토 항목(11.3)의 키다(11.9).
+    // 순수 함수. times: 재지 않았으면 null. unexplainedKeys: 사람이 아직 보지 않았으면 null. 키는 검토 항목(4.9)의 키다(4.9).
     // 대조 오류가 있으면(CompareResult.Metrics가 null) 부르는 쪽이 판정하지 않는다(5절).
     // 대조 결과가 이 정의에서 나온 것이 아니면 ArgumentException이다(5절 "정의와 대조 결과", T-013).
     public static JudgmentResult Judge(CaseDefinition definition, CompareMetrics metrics, JudgmentTimes? times = null, IReadOnlyList<string>? unexplainedKeys = null)
@@ -44,8 +44,8 @@ public static class JudgmentEngine
             throw new ArgumentOutOfRangeException(nameof(times), times, "시간은 0 이상이다.");
         }
 
-        // 11.3 검토 항목: 항목 상태가 표의 상태인 것. 수는 표 순서(불일치, 추가 행, 중복 행)로 센다.
-        // 불일치 = 값 불일치 + 누락 항목(기준 행). 몰림({bad})은 불일치만 본다(11.5 둘째 글머리).
+        // 4.9 검토 항목: 항목 상태가 표의 상태인 것. 수는 표 순서(불일치, 추가 행, 중복 행)로 센다.
+        // 불일치 = 값 불일치 + 누락 항목(기준 행). 몰림({bad})은 불일치만 본다(4.4 둘째 글머리).
         var review = new ReviewItemSet(
             metrics.Items.Where(i => ReviewItems.Any(r => r.Statuses.Contains(i.Status))).ToArray(),
             ReviewItems.Select(r => metrics.Items.Count(i => r.Statuses.Contains(i.Status))).ToArray(),
@@ -100,7 +100,7 @@ public static class JudgmentEngine
         }
     }
 
-    // 11.9: 사람 입력 키는 검토 항목(불일치·추가 행·중복 행)의 키여야 하고 중복이 없어야 한다. 아니면 부르는 쪽 잘못이다.
+    // 4.9: 사람 입력 키는 검토 항목(불일치·추가 행·중복 행)의 키여야 하고 중복이 없어야 한다. 아니면 부르는 쪽 잘못이다.
     // 키 하나가 항목 여럿을 덮을 수 있다(결과 쪽에 여러 번 나온 키).
     private static void CheckUnexplainedKeys(IReadOnlyList<string>? keys, CompareItem[] review, string paramName)
     {
@@ -147,7 +147,7 @@ public static class JudgmentEngine
         return (new JudgmentThresholds(accuracyMin, missingMax, timeMustDrop), defaults.ToArray());
     }
 
-    // 11.4 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(11.6). 다음 할 일은 11.7.
+    // 4.3 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(4.5). 다음 할 일은 4.7.
     private static JudgmentResult NotVerified(CompareMetrics metrics, JudgmentThresholds thresholds, string[] defaults)
     {
         // 미검증 이유는 CheckConsistent가 정의와 맞춰 보았다(no_inputs 또는 no_compare_fields, 5절).
@@ -199,7 +199,7 @@ public static class JudgmentEngine
             RuleMissing, missingMet ? Met : NotMet,
             Marked(MissingCheck(missingMet, Number(missingRatePct), Number(counts.Missing), reference, Number(t.MissingMax)), KeyMissingMax));
 
-        // 11.5 UNEXPLAINED(11.9): 검토 항목이 없으면 none. 있으면 사람 입력으로 정한다. {unexplained}는 키 수다.
+        // 4.4 UNEXPLAINED(4.9): 검토 항목이 없으면 none. 있으면 사람 입력으로 정한다. {unexplained}는 키 수다.
         var unexplainedCount = Number(unexplainedKeys?.Count ?? 0);
         var unexplained = review.Items.Length == 0 ? new JudgmentCheck(RuleUnexplained, None, UnexplainedNoneCheck)
             : unexplainedKeys is null ? new JudgmentCheck(RuleUnexplained, NotReviewed, UnexplainedNotReviewedCheck(itemsText, breakdown))
@@ -227,7 +227,7 @@ public static class JudgmentEngine
         var focus = FocusOf(definition, metrics, review.Bad);
         var checks = new[] { accuracy, missing, unexplained, time, focus.Check };
 
-        // 11.4 판정 표. 처음 걸리는 행. 판정 문장은 그 행(순서)에 오기까지 읽은 문턱(11.6)이 기본값이면 표시를 붙인다.
+        // 4.3 판정 표. 처음 걸리는 행. 판정 문장은 그 행(순서)에 오기까지 읽은 문턱(4.5)이 기본값이면 표시를 붙인다.
         // 사람이 아직 보지 않은 검토 항목은 몰림·시간 뒤의 조건부다(순서 7). 보류가 아니다.
         var (verdict, rule, reason, order) =
             !accuracyMet ? (VerdictHold, RuleAccuracy, AccuracyVerdict(Number(accuracyPct), Number(t.AccuracyMin)), OrderAccuracy)
@@ -243,7 +243,7 @@ public static class JudgmentEngine
             reason += DefaultMark;
         }
 
-        // 11.7 다음 할 일. 표 순서.
+        // 4.7 다음 할 일. 표 순서.
         var todo = new List<JudgmentTodo>();
         if (time.Result == NotMeasured)
         {
@@ -264,7 +264,7 @@ public static class JudgmentEngine
         return new JudgmentResult(metrics.Case, verdict, rule, reason, t, defaults, checks, todo.ToArray());
     }
 
-    // 11.7 confirm_thresholds. {defaults}: 기본값을 쓴 키와 값을 4.2 순서로 ", "로 잇는다.
+    // 4.7 confirm_thresholds. {defaults}: 기본값을 쓴 키와 값을 4.2 순서로 ", "로 잇는다.
     private static void AddConfirmThresholds(List<JudgmentTodo> todo, JudgmentThresholds t, string[] defaults)
     {
         if (defaults.Length == 0)
@@ -306,7 +306,7 @@ public static class JudgmentEngine
         }
     }
 
-    // 11.8 몰림(M-A). 열은 case.yaml inputs.group 하나다. Group·Value는 found일 때 판정 문장에 쓰는 표시 글자다.
+    // 4.8 몰림(M-A). 열은 case.yaml inputs.group 하나다. Group·Value는 found일 때 판정 문장에 쓰는 표시 글자다.
     private static FocusResult FocusOf(CaseDefinition definition, CompareMetrics metrics, CompareItem[] bad)
     {
         var badText = Number(bad.Length);
@@ -366,6 +366,6 @@ public static class JudgmentEngine
 
     private sealed record FocusResult(JudgmentCheck Check, string? Group, string? Value);
 
-    // 11.3 검토 항목. Items: 검토 항목 전부(대조 항목 순서). Counts: ReviewItems 표 순서의 수. Bad: 불일치 항목(값 불일치·누락).
+    // 4.9 검토 항목. Items: 검토 항목 전부(대조 항목 순서). Counts: ReviewItems 표 순서의 수. Bad: 불일치 항목(값 불일치·누락).
     private sealed record ReviewItemSet(CompareItem[] Items, int[] Counts, CompareItem[] Bad);
 }

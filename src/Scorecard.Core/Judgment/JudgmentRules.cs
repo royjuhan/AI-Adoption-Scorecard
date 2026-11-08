@@ -6,7 +6,7 @@ namespace Scorecard.Core.Judgment;
 
 // 판정의 값·숫자·문장을 이 파일 한 곳에만 둔다(docs/spec/judgment.md 4.13, classification.md 4.9와 같은 방식).
 // 원본은 스펙 4.2 기본값 표, 4.5 숫자 표, 4.6 기본값 표시와 T-012 11절 표다:
-// 11.3 검토 항목, 11.4 판정 표, 11.5 확인 표, 11.6 읽은 문턱, 11.7 다음 할 일.
+// 4.9 검토 항목, 4.3 판정 표, 4.4 확인 표, 4.5 읽은 문턱, 4.7 다음 할 일.
 // 값을 바꾸려면 스펙 표를 먼저 고친다. 테스트가 스펙 표를 읽어 Core 동작과 대조한다.
 // 실행 중에 스펙 문서를 읽지 않는다. 비교는 서수, 숫자는 InvariantCulture다.
 internal static class JudgmentRules
@@ -37,7 +37,7 @@ internal static class JudgmentRules
     public const string OneValue = "one_value";
     public const string Spread = "spread";
 
-    // 11.7 다음 할 일 키.
+    // 4.7 다음 할 일 키.
     public const string TodoAddData = "add_data";
     public const string TodoAddCompare = "add_compare";
     public const string TodoMeasureTime = "measure_time";
@@ -45,7 +45,7 @@ internal static class JudgmentRules
     public const string TodoAddGroup = "add_group";
     public const string TodoConfirmThresholds = "confirm_thresholds";
 
-    // 11.3 검토 항목: {breakdown} 이름과 그 항목 상태. 이 순서가 {breakdown} 순서다. match는 검토 항목이 아니다.
+    // 4.9 검토 항목: {breakdown} 이름과 그 항목 상태. 이 순서가 {breakdown} 순서다. match는 검토 항목이 아니다.
     public static readonly (string Name, string[] Statuses)[] ReviewItems =
     [
         ("불일치", [CompareEngine.ItemMismatch, CompareEngine.ItemMissing]),
@@ -53,13 +53,13 @@ internal static class JudgmentRules
         ("중복 행", [CompareEngine.ItemDuplicate]),
     ];
 
-    // 몰림({bad})·몰림 값에 쓰는 불일치 항목 상태(11.5 둘째 글머리). 추가 행·중복 행은 넣지 않는다.
+    // 몰림({bad})·몰림 값에 쓰는 불일치 항목 상태(4.4 둘째 글머리). 추가 행·중복 행은 넣지 않는다.
     public static readonly string[] BadStatuses = [CompareEngine.ItemMismatch, CompareEngine.ItemMissing];
 
-    // 몰림 값을 읽는 기준 행의 항목 상태(11.8 규칙 3). 중복 항목도 기준 행을 가리키지만 같은 행이라 넣지 않는다.
+    // 몰림 값을 읽는 기준 행의 항목 상태(4.8 규칙 3). 중복 항목도 기준 행을 가리키지만 같은 행이라 넣지 않는다.
     public static readonly string[] ReferenceRowStatuses = [CompareEngine.ItemMatch, CompareEngine.ItemMismatch, CompareEngine.ItemMissing];
 
-    // 11.4 판정 표의 순서. 11.6 읽은 문턱 표가 이 순서로 적는다(UNEXPLAINED는 4·7 두 곳).
+    // 4.3 판정 표의 순서. 4.5 읽은 문턱 표가 이 순서로 적는다(UNEXPLAINED는 4·7 두 곳).
     public const int OrderNotVerified = 1;
     public const int OrderAccuracy = 2;
     public const int OrderMissing = 3;
@@ -75,7 +75,7 @@ internal static class JudgmentRules
     // 4.5 빈 값 표시.
     public const string EmptyValue = "(빈 칸)";
 
-    // 11.4 판정 문장 틀.
+    // 4.3 판정 문장 틀.
     public const string NoInputsVerdict = "검증 자료(case.yaml inputs)가 없어 미검증.";
     public const string NoCompareFieldsVerdict = "대조할 열(case.yaml compare)이 없어 미검증.";
     public const string TimeNotMeasuredVerdict = "정확도·누락률은 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.";
@@ -99,7 +99,7 @@ internal static class JudgmentRules
     public static string UnexplainedNotReviewedVerdict(string items, string breakdown) =>
         $"정확도·누락률은 문턱을 충족하나 검토할 항목 {items}건({breakdown})을 사람이 아직 보지 않았으므로 조건부.";
 
-    // 11.5 확인 문장 틀.
+    // 4.4 확인 문장 틀.
     public static string AccuracyCheck(bool met, string accuracyPct, string match, string reference, string accuracyMin) => met
         ? $"정확도 {accuracyPct}%({match}/{reference})가 문턱 {accuracyMin}% 이상이다."
         : $"정확도 {accuracyPct}%({match}/{reference})가 문턱 {accuracyMin}%에 못 미친다.";
@@ -138,7 +138,7 @@ internal static class JudgmentRules
 
     public static string FocusSpreadCheck(string bad, string group) => $"불일치 {bad}건이 {group} 열의 한 값에 몰리지 않았다.";
 
-    // 11.7 다음 할 일 문구.
+    // 4.7 다음 할 일 문구.
     public const string AddDataText =
         "기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.";
 
@@ -151,7 +151,7 @@ internal static class JudgmentRules
     public static string ConfirmThresholdsText(string defaults) =>
         $"문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.";
 
-    // 11.6 읽은 문턱: 판정 표의 순서마다 그 행에 오기까지 읽은 문턱(4.2 순서).
+    // 4.5 읽은 문턱: 판정 표의 순서마다 그 행에 오기까지 읽은 문턱(4.2 순서).
     // "정확도·누락률은 충족하나"로 시작하는 문장은 앞 문턱도 읽은 것으로 본다. 순서 7은 시간(순서 5)을 지나 왔다.
     public static string[] ReadThresholds(int order) => order switch
     {
@@ -161,7 +161,7 @@ internal static class JudgmentRules
         _ => [KeyAccuracyMin, KeyMissingMax, KeyTimeMustDrop],
     };
 
-    // 11.3 {breakdown}: 이름마다 수를 세어 0이 아닌 것만 "이름 N건"으로 쓰고 ", "로 잇는다. counts는 ReviewItems 순서다.
+    // 4.9 {breakdown}: 이름마다 수를 세어 0이 아닌 것만 "이름 N건"으로 쓰고 ", "로 잇는다. counts는 ReviewItems 순서다.
     public static string Breakdown(IReadOnlyList<int> counts) =>
         string.Join(", ", ReviewItems.Select((r, i) => (r.Name, Count: counts[i])).Where(p => p.Count > 0).Select(p => $"{p.Name} {Number(p.Count)}건"));
 

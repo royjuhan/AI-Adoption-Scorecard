@@ -23,8 +23,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
-- 진행 중: M2-3 HTML 스코어카드(T-020). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23), M2-2(#24, #27)는 끝났다.
-- 다음: M2-4 build 번들(T-021, 브랜치 `t021`, M2-3 위), v0.1.0-alpha 태그(ADR 0010 B-12).
+- 진행 중: M2-4 build 번들(T-021). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23), M2-2(#24, #27), M2-3(#28)은 끝났다.
+- 다음: v0.1.0-alpha 태그(ADR 0010 B-12).
 - 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
@@ -58,6 +58,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-018 M2-1 명령 틀 | #23 | 2026-11-08 | 2084 | Cli 새 코드(lead_check 로컬 측정, measured) | 리뷰 1회 막는 지적 없음. Cli N6 허용 목록 `Scorecard.Core`(T-018 9). CI mutation 재사용은 이 환경에서 아티팩트 저장소가 막혀 로컬로 돌림 |
 | T-019a M2-2 schema 2 스펙·oracle | #24 | 2026-11-08 | 2084 | 해당 없음(src 변경 없음) | ADR 0013, juhan 확인(사용자 확인은 스킬 대화, 게이트는 트리). 리뷰 막는 지적 1(SIGNOFF+AI 비④ 게이트) 고침 |
 | T-019b M2-2 Core·expected·스킬 | #27 | 2026-11-08 | 2153 | 바뀐 Core 파일 합계 91.85%(base 91.38%) | ADR 0014. 민감 경로 전체 diff 리뷰 막는 지적 없음. #25·#26은 브랜치 기록·커밋 범위로 regression-guard에 걸려 닫고 다시 엶 |
+| T-020 M2-3 HTML 스코어카드 | #28 | 2026-11-08 | 2198 | CI mutation 녹색(바뀐 파일 base 이상) | 리뷰 1회 막는 지적 없음(AI 서명 단계 게이트 표시 하나는 고침). 민감 경로 tools/html-check 전체 diff 리뷰 막는 지적 없음. Windows CRLF 원본에서 CSS 줄바꿈 고침 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 

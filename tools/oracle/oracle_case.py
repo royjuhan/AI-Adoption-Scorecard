@@ -1,5 +1,5 @@
 # case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13, T-012 개정(inputs.group), T-014(text-check.md 4.1: checklist·scores·
-# thresholds.score_gap_max)을 보고 짰다(src/는 읽지 않았다).
+# thresholds.score_gap_max), M2-2(case-schema 4.14: 단계의 AI 판단 ai)를 보고 짰다(src/는 읽지 않았다).
 # 오류가 있는 입력은 모델을 만들지 않고 OracleError로 멈춘다. 엔진의 오류 줄은 흉내 내지 않는다.
 from __future__ import annotations
 
@@ -28,7 +28,9 @@ ANSWER_KEYS = tuple(a[0] for a in ANSWERS)
 
 # case-schema 4.3 최상위 키, 4.4 단계 항목 키, 4.5 inputs·compare·thresholds 키.
 TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'checklist', 'scores', 'thresholds')
-STEP_KEYS = ('name', 'answers', 'inferred')
+STEP_KEYS = ('name', 'answers', 'inferred', 'ai')  # ai: M2-2(case-schema 4.14), 선택
+AI_KEYS = ('assignee', 'reason')
+AI_ASSIGNEES = ('①', '②', '②M', '③', '④')  # case-schema 4.14. 서수 비교
 INPUT_KEYS = ('reference', 'candidate', 'key', 'group')  # group: T-012 개정(case-schema 10.2), 선택
 COMPARE_KEYS = ('field', 'tolerance', 'tolerance_pct')
 THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop', 'score_gap_max')  # score_gap_max: T-014
@@ -51,9 +53,17 @@ class Answer:
 
 
 @dataclass(frozen=True)
+class AiJudgment:
+    """case-schema 4.14 단계의 ai. 담당(AI_ASSIGNEES 하나)과 근거(쓴 글 그대로)."""
+    assignee: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class Step:
     name: str
     answers: dict  # 키 → Answer, ANSWER_KEYS 순서
+    ai: AiJudgment | None = None  # M2-2. 키가 없거나 null이면 None
 
 
 @dataclass(frozen=True)
@@ -227,7 +237,7 @@ def parse_case(data: bytes, source: str) -> Case:
         if step_name in seen_names:
             r.fail(step_map.get('name'), f'{p}.name', '단계 이름이 중복된다')
         seen_names.add(step_name)
-        steps.append(Step(step_name, _answers(r, step_map, p)))
+        steps.append(Step(step_name, _answers(r, step_map, p), _ai(r, step_map, p)))
 
     inputs = None
     inputs_node = root.get('inputs')
@@ -357,6 +367,20 @@ def _scores(r: _Reader, root: Mapping):
     if low >= high:
         r.fail(m.get('max'), 'scores.max', f'범위 밖이다 (min보다 커야 한다): {high}')  # range, 위치는 max 값
     return Scores(sheet, sources, low, high)
+
+
+def _ai(r: _Reader, step_map: Mapping, p: str):
+    """case-schema 4.14 ai. 없거나 null이면 None. 오류 입력은 OracleError로 멈춘다."""
+    node = step_map.get('ai')
+    if _is_null(node):
+        return None
+    m = r.mapping(node, f'{p}.ai', AI_KEYS)
+    assignee_node = m.get('assignee')
+    assignee = r.string(assignee_node, f'{p}.ai.assignee', required=True)
+    if assignee not in AI_ASSIGNEES:
+        r.fail(assignee_node, f'{p}.ai.assignee', f"선택지 밖의 값 '{assignee}'")  # enum
+    reason = r.string(m.get('reason'), f'{p}.ai.reason', required=True)
+    return AiJudgment(assignee, reason)
 
 
 def _answers(r: _Reader, step_map: Mapping, p: str) -> dict:

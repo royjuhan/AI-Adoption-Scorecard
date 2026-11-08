@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-019 (a) |
 | 2026-11-08 | 0012 | sweeper: 스펙 6개를 본문(200줄 이내, 지금 동작)과 `docs/spec/data/`(테스트·oracle이 읽는 표·블록, 바이트 그대로)로 나눔. `SpecDocument` 상수 6개·`selftest.py` 경로 5개를 data로, 줄 선택 하나. 지시문 정리·`spikes/` 삭제. 가드·개수는 그대로 | juhan 지시 | sweeper PR |
 | 2026-11-08 | 0011 | `lead_check.py --mutation-from`: CI `mutation` 잡의 `mutation.json`을 다시 쓴다. 조건: base 도구, `.github/`·`tools/ci/` 변경 없음, base 같음, CI head 트리 = head 트리, status `measured`·`not_applicable`. 아니면 로컬 Stryker. 독립성이 조금 준다(ADR 남은 위험) | juhan 선택 | ADR 0011 PR |
 | 2026-11-08 | 0010 | 방향 수정. A: 도구는 온라인 AI 도구, 분류는 AI 판단 + 규칙 의견(다르면 표시), 검증 숫자는 Core, 오프라인·실행 시 AI 없음은 납품물만(가드는 납품물 템플릿으로 옮길 카드까지 그대로), exe 문답 없음, AI에 보낼 자료는 사용자가 정함(README 한 줄). B: 빈 곳 카드는 M2 뒤, 스펙 200줄, 리뷰 1회·막는 지적만·나머지 `docs/LATER.md`, [재검토]는 CI 빨간불만, oracle은 Core 대조·판정만, effort, M2 넷 순서와 v0.1.0-alpha. 지시문 1절·2절 머리말·1·6·7·3.1·3.3·3.5·5절·9절·10절·13절, CLAUDE.md, `.claude/agents/`. 2절 8·10은 그대로 | juhan 지시 | ADR 0010 PR |
@@ -61,6 +62,18 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | T-019 M2-2 | 1 AI 판단 입력 | 단계 항목 선택 키 `ai: {assignee, reason}`. 담당 `①` `②` `②M` `③` `④`, 근거는 비지 않은 문자열(case-schema 4.14) | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 2 ②M | 학습 모델(결정론): 미리 학습해 고정한 모델, 실행 때 AI 없음. ②의 한 갈래라 규칙 의견과 비교할 때 ② | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 3 출력 모양 | 단계마다 `name` 뒤 `source`(`ai`·`rule`), `rule_opinion {assignee, rule}`, `differs`. AI 단계의 `step` 행은 `rule` `AI`, 근거 그대로, 표시 없음 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 4 부가 행 | `PARTIAL`·`GATE`는 AI 판단과 상관없이 트리 것 그대로. 대안(규칙 의견에만 둠)은 게이트가 빠져 추천하지 않음 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 5 `differs` | `step` 행 담당의 비교 값만 본다. `ai`가 없으면 false | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 6 확인 항목 | `confirm_existing_feature` 삭제(T-017 카드 5), `measure_minutes_per_item`은 남김 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 7 AI 과잉 후보 | `current_actor: ai_each_time`이고 `step` 행 담당의 비교 값이 ②(②M 포함) | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 8 schema_version | 1 → 2(ADR 0008 결정 1: 받던 입력에서 값이 빠지고 단계 속성이 는다). expected migration 다섯 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 9 PR 나누기 | 두 PR. (a) 스펙·oracle·ADR, (b) Core·expected·TestData·스킬·Cli 골든(`oracle-and-expected`) | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 10 oracle 판 | schema 1·2 두 판을 expected `schema_version`으로 고름. 섞이면 분류 모두 DIFF. schema 1 판은 `ai`를 거절. PR (b) 뒤 첫 oracle 변경에서 삭제 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 11 예제 | 공개 예제 다섯에 `ai`를 넣지 않음(모두 `source: rule`). TestData 표본 `ai-judgment`로 확인 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 12 사용자 확인(LATER #20) | 스킬 대화에서 단계마다 AI 판단·추정 답을 보이고 맞음/바꾸기 뒤에만 `answers.yaml`을 쓴다. 엔진은 묻지 않는다 | T-019 (a) |
 | 2026-11-08 | T-018 M2-1 | 1 출력 폴더 | 기본 `<케이스>/out`, `--out`은 케이스 폴더 밖이나 기본값과 같은 폴더. 같은 이름 파일은 덮어쓰고 다른 파일은 그대로, 오류면 아무것도 쓰지 않는다. `/examples/*/out/`는 gitignore | T-018 |
 | 2026-11-08 | T-018 M2-1 | 2 도움말 | 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령 `classify`·`compare`·`judge`는 숨긴다. `help --json`은 명령 넷 | T-018 |
 | 2026-11-08 | T-018 M2-1 | 3 사용자 명령 `--json` | 결과 객체 `schema_version` 1·`command`·`files`(출력 폴더 기준 상대 경로). 숫자·판정은 파일에만. 넓히는 일은 `report.md`(M2-3) | T-018 |

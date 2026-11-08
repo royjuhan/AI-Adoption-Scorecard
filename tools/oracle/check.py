@@ -12,6 +12,9 @@
 # --json이면 {"files": [{"expected_sha256", "oracle_sha256", "path", "status"}]}를 쓴다(키 정렬, LF).
 # judgment.json은 judge.py(judgment.md 4절 규칙, schema_version 2) 하나로 만든다. T-013에서 T-011 판(judge_v1.py)과
 # expected의 schema_version으로 판을 고르던 것을 지웠다(ADR 0007 결정 4, ADR 0008). 옛 판 expected는 DIFF다.
+# classification.json은 판이 둘이다(ADR 0013, M2-2). 읽을 수 있는 expected classification.json의 schema_version이 모두 1이면
+# schema 1 판(M2-2 전 규칙), 모두 2이거나 읽을 수 있는 것이 없으면 schema 2 판으로 재현한다. 1과 2가 섞이면
+# classification.json을 모두 DIFF(oracle=error)로 낸다. M2-2 PR (b) 뒤 첫 oracle 변경에서 판 고르기를 지운다.
 # 표준 라이브러리만 쓴다. 네트워크·외부 프로세스 없음. 저장소 파일은 읽기만 한다.
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # 저장소에 __pycache__를 쓰지 않는다.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from classify import classification_bytes  # noqa: E402
+from classify import SCHEMA_VERSION, classification_bytes, schema_of  # noqa: E402
 from compare import metrics_bytes  # noqa: E402
 import judge  # noqa: E402
 from oracle_common import OracleError, ordinal_key, sha256_hex, utf8_stdio  # noqa: E402
@@ -55,15 +58,18 @@ class _Disagree(Exception):
         self.second = second
 
 
-def build_classification(example: Path) -> bytes:
+def build_classification(example: Path, schema: int | None = SCHEMA_VERSION) -> bytes:
     """answers.yaml이 있으면 그것으로, 없으면 case.yaml의 steps로 분류한다.
 
     둘 다 있으면 둘 다 분류해 바이트가 같아야 한다(classification 7.1 5, synthetic-examples: 단계·답이 같다).
+    schema는 classification_schema가 고른 판이다. None이면 판이 섞였다(모두 DIFF).
     """
+    if schema is None:
+        raise OracleError('expected classification.json의 schema_version이 1과 2로 섞였다(ADR 0013)')
     sources = [n for n in ('answers.yaml', 'case.yaml') if _is_file(example, n)]
     if not sources:
         raise OracleError('answers.yaml도 case.yaml도 없다')
-    outputs = [(n, classification_bytes((example / n).read_bytes(), n)) for n in sources]
+    outputs = [(n, classification_bytes((example / n).read_bytes(), n, schema)) for n in sources]
     first_name, first = outputs[0]
     for name, out in outputs[1:]:
         if out != first:
@@ -84,6 +90,23 @@ BUILDERS = {'classification.json': build_classification, 'metrics.json': build_m
             'judgment.json': build_judgment}
 
 
+def classification_schema(examples: Path, folders: list):
+    """분류 판(ADR 0013). 읽을 수 있는 expected classification.json의 schema_version이 하나면 그 판, 없으면 지금 판.
+
+    1과 2가 섞이면 None이다. 읽을 수 없는 파일(JSON이 아님, 모르는 값)은 고르기에 넣지 않는다(그 파일은 바이트가 달라 DIFF다).
+    """
+    versions = set()
+    for name in folders:
+        folder = examples / name / 'expected'
+        if _is_file(folder, 'classification.json'):
+            version = schema_of((folder / 'classification.json').read_bytes())
+            if version is not None:
+                versions.add(version)
+    if not versions:
+        return SCHEMA_VERSION
+    return versions.pop() if len(versions) == 1 else None
+
+
 def targets(examples: Path, folders: list) -> tuple:
     """이번에 볼 종류. TARGETS 전부 + OPTIONAL_TARGETS 가운데 어느 예제에든 expected가 있는 것."""
     present = [t for t in OPTIONAL_TARGETS if any(_is_file(examples / name / 'expected', t) for name in folders)]
@@ -97,6 +120,8 @@ def check(repo: Path):
     with os.scandir(examples) as it:
         folders = sorted((e.name for e in it if e.is_dir(follow_symlinks=False)), key=ordinal_key)
     kinds = targets(examples, folders)
+    cls_schema = classification_schema(examples, folders)
+    builders = {**BUILDERS, 'classification.json': lambda ex: build_classification(ex, cls_schema)}
     results = []
     for name in folders:
         example = examples / name
@@ -108,7 +133,7 @@ def check(repo: Path):
             oracle = None
             note = None
             try:
-                oracle = BUILDERS[target](example)
+                oracle = builders[target](example)
             except _Disagree as d:
                 note = str(d)
                 oracle = d.second if expected is not None and d.first == expected else d.first

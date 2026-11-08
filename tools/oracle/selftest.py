@@ -280,7 +280,7 @@ def check_testdata(repo: Path, cls_spec: list, met_spec: list) -> None:
 
     # metrics 4.10: guard case-valid metrics.json의 SHA-256 앞자리와 크기.
     m = next(re.search(r'metrics\.json SHA-256 `([0-9a-f]+)…`, ([0-9,]+)바이트', line) for line in met_spec
-             if 'xcheck-case-valid' in line)
+             if line.startswith('- `case-valid`의 두 CSV는'))
     got = metrics_bytes(guard)
     expect(sha256_hex(got).startswith(m.group(1)) and len(got) == int(m.group(2).replace(',', '')),
            f'metrics 4.10 guard case-valid metrics.json {sha256_hex(got)[:8]} {len(got)}')
@@ -1646,12 +1646,12 @@ def main(argv: list) -> int:
     ap = argparse.ArgumentParser(description='oracle 자기 점검(스펙 표 대조, 음성 대조, 결정론)')
     ap.add_argument('--repo', default=str(HERE.parents[1]))
     repo = Path(ap.parse_args(argv).repo)
-    cls_spec = (repo / 'docs/spec/classification.md').read_text(encoding='utf-8').split('\n')
-    met_spec = (repo / 'docs/spec/metrics.md').read_text(encoding='utf-8').split('\n')
-    jud_spec = (repo / 'docs/spec/judgment.md').read_text(encoding='utf-8').split('\n')
+    cls_spec = (repo / 'docs/spec/data/classification.md').read_text(encoding='utf-8').split('\n')
+    met_spec = (repo / 'docs/spec/data/metrics.md').read_text(encoding='utf-8').split('\n')
+    jud_spec = (repo / 'docs/spec/data/judgment.md').read_text(encoding='utf-8').split('\n')
 
-    cs_spec = (repo / 'docs/spec/case-schema.md').read_text(encoding='utf-8').split('\n')
-    tc_spec = (repo / 'docs/spec/text-check.md').read_text(encoding='utf-8').split('\n')
+    cs_spec = (repo / 'docs/spec/data/case-schema.md').read_text(encoding='utf-8').split('\n')
+    tc_spec = (repo / 'docs/spec/data/text-check.md').read_text(encoding='utf-8').split('\n')
 
     check_classification(cls_spec)
     check_signoff_inferred(repo, cls_spec)

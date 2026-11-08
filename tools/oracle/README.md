@@ -17,7 +17,7 @@
 | 명령 | 하는 일 |
 | --- | --- |
 | `python3 tools/oracle/check.py [--repo <루트>] [--json <보고서 경로>]` | CI 계약. 예제 전부 비교 |
-| `python3 tools/oracle/classify.py <answers.yaml 또는 case.yaml>` | 표준 출력에 classification.json 바이트(디버깅용) |
+| `python3 tools/oracle/classify.py [--schema 1\|2] <answers.yaml 또는 case.yaml>` | 표준 출력에 classification.json 바이트(기본 schema 2, 디버깅용) |
 | `python3 tools/oracle/compare.py <케이스 폴더>` | 표준 출력에 metrics.json 바이트(디버깅용) |
 | `python3 tools/oracle/judge.py <케이스 폴더>` | 표준 출력에 judgment.json 바이트(schema_version 2. 시간·사람 입력 없음, 디버깅용) |
 | `python3 tools/oracle/selftest.py [--repo <루트>]` | 자기 점검: 스펙 표 대조, 음성 대조, 결정론 |
@@ -49,6 +49,7 @@
 - `--json`: `{"files": [{"expected_sha256", "oracle_sha256", "path", "status"}]}`. `status`는 `match`·`diff`·`missing`. 없는 값은 null. 키 정렬, 들여쓰기 2칸, UTF-8, LF, 끝에 LF.
 - 대상은 이 세 종류뿐이다. oracle이 만들지 못하는 종류(`report-outline.json` 등)는 보고에 나오지 않는다. 그런 파일을 바꾸면 oracle이 재현하지 못한 것이다.
 - 판정은 judgment.md 8절 골든과 같이 시간·사람 입력 없이(null) 만든다.
+- classification.json은 판이 둘이다(ADR 0013, M2-2). 읽을 수 있는 expected classification.json의 `schema_version`이 모두 1이면 schema 1 판(M2-2 전 규칙, `ai`가 있는 입력은 거절), 모두 2이거나 읽을 수 있는 것이 없으면 schema 2 판(classification.md 9절)으로 만든다. 1과 2가 섞이면 classification.json을 모두 `DIFF`(oracle=error)로 낸다. M2-2 PR (b) 뒤 첫 oracle 변경에서 판 고르기를 지운다. 출력 줄·인자·보고서는 그대로다.
 - 분류는 `answers.yaml`로 만든다(없으면 `case.yaml`). 둘 다 있으면 `case.yaml`의 `steps`로 낸 바이트도 같아야 MATCH다. 다르면 DIFF이고 expected와 다른 쪽의 sha256을 적는다.
 - 표준 출력·오류는 UTF-8, LF로 고정한다. 저장소 파일은 읽기만 하고 `__pycache__`도 쓰지 않는다.
 
@@ -56,7 +57,7 @@
 
 | 파일 | 스펙 |
 | --- | --- |
-| `classify.py` | classification.md 3.2(JSON 모양), 4.1(트리 순서), 4.2(조건 표), 4.3(행 만들기), 4.4(값), 4.5(문장 틀·문구 표), 4.6(읽은 답 표, 기본값 표시), 4.7(확인 항목), 4.8(AI 과잉 후보), 4.12(추정 표시). 지시문 3.3 |
+| `classify.py` | classification.md 3.2(JSON 모양), 4.1(트리 순서), 4.2(조건 표), 4.3(행 만들기), 4.4(값), 4.5(문장 틀·문구 표), 4.6(읽은 답 표, 기본값 표시), 4.7(확인 항목), 4.8(AI 과잉 후보), 4.12(추정 표시), 9절(schema 2: `source`·`rule_opinion`·`differs`, AI 행, 부가 행은 트리 것, 9.3 비교 값 표, 9.4 확인 항목). case-schema.md 4.14(`ai`, `oracle_case.py`). 지시문 3.3 |
 | `compare.py` | metrics.md 2절(미검증이면 파일을 읽지 않음), 3.1(항목 순서, 메모리 결과의 기준 행 전부·머리 행), 3.2(속성 표, `items`에 쓰는 항목), 4.1(패턴, 이름 맞추기, 서수 정렬), 4.3(키), 4.4(항목·셈, 미검증 표), 4.5(숫자 모양, 허용 오차, 넘침), 4.8(퍼센트), 4.3·13.2(결과 쪽 키 중복: 항목 `duplicate`, 결과 쪽에 두 번 나온 기준 키는 값 불일치, 중복 항목에 기준과의 차이, `fields[].compared`는 중복 행 포함), 12.3(기준 파일의 `inputs.group` 열), text-check.md 3.1(새 속성 자리)·4.2(체크리스트 대조: 빠진 항목은 값 불일치, `missing_items`, 열 찾기 순서, 규칙 10 확인할 것이 없는 기준 행은 `no-check`로 멈춤)·4.3 규칙 2(대조 `measured`이면 기준 키를 `scores.py`에 넘긴다) |
 | `judge.py` | judgment.md 2절, 3.2·3.3(schema_version 2, 바이트), 4.2(기본값), 4.3(판정 표), 4.4(확인 표), 4.5·4.6(문장 값, 읽은 문턱 표), 4.7(다음 할 일 표), 4.8(몰림 M-A, `inputs.group`), 4.9(검토 항목, `{breakdown}`, 사람 입력 = 검토 항목 키), 4.10(시간), 5절(정의·대조 결과 검사, T-013), text-check.md 3.2·5절(`score_gap_max`, 확인 `SCORE`, 문턱 0 문장, 판정 행, 읽은 문턱, `rescore_blind`, 점수표만 길: 읽는 문턱만 `defaults`, `inputs`가 있고 대조할 열이 없으면 조건부 + `add_compare`). 대조는 `compare.py`의 메모리 결과 |
 | `checklist.py` | text-check.md 4.2(공백 접기, 서수 부분 문자열, `column` 칸이 비면 요구하지 않음, `any`) |

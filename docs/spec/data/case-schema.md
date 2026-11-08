@@ -200,6 +200,39 @@ steps:
     inferred: [frequency, batch_size]
 ```
 
+### 4.14 AI 판단 `ai` (M2-2)
+
+```yaml
+steps:
+  - name: 유형 고르기
+    answers: {input_kind: table, rule_expressible: partial, frequency: daily, batch_size: 30, human_signoff: no}
+    ai:
+      assignee: ②M
+      reason: 지난 기록으로 학습한 분류 모델을 고정해 쓴다.
+```
+
+장면. 단계 하나(`steps[1]`)의 `ai` 값만 바꾼다. 코드가 `—`이면 오류가 아니다. 메시지는 4.9 표의 문구다.
+
+| `ai` 장면 | 코드 | 경로 | 메시지 |
+| --- | --- | --- | --- |
+| `ai: ~` | — | — | AI 판단 없음 |
+| `ai: {assignee: ②, reason: 표를 옮긴다}` | — | — | 담당 `②` |
+| `ai: {assignee: ②M, reason: 고정한 모델}` | — | — | 담당 `②M` |
+| `ai: {assignee: "④", reason: "사람이 한다"}` | — | — | 담당 `④` |
+| `ai: [②]` | `type` | `steps[1].ai` | `매핑이어야 한다` |
+| `ai: ②` | `type` | `steps[1].ai` | `매핑이어야 한다` |
+| `ai: {reason: 근거}` | `required` | `steps[1].ai.assignee` | `필수 필드가 없다` |
+| `ai: {assignee: ②}` | `required` | `steps[1].ai.reason` | `필수 필드가 없다` |
+| `ai: {assignee: ②, reason: ""}` | `required` | `steps[1].ai.reason` | `값이 비어 있다` |
+| `ai: {assignee: ②, reason: ~}` | `required` | `steps[1].ai.reason` | `값이 비어 있다` |
+| `ai: {assignee: ~, reason: 근거}` | `required` | `steps[1].ai.assignee` | `값이 비어 있다` |
+| `ai: {assignee: ⑤, reason: 근거}` | `enum` | `steps[1].ai.assignee` | `선택지 밖의 값 '⑤'. 가능한 값: ①, ②, ②M, ③, ④` |
+| `ai: {assignee: ②m, reason: 근거}` | `enum` | `steps[1].ai.assignee` | `선택지 밖의 값 '②m'. 가능한 값: ①, ②, ②M, ③, ④` |
+| `ai: {assignee: 2, reason: 근거}` | `enum` | `steps[1].ai.assignee` | `선택지 밖의 값 '2'. 가능한 값: ①, ②, ②M, ③, ④` |
+| `ai: {assignee: [②], reason: 근거}` | `type` | `steps[1].ai.assignee` | `스칼라 값이어야 한다` |
+| `ai: {assignee: ②, reason: [근거]}` | `type` | `steps[1].ai.reason` | `스칼라 값이어야 한다` |
+| `ai: {assignee: ②, reason: 근거, note: 메모}` | `unknown-field` | `steps[1].ai.note` | `알 수 없는 필드다` |
+
 ## 5. 예외
 
 | 상황 | 결과 | 근거 |

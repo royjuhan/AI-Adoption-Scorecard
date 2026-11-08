@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-# oracle 분류기. docs/spec/classification.md 3.2·3.3·4.1~4.8·4.12와 case-schema.md 4.4·4.13만 보고 짰다.
+# oracle 분류기. docs/spec/classification.md 3.2·3.3·4.1~4.8·4.12·9절과 case-schema.md 4.4·4.13·4.14만 보고 짰다.
 # src/는 읽지 않았다(ADR 0005 결정 9). 규칙 값은 스펙 표를 손으로 옮겨 이 파일에 적었다.
 # 스펙 표가 바뀌면 prototyper가 이 파일을 같이 고친다. 실행 중에 스펙 문서를 읽지 않는다.
 #
-# 사용: python3 tools/oracle/classify.py <answers.yaml 또는 case.yaml>
-#   표준 출력에 classification.json 바이트를 쓴다. 범위 밖 입력이면 표준 오류에 이유, 종료 코드 2.
+# 판이 둘이다(ADR 0013). schema 2(classification.md 9절, M2-2): 단계마다 source·rule_opinion·differs, AI 판단 행,
+# 확인 항목에서 confirm_existing_feature를 뺀다. schema 1: M2-2 전 규칙 그대로(동결). ai가 있는 입력은 거절한다.
+# check.py가 expected classification.json의 schema_version으로 판을 고른다. M2-2 PR (b) 뒤 첫 oracle 변경에서 schema 1 길을 지운다.
+#
+# 사용: python3 tools/oracle/classify.py [--schema 1|2] <answers.yaml 또는 case.yaml>
+#   표준 출력에 classification.json 바이트를 쓴다(기본 schema 2). 범위 밖 입력이면 표준 오류에 이유, 종료 코드 2.
 # 표준 라이브러리만 쓴다. 네트워크·외부 프로세스 없음.
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -19,7 +24,8 @@ from oracle_case import ANSWER_KEYS, Case, parse_case  # noqa: E402
 from oracle_common import OracleError, utf8_stdio  # noqa: E402
 from oracle_json import render  # noqa: E402
 
-SCHEMA_VERSION = 1  # classification.md 3.2 첫 키(ADR 0004 결정 2)
+SCHEMA_VERSION = 2  # classification.md 9.2 첫 키(ADR 0013). 지금 판
+SCHEMAS = (1, 2)  # 1은 M2-2 전 판(3.2). PR (b) 뒤 지운다(ADR 0013 결정 5)
 
 # 4.2 조건 표. (근거 키, 키, 비교, 값). 같은 근거 키의 행은 모두 참이어야 걸린다.
 CONDITIONS = (
@@ -89,11 +95,21 @@ USED = {
 DEFAULT_MARK = ' (기본값 사용, 확인 필요)'
 INFERRED_MARK = ' (AI 추정, 확인 필요)'
 
-# 4.7 확인 항목 표. (키, 답 키, 값). 값 None은 "null이면".
+# 4.7 확인 항목 표. (키, 답 키, 값). 값 None은 "null이면". schema 1.
 CHECKS = (
     ('measure_minutes_per_item', 'minutes_per_item', None),
     ('confirm_existing_feature', 'existing_feature', 'unknown'),
 )
+# 9.4 확인 항목 표(schema 2). confirm_existing_feature를 뺐다(AI가 판단한다).
+CHECKS_V2 = (
+    ('measure_minutes_per_item', 'minutes_per_item', None),
+)
+
+# 9.1·9.3(schema 2). AI 판단 행의 근거 키, source 값, 담당 비교 값 표(AI 담당 → 규칙 담당과 비교할 값).
+RULE_AI = 'AI'
+SOURCE_AI = 'ai'
+SOURCE_RULE = 'rule'
+COMPARE_AS = {'①': '①', '②': '②', '②M': '②', '③': '③', '④': '④'}
 
 _PLACEHOLDER = re.compile(r'\{([a-z_]+)( 문구)?\}')
 
@@ -139,10 +155,14 @@ def _sentence(rule: str, values: dict) -> str:
     return _PLACEHOLDER.sub(sub, template)
 
 
-def classify(case: Case) -> list:
+def classify(case: Case, schema: int = SCHEMA_VERSION) -> list:
     """Case → 단계 결과 목록. 원소는 dict: JSON 속성(number~rows)과 메모리 전용 inferred·used."""
+    if schema not in SCHEMAS:
+        raise OracleError(f'모르는 schema_version {schema}')
     result = []
     for number, step in enumerate(case.steps, start=1):
+        if schema == 1 and step.ai is not None:
+            raise OracleError(f'steps[{number}].ai: schema 1 판 범위 밖(ADR 0013)')  # 옛 판 가드
         answers = step.answers
         values = {k: answers[k].value for k in ANSWER_KEYS}
         rows = []
@@ -164,58 +184,93 @@ def classify(case: Case) -> list:
             add('PARTIAL', 'PARTIAL')
         if leaf != 'SIGNOFF' and _holds('GATE', values):
             add('GATE', 'GATE')
+        # 9.3 규칙 5(schema 2): SIGNOFF 단계라도 AI 담당의 비교 값이 ④가 아니면 GATE를 붙인다.
+        # 게이트를 빼는 근거는 step 행이 ④라는 것이다. 마지막 step 행이 ④일 때만 뺀다.
+        if (schema == 2 and leaf == 'SIGNOFF' and step.ai is not None
+                and COMPARE_AS[step.ai.assignee] != '④' and _holds('GATE', values)):
+            add('GATE', 'GATE')
 
-        checks = [name for name, key, want in CHECKS if values[key] == want]
-        # 4.8: current_actor가 ai_each_time이고 step 행 담당이 ②.
-        overuse = _holds('OVERUSE', values) and rows[0]['assignee'] == '②'
-        if _holds('CHECK_EXISTING', values) != ('confirm_existing_feature' in checks):
-            raise OracleError('확인 항목 표와 조건 표가 어긋난다')  # 4.2 CHECK_EXISTING 행과 4.7 표는 같은 조건이다.
+        out = {'number': number, 'name': step.name}
+        if schema == 1:
+            checks = [name for name, key, want in CHECKS if values[key] == want]
+            # 4.8: current_actor가 ai_each_time이고 step 행 담당이 ②.
+            overuse = _holds('OVERUSE', values) and rows[0]['assignee'] == '②'
+            if _holds('CHECK_EXISTING', values) != ('confirm_existing_feature' in checks):
+                raise OracleError('확인 항목 표와 조건 표가 어긋난다')  # 4.2 CHECK_EXISTING 행과 4.7 표는 같은 조건이다.
+        else:
+            # 9.1: 규칙 의견 = 트리 step 행의 담당·근거 키. AI 판단이 있으면 step 행만 AI 행으로 바꾼다.
+            # 부가 행(PARTIAL·GATE)은 트리 것을 그대로 둔다(9.3 규칙 4). SIGNOFF 뒤 GATE만 규칙 5.
+            opinion = {'assignee': rows[0]['assignee'], 'rule': rows[0]['rule']}
+            if step.ai is not None:
+                rows[0] = {'kind': KIND_STEP, 'assignee': step.ai.assignee, 'rule': RULE_AI,
+                           'reason': step.ai.reason, 'used': ()}
+                out['source'] = SOURCE_AI
+                differs = COMPARE_AS[step.ai.assignee] != opinion['assignee']  # 9.3 표
+            else:
+                out['source'] = SOURCE_RULE
+                differs = False
+            out['rule_opinion'] = opinion
+            out['differs'] = differs
+            checks = [name for name, key, want in CHECKS_V2 if values[key] == want]
+            # 9.1: current_actor가 ai_each_time이고 step 행 담당의 비교 값이 ②(② 또는 ②M).
+            overuse = _holds('OVERUSE', values) and COMPARE_AS[rows[0]['assignee']] == '②'
 
-        result.append({
-            'number': number,
-            'name': step.name,
+        out.update({
             'defaults': [k for k in ANSWER_KEYS if answers[k].is_default],
             'checks': checks,
             'ai_overuse_candidate': overuse,
             'rows': rows,
             'inferred': [k for k in ANSWER_KEYS if answers[k].is_inferred],
         })
+        result.append(out)
     return result
 
 
-def to_json_value(case: Case, steps: list) -> dict:
-    """3.2 모양. Used·Inferred는 쓰지 않는다."""
-    return {
-        'schema_version': SCHEMA_VERSION,
-        'case': case.name,
-        'steps': [
-            {
-                'number': s['number'],
-                'name': s['name'],
-                'defaults': s['defaults'],
-                'checks': s['checks'],
-                'ai_overuse_candidate': s['ai_overuse_candidate'],
-                'rows': [{'kind': r['kind'], 'assignee': r['assignee'], 'rule': r['rule'], 'reason': r['reason']}
-                         for r in s['rows']],
-            }
-            for s in steps
-        ],
-    }
+def to_json_value(case: Case, steps: list, schema: int = SCHEMA_VERSION) -> dict:
+    """3.2 모양(schema 1) 또는 9.2 모양(schema 2). Used·Inferred는 쓰지 않는다."""
+    if schema not in SCHEMAS:
+        raise OracleError(f'모르는 schema_version {schema}')
+    out_steps = []
+    for s in steps:
+        step = {'number': s['number'], 'name': s['name']}
+        if schema == 2:
+            step['source'] = s['source']
+            step['rule_opinion'] = {'assignee': s['rule_opinion']['assignee'], 'rule': s['rule_opinion']['rule']}
+            step['differs'] = s['differs']
+        step['defaults'] = s['defaults']
+        step['checks'] = s['checks']
+        step['ai_overuse_candidate'] = s['ai_overuse_candidate']
+        step['rows'] = [{'kind': r['kind'], 'assignee': r['assignee'], 'rule': r['rule'], 'reason': r['reason']}
+                        for r in s['rows']]
+        out_steps.append(step)
+    return {'schema_version': schema, 'case': case.name, 'steps': out_steps}
 
 
-def classification_bytes(data: bytes, source: str) -> bytes:
+def classification_bytes(data: bytes, source: str, schema: int = SCHEMA_VERSION) -> bytes:
     case = parse_case(data, source)
-    return render(to_json_value(case, classify(case)))
+    return render(to_json_value(case, classify(case, schema), schema))
+
+
+def schema_of(expected: bytes):
+    """expected classification.json의 schema_version(1 또는 2). 읽을 수 없거나 모르는 값이면 None."""
+    try:
+        value = json.loads(expected.decode('utf-8')).get('schema_version')
+    except (ValueError, AttributeError):
+        return None
+    return value if type(value) is int and value in SCHEMAS else None
 
 
 def main(argv: list) -> int:
     utf8_stdio()
+    schema = SCHEMA_VERSION
+    if len(argv) == 3 and argv[0] == '--schema' and argv[1] in ('1', '2'):
+        schema, argv = int(argv[1]), argv[2:]
     if len(argv) != 1:
-        print('사용: classify.py <answers.yaml 또는 case.yaml>', file=sys.stderr)
+        print('사용: classify.py [--schema 1|2] <answers.yaml 또는 case.yaml>', file=sys.stderr)
         return 2
     path = Path(argv[0])
     try:
-        out = classification_bytes(path.read_bytes(), path.name)
+        out = classification_bytes(path.read_bytes(), path.name, schema)
     except OracleError as e:
         print(f'oracle: {e}', file=sys.stderr)
         return 2

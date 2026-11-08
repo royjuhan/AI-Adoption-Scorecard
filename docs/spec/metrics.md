@@ -1723,4 +1723,4 @@ test-engineer(`tests/`, 바꾸는 이유를 PR 본문에): `DuplicateTests` 가�
 - 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md`다. 이 절은 가리키기만 한다.
 - 체크리스트 대조는 대조의 한 종류다. 빠진 항목이 있으면 값 불일치다(text-check.md 4.2). 셈·정확도·누락률·오류 코드는 이 문서 그대로다.
 - metrics.json에 설정했을 때만 있는 속성: `compare.checklist`, `compare.items[].missing_items`, 최상위 `scores`(text-check.md 3.1). `schema_version`은 1 그대로다(ADR 0008 결정 1).
-- 3.2 속성 표와 4.7 오류 표는 바꾸지 않는다. 새 경로는 text-check.md 3.1 표, 점수 오류는 4.5 표다. 예제 4종 expected는 바이트 그대로다.
+- 3.2 속성 표와 4.7 오류 표는 바꾸지 않는다. 새 경로는 text-check.md 3.1 표, 점수·체크리스트 오류(`no-check` 포함)는 4.5 표다. 예제 4종 expected는 바이트 그대로다.

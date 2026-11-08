@@ -1,4 +1,4 @@
-// 스파이크 도구. 머지 대상 아님. 엔진 공개 API만 부른다(엔진 코드는 읽지 않는다).
+// 스파이크 도구. 남긴다(docs/cases-public/README.md 4절 2). 엔진 공개 API만 부른다(엔진 코드는 읽지 않는다).
 // API 출처: classification.md 4.11, metrics.md 4.11, judgment.md 4.13, case-schema.md 4.12.
 //
 // 쓰기:

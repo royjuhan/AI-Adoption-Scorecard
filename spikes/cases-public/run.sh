@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 스파이크(머지 대상 아님). 사용: spikes/cases-public/run.sh <작업폴더(없는 경로)>
+# 스파이크. 남긴다(docs/cases-public/README.md 4절 1). 사용: spikes/cases-public/run.sh <작업폴더(없는 경로)>
 # 커밋된 HEAD를 작업 폴더에 clone하고, 작업 트리의 이 스파이크·answers를 복사해 돌린다.
 # 저장소의 src/·tests/·examples/는 건드리지 않는다.
 set -euo pipefail

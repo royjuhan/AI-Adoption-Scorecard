@@ -100,8 +100,9 @@ def score_body(case_dir: Path, case, taken: set) -> dict:
     for rel in sheet_files:
         header_line, header, rows = _read(case_dir, rel)
         ix = _columns(header, SHEET_COLUMNS, rel)
-        if 'source' in header:
-            findings.append((0, rel, header_line, 'source'))
+        for name in header:  # 4.4 source_column: 열 이름도 ASCII 소문자로 본다(리뷰 2차 N1). 값은 쓴 글 그대로.
+            if ascii_lower(name) == 'source':
+                findings.append((0, rel, header_line, name))
         for row in rows:
             rater, item, blind, score = (row.cells[ix[c]] for c in SHEET_COLUMNS)
             if rater == '' or item == '' or blind == '':

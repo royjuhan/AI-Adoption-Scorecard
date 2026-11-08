@@ -3,7 +3,7 @@
 - 지시: `README.md` 4절 2항. 빈 곳마다 합성 예제 1개를 지금 엔진에 넣고 "막힘 / 틀림 / 문제없음" 중 하나로 적는다. 막힘·틀림만 카드로 만든다.
 - 작성: prototyper, 2026-11-08.
 - 엔진: 커밋 `79d0de3`의 `src/Scorecard.Core` 사본. 작업 트리의 진행 중 수정은 섞지 않았다. .NET SDK 10.0.114. 엔진 코드는 읽지 않았다. 공개 API(`classification.md` 4.11, `metrics.md` 4.11, `judgment.md` 4.13, `case-schema.md` 4.12)만 불렀다.
-- 도구: `spikes/gap-runner/`(솔루션 밖 콘솔, 머지 대상 아님). `CaseParser.ParseDirectory`(answers 파일은 `CaseParser.Parse`) → `StepClassifier.Classify` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`. JSON은 `ClassificationJson`·`MetricsJson`·`JudgmentJson.Render` 바이트 그대로 `spikes/gap-NN/out/`에 쓴다. 요약 줄은 `spikes/gap-NN/result.txt`.
+- 도구: `spikes/gap-runner/`(솔루션 밖 콘솔. `spikes/gap-NN/`과 같이 남긴다, `README.md` 4절 2). `CaseParser.ParseDirectory`(answers 파일은 `CaseParser.Parse`) → `StepClassifier.Classify` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`. JSON은 `ClassificationJson`·`MetricsJson`·`JudgmentJson.Render` 바이트 그대로 `spikes/gap-NN/out/`에 쓴다. 요약 줄은 `spikes/gap-NN/result.txt`.
 - 재현: `python3 -I spikes/gap-runner/make-gaps.py` → `spikes/gap-runner/run-gaps.sh <작업폴더>`. 만들기·돌리기를 두 번 해서 파일 197개의 SHA-256이 같았다.
 - 합성: 이름·값은 모두 `make-gaps.py`가 지어냈다. 실제 회사 자료·이름·수치가 없다(지시문 2절 8·10). 회사 이름 검사는 5절.
 - 사람 입력: `--reviewed`는 "사람이 보고 모두 설명함"(`unexplainedKeys` = 빈 목록)이다. 표시가 없으면 null(아직 안 봄). 시간은 넣지 않았다. 자료가 있는 예제는 모두 `time_must_drop: false`다. `thresholds`가 없는 예제는 자료도 없어 미검증이다.

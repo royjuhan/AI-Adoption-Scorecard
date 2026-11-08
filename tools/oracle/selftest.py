@@ -15,7 +15,8 @@
 #    예제 이름은 고정하지 않는다. examples/의 폴더 이름(서수)이고, 폴더마다 7절 블록이 하나 있어야 한다.
 #    metrics.md 12.5 compare-duplicate 블록, 13절 결과 쪽 중복 순서 표(T-013), case-schema.md 10.2 inputs.group 표.
 #    변형: 예제 CSV의 CRLF·CR·BOM·따옴표·마지막 줄바꿈 없음·끝 빈 행·칸 앞뒤 공백, answers.yaml의 CRLF·CR·BOM이 같은 바이트.
-#    text-check.md(T-014): 4.1~4.4·5.1~5.5 표(상수 = 표, 파서·맞추기·평균·점수 자료 장면, 5.2 문턱 0 문장 표), 3.1·3.2 새 속성 표,
+#    text-check.md(T-014): 4.1~4.5·5.1~5.5 표(상수 = 표, 파서·맞추기·체크리스트 장면·평균·점수 자료 장면, 4.5 체크리스트 코드 표,
+#    5.2 문턱 0 문장 표), 3.1·3.2 새 속성 표,
 #    6.1 판정 장면(점수표만 + 대조할 열 없음 = 조건부, 점수표만 defaults = 읽는 문턱만), 7.2 계획 표로 CSV를 다시 만들어
 #    7.3 블록과 비교, 7.4 블록 = oracle 출력, CSV 변형(점수 칸 따옴표·공백 포함), PR (b) 모의
 #    (예제 사본 + reply-drafts 블록 → check.py 모두 MATCH, 바꾸면 그 파일만 DIFF). examples/reply-drafts가 있으면 파일 = 블록.
@@ -1100,20 +1101,24 @@ def tc_write(folder: Path, files: dict, skip_expected: bool = True) -> Path:
 
 
 def tc_change(folder: Path, cell: str) -> None:
-    """바꾼 곳: `파일`, `파일`: `옛 글` → `새 글`[, …]. 파일마다 모든 곳을 바꾼다. 옛 글이 없으면 실패."""
+    """바꾼 곳: `파일`, `파일`: `옛 글` → `새 글`[, …][; `파일`: …]. 파일마다 모든 곳을 바꾼다. 옛 글이 없으면 실패.
+
+    파일이 다른 묶음은 `; `로 잇는다(리뷰 2차 B1 장면, text-check.md 4.2·6.1).
+    """
     if cell == '(없음)':
         return
-    at = cell.index('`: `')
-    names = spans(cell[:at + 1])
-    pairs_ = [(tc_unescape(a), tc_unescape(b)) for a, b in re.findall(r'`([^`]*)` → `([^`]*)`', cell[at + 3:])]
-    expect(len(names) > 0 and len(pairs_) > 0, f'T-014 바꾼 곳 읽기: {cell}')
-    for name in names:
-        path = folder / name
-        text = path.read_bytes().decode('utf-8')
-        for old, new in pairs_:
-            expect(old in text, f'T-014 바꾼 곳 {name}: {old!r} 없음')
-            text = text.replace(old, new)
-        path.write_bytes(text.encode('utf-8'))
+    for group in re.split(r'(?<=`); (?=`)', cell):
+        at = group.index('`: `')
+        names = spans(group[:at + 1])
+        pairs_ = [(tc_unescape(a), tc_unescape(b)) for a, b in re.findall(r'`([^`]*)` → `([^`]*)`', group[at + 3:])]
+        expect(len(names) > 0 and len(pairs_) > 0, f'T-014 바꾼 곳 읽기: {group}')
+        for name in names:
+            path = folder / name
+            text = path.read_bytes().decode('utf-8')
+            for old, new in pairs_:
+                expect(old in text, f'T-014 바꾼 곳 {name}: {old!r} 없음')
+                text = text.replace(old, new)
+            path.write_bytes(text.encode('utf-8'))
 
 
 def tc_generate(tc_spec: list) -> dict:
@@ -1210,6 +1215,7 @@ def tc_judge(folder: Path, times=None, unexplained=None):
 def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> None:
     from checklist import ABSENT, FOUND, SKIPPED, item_result
     from oracle_case import ChecklistItem
+    import compare as C2
     import scores as SC
 
     start = COUNT['ok']
@@ -1331,6 +1337,20 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
                 expect(blind['status'] == tick(result) and rules == want, f'T-014 4.4 {cell}: {blind["status"]} {rules}')
             except OracleError as e:
                 expect(result == '오류' and f'({tick(code)} 오류 입력' in str(e), f'T-014 4.4 {cell}: {e}')
+
+        # 체크리스트 장면(4.2 규칙 10, 리뷰 2차 B1): 확인할 것이 없는 기준 행은 no-check 오류. 정확도는 받았을 때만.
+        rows = table(tc_spec, '| 체크리스트 코드 | 언제 | 위치 | 메시지 |')
+        expect([(tick(c), tick(m).replace('<키>', '{key}')) for c, _w, _p, m in rows] == [C2.NO_CHECK],
+               'T-014 4.5 체크리스트 코드 = NO_CHECK')
+        for k, (cell, result, code, accuracy) in enumerate(table(tc_spec, '| 체크리스트 바꾼 곳 | 결과 | 코드 | 정확도(%) |')):
+            folder = tmp / f'check{k:02d}' / TC_EXAMPLE
+            shutil.copytree(base, folder)
+            tc_change(folder, cell)
+            try:
+                value = json.loads(metrics_bytes(folder))['compare']
+                expect(result == '받음' and str(value['accuracy_pct']) == accuracy, f'T-014 4.2 장면 {cell}: {value["accuracy_pct"]}')
+            except OracleError as e:
+                expect(result == '오류' and f'({tick(code)} 오류 입력' in str(e), f'T-014 4.2 장면 {cell}: {e}')
 
         # 판정 장면(6.1). 바탕 score-only = 6.2 case.yaml + reply-drafts scores/.
         only = tmp / 'only' / 'score-only'

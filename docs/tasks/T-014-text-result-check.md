@@ -1,7 +1,7 @@
 # T-014 문장 결과 검증 (빈 곳 2)
 
 - 마일스톤: 빈 곳 카드(`docs/cases-public/README.md` 2절 2, 4절 3항 순서 첫째)
-- 상태: 스펙 채택(ADR 0005 결정 3, text-check.md 질문 1~15, ADR 0009). PR (a) 스펙·oracle, 리뷰 지적 반영
+- 상태: 스펙 채택(ADR 0005 결정 3, text-check.md 질문 1~18, ADR 0009). PR (a) 스펙·oracle, 리뷰 지적·리뷰 2차 지적 반영
 
 ## 목표
 
@@ -24,7 +24,7 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 
 ## 잠정 결정 (ADR 0005 결정 3, 리드 채택 2026-11-08)
 
-`docs/spec/text-check.md` 질문 1~15의 추천안을 채택했다(ADR 0009). 13~15는 PR (a) 리뷰 지적에서 나왔다. 한 줄 요지는 STATUS.md 잠정 결정 T-014 행.
+`docs/spec/text-check.md` 질문 1~18의 추천안을 채택했다(ADR 0009). 13~15는 PR (a) 리뷰 지적, 16~18은 리뷰 2차 지적에서 나왔다. 한 줄 요지는 STATUS.md 잠정 결정 T-014 행.
 
 1. 자리: `case.yaml` 최상위 `checklist`·`scores`. 단계 질문 그대로(10개).
 2. 체크리스트는 대조의 한 종류. 빠진 항목이 있으면 값 불일치.
@@ -41,6 +41,9 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 13. 점수표만인데 `inputs`가 있고 대조할 열이 없으면 통과가 아니라 조건부 `NOT_VERIFIED`(`no_compare_fields`, 점수 보류 뒤·`TIME` 앞) + `add_compare`.
 14. 점수표만이 읽지 않는 문턱(`accuracy_min`·`missing_max`)은 `defaults`·`confirm_thresholds`·표시에서 뺀다. `thresholds` 모양은 그대로.
 15. `score_gap_max` 값이 0이면 "넘게" 없는 문장(5.2 문턱 0 문장 표).
+16. 체크리스트가 기준 행에 아무것도 요구하지 않으면(`compare`·`any` 없음, `column` 칸 모두 빔) 일치가 아니라 `no-check` 입력 오류(4.2 규칙 10). 사람 자료 결함이라 오류, 일부 행만 빈 경우도 막는다.
+17. 가림 확인 `source_column`은 열 이름도 ASCII 소문자로 본다(`Source`).
+18. 채점자가 한쪽 출처만 매긴 치우침은 이 카드에서 막지 않고 text-check.md 9절 8에 조건(채점자마다·건마다 AI·사람 점수 수 같음)을 적는다. 빈 곳 16·17 카드에서 정한다.
 
 ## PR (a) 리뷰 지적 (#17)
 
@@ -51,6 +54,15 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 - d. 스펙 상태 줄 "초안" → "채택(ADR 0005 결정 3, ADR 0009)": text-check.md, case-schema.md 11절, judgment.md 13절, metrics.md 14절.
 - f. `spikes/T-014`는 머지 대상이 아니다. 스펙 머리 글·10절을 "selftest가 7.2 계획 표로 CSV를 다시 만들어 블록과 맞춘다"로.
 - g. `spikes/gap-19`의 처리량을 README 3절 수치에서 둥근 합성 값(분당 1만 건, 하루 1,440만 건)으로. 생성 스크립트·결과·gaps.md.
+
+## PR (a) 리뷰 2차 지적
+
+- 막는 지적 B1(체크리스트가 아무것도 요구하지 않는 행이 결과 문장과 상관없이 일치): 잠정 결정 16. 스펙 4.2 규칙 10·체크리스트 장면 표, 4.5 체크리스트 코드 표(`no-check`), 6.1 "번호 칸 빈 행, 빈 답변", oracle `compare.py`, selftest(`; `로 파일 묶음을 잇는 바꾼 곳). 리드 추천 둘(일치로 세지 않음, 합 0이면 조건부) 대신 오류를 골랐다. 까닭은 질문 16.
+- N1: 잠정 결정 17. 4.4 가림 규칙 표와 장면 한 행, oracle `scores.py`.
+- N2: 잠정 결정 18. 9절 8, ADR 0009 남은 위험.
+- N3: 지시문 3.4 "점수가 문턱을 충족해도 통과가 아니라 조건부다(점수 보류는 그대로 앞선다…)". 같은 문단에 "확인할 항목이 없는 행은 입력 오류"를 더했다.
+- N4: `spikes/gap-runner/`·`spikes/cases-public/` 파일 머리 표시와 `gaps.md`·`diff.md` 6줄을 "남긴다(`docs/cases-public/README.md` 4절 2)"로(`cases-public`은 그 스파이크를 정한 4절 1). `spikes/T-0xx`는 머지 대상 아님 그대로.
+- reply-drafts 7.3·7.4 블록과 예제 expected 12개는 바이트 그대로다.
 
 ## 메모
 

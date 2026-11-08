@@ -3,7 +3,7 @@
 - README 4절 1항. 작성: prototyper, 2026-11-08.
 - 기준: README 1절의 "예상 분류"와 "과잉 후보". 답 파일을 엔진 결과에 맞춰 고치지 않았다.
 - 답 파일: `docs/cases-public/answers/case-NN.yaml` 20개. 모양은 `examples/*/answers.yaml`과 같다.
-- 엔진: 커밋 `79d0de3`의 `Scorecard.Core`(clone). 스파이크 `spikes/cases-public/`(머지 대상 아님, .sln 밖). `CaseParser.Parse(bytes, "answers.yaml")` → `StepClassifier.Classify`만 쓴다.
+- 엔진: 커밋 `79d0de3`의 `Scorecard.Core`(clone). 스파이크 `spikes/cases-public/`(.sln 밖. 남긴다, `README.md` 4절 1). `CaseParser.Parse(bytes, "answers.yaml")` → `StepClassifier.Classify`만 쓴다.
 - 실행: `spikes/cases-public/run.sh <작업폴더>`. 원문 출력 `spikes/cases-public/result.txt`. 두 번 돌려 출력이 같았다.
 - 결과: 20개 모두 오류 0건으로 읽혔다. **같음 10, 다름 10.**
 

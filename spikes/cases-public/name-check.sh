@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 스파이크(머지 대상 아님). README 1절 표의 사례 이름 칸과 출처 줄에서 회사 이름을 뽑아
+# 스파이크. 남긴다(docs/cases-public/README.md 4절 1). README 1절 표의 사례 이름 칸과 출처 줄에서 회사 이름을 뽑아
 # 주어진 경로에 하나라도 있는지 본다. 사용: name-check.sh <검사할 경로>...
 set -euo pipefail
 readme="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/docs/cases-public/README.md"

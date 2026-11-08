@@ -1,4 +1,4 @@
-// 스파이크(머지 대상 아님). docs/cases-public/answers/*.yaml을 엔진에 넣어 단계별 담당·근거 키를 찍는다.
+// 스파이크. 남긴다(docs/cases-public/README.md 4절 1). docs/cases-public/answers/*.yaml을 엔진에 넣어 단계별 담당·근거 키를 찍는다.
 // 쓰는 API는 docs/spec/classification.md 4.11, case-schema.md 4.12뿐이다. 엔진 코드는 읽지 않았다.
 // 사용: dotnet run -- <yaml 폴더>
 using System.Security.Cryptography;

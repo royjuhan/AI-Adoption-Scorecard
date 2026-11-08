@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- 스파이크 도구. 머지 대상 아님. 솔루션에 넣지 않는다.
+  <!-- 스파이크 도구. 남긴다(docs/cases-public/README.md 4절 2). 솔루션에 넣지 않는다.
        CoreDir 기본값은 저장소 src/Scorecard.Core. run-gaps.sh는 커밋된 HEAD 사본을 넘긴다. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

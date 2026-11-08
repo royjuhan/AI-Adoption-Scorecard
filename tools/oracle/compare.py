@@ -10,6 +10,8 @@
 # T-014(text-check.md 3.2·4.2): checklist가 있으면 결과 문장 열에 항목 문구가 있는지 본다(문자열 규칙만, checklist.py).
 #   빠진 항목이 있으면 값 불일치다. checklist 객체와 items[].missing_items는 checklist가 있을 때만 쓴다.
 #   scores가 있으면 metrics.json 최상위에 scores(scores.py)를 더한다. 둘 다 없으면 바이트가 T-013과 같다.
+#   리뷰 2차 B1(text-check.md 4.2 규칙 10): compare 필드가 없고 체크리스트가 그 기준 행에 요구하는 항목이 하나도 없으면
+#   (any 항목이 없고 column 항목 칸이 모두 빔) no-check 오류다. 그 행은 어떤 결과 문장이든 일치가 되기 때문이다.
 #
 # 사용: python3 tools/oracle/compare.py <케이스 폴더>
 #   표준 출력에 metrics.json 바이트를 쓴다. 범위 밖 입력이면 표준 오류에 이유, 종료 코드 2.
@@ -34,6 +36,9 @@ from oracle_json import JsonNumber, render  # noqa: E402
 
 SCHEMA_VERSION = 1  # metrics.md 3.2 첫 키(ADR 0004 결정 2)
 CASE_FILE = 'case.yaml'
+
+# text-check.md 4.5 체크리스트 코드 표(리뷰 2차 B1). (코드, 메시지 틀)
+NO_CHECK = ('no-check', '확인할 항목이 없다: {key} (column 항목 칸이 모두 비었다)')
 
 # 4.4 미검증 표, 3.2 속성 표의 값.
 STATUS_MEASURED = 'measured'
@@ -343,6 +348,11 @@ def _compare_run(case_dir: Path, case: Case) -> CompareRun:
         else:
             seen.add(c.key)
             cand.append(c)
+    if cl is not None and not fields and all(i.column is not None for i in cl.items):
+        # 4.2 규칙 10: compare 필드도 any 항목도 없으면 column 칸이 빈 행에는 확인할 것이 없다. 결과 문장과 상관없다.
+        for r in ref:
+            if all(item_result(i, '', r.cells[i.column]) == SKIPPED for i in cl.items):
+                raise OracleError(f'{r.file}:{r.line}: {NO_CHECK[1].format(key=r.key)} ({NO_CHECK[0]} 오류 입력, 범위 밖)')
     for r in ref:
         for f in fields:
             if f.is_number and parse_number(r.cells[f.field]) is None:

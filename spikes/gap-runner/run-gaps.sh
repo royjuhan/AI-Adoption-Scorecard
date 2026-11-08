@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 스파이크(머지 대상 아님). 잠재 빈 곳 14~25 합성 예제를 지금 엔진으로 돌린다.
+# 스파이크. 남긴다(docs/cases-public/README.md 4절 2). 잠재 빈 곳 14~25 합성 예제를 지금 엔진으로 돌린다.
 # 쓰기: spikes/gap-runner/run-gaps.sh <작업폴더> [gap-NN ...]
 # - 커밋된 HEAD의 src/Scorecard.Core를 작업 폴더에 풀어 그 사본을 참조한다(작업 트리의 진행 중 수정을 섞지 않는다).
 # - 각 spikes/gap-NN/runs.txt의 줄(<상대 경로> [옵션])마다 gap-runner를 부른다.

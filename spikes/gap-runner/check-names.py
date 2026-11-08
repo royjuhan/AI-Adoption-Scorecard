@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""회사 이름 검사. 스파이크(머지 대상 아님).
+"""회사 이름 검사. 스파이크. 남긴다(docs/cases-public/README.md 4절 2).
 
 이름 목록은 docs/cases-public/README.md 1절에서 읽는다(이 파일에 이름을 적지 않는다).
 - 표 "사례" 칸의 앞 영문 이름

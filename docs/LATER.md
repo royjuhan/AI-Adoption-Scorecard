@@ -55,3 +55,9 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #20 | [사람 데모 확인] 삭제가 지시문 2절 4·머리말, release.md, sweeper.md 설명에 안 퍼졌다 | 지시문, .claude/agents |
 | 2026-11-08 | #20 | 3.1 "모든 JSON은 첫 키 `schema_version: 1`"은 M2-2에서 classification.json이 2가 되면 고친다 | 지시문 3.1 |
 | 2026-11-08 | #20 | lead_check mutation 재사용 결정의 juhan 원문이 저장소에 없다(ADR 0011에 날짜만) | ADR 0011 |
+| 2026-11-08 | #21 | CI mutation 잡에 killpg가 없어 남은 프로세스가 업로드 전 mutation.json을 바꿀 수 있다(ADR 0011 남은 위험). 로컬도 setsid로 피할 수 있다 | ADR 0011 |
+| 2026-11-08 | #21 | 재사용 차단 목록에 `global.json`·`.config/`가 없다(CI는 head global.json으로 SDK 선택) | tools/ci/lead_check.py |
+| 2026-11-08 | #21 | 재사용 테스트가 얕다(소스 글자 위치 비교, main() 끝까지 도는 경로 없음) | tools/ci/test_regression_guard.py |
+| 2026-11-08 | #21 | `pull/<N>/merge`로 받으면 main이 움직였을 때 다른 병합 커밋이라 로컬 실행으로 간다(안전, 시간만 못 아낌). 문서에 한 줄 | ADR 0011 |
+| 2026-11-08 | #21 | reviewer.md 막는 지적 기준에 ADR·STATUS 기록이 없다. ADR 0010 해석으로 한 줄 | reviewer.md |
+| 2026-11-08 | #21 | `lead-check.json` `mutation_reuse.from`에 절대 경로(CI 도구용, 참고) | tools/ci/lead_check.py |

@@ -85,6 +85,15 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 - N1(다른 케이스의 점수표가 말없이 쓰임): 잠정 결정 22. 스펙 4.3 규칙 2·4.5 `blind` 행·장면 표 한 행, oracle `compare.py`·`scores.py`.
 - `bai05`·`mail05` 장면과 reply-drafts 7.3·7.4 블록, 예제 expected 12개는 바이트 그대로다.
 
+## 남은 일 (PR #18 리뷰 막지 않는 지적)
+
+1. `case-schema.md` 4.3·4.5·4.9·4.12 표 옮기기: 다음 정리 카드로 미룬다. 표를 옮기면 기존 테스트가 읽는 표 머리가 바뀔 수 있어 따로 한다.
+2. 지시문 12절 `reply-drafts` 행과 제목 "4종": 지시문 변경이라 ADR이 필요해 다음 정리 카드로 미룬다.
+3. 출처 표 오류면 점수표와 맞춰 보는 `blind` 검사를 하지 않는다(text-check.md 4.5, oracle 첫 오류에서 멈춤).
+4. `scores`·`thresholds`의 -0 처리: `scores.min`·`max`의 -0은 `range` 오류로 고침(PR #18). `thresholds.score_gap_max`의 -0은 기존 thresholds처럼 받음(기록).
+
+24. PR #18 리뷰 막지 않는 지적 정리(질문 아님): 표 옮기기·지시문 12절은 다음 정리 카드, 출처 표 오류면 `blind` 검사 안 함.
+
 ## 메모
 
 - 근거: `docs/cases-public/README.md` 1절의 빈 곳 2 사례, `docs/cases-public/diff.md`, `docs/cases-public/gaps.md`(16 표본 크기, 17 기준 신뢰도가 점수표와 닿는다).

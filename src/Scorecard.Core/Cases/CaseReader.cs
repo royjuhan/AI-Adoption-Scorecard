@@ -582,7 +582,9 @@ internal sealed class CaseReader(ErrorSink errors)
             return null;
         }
 
-        if (!long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value)
+        // 음의 0(-0)은 정수 패턴에 맞지만 long으로 읽으면 0이 된다. 스펙 4.6 정수 행대로 범위 밖으로 본다.
+        if (text == "-0"
+            || !long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value)
             || value < ScoreBoundMin
             || value > ScoreBoundMax)
         {

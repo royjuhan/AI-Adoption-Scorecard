@@ -928,4 +928,4 @@ public sealed record CaseInputs(string Reference, string Candidate, string Key, 
 - 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md`다. 이 절은 가리키기만 한다(text-check.md 11절 1).
 - 새 최상위 키 `checklist`(체크리스트 대조)·`scores`(가림 점수표), `thresholds.score_gap_max`: text-check.md 4.1. 둘 다 선택이다. 없으면 지금과 같다.
 - 오류 코드는 4.9의 17개 그대로다. `required`·`conflict`·`duplicate`·`range`의 "언제"가 는다(text-check.md 4.1 파서 장면 표).
-- 단계 질문은 늘지 않는다(10개). 이 문서의 4.3·4.5·4.9 표는 PR (b)에서 고친다. 이 PR에서는 표를 바꾸지 않는다(그 표를 읽는 테스트가 있다).
+- 단계 질문은 늘지 않는다(10개). 이 문서의 4.3·4.5·4.9 표는 이번 PR (b)에서도 옮기지 않고 다음 정리 카드로 미룬다. 이유: 표를 옮기면 기존 테스트가 읽는 표 머리가 바뀔 수 있어 따로 한다.

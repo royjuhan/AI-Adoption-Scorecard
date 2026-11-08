@@ -6,7 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
-| 2026-11-08 | 0009 | 문장 결과 검증 두 길(checklist·scores), 판정 SCORE, oracle checklist.py·scores.py. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-014 (a) |
+| 2026-11-08 | 0009 | 문장 결과 검증 두 길(checklist·scores), 판정 SCORE, oracle checklist.py·scores.py, 지시문 3.4(문장 결과 두 길·점수 보류·점수표만, 조건부 문장 괄호). 12절 예제 표는 PR (b). 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-014 (a) |
 | 2026-11-08 | 0008 | schema_version 기준(받던 입력에서 속성 제거·이름·형식·뜻 변경일 때만 올림), 지시문 5절 judgment.json·3.4 안 본 검토 항목, oracle 판 하나(judge_v1 삭제), CI 설명 문구. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | #16 |
 | 2026-11-07 | 0007 | oracle이 expected judgment.json의 schema_version으로 판정 판을 고른다(T-011 동결본 `judge_v1`, 거절 가드 하나). PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | #14 |
 | 2026-11-07 | 0006 | `oracle-head` 잡과 lead_check가 head `selftest.py`도 돌린다. guard가 잡 넷(mutation, oracle, oracle-head, test-run) 결과를 모두 본다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | #12 |
@@ -106,6 +106,9 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-08 | T-014 | 10 예제 | 새 예제 `reply-drafts`. mixed-exceptions 그대로 | T-014 |
 | 2026-11-08 | T-014 | 11 생성기 | 문장 생성기를 Core에(T-005 방식) | T-014 |
 | 2026-11-08 | T-014 | 12 규칙 자리 | `docs/spec/text-check.md` | T-014 |
+| 2026-11-08 | T-014 | 13 점수표만 + `inputs` 있고 대조할 열 없음(리뷰 막는 지적 2) | 통과가 아니라 조건부 `NOT_VERIFIED`(`no_compare_fields`, 점수 보류 뒤·`TIME` 앞) + `add_compare` | T-014 |
+| 2026-11-08 | T-014 | 14 점수표만이 읽지 않는 문턱(리뷰 b) | `accuracy_min`·`missing_max`는 `defaults`·`confirm_thresholds`·표시에서 뺀다. `thresholds` 모양은 그대로 | T-014 |
+| 2026-11-08 | T-014 | 15 `score_gap_max` 0 문장(리뷰 h) | 값이 0이면 "넘게" 없는 틀(text-check.md 5.2 문턱 0 문장 표). reply-drafts 블록 그대로 | T-014 |
 
 ## 재검토 기록 (ADR 0005 [재검토])
 

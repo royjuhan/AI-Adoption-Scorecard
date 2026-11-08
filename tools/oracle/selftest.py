@@ -15,8 +15,9 @@
 #    예제 이름은 고정하지 않는다. examples/의 폴더 이름(서수)이고, 폴더마다 7절 블록이 하나 있어야 한다.
 #    metrics.md 12.5 compare-duplicate 블록, 13절 결과 쪽 중복 순서 표(T-013), case-schema.md 10.2 inputs.group 표.
 #    변형: 예제 CSV의 CRLF·CR·BOM·따옴표·마지막 줄바꿈 없음·끝 빈 행·칸 앞뒤 공백, answers.yaml의 CRLF·CR·BOM이 같은 바이트.
-#    text-check.md(T-014): 4.1~4.4·5.1~5.5 표(상수 = 표, 파서·맞추기·평균·점수 자료 장면), 3.1·3.2 새 속성 표,
-#    6.1 판정 장면, 7.2 계획 표로 CSV를 다시 만들어 7.3 블록과 비교, 7.4 블록 = oracle 출력, CSV 변형, PR (b) 모의
+#    text-check.md(T-014): 4.1~4.4·5.1~5.5 표(상수 = 표, 파서·맞추기·평균·점수 자료 장면, 5.2 문턱 0 문장 표), 3.1·3.2 새 속성 표,
+#    6.1 판정 장면(점수표만 + 대조할 열 없음 = 조건부, 점수표만 defaults = 읽는 문턱만), 7.2 계획 표로 CSV를 다시 만들어
+#    7.3 블록과 비교, 7.4 블록 = oracle 출력, CSV 변형(점수 칸 따옴표·공백 포함), PR (b) 모의
 #    (예제 사본 + reply-drafts 블록 → check.py 모두 MATCH, 바꾸면 그 파일만 DIFF). examples/reply-drafts가 있으면 파일 = 블록.
 # 2. 음성 대조: 예제 사본에서 expected 한 바이트, expected 삭제, 결과 CSV 값, answers.yaml 답을 바꾸면
 #    check.py가 DIFF·MISSING과 종료 코드 1을 낸다. 사본 그대로면 모두 MATCH, 종료 코드 0.
@@ -1219,6 +1220,8 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
     expect([(tick(c), tick(r), tick(t)) for c, r, _w, _th, t in rows] == list(J2.SCORE_CHECK_TABLE), 'T-014 5.2 = SCORE_CHECK_TABLE')
     expect({tick(r): (() if th == '—' else tuple(spans(th))) for _c, r, _w, th, _t in rows} == J2.SCORE_CHECK_READS,
            'T-014 5.2 읽는 문턱 = SCORE_CHECK_READS')
+    rows = table(tc_spec, '| 문턱 0 문장 | 근거 키 | 결과 | 문장 틀 |')
+    expect([(w, tick(k), tick(r), tick(t)) for w, k, r, t in rows] == list(J2.SCORE_ZERO_TABLE), 'T-014 5.2 문턱 0 문장 = SCORE_ZERO_TABLE')
     rows = table(tc_spec, '| 자리 | 근거 키 | 확인 결과 | 길 | 판정 | 판정 문장 틀 |')
     got = [(tick(a), tick(k), None if r == '—' else tick(r), tick(p), tick(v), tick(t)) for a, k, r, p, v, t in rows]
     expect(got == list(J2.SCORE_VERDICT_ROWS), 'T-014 5.3 = SCORE_VERDICT_ROWS')
@@ -1337,18 +1340,33 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
             (only / rel).write_bytes(files[rel])
         bases = {'reply-drafts': base, 'score-only': only}
         scene_head = '| 장면 | 바탕 | 바꾼 곳 | 판정 | 근거 키 | 확인 결과 | 다음 할 일 |'
-        reasons = {}
+        reasons, judged = {}, {}
         for k, (scene, src, cell, verdict, rule, checks, todo) in enumerate(table(tc_spec, scene_head)):
             folder = tmp / f'scene{k:02d}' / tick(src)
             shutil.copytree(bases[tick(src)], folder)
             tc_change(folder, cell)
-            res, _case, _run = tc_judge(folder)
+            res, _case, run = tc_judge(folder)
             got = (res['verdict'], res['rule'], [c['result'] for c in res['checks']], [t['key'] for t in res['todo']])
             want = (tick(verdict), tick(rule), spans(checks), [] if todo == '—' else spans(todo))
             expect(got == want, f'T-014 6.1 {scene}: {got}')
-            reasons[scene] = res['reason']
-        line = next(x for x in tc_spec if x.startswith('- "점수 문턱 기본값": '))
-        expect(spans(line)[-1] == reasons.get('점수 문턱 기본값'), f'T-014 6.1 기본값 판정 문장 {reasons.get("점수 문턱 기본값")}')
+            reasons[scene], judged[scene] = res['reason'], res
+            if run.body['status'] == 'not_verified':  # 5.1: 점수표만은 읽는 문턱만 defaults에 적는다.
+                expect(all(d in J2.SCORES_ONLY_READ for d in res['defaults']), f'T-014 5.1 {scene}: defaults {res["defaults"]}')
+            gap = res['thresholds'].get('score_gap_max')
+            if gap is not None and Decimal(gap.text) == 0:  # 5.2 문턱 0 문장: "점 넘게"가 없다.
+                expect(all('점 넘게' not in x for x in [res['reason']] + [c['reason'] for c in res['checks']]),
+                       f'T-014 5.2 {scene}: 문턱 0 문장')
+        for scene in ('점수 문턱 기본값', '점수표만, 대조 열 없음'):
+            line = next(x for x in tc_spec if x.startswith(f'- "{scene}": '))
+            expect(spans(line)[-1] == reasons.get(scene), f'T-014 6.1 {scene} 판정 문장 {reasons.get(scene)}')
+        unused = judged.get('점수표만, 쓰지 않는 문턱 기본값', {})
+        expect(unused.get('defaults') == [] and unused.get('thresholds', {}).get('accuracy_min') is not None,
+               'T-014 5.1 점수표만: 쓰지 않는 문턱은 defaults에 없고 thresholds 모양은 그대로')
+        # 리뷰 지적 2: inputs가 있는데 대조할 열이 없으면 점수표만이어도 통과가 아니다.
+        for scene, res in judged.items():
+            if res['rule'] == 'NOT_VERIFIED':
+                expect(res['verdict'] == 'conditional' and 'add_compare' in [t['key'] for t in res['todo']],
+                       f'T-014 5.3 {scene}: 대조할 열 없음은 조건부 + add_compare')
         expect_refused('T-014 5.3 점수표만 + 검토 항목 키', lambda: tc_judge(only, None, []))
         value = json.loads(metrics_bytes(only))
         expect(list(value) == ['schema_version', 'case', 'compare', 'scores'] and value['compare']['reason'] == 'no_inputs',

@@ -268,11 +268,11 @@ def gap19():
     clean(g)
     task = "합성 거래 기록을 규칙으로 점검한다"
     write(f"{g}/volume/case.yaml", case_yaml(19, "gap-19-volume", task, [
-        ("실시간 거래 점검(분당 8천 건)", ans(frequency="daily", batch_size=11520000, failure_impact="external")),
+        ("실시간 거래 점검(분당 1만 건)", ans(frequency="daily", batch_size=14400000, failure_impact="external")),
         ("소량 거래 점검(하루 20건)", ans(frequency="daily", batch_size=20, failure_impact="external")),
-    ], comment=["두 단계는 처리량만 다르다(하루 1,152만 건 vs 하루 20건). 검증 자료 없음."]))
+    ], comment=["두 단계는 처리량만 다르다(하루 1,440만 건 vs 하루 20건). 검증 자료 없음."]))
     write(f"{g}/answers-latency.yaml", answers_yaml(19, "gap-19-latency", task, [
-        ("실시간 거래 점검(분당 8천 건)", ans(frequency="daily", batch_size=11520000, failure_impact="external",
+        ("실시간 거래 점검(분당 1만 건)", ans(frequency="daily", batch_size=14400000, failure_impact="external",
                                    max_latency_ms=50)),
     ], comment=["처리량·응답 시간 질문을 답에 더해 본다(지금 질문 표에 없는 키)."]))
     runs(g, ["volume", "answers-latency.yaml"])

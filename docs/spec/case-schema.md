@@ -923,7 +923,7 @@ public sealed record CaseInputs(string Reference, string Candidate, string Key, 
 4. 7.2 파서 테스트 표에 10.2 표(머리 행 그대로 읽는다).
 5. `synthetic-examples.md` 4.8 표 `inputs` 칸 끝에 ", 유형 열 `signal_type`"(table-compare), ", 유형 열 `record_kind`"(signoff-final). `CaseYamlTests.Case_data_keys_match_spec_table`이 이 칸으로 `CaseInputs`를 만든다. 7.2·7.5 `case.yaml` 블록·SHA-256 줄. `signoff-final.md` 파일 표 `case.yaml` 행(`e11e7b68…`, 2,616).
 
-## 11. T-014 개정 (`checklist`·`scores`, 초안)
+## 11. T-014 개정 (`checklist`·`scores`, 채택(ADR 0005 결정 3, ADR 0009))
 
 - 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md`다. 이 절은 가리키기만 한다(text-check.md 11절 1).
 - 새 최상위 키 `checklist`(체크리스트 대조)·`scores`(가림 점수표), `thresholds.score_gap_max`: text-check.md 4.1. 둘 다 선택이다. 없으면 지금과 같다.

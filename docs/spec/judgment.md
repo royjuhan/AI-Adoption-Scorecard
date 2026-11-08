@@ -1229,9 +1229,10 @@ test-engineer(`tests/`, 바꾸는 기존 테스트는 PR 본문에 이유):
 
 - ADR 0005 결정 3에 따라 리드가 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다. 이 절은 추천안만 적는다.
 
-## 13. T-014 개정 (점수 확인 `SCORE`, 초안)
+## 13. T-014 개정 (점수 확인 `SCORE`, 채택(ADR 0005 결정 3, ADR 0009))
 
 - 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md` 5절이다. 이 절은 가리키기만 한다.
-- 점수표(`scores`)가 있을 때만: 문턱 `score_gap_max`(기본값 0), 확인 여섯째 `SCORE`, 판정 행 다섯(순서 4 뒤 보류 둘, 점수표만일 때 `TIME`·`PASS`), 다음 할 일 `rescore_blind`.
-- 점수표만 있는 케이스는 미검증이 아니다. `checks`는 `TIME`·`SCORE` 둘이다(text-check.md 5.3).
+- 점수표(`scores`)가 있을 때만: 문턱 `score_gap_max`(기본값 0, 값이 0이면 "넘게" 없는 문장), 확인 여섯째 `SCORE`, 판정 행 여섯(순서 4 뒤 보류 둘, 점수표만일 때 대조할 열 없음 조건부·`TIME`·`PASS`), 다음 할 일 `rescore_blind`.
+- 점수표만 있는 케이스는 미검증이 아니다. `checks`는 `TIME`·`SCORE` 둘이다(text-check.md 5.3). `defaults`에는 이 길이 읽는 문턱(`time_must_drop`, `score_gap_max`)만 적는다(text-check.md 5.1).
+- 점수표만인데 `inputs`가 있고 대조할 열(`compare`·`checklist`)이 없으면 순서 1의 `NOT_VERIFIED` `no_compare_fields`가 미검증이 아니라 조건부로 점수 보류 뒤에 걸린다. 다음 할 일 `add_compare`(text-check.md 5.3·5.5). 이 문서 4.3 순서 1 행과 문장은 점수표가 없을 때 그대로다.
 - 4.3·4.4·4.6·4.7 표, 7.1 예제 표, 7.2~7.5 블록은 바꾸지 않는다. 새 예제 `reply-drafts`는 text-check.md 7.1 새 예제 표에 있다. `schema_version`은 2 그대로다.

@@ -1,23 +1,23 @@
 # text-check (T-014 스펙: 문장 결과 검증)
 
-- 상태: 초안(2026-11-08, prototyper). ADR 0005 결정 3에 따라 리드가 끝의 추천안을 채택하고 카드 "잠정 결정"과 `docs/STATUS.md`에 적는다.
+- 상태: 채택(ADR 0005 결정 3, ADR 0009). 2026-11-08 prototyper 초안, 리드가 끝의 추천안 1~12를 채택했다. PR (a) 리뷰 뒤 고친 곳(5.1~5.5, 6.1, 4.3 규칙 2)은 질문 13~15이고 같이 채택했다. 카드 "잠정 결정"과 `docs/STATUS.md`에 적었다.
 - 작업 카드: `docs/tasks/T-014-text-result-check.md`. 빈 곳 2(`docs/cases-public/README.md` 2절 2, 4절 3항 순서 첫째).
 - 출발점: 지시문 2절 원칙(엔진에 AI 없음, 실제 자료·회사 자료 금지), 3.4 판정, 12절 예제 [읽음]. `docs/cases-public/README.md` 1절의 빈 곳 2 사례 요약과 4절 [읽음]. `docs/cases-public/gaps.md` 16(표본 크기)·17(기준 신뢰도) [읽음]. `case-schema.md`·`metrics.md`·`judgment.md`·`synthetic-examples.md`, ADR 0004·0005·0007·0008, `docs/STATUS.md` 잠정 결정 [읽음].
 - 확인 대상 커밋: `61ea067`. `src/`·`tests/`·`examples/`는 이 커밋 그대로다. `src/`는 읽지 않았다(ADR 0005 결정 9).
 - 확인 환경: Ubuntu 24.04 x64, Python 3.13(oracle·스파이크), .NET SDK 10.0.114(기존 테스트만).
-- 근거: oracle(`tools/oracle/`, 이 문서 글만 보고 고쳤다). 이 문서의 블록·SHA-256·판정은 oracle이 낸 것이다 `[T14:O]`. 예제 자료는 스파이크 생성기(`spikes/T-014/gen.py`)가 냈다 `[T14:G]`. 점검 줄은 `python3 -I -B tools/oracle/selftest.py --repo .`이다 `[T14:selftest]`.
-- 스파이크: `spikes/T-014/` (머지 대상 아님). 실행은 `spikes/T-014/run-spike.sh <작업폴더>`. 이 문서는 `spikes/T-014/fill.py`가 `spec.template.md`에 생성기·oracle 출력을 채워 만든다.
+- 근거: oracle(`tools/oracle/`, 이 문서 글만 보고 고쳤다). 이 문서의 블록·SHA-256·판정은 oracle이 낸 것이다 `[T14:O]`. 예제 자료는 스파이크 생성기가 냈다 `[T14:G]`. selftest가 7.2 계획 표로 CSV를 다시 만들어 7.3 블록과 바이트로 맞춘다. 점검 줄은 `python3 -I -B tools/oracle/selftest.py --repo .`이다 `[T14:selftest]`.
+- 스파이크: `spikes/T-014/` (머지 대상 아님. 이 PR에 없다). 첫 판은 스파이크가 생성기·oracle 출력을 이 문서에 채웠다. 리뷰 뒤 고친 곳은 손으로 고쳤다. 저장소에서 다시 확인하는 길은 selftest다: 7.2 계획 표 → CSV = 7.3 블록, 7.4 블록 = oracle 출력, 표 = oracle 상수, 6.1 장면.
 - 고르는 기준(리드 지시): 사용자에게 맞나(쓰기 쉬움) → 그다음 바이트 보존.
 
 ## 0. 표기
 
-- `[읽음]`: 커밋된 파일을 읽어서 확인한 사실. `[T14:O]`·`[T14:G]`·`[T14:selftest]`: 위 머리 글. `[T14:S0]`~`[T14:S7]`: 스파이크 단계(10절).
+- `[읽음]`: 커밋된 파일을 읽어서 확인한 사실. `[T14:O]`·`[T14:G]`·`[T14:selftest]`: 위 머리 글. `[T14:S0]`~`[T14:S6]`: 스파이크 단계(10절, 기록).
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
 - 문장 결과: 정답 표가 없는 결과(요약, 답변 초안, 보고서 문장). 결과 자료의 한 칸에 문장이 들어 있다.
 - 체크리스트 대조(길 1): 결과 문장마다 꼭 들어갈 항목이 있는지 문자열 규칙으로 본다(4.2).
 - 가림 점수표(길 2): 사람이 AI 결과와 사람 결과를 누가 썼는지 모르고 매긴 점수(4.3). 엔진은 모으기만 한다.
 - 가림 키: 채점자가 보는 결과 이름. 출처 표: 가림 키 → 건·출처(`ai`·`human`). 채점자에게 주지 않는 표다.
-- 길: 판정이 쓰는 자료. "표 대조" = 대조가 `measured`(compare 필드 또는 체크리스트)이고 점수표가 있음. "점수표만" = 대조가 미검증이고 점수표가 있음.
+- 길: 판정이 쓰는 자료. "표 대조" = 대조가 `measured`(compare 필드 또는 체크리스트)이고 점수표가 있음. "점수표만" = 대조가 미검증이고 점수표가 있음. 미검증 이유가 `no_compare_fields`(`inputs`를 적었는데 `compare`·`checklist`가 없음)여도 점수표만이다. 그때는 통과가 아니다(5.3).
 - `CaseDefinition`·`CaseError`는 `case-schema.md`, `CompareMetrics`·`CsvRow`는 `metrics.md`, `JudgmentEngine`은 `judgment.md`의 이름이다.
 
 ## 1. 범위
@@ -146,6 +146,7 @@
 | `thresholds.score_gap_max` | 숫자 | AI 평균이 사람 평균보다 낮아도 되는 폭(5.1). `case.yaml` 값 그대로(자릿수 유지) 또는 기본값. `scores`가 있을 때만 |
 
 - `checks[].rule`에 `SCORE`, `checks[].result`에 `revealed`·`met`·`not_met`, `todo[].key`에 `rescore_blind`가 는다. 값이 느는 것이다. 경로는 그대로다.
+- `rule` `NOT_VERIFIED`가 `verdict` `conditional`과 같이 나올 수 있다(점수표만 + 대조할 열 없음, 5.3). 값은 늘지 않는다. 판정은 `verdict`가 정한다.
 
 ### 3.3 바이트 규칙과 `schema_version`
 
@@ -250,7 +251,7 @@
 규칙:
 
 1. 출처 표: 가림 키는 쪽 전체(모든 출처 표 파일)에서 하나씩(`duplicate-key`). 출처는 `ai`·`human`(서수, `source`). 건마다 `ai` 하나, `human` 하나(`pair`).
-2. 점수표: 점수는 따옴표 없는 정수 글 `0` 또는 `[1-9][0-9]*`이고 `min` 이상 `max` 이하(`score`). 가림 키는 출처 표에 있어야 하고, 건은 출처 표의 그 키의 건과 같아야 한다(`blind`). 같은 채점자·같은 가림 키는 한 번(`duplicate-key`).
+2. 점수표: 점수 칸은 따옴표를 풀고 정규화(`metrics.md` 4.6, 앞뒤 공백 뗌)한 값이 정수 글 `0` 또는 `[1-9][0-9]*`이고 `min` 이상 `max` 이하(`score`). 다른 칸과 같은 CSV 규칙이다(4.6 CSV 변형). `"4"`·` 4 `는 `4`이고, `4.0`·`04`·`+4`는 정수 글이 아니다. 가림 키는 출처 표에 있어야 하고, 건은 출처 표의 그 키의 건과 같아야 한다(`blind`). 같은 채점자·같은 가림 키는 한 번(`duplicate-key`).
 3. 빠진 점수: 출처 표의 가림 키마다 점수가 하나 이상 있어야 한다(`blind`). 점수표는 사람이 만든 자료다. 빠진 칸은 자료 오류로 보고 채우게 한다(`metrics.md` 12.1의 "기준 자료는 사람이 확정한 정답"과 같은 갈래).
 4. 집계: 출처마다 결과 수, 점수 수, 합, 평균, 분포(`min`~`max` 점수마다 수). 평균은 소수 둘째 자리로, 셋째 자리가 5 이상이면 올린다. 정수로 셈한다: `hundredths = (2 × 합 × 100 + 수) div (2 × 수)`. 늘 두 자리다(`4.00`).
 5. 건마다 비교(`paired`): 그 건의 AI 점수 합 × 사람 점수 수와 사람 점수 합 × AI 점수 수를 비교한다. 크면 `better`, 같으면 `same`, 작으면 `worse`. 나눗셈이 없다.
@@ -310,6 +311,8 @@
 | `scores/sheet.csv`: `\n` → `,human\n` | `revealed` | `source_value` 72건 | — |
 | `scores/sheet.csv`: `,4\n` → `,6\n` | 오류 | — | `score` |
 | `scores/sheet.csv`: `,4\n` → `,4.0\n` | 오류 | — | `score` |
+| `scores/sheet.csv`: `,4\n` → `,04\n` | 오류 | — | `score` |
+| `scores/sheet.csv`: `,4\n` → `,"4"\n` | `kept` | — | — |
 | `scores/sheet.csv`: `,b24,` → `,b99,` | 오류 | — | `blind` |
 | `scores/sources.csv`: `,human\n` → `,ai\n` | 오류 | — | `pair` |
 | `scores/sources.csv`: `,ai\n` → `,AI\n` | 오류 | — | `source` |
@@ -317,6 +320,7 @@
 
 - `\n` → `,human\n`은 머리 행에 `human` 열을 더하고 모든 칸에 `human`을 쓴다. 열 이름 `human`은 `source_column`이 아니다(열 이름은 `source`만 본다). 칸 72개가 `source_value`다.
 - `b24`를 바꾸면 그 키는 출처 표에 없다(`blind`, 첫 오류). 점수가 빠진 키(`b24`)도 `blind`다.
+- 점수 칸 `"4"`는 따옴표를 푼 값이 `4`라 받는다. `04`·`4.0`은 정수 글이 아니라 `score` 오류다(4.3 규칙 2).
 
 ### 4.5 오류
 
@@ -359,6 +363,10 @@
 | `score_gap_max` | `0` | 지시문에 값이 없다. "AI 결과 평균이 사람 결과 평균보다 낮지 않다"가 가장 보수적이다. 기본값 표시로 확인을 받는다 |
 
 - `confirm_thresholds` 문구의 `{defaults}`에 `score_gap_max 0`이 든다.
+- 점수표만(5.3)이면 `defaults`에는 이 길이 읽는 문턱만 적는다: 5.4 표의 점수표만 행에 나오는 `time_must_drop`, `score_gap_max`. `accuracy_min`·`missing_max`는 이 길이 읽지 않으므로 기본값이어도 `defaults`·`confirm_thresholds`·기본값 표시에 넣지 않는다. 대조를 더하면 그때 대조 길이 읽어 표시한다.
+- `thresholds` 객체 모양은 그대로다(`judgment.md` 3.2 세 키 + `score_gap_max`). 점수표만에서 `accuracy_min`·`missing_max` 값(적은 값 또는 기본값)은 판정에 쓰이지 않는다.
+- 표 대조와 점수표가 없는 판정은 `judgment.md` 4.2 그대로다(미검증 mixed-exceptions의 기본값 셋 포함). 예제 바이트가 그대로다.
+- → 질문 14.
 
 ### 5.2 확인 `SCORE`
 
@@ -374,6 +382,18 @@
 - 문장 값: `{findings}` = 발견 수. `{ai_mean}`·`{human_mean}` = 3.1의 평균 글. `{ai_ratings}`·`{human_ratings}` = 점수 수. `{score_gap_max}` = 쓴 문턱 글(`case.yaml` 글 그대로 또는 `0`).
 - 평균이 사람 쪽만 높은지(한쪽 검정)만 본다. AI가 더 높아도 `met`이다.
 
+문턱 0 문장. `score_gap_max` 값이 0이면(`0`, `0.0` 모두 값으로 본다) 위 확인 문장과 5.3 `SCORE` `not_met` 판정 문장 대신 이 틀을 쓴다. "0점 넘게"는 뜻이 없어서다. 걸리는 조건·읽는 문턱·기본값 표시는 위 표 그대로다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다.
+
+| 문턱 0 문장 | 근거 키 | 결과 | 문장 틀 |
+| --- | --- | --- | --- |
+| 확인 | `SCORE` | `met` | `AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 낮지 않다.` |
+| 확인 | `SCORE` | `not_met` | `AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 낮다.` |
+| 판정 | `SCORE` | `not_met` | `AI 결과 평균 {ai_mean}점이 사람 결과 평균 {human_mean}점보다 낮으므로 보류.` |
+
+- `revealed` 문장은 문턱을 쓰지 않아 그대로다.
+- 표시 평균은 반올림한 글이다. 문턱 0에서 두 평균 글이 같아도(예: 둘 다 `3.86`) 합·수 셈으로는 AI가 낮을 수 있다. 그때 문장은 "낮다"다. 셈이 기준이다(4.3 규칙 7).
+- → 질문 15.
+
 ### 5.3 판정 행
 
 `judgment.md` 4.3 표에 더한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "자리"는 `judgment.md` 4.3의 순서다. `4 뒤`는 순서 4(`UNEXPLAINED` `found`) 뒤, 순서 5 앞이다. 길이 `점수표만`인 행은 그 순서의 기존 행 대신 쓴다.
@@ -382,15 +402,19 @@
 | --- | --- | --- | --- | --- | --- |
 | `4 뒤` | `SCORE` | `revealed` | `모두` | `hold` | `점수표에서 출처가 드러난 곳이 {findings}군데 있어 점수를 쓸 수 없으므로 보류.` |
 | `4 뒤` | `SCORE` | `not_met` | `모두` | `hold` | `AI 결과 평균 {ai_mean}점이 사람 결과 평균 {human_mean}점보다 {score_gap_max}점 넘게 낮으므로 보류.` |
+| `4 뒤` | `NOT_VERIFIED` | `no_compare_fields` | `점수표만` | `conditional` | `점수는 문턱을 충족하나 대조할 열(case.yaml compare·checklist)이 없어 기준·결과 자료(case.yaml inputs)를 쓰지 않았으므로 조건부.` |
 | `5` | `TIME` | `not_measured` | `점수표만` | `conditional` | `점수는 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.` |
 | `5` | `TIME` | `not_met` | `점수표만` | `conditional` | `점수는 문턱을 충족하나 처리·검토 시간 {total}분이 적용 전 {before}분보다 짧지 않으므로 조건부.` |
 | `8` | `PASS` | — | `점수표만` | `pass` | `점수가 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.` |
 
-- 점수표만(대조가 미검증, 점수표 있음): 순서 1(`NOT_VERIFIED`)에 걸리지 않는다. 대조 확인 넷(`ACCURACY`, `MISSING`, `UNEXPLAINED`, `FOCUS`)이 없다. `checks`는 `TIME`, `SCORE`다. 판정은 `SCORE` 두 행 → `TIME`(위 두 행) → `PASS`(위 행) 순서다.
+- 점수표만(대조가 미검증, 점수표 있음): 순서 1(`NOT_VERIFIED`)에 그 자리에서 걸리지 않는다. 대조 확인 넷(`ACCURACY`, `MISSING`, `UNEXPLAINED`, `FOCUS`)이 없다. `checks`는 `TIME`, `SCORE`다. 판정은 `SCORE` 두 행 → `NOT_VERIFIED` `no_compare_fields`(위 행) → `TIME`(위 두 행) → `PASS`(위 행) 순서다.
+- 대조할 열 없음(`NOT_VERIFIED` `no_compare_fields`, 점수표만): 사용자가 `inputs`에 기준·결과 자료를 적었는데 `compare`·`checklist`가 없다. 그 자료를 쓰지 않은 채 통과를 내면 자료가 말없이 버려진다. 그래서 통과가 아니라 조건부이고 다음 할 일 `add_compare`가 나온다(5.5). "확인 결과" 칸은 `judgment.md` 4.3 순서 1처럼 대조 결과의 `reason`이다. 근거 키·결과 값은 순서 1의 것을 그대로 쓴다(새 값이 없다).
+- 이 행의 자리: 점수 보류(`SCORE` 두 행) 뒤다. 보류 → 조건부 → 통과 순서(`judgment.md` 4.1 해석 3)를 지킨다. 점수가 미달이면 보류가 먼저 보이고 `add_compare`는 할 일에 남는다. `TIME`보다 앞이다. 시간은 `checks`의 `TIME`에 남지만 자료를 쓰지 않은 것은 확인이 없어 판정 문장이 아니면 보이지 않는다(`judgment.md` 4.3 "확인 다섯은 checks에 모두 남으므로"와 같은 까닭).
+- `inputs`가 없는 점수표만(`no_inputs`)은 사용자가 점수표만으로 재겠다고 정한 것이다. 이 행에 걸리지 않고 지금처럼 `TIME`·`PASS`로 간다.
 - 표 대조 + 점수표: `checks`는 다섯 + `SCORE`. 판정은 `judgment.md` 4.3 순서 2~4 → `SCORE` 두 행 → 순서 5~8(기존 문장 그대로)이다. 정확도 미달(2)이 가림(4 뒤)보다 앞이다. 둘 다 보류이고, 정확도 문장이 더 구체적이다.
 - 가림이 깨지면 정확도·시간보다 늦게, 조건부보다 앞에 보류다. 점수를 쓸 수 없는데 통과·조건부를 내면 안 된다.
 - 점수표만이면서 사람 입력(검토 항목 키)을 받으면 `ArgumentException`이다. 검토 항목이 없다.
-- → 질문 8.
+- → 질문 8, 13.
 
 ### 5.4 읽은 문턱
 
@@ -403,10 +427,12 @@
 | `5~8` | — | — | `표 대조` | `accuracy_min`, `missing_max`, `time_must_drop`, `score_gap_max` |
 | `4 뒤` | `SCORE` | `revealed` | `점수표만` | — |
 | `4 뒤` | `SCORE` | `not_met` | `점수표만` | `score_gap_max` |
+| `4 뒤` | `NOT_VERIFIED` | `no_compare_fields` | `점수표만` | `score_gap_max` |
 | `5` | `TIME` | — | `점수표만` | `time_must_drop`, `score_gap_max` |
 | `8` | `PASS` | — | `점수표만` | `time_must_drop`, `score_gap_max` |
 
 - 점수표가 없으면 `judgment.md` 4.6 표 그대로다.
+- 점수표만의 `defaults`는 이 표의 점수표만 행에 나오는 문턱만 본다(5.1).
 
 ### 5.5 다음 할 일
 
@@ -416,7 +442,8 @@
 | --- | --- | --- |
 | `rescore_blind` | `SCORE` = `revealed` | `출처가 드러나지 않게 가림 키를 새로 붙이고 점수를 다시 매긴다.` |
 
-- 점수표만이면 대조 쪽 할 일(`add_data`, `add_compare`, `review_items`, `add_group`)은 나오지 않는다. `measure_time`(`TIME` = `not_measured`), `rescore_blind`, `confirm_thresholds`만 나온다. 점수표만으로 잰다고 사용자가 정한 것이다.
+- 점수표만이면 대조 쪽 할 일(`add_data`, `review_items`, `add_group`)은 나오지 않는다. `add_compare`(미검증 이유가 `no_compare_fields`일 때, 판정과 상관없이), `measure_time`(`TIME` = `not_measured`), `rescore_blind`, `confirm_thresholds`(5.1의 읽는 문턱만)가 나온다. `inputs`가 없으면 점수표만으로 잰다고 사용자가 정한 것이다.
+- `add_compare` 문구는 `judgment.md` 4.7 그대로다("case.yaml compare에 대조할 열과 허용 오차를 적는다."). 미검증 예제 mixed-exceptions의 바이트가 그 문구를 담고 있다. `checklist`도 된다는 것은 판정 문장이 말한다.
 
 ### 5.6 정의와 대조 결과
 
@@ -445,9 +472,16 @@
 | 점수표만, 문턱 기본값 | `score-only` | `case.yaml`: `  score_gap_max: 0.5\n` → `` | `hold` | `SCORE` | `off`, `not_met` | `confirm_thresholds` |
 | 점수표만, 시간 조건 | `score-only` | `case.yaml`: `  time_must_drop: false\n` → `  time_must_drop: true\n` | `conditional` | `TIME` | `not_measured`, `met` | `measure_time` |
 | 점수표만, 가림 깨짐 | `score-only` | `scores/sources.csv`, `scores/sheet.csv`: `b02,` → `human-02,` | `hold` | `SCORE` | `off`, `revealed` | `rescore_blind` |
+| 점수표만, 쓰지 않는 문턱 기본값 | `score-only` | `case.yaml`: `  accuracy_min: 80\n  missing_max: 5\n` → `` | `pass` | `PASS` | `off`, `met` | — |
+| 점수표만, 대조 열 없음 | `reply-drafts` | `case.yaml`: `checklist:\n  text: reply\n  items:\n    - {item: ticket, column: ticket}\n    - {item: action, column: action}\n    - {item: closing, any: [감사합니다, 고맙습니다]}\n` → `` | `conditional` | `NOT_VERIFIED` | `off`, `met` | `add_compare` |
+| 점수표만, 대조 열 없음, 시간 조건 | `reply-drafts` | `case.yaml`: `checklist:\n  text: reply\n  items:\n    - {item: ticket, column: ticket}\n    - {item: action, column: action}\n    - {item: closing, any: [감사합니다, 고맙습니다]}\n` → ``, `  time_must_drop: false\n` → `  time_must_drop: true\n` | `conditional` | `NOT_VERIFIED` | `not_measured`, `met` | `add_compare`, `measure_time` |
+| 점수표만, 대조 열 없음, 점수 미달 | `reply-drafts` | `case.yaml`: `checklist:\n  text: reply\n  items:\n    - {item: ticket, column: ticket}\n    - {item: action, column: action}\n    - {item: closing, any: [감사합니다, 고맙습니다]}\n` → ``, `  score_gap_max: 0.5\n` → `` | `hold` | `SCORE` | `off`, `not_met` | `add_compare`, `confirm_thresholds` |
 
 - "빠진 항목 하나": `d12`에 문의 번호를 넣으면 불일치가 `d03` 하나다. `focus_min`(2)보다 적어 `few`다. 정확도 11/12 = 91.7%.
-- "점수 문턱 기본값": 판정 문장과 `SCORE` 확인 문장 끝에 기본값 표시가 붙는다. 판정 문장은 `AI 결과 평균 3.86점이 사람 결과 평균 4.19점보다 0점 넘게 낮으므로 보류. (기본값 사용, 확인 필요)`다 [T14:O].
+- "점수 문턱 기본값": 판정 문장과 `SCORE` 확인 문장 끝에 기본값 표시가 붙는다. 문턱이 0이라 문턱 0 문장(5.2)이다. 판정 문장은 `AI 결과 평균 3.86점이 사람 결과 평균 4.19점보다 낮으므로 보류. (기본값 사용, 확인 필요)`다 [T14:O].
+- "점수표만, 쓰지 않는 문턱 기본값": `accuracy_min`·`missing_max`를 지워 기본값(95·2)이 되어도 점수표만은 그 둘을 읽지 않는다. `defaults`가 `[]`이고 `confirm_thresholds`가 없다(5.1) [T14:O].
+- "점수표만, 대조 열 없음": PR (a) 리뷰에서 찾은 장면이다. 체크리스트를 지우면 `inputs`는 있는데 대조할 열이 없다(미검증 `no_compare_fields`). 고치기 전에는 통과 `PASS`, 할 일 없음이었다. 이제 판정 문장은 `점수는 문턱을 충족하나 대조할 열(case.yaml compare·checklist)이 없어 기준·결과 자료(case.yaml inputs)를 쓰지 않았으므로 조건부.`다 [T14:O].
+- "…시간 조건": 대조할 열 없음이 `TIME`보다 앞이다. `TIME` `not_measured`는 `checks`와 `measure_time`에 남는다. "…점수 미달": 점수 보류가 먼저이고 `add_compare`는 할 일에 남는다(5.3 자리).
 - "점수표만": `checks`가 둘이다. `NOT_VERIFIED`가 아니다(카드 수용 기준 1).
 
 ### 6.2 `score-only`
@@ -1128,8 +1162,8 @@ test-engineer(`tests/`, `examples/`):
 | 평균(4.3) | 머리 행 `\| 점수 합 \| 점수 수 \| 평균 \|` | 3 |
 | 가림·점수 오류(4.4·4.5) | 머리 행 `\| 가림 규칙 \| 보는 곳 \| 걸리는 조건 \| 발견 위치·값 \|`, `\| 점수 자료 바꾼 곳 \| 결과 \| 가림 발견 \| 코드 \|`, `\| 점수 코드 \| 언제 \| 위치 \| 메시지 \|` | 3 |
 | 새 속성(3.1·3.2) | 머리 행 `\| 새 속성 \| 형식 \| 뜻 \|`, `\| 판정 새 속성 \| 형식 \| 뜻 \|`. reply-drafts 출력의 새 경로 = 표(순서) | 2, 3 |
-| 판정(5절) | 머리 행 `\| 점수 문턱 \| 기본값 \| 근거 \|`, `\| 점수 확인 \| 결과 \| 걸리는 조건 \| 읽는 문턱 \| 확인 문장 틀 \|`, `\| 자리 \| 근거 키 \| 확인 결과 \| 길 \| 판정 \| 판정 문장 틀 \|`, `\| 자리 \| 근거 키 \| 확인 결과 \| 길 \| 읽은 문턱 \|`, `\| 점수 할 일 \| 나오는 때 \| 문구 \|` = Core 상수 | 3 |
-| 판정 장면(6.1) | 머리 행 `\| 장면 \| 바탕 \| 바꾼 곳 \| 판정 \| 근거 키 \| 확인 결과 \| 다음 할 일 \|` | 1, 3 |
+| 판정(5절) | 머리 행 `\| 점수 문턱 \| 기본값 \| 근거 \|`, `\| 점수 확인 \| 결과 \| 걸리는 조건 \| 읽는 문턱 \| 확인 문장 틀 \|`, `\| 문턱 0 문장 \| 근거 키 \| 결과 \| 문장 틀 \|`, `\| 자리 \| 근거 키 \| 확인 결과 \| 길 \| 판정 \| 판정 문장 틀 \|`, `\| 자리 \| 근거 키 \| 확인 결과 \| 길 \| 읽은 문턱 \|`, `\| 점수 할 일 \| 나오는 때 \| 문구 \|` = Core 상수 | 3 |
+| 판정 장면(6.1) | 머리 행 `\| 장면 \| 바탕 \| 바꾼 곳 \| 판정 \| 근거 키 \| 확인 결과 \| 다음 할 일 \|`. 점수표만이면 `defaults` ⊆ {`time_must_drop`, `score_gap_max`}. 6.1 글머리의 판정 문장 둘 | 1, 3 |
 | 골든 | `examples/reply-drafts/` → 파서 → 대조 → 판정 → 세 파일이 expected와 바이트까지 같다 | 4 |
 | 블록 = 파일 | 7.3·7.4 블록·SHA-256 줄 = `examples/reply-drafts/` 파일. 머리 행 `\| 새 예제 \| inputs.group \| …`, `\| 예제 파일 \| 만드는 곳 \|` | 4 |
 | 생성기(7.2) | 머리 행 `\| 계획 \| 값 \|`로 Core 생성기를 돌려 7.3 CSV 넷과 바이트까지 같다 | 4 |
@@ -1142,13 +1176,13 @@ core-dev(`src/Scorecard.Core/`):
 1. 파서: `CaseDefinition`에 `Checklist`·`Scores`(위치 매개변수 끝, 기본값 null), `CaseThresholds`에 `ScoreGapMax`(기본값 null). 4.1 검사. 기존 생성 코드가 그대로 컴파일된다(T-012 `Group`과 같은 방식).
 2. 대조: 4.2(체크리스트), 3.1 `checklist`·`missing_items`. 열 찾기 순서(4.2 규칙 1).
 3. 점수표: 4.3·4.4·4.5. 새 공개 형식 `ScoreSummary`(제안). `CompareMetrics`에 `Scores`(끝, 기본값 null). `MetricsJson.Render`가 3.1 자리에 쓴다.
-4. 판정: 5절. `JudgmentRules.cs`에 5.1~5.5 상수. `JudgmentJson`이 3.2를 쓴다.
+4. 판정: 5절. `JudgmentRules.cs`에 5.1~5.5 상수(5.2 문턱 0 문장 표 포함). 점수표만의 `defaults`는 5.1, 대조할 열 없음은 5.3 `NOT_VERIFIED` 행. `JudgmentJson`이 3.2를 쓴다.
 5. 생성기: 7.2 `SyntheticReplies`(`internal` SplitMix64 재사용).
 6. 규칙 값은 `internal` 한 파일씩(`classification.md` 4.9 방식). 실행 중에 문서를 읽지 않는다.
 
 - 시작 전 main 테스트 수 이상, 삭제·Skip 없음(카드 수용 기준 8). 바꾸는 기존 테스트는 목록에 예제·파일·대상을 더하는 것뿐이다.
 - `tests/`·`src/`에 `tools/oracle` 글자를 쓰지 않는다(regression-guard `ci-tamper`). PR (b)는 `tools/oracle/`을 바꾸지 않는다(`oracle-and-expected`, 바꾸면 `ci-changed`).
-- 이 스펙(PR (a))은 기존 C# 테스트가 읽는 표·블록·줄을 바꾸지 않는다. 작업 트리 사본(`src/`·`tests/`는 커밋 그대로)에서 `dotnet test -c Release` 1,664개가 모두 통과한다 [T14:S5].
+- 이 스펙(PR (a))은 기존 C# 테스트가 읽는 표·블록·줄을 바꾸지 않는다. 작업 트리 사본(`src/`·`tests/`는 커밋 그대로)에서 `dotnet test -c Release` 1,664개가 모두 통과한다 [T14:S5]. 리뷰 뒤 고친 작업 트리에서도 1,664개가 모두 통과한다(`src/`·`tests/`는 그대로).
 
 ## 9. 미확인 목록
 
@@ -1162,7 +1196,7 @@ core-dev(`src/Scorecard.Core/`):
 
 ## 10. 스파이크 단계 목록
 
-`spikes/T-014/run-spike.sh <작업폴더>`. 저장소 파일은 읽기만 하고, 작업 폴더에 사본을 만든다. `summary.txt`는 마지막 실행이다.
+스파이크는 머지 대상이 아니라 이 PR에 없다(`spikes/T-014/`, 작업 폴더에서만 돌렸다). 아래 표는 첫 판을 만들 때 한 일의 기록이다. 저장소에서 다시 확인하는 길은 selftest다: 7.2 계획 표로 CSV를 다시 만들어 7.3 블록과 맞추고(S0·S1 대신), 7.4 블록 = oracle 출력(S2), PR (b) 모의(S4), 표 = oracle 상수, 6.1 장면을 본다. 리뷰 뒤 고친 곳은 손으로 고쳤다(S3의 `fill.py` 판과 다르다).
 
 | 단계 | 한 일 |
 | --- | --- |
@@ -1182,7 +1216,7 @@ core-dev(`src/Scorecard.Core/`):
 2. `metrics.md`: 3.2 표는 그대로다(table-compare 경로 순서를 보는 테스트가 있다). 새 경로는 이 문서 3.1 표다. 4.7 오류 표도 그대로, 점수 코드는 4.5.
 3. `judgment.md`: 4.3·4.4·4.6·4.7 표는 그대로다. 이 문서 5절 표를 더해서 읽는다. 7.1 예제 표에 reply-drafts를 넣지 않는다(확인이 여섯이라 "확인 다섯" 칸과 맞지 않는다). 이 문서 7.1 새 예제 표가 그 자리다.
 4. `synthetic-examples.md`: 문장 생성기는 이 문서 7.2다. 4.3 계획 표에 넣지 않는다(열 모양이 다르다).
-5. 지시문(`docs/README-instructions.md`, 리드·ADR): 12절 예제 표에 다섯째 `reply-drafts`(정답 표 없는 문장 결과, 조건부), 3.3·3.4에 "문장 결과는 체크리스트·가림 점수표로 잰다, 점수 평균이 문턱만큼 낮으면 보류". 2절 원칙은 바꾸지 않는다.
+5. 지시문(`docs/README-instructions.md`, 리드·ADR 0009): 3.4에 문장 결과의 두 길, 점수 미달·가림 깨짐 보류, 점수표만 판정과 대조할 열 없음 조건부를 PR (a)에서 더했다. 12절 예제 표의 다섯째 `reply-drafts`(정답 표 없는 문장 결과, 조건부)와 제목 "4종"은 PR (b)에서 고친다. 테스트(`Instructions_section_12_verdicts_hold` 등)가 그 표의 행마다 `examples/`를 읽어 PR (a)에서 넣으면 실패한다. 2절 원칙은 바꾸지 않는다.
 
 ## 12. ADR 0009 초안 요지 (리드가 쓴다)
 
@@ -1192,7 +1226,7 @@ core-dev(`src/Scorecard.Core/`):
 - 배경: 빈 곳 2. 정답 표가 없는 문장 결과는 지금 미검증뿐이다.
 - 결정 1: `case.yaml`에 `checklist`·`scores`(케이스 수준). 엔진은 문자열 규칙과 셈만 쓴다(AI·자연어 처리 없음).
 - 결정 2: 출력은 설정했을 때만 있는 속성이다. `schema_version`은 그대로(ADR 0008 결정 1 적용).
-- 결정 3: 판정에 확인 `SCORE`와 행 다섯(5.3). 기존 표·문장·예제 바이트는 그대로다.
+- 결정 3: 판정에 확인 `SCORE`와 행 여섯(5.3, 리뷰 뒤 대조할 열 없음 조건부 한 행). 기존 표·문장·예제 바이트는 그대로다.
 - 결정 4: oracle에 `checklist.py`·`scores.py`를 더하고 `oracle_case.py`·`compare.py`·`judge.py`·`selftest.py`를 넓힌다(이 문서 글만 보고). `check.py` 계약은 그대로다.
 - 결정 5: 새 예제 `reply-drafts`는 PR (b). 지시문 12절 문구는 리드가 고친다(5절 목록 그대로).
 - 영향: 기존 expected 12개 바이트 그대로. 가드를 약하게 하는 변경은 없다. selftest는 점검이 늘기만 한다.
@@ -1201,7 +1235,7 @@ core-dev(`src/Scorecard.Core/`):
 
 ## 승인 질문 (ADR 0005: 추천안 채택)
 
-추천안은 "사용자에게 맞나 → 그다음 바이트 보존" 순서로 골랐다. "ADR 0004 기준"은 ADR 0005 전이었다면 누가 정했을지다(`judgment.md` 12.6과 같다). 질문은 12개다.
+추천안은 "사용자에게 맞나 → 그다음 바이트 보존" 순서로 골랐다. "ADR 0004 기준"은 ADR 0005 전이었다면 누가 정했을지다(`judgment.md` 12.6과 같다). 질문은 15개다. 13~15는 PR (a) 리뷰 지적에서 나왔다.
 
 1. **두 길의 자리(4.1).** ADR 0004 기준: juhan 직접(`case.yaml` 스키마).
    - 추천: 최상위 `checklist`·`scores` 두 키. `inputs`·`compare`는 그대로. 단계 질문은 늘지 않는다.
@@ -1225,7 +1259,7 @@ core-dev(`src/Scorecard.Core/`):
    - 추천: 모든 점수의 출처별 평균(소수 둘째, 정수 셈), 분포, 건별 비교, 채점자별 평균. 판정은 합·수 곱셈으로 `score_gap_max`(기본값 0) 비교.
    - 대안: 건별 승패 비율로 판정. 같은 점수 차이도 건 수에 따라 판정이 흔들린다.
 8. **판정 자리(5.3).** ADR 0004 기준: 리드.
-   - 추천: `SCORE`는 확인 여섯째. `revealed`·`not_met`은 순서 4 뒤 보류. 점수표만이면 `NOT_VERIFIED`가 아니고 `TIME`·`PASS` 문장을 "점수는"으로 쓴다. 기존 문장은 그대로.
+   - 추천: `SCORE`는 확인 여섯째. `revealed`·`not_met`은 순서 4 뒤 보류. 점수표만이면 `NOT_VERIFIED`가 아니고 `TIME`·`PASS` 문장을 "점수는"으로 쓴다. 기존 문장은 그대로. (리뷰 뒤: `inputs`를 적고 대조할 열이 없는 점수표만은 질문 13.)
    - 대안: 점수 미달을 조건부로. 지시문 3.4 "보류 = 정확도 미달"과 같은 갈래(품질 미달)라 보류가 맞다.
 9. **출력과 `schema_version`(3.1~3.3).** ADR 0004 기준: juhan 직접(expected 모양).
    - 추천: metrics.json·judgment.json에 설정했을 때만 있는 속성. `schema_version` 그대로(ADR 0008 결정 1). 기존 expected 12개 바이트 그대로, migration 없음.
@@ -1239,7 +1273,17 @@ core-dev(`src/Scorecard.Core/`):
 12. **문서 자리(11절).** ADR 0004 기준: 리드.
     - 추천: 규칙의 자리는 이 문서. 다른 스펙의 표는 바꾸지 않고 "T-014 개정" 절에서 가리킨다. PR (b)에서 `case-schema.md` 표만 옮긴다(파서 규칙은 한 곳에 있어야 찾기 쉽다).
     - 대안: `judgment.md`·`metrics.md` 표에 행을 넣는다. 표를 읽는 기존 테스트·selftest가 같이 바뀌고, PR (b)는 oracle을 바꿀 수 없다.
+13. **점수표만인데 `inputs`가 있고 대조할 열이 없음(5.3, 리뷰 막는 지적 2).** ADR 0004 기준: 리드.
+    - 추천: 조건부 `NOT_VERIFIED`(`no_compare_fields`) + `add_compare`. 자리는 점수 보류 뒤, `TIME` 앞. 근거 키·결과 값·할 일 키가 모두 있던 것이다. 보류 → 조건부 → 통과 순서를 지킨다. 점수는 그대로 보인다.
+    - 대안 1: 미검증(순서 1 그대로). 이번에는 점수표가 말없이 버려진다. 가림이 깨져도 보류가 나오지 않는다.
+    - 대안 2: 파서 오류(`inputs`가 있으면 `compare`·`checklist` 필수). 지금 받는 `case.yaml`(`inputs`만 있고 `compare`가 빈 미검증)을 거절하게 된다.
+14. **점수표만이 읽지 않는 문턱(5.1, 리뷰 지적 b).** ADR 0004 기준: 리드.
+    - 추천: `defaults`·`confirm_thresholds`·기본값 표시에는 이 길이 읽는 문턱(`time_must_drop`, `score_gap_max`)만. `thresholds` 객체 모양은 그대로.
+    - 대안: 점수표만이면 `thresholds`에서도 `accuracy_min`·`missing_max`를 뺀다. 쓰지 않는 값이 안 보이지만, 읽는 쪽이 키가 있는지 늘 봐야 하고 `judgment.md` 3.2 모양이 길마다 달라진다.
+15. **문턱 0 문장(5.2, 리뷰 지적 h).** ADR 0004 기준: 리드.
+    - 추천: `score_gap_max` 값이 0이면 "{score_gap_max}점 넘게"가 없는 틀(5.2 문턱 0 문장 표). 기존 틀·reply-drafts 블록은 그대로.
+    - 대안: 틀 하나를 "차이가 문턱 {score_gap_max}점을 넘으므로"로 바꾼다. 문턱 0도 읽히지만 reply-drafts expected 블록이 바뀐다.
 
 ## 채택
 
-- ADR 0005 결정 3에 따라 리드가 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다. 이 절은 추천안만 적는다.
+- ADR 0005 결정 3에 따라 리드가 추천안 1~12를 채택했다(ADR 0009). PR (a) 리뷰 뒤 13~15도 추천안을 채택했다. 카드 "잠정 결정"과 `docs/STATUS.md` 잠정 결정 T-014 행에 적었다.

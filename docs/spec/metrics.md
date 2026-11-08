@@ -1718,7 +1718,7 @@ test-engineer(`tests/`, 바꾸는 이유를 PR 본문에): `DuplicateTests` 가�
 - `Compare_duplicate_sample_matches_spec_block`: 테스트는 그대로다. 블록이 바뀌어 core-dev 구현 전에는 실패한다.
 - 새 테스트: 13.3 표(행마다 셈·차이·판정), 줄 순서 뒤집기(결과 행을 거꾸로 해도 `counts`·`fields` 같음).
 
-## 14. T-014 개정 (문장 결과 검증, 초안)
+## 14. T-014 개정 (문장 결과 검증, 채택(ADR 0005 결정 3, ADR 0009))
 
 - 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md`다. 이 절은 가리키기만 한다.
 - 체크리스트 대조는 대조의 한 종류다. 빠진 항목이 있으면 값 불일치다(text-check.md 4.2). 셈·정확도·누락률·오류 코드는 이 문서 그대로다.

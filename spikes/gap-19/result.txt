@@ -1,7 +1,7 @@
-# gap-19. 엔진: HEAD 79d0de3 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
+# gap-19. 엔진: HEAD 254e390 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
 == volume 
 PARSE ok case=gap-19-volume steps=2 inputs=null compare=0
-STEP 1 실시간 거래 점검(분당 8천 건) | defaults=[] checks=[] overuse=false
+STEP 1 실시간 거래 점검(분당 1만 건) | defaults=[] checks=[] overuse=false
   ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매일 반복되므로 규칙 기반 소프트웨어로 분류.
   ROW 1 ④ GATE human_gate: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
 STEP 2 소량 거래 점검(하루 20건) | defaults=[] checks=[] overuse=false

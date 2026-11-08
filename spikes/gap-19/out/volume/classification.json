@@ -4,7 +4,7 @@
   "steps": [
     {
       "number": 1,
-      "name": "실시간 거래 점검(분당 8천 건)",
+      "name": "실시간 거래 점검(분당 1만 건)",
       "defaults": [],
       "checks": [],
       "ai_overuse_candidate": false,

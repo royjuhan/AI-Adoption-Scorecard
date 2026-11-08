@@ -27,7 +27,7 @@
 - T-011 수용 기준 7(ci-dev, `2eb99a0`): `tools/oracle`이 바뀐 PR에서 CI `oracle-head` 잡이 head `check.py` 다음에 head `selftest.py`를 돌린다. 머지 전 `tools/ci/lead_check.py`도 같은 단계를 돈다(`run_head_oracle`). 하나라도 실패하면 그 잡·단계가 실패한다.
 - base `selftest.py`는 어디서도 돌리지 않는다. `oracle` 잡은 base `check.py`만 돈다(`tools/ci/README.md` "결정한 해석" 10).
 - 부르는 모양: `python3 -I -B tools/oracle/selftest.py --repo <checkout 루트>`(`oracle-head`는 `--repo .`, lead_check는 head 트리). `--repo`를 빼면 이 파일의 두 단계 위를 저장소로 본다.
-- 읽는 것: `docs/spec/classification.md`·`metrics.md`·`judgment.md`·`case-schema.md`, `examples/`, `tests/Scorecard.Tests/TestData/`. 읽기만 한다.
+- 읽는 것: `docs/spec/data/classification.md`·`metrics.md`·`judgment.md`·`case-schema.md`·`text-check.md`(스펙의 표·블록, ADR 0012), `examples/`, `tests/Scorecard.Tests/TestData/`. 읽기만 한다. 아래 절 번호는 스펙 본문과 데이터 파일에 같이 있다.
 - 예제 이름을 고정하지 않는다(T-013). `examples/`의 폴더 이름(서수)을 읽는다. judgment.md 7.1 예제 표의 이름이 폴더 이름과 같아야 하고, 폴더마다 7절 judgment.json 블록이 하나 있어야 한다. 예제를 더하고 표·블록을 빠뜨리면 실패한다.
 - 판은 하나다(T-013, ADR 0007 결정 4·ADR 0008 결정 4). T-011 판 점검을 지웠다. 판과 상관없던 점검(3.2 속성·형식, 3.3 문턱 자릿수, 시간 거절 등)은 T-012 판 점검으로 옮겼다.
 - 쓰는 것: 임시 폴더(`tempfile`)뿐이다. `check.py`를 자식 프로세스(`sys.executable`)로 돌린다. 네트워크 없음.

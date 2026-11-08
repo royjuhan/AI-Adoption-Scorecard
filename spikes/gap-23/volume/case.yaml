@@ -1,9 +1,0 @@
-# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 23 확인용(docs/cases-public/README.md 3절).
-# 하루 5만 건. 건당 AI 요금을 적을 곳이 없다. 검증 자료 없음.
-name: gap-23-volume
-task: 합성 문의를 분류하고 주문을 확인한다
-steps:
-  - name: 문의 유형 분류
-    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 50000, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 주문 번호 확인
-    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 50000, exception_rate: 5, current_actor: ai_each_time, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}

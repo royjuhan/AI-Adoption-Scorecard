@@ -1,9 +1,0 @@
-query_id,doc_id,rank
-q1,d01,1
-q1,d02,2
-q1,d03,3
-q1,d04,4
-q1,d05,5
-q2,d01,1
-q2,d08,2
-q2,d09,3

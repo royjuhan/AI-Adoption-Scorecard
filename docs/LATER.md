@@ -163,3 +163,8 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #25 | 스킬 7절이 case.yaml 단계를 answers.yaml과 "같게 둔다"고만 한다. 두 파일 단계가 어긋나면 check와 start의 분류가 다를 수 있다. 한쪽에서 읽게 하거나 어긋나면 알린다 | .claude/skills/scorecard/SKILL.md:94 |
 | 2026-11-08 | #25 | selftest.py 주석·라벨이 아직 9.x 절 번호다(classify.py와 같은 일, 다음 oracle 변경에서) | tools/oracle/selftest.py |
 | 2026-11-08 | #25 | AiJudgmentTests의 블록 비교가 텍스트 비교다. 다른 골든처럼 바이트로 맞추면 실패 메시지가 일관된다 | tests/Scorecard.Tests/Classification/AiJudgmentTests.cs |
+| 2026-11-08 | M2-3 | `inferred`·`current_actor`를 케이스 폴더 answers.yaml에서 다시 분류해 읽는다. `start --answers`가 다른 파일을 썼거나 뒤에 답이 바뀌면 classification.json과 어긋난다(번호·이름만 비교). 실제로 쓴 답 파일 해시도 남지 않는다 | src/Scorecard.Core/Report/ScorecardBuilder.cs |
+| 2026-11-08 | M2-3 | classification.json 단계의 `rows`가 비면 IndexOutOfRange로 종료 1. `result` 오류(2)로(손으로 고친 파일만) | ScorecardBuilder.cs, ResultReader.cs |
+| 2026-11-08 | M2-3 | 자료 패턴 읽기가 실패하면(overlap·파일 없음) 자료 파일 해시를 말없이 뺀다. 입력 기록이 빈 것을 표시 | ScorecardBuilder.cs |
+| 2026-11-08 | M2-3 | html-check를 인자 없이 부르면 끝난다. 골든 6개 경로로 돌리는 명령을 카드나 스펙 6절에 적는다 | tools/html-check/check.mjs, report.md 6절 |
+| 2026-11-08 | M2-3 | `change`가 지금 담당과 같은 담당을 적어도 받는다("④를 ④로 바꿨다" 위험). 막을지 스펙 5절에서 | src/Scorecard.Core/Report/ReviewParser.cs |

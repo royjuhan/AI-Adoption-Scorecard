@@ -226,6 +226,12 @@
       "name": "답변 초안 쓰기",
       "kind": "human_gate",
       "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    },
+    {
+      "step": 5,
+      "name": "최종 확인·발송",
+      "kind": "signoff",
+      "reason": "사람이 읽고 서명해 보낸다."
     }
   ],
   "risks": [

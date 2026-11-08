@@ -58,7 +58,7 @@
 
 ### 4.6 게이트(5구역)
 
-- `SIGNOFF` 단계는 `signoff`, 부가 행 `exception_review`·`human_gate`는 그 종류로 단계 순서대로 둔다. 문장은 근거 문장 그대로.
+- 규칙 의견이 `SIGNOFF`이고 담당이 ④인 단계(AI 판단 단계 포함)는 `signoff`, 부가 행 `exception_review`·`human_gate`는 그 종류로 단계 순서대로 둔다. 문장은 근거 문장 그대로.
 
 ### 4.7 남는 위험(5구역)
 

@@ -275,10 +275,10 @@ public static class ScorecardBuilder
             Math.Max(0, items.Count - ReportRules.ItemLimit));
     }
 
-    // 사람 게이트(4.6): 서명 단계(SIGNOFF 단계 행), 예외 검토 행, 사람 게이트 행. 단계 순서, 단계 안은 행 순서.
+    // 사람 게이트(4.6): 서명 단계(규칙 의견 SIGNOFF이고 담당 ④, AI 판단 단계 포함), 예외 검토 행, 사람 게이트 행. 단계 순서, 단계 안은 행 순서.
     private static ScorecardGate[] Gates(IReadOnlyList<ScorecardStep> steps) =>
         steps.SelectMany(s =>
-            (s.Rule == "SIGNOFF" ? [new ScorecardGate(s.Number, s.Name, ReportRules.GateSignoff, s.Reason)] : Array.Empty<ScorecardGate>())
+            (s.RuleOpinion.Rule == "SIGNOFF" && s.Assignee == "④" ? [new ScorecardGate(s.Number, s.Name, ReportRules.GateSignoff, s.Reason)] : Array.Empty<ScorecardGate>())
             .Concat(s.Extra.Select(r => new ScorecardGate(s.Number, s.Name, r.Kind, r.Reason))))
         .ToArray();
 

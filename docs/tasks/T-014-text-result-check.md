@@ -1,7 +1,7 @@
 # T-014 문장 결과 검증 (빈 곳 2)
 
 - 마일스톤: 빈 곳 카드(`docs/cases-public/README.md` 2절 2, 4절 3항 순서 첫째)
-- 상태: 스펙 채택(ADR 0005 결정 3, text-check.md 질문 1~18, ADR 0009). PR (a) 스펙·oracle, 리뷰 지적·리뷰 2차 지적 반영
+- 상태: 스펙 채택(ADR 0005 결정 3, text-check.md 질문 1~20, ADR 0009). PR (a) 스펙·oracle, 리뷰 1~3차 지적 반영
 
 ## 목표
 
@@ -24,7 +24,7 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 
 ## 잠정 결정 (ADR 0005 결정 3, 리드 채택 2026-11-08)
 
-`docs/spec/text-check.md` 질문 1~18의 추천안을 채택했다(ADR 0009). 13~15는 PR (a) 리뷰 지적, 16~18은 리뷰 2차 지적에서 나왔다. 한 줄 요지는 STATUS.md 잠정 결정 T-014 행.
+`docs/spec/text-check.md` 질문 1~20의 추천안을 채택했다(ADR 0009). 13~15는 PR (a) 리뷰 지적, 16~18은 리뷰 2차, 19~20은 리뷰 3차 지적에서 나왔다. 한 줄 요지는 STATUS.md 잠정 결정 T-014 행.
 
 1. 자리: `case.yaml` 최상위 `checklist`·`scores`. 단계 질문 그대로(10개).
 2. 체크리스트는 대조의 한 종류. 빠진 항목이 있으면 값 불일치.
@@ -44,6 +44,8 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 16. 체크리스트가 기준 행에 아무것도 요구하지 않으면(`compare`·`any` 없음, `column` 칸 모두 빔) 일치가 아니라 `no-check` 입력 오류(4.2 규칙 10). 사람 자료 결함이라 오류, 일부 행만 빈 경우도 막는다.
 17. 가림 확인 `source_column`은 열 이름도 ASCII 소문자로 본다(`Source`).
 18. 채점자가 한쪽 출처만 매긴 치우침은 이 카드에서 막지 않고 text-check.md 9절 8에 조건(채점자마다·건마다 AI·사람 점수 수 같음)을 적는다. 빈 곳 16·17 카드에서 정한다.
+19. 가림 키 조각은 ASCII 영문자 묶음과 숫자 묶음(영문자·숫자 사이에서도 나눔). `ai01`·`HUMAN03`을 잡고 `bai05`·`mail05`는 안 잡는다.
+20. 칸 값 `source_value`는 칸 전체가 `ai`·`human`일 때만(그대로). 칸 안 조각·한국어 표기는 9절 10·11, 다음 카드.
 
 ## PR (a) 리뷰 지적 (#17)
 
@@ -62,6 +64,15 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 - N2: 잠정 결정 18. 9절 8, ADR 0009 남은 위험.
 - N3: 지시문 3.4 "점수가 문턱을 충족해도 통과가 아니라 조건부다(점수 보류는 그대로 앞선다…)". 같은 문단에 "확인할 항목이 없는 행은 입력 오류"를 더했다.
 - N4: `spikes/gap-runner/`·`spikes/cases-public/` 파일 머리 표시와 `gaps.md`·`diff.md` 6줄을 "남긴다(`docs/cases-public/README.md` 4절 2)"로(`cases-public`은 그 스파이크를 정한 4절 1). `spikes/T-0xx`는 머지 대상 아님 그대로.
+- reply-drafts 7.3·7.4 블록과 예제 expected 12개는 바이트 그대로다.
+
+## PR (a) 리뷰 3차 지적
+
+- 막는 지적 B1(가림 키 `ai01`·`human03`·`AI01`을 조각 하나로 봐서 놓침): 잠정 결정 19. 스펙 4.4 가림 규칙 표·조각 글머리, 장면 표에 `ai01`·`HUMAN03` 행(`bai05` 안 잡힘 행은 있던 것), oracle `scores.py` `_TOKEN`.
+- N1(체크리스트는 있는지만 봄): 9절 9, ADR 0009 남은 위험. 다른 행 값을 보는 규칙은 다음 카드.
+- N2(칸 값은 정확히 `ai`·`human`만): 잠정 결정 20. 조각 규칙을 칸에 쓰면 의견 칸·채점자 이름에서 보류가 잘못 나와 9절 10.
+- N3(한국어 출처 표기): 9절 11, ADR 0009 남은 위험.
+- N5: 4.5 `overlap` 행 "대조가 `inputs` 파일을 읽을 때만(대조 `measured`)".
 - reply-drafts 7.3·7.4 블록과 예제 expected 12개는 바이트 그대로다.
 
 ## 메모

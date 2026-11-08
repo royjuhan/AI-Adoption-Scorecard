@@ -19,7 +19,8 @@ BLIND_KEPT, BLIND_REVEALED = 'kept', 'revealed'
 RULE_SOURCE_COLUMN, RULE_SOURCE_VALUE, RULE_SOURCE_IN_BLIND = 'source_column', 'source_value', 'source_in_blind'
 BLIND_RULES = (RULE_SOURCE_COLUMN, RULE_SOURCE_VALUE, RULE_SOURCE_IN_BLIND)
 SCORE_RE = re.compile(r'(?:0|[1-9][0-9]*)', re.ASCII)
-_TOKEN = re.compile(r'[A-Za-z0-9]+', re.ASCII)
+# 4.4 조각: ASCII 영문자 묶음과 숫자 묶음. 영문자와 숫자 사이에서도 나눈다(리뷰 3차 B1: ai01·HUMAN03).
+_TOKEN = re.compile(r'[A-Za-z]+|[0-9]+', re.ASCII)
 
 
 def ascii_lower(text: str) -> str:
@@ -28,7 +29,7 @@ def ascii_lower(text: str) -> str:
 
 
 def blind_tokens(key: str) -> list:
-    """4.4 source_in_blind: 가림 키를 ASCII 영문자·숫자가 아닌 글자로 나눈 조각(ASCII 소문자로)."""
+    """4.4 source_in_blind: 가림 키를 ASCII 영문자 묶음과 숫자 묶음으로 나눈 조각(ASCII 소문자로)."""
     return [ascii_lower(t) for t in _TOKEN.findall(key)]
 
 

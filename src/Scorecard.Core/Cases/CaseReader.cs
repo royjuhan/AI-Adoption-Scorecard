@@ -38,7 +38,9 @@ internal sealed class CaseReader(ErrorSink errors)
         ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "checklist", "scores", "thresholds"];
 
     // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
-    private static readonly string[] StepKeys = ["name", "answers", "inferred"];
+    // ai는 AI가 적은 단계 담당과 근거다(스펙 4.14, ADR 0013).
+    private static readonly string[] StepKeys = ["name", "answers", "inferred", "ai"];
+    private static readonly string[] AiKeys = ["assignee", "reason"];
     // group은 선택 키다(스펙 10.1, T-012).
     private static readonly string[] InputKeys = ["reference", "candidate", "key", "group"];
     private static readonly string[] CompareKeys = ["field", "tolerance", "tolerance_pct"];
@@ -132,7 +134,8 @@ internal sealed class CaseReader(ErrorSink errors)
             var answerFields = AnswerFields(stepFields, answersPath);
             var answers = ReadAnswers(answerFields, answersPath);
             var inferred = ReadInferred(stepFields, path, answerFields, answersPath);
-            steps.Add(new CaseStep(number, name ?? string.Empty, MarkInferred(answers, inferred)));
+            var ai = ReadAi(stepFields, path);
+            steps.Add(new CaseStep(number, name ?? string.Empty, MarkInferred(answers, inferred), ai));
         }
 
         return steps;
@@ -227,6 +230,36 @@ internal sealed class CaseReader(ErrorSink errors)
         }
 
         return keys;
+    }
+
+    // 스펙 4.14 ai: AI가 적은 단계 담당과 근거. 없거나 null이면 AI 판단이 없다. 매핑이 아니면 type.
+    // assignee·reason 둘 다 필수다. 다른 키는 unknown-field. assignee는 StepQuestions.AiAssignees 중 하나(서수), 아니면 enum.
+    // reason은 저장만 한다. 앞뒤 공백을 지우지 않는다. 비면(null, "", 공백뿐) required.
+    private StepAi? ReadAi(Dictionary<string, YamlNode> stepFields, string stepPath)
+    {
+        if (!TryGetPresent(stepFields, "ai", out var node))
+        {
+            return null;
+        }
+
+        var path = YamlTree.ChildPath(stepPath, "ai");
+        if (node is not YamlMapping map)
+        {
+            TypeError(node, path, MustBeMapping);
+            return null;
+        }
+
+        var fields = Fields(map, AiKeys, path);
+        var assigneePath = YamlTree.ChildPath(path, "assignee");
+        var assignee = RequiredString(fields, map, "assignee", assigneePath);
+        if (assignee is not null && !StepQuestions.AiAssignees.Contains(assignee, StringComparer.Ordinal))
+        {
+            Add(fields["assignee"], ErrorCode.Enum, assigneePath, $"선택지 밖의 값 '{assignee}'. 가능한 값: {string.Join(", ", StepQuestions.AiAssignees)}");
+            assignee = null;
+        }
+
+        var reason = RequiredString(fields, map, "reason", YamlTree.ChildPath(path, "reason"));
+        return assignee is null || reason is null ? null : new StepAi(assignee, reason);
     }
 
     // inferred에 적은 답에 IsInferred를 단다. 값과 IsDefault는 그대로다.

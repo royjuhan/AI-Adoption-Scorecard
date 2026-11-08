@@ -44,6 +44,9 @@ internal static class StepQuestions
         ExistingFeature.Key,
         HumanSignoff.Key,
     ];
+
+    // 단계 항목 ai의 담당 선택지(스펙 4.14, ADR 0013). 서수 비교다. ②M은 학습 모델(결정론)이다.
+    public static readonly string[] AiAssignees = ["①", "②", "②M", "③", "④"];
 }
 
 // 열거 질문. 선택지는 서수(대소문자 구분)로 비교한다.

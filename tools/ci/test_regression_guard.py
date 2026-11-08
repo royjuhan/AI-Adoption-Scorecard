@@ -1856,6 +1856,117 @@ class TestLeadCheckHelpers(unittest.TestCase):
             shutil.rmtree(root, ignore_errors=True)
 
 
+class TestLeadCheckMutationReuse(unittest.TestCase):
+    """ADR 0011: lead_check --mutation-from이 CI mutation.json을 쓰는 조건(reuse_mutation)과 음성 대조."""
+
+    def setUp(self) -> None:
+        self.repo = TempRepo()
+        r = self.repo
+        r.write("tools/ci/regression_guard.py", "# guard\n")
+        r.write(".github/workflows/ci.yml", "name: ci\n")
+        r.write("src/A.cs", "class A { }\n")
+        self.base = r.commit("base")
+        r.git("checkout", "-q", "-b", "pr")
+        r.write("src/A.cs", "class A { int x; }\n")
+        self.head = r.commit("T-099: PR")
+        # GitHub 병합 커밋 흉내: 트리는 head와 같고 SHA는 다르다.
+        tree = r.git("rev-parse", f"{self.head}^{{tree}}")
+        self.ci_head = r.git("commit-tree", tree, "-p", self.base, "-p", self.head, "-m", "Merge pull request")
+        self.assertNotEqual(self.ci_head, self.head)
+
+    def tearDown(self) -> None:
+        self.repo.close()
+
+    def data(self, **override) -> bytes:
+        doc = {"schema_version": 1, "status": "measured", "base": self.base, "head": self.ci_head, "files": [], "errors": []}
+        doc.update(override)
+        return json.dumps(doc).encode("utf-8")
+
+    def reuse(self, data: bytes | None, head: str | None = None, tools_source: str = "base") -> tuple[bytes | None, str]:
+        return lead_check.reuse_mutation(self.repo.root, self.base, head or self.head, data, tools_source)
+
+    def test_reuses_matching_ci_result(self) -> None:
+        out, why = self.reuse(self.data())
+        self.assertIsNotNone(out, why)
+        doc = json.loads(out.decode("utf-8"))
+        self.assertEqual(doc["head"], self.head)
+        self.assertEqual(doc["ci_head"], self.ci_head)
+        self.assertEqual(doc["base"], self.base)
+        self.assertTrue(out.endswith(b"\n"))
+        self.assertEqual(self.reuse(self.data())[0], out)  # 같은 입력이면 같은 바이트
+        # guard의 범위 검사를 지난다(바꾸지 않은 CI 파일은 지나지 못한다).
+        rng = cigit.Range(self.base, self.head, "test")
+        ok, reasons = rg.mutation_evidence(doc, None, rng, "success")
+        self.assertFalse(any("범위가 다르다" in x for x in reasons), reasons)
+        _, reasons = rg.mutation_evidence(json.loads(self.data()), None, rng, "success")
+        self.assertTrue(any("범위가 다르다" in x for x in reasons), reasons)
+
+    def test_not_applicable_is_reused(self) -> None:
+        self.assertIsNotNone(self.reuse(self.data(status="not_applicable"))[0])
+
+    def test_head_itself_is_reused(self) -> None:
+        self.assertIsNotNone(self.reuse(self.data(head=self.head))[0])  # head가 base를 품는 PR
+
+    def test_refuses_failed_status(self) -> None:
+        for status in ("error", "timeout", None):
+            out, why = self.reuse(self.data(status=status))
+            self.assertIsNone(out, status)
+            self.assertIn("status=", why)
+
+    def test_refuses_ci_or_workflow_change(self) -> None:
+        r = self.repo
+        for path in ("tools/ci/regression_guard.py", ".github/workflows/ci.yml", ".github/actions/x/action.yml"):
+            r.git("checkout", "-q", "-B", "pr2", self.head)
+            r.write(path, "# 바뀜\n")
+            head = r.commit("T-099: 도구도 바꿈")
+            tree = r.git("rev-parse", f"{head}^{{tree}}")
+            ci_head = r.git("commit-tree", tree, "-p", self.base, "-p", head, "-m", "Merge")
+            out, why = self.reuse(self.data(head=ci_head), head=head)
+            self.assertIsNone(out, path)
+            self.assertIn(path, why)
+
+    def test_refuses_bootstrap(self) -> None:
+        out, why = self.reuse(self.data(), tools_source="head")
+        self.assertIsNone(out)
+        self.assertIn("부트스트랩", why)
+
+    def test_refuses_other_base(self) -> None:
+        r = self.repo
+        r.git("checkout", "-q", "main")
+        other = r.commit("main이 앞으로")
+        out, why = self.reuse(self.data(base=other))
+        self.assertIsNone(out)
+        self.assertIn("base가 다르다", why)
+
+    def test_refuses_other_tree(self) -> None:
+        r = self.repo
+        r.write("src/A.cs", "class A { int y; }\n")
+        other = r.commit("다른 내용")
+        out, why = self.reuse(self.data(head=other))
+        self.assertIsNone(out)
+        self.assertIn("트리가 다르다", why)
+
+    def test_refuses_unknown_head_and_bad_files(self) -> None:
+        cases = {
+            "저장소에 없다": self.data(head="0123456789abcdef0123456789abcdef01234567"),
+            "저장소에 없다 ": self.data(head=self.ci_head[:12]),
+            "schema_version": self.data(schema_version=2),
+            "JSON이 아니다": b"{not json",
+            "읽을 수 없다": None,
+        }
+        for want, data in cases.items():
+            out, why = self.reuse(data)
+            self.assertIsNone(out, want)
+            self.assertIn(want.strip(), why)
+
+    def test_main_reads_file_before_head_code(self) -> None:
+        """--mutation-from 파일은 head 코드가 돌기 전에 읽는다(소스에서 순서를 본다)."""
+        with open(lead_check.__file__, encoding="utf-8") as f:
+            text = f.read()
+        body = text[text.index("def main("):]
+        self.assertLess(body.index("read_bytes(args.mutation_from)"), body.index("make_sandbox("))
+
+
 # ---------------------------------------------------------------- T-011a: oracle selftest, guard --job
 
 

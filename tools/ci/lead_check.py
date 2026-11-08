@@ -27,6 +27,12 @@ PR의 ci.yml은 PR이 고칠 수 있다(예: guard 줄 끝에 `|| true`를 붙�
 6. base regression_guard: 4에서 메모리에 꺼내 둔 도구를 새 폴더에 다시 쓰고(blob id 확인), 리드 저장소의 git 개체와
    메모리의 결과로 돈다(--require-base-tools). 단계 결과는 --job mutation·oracle·oracle-head·test-run으로 넘긴다.
 
+CI mutation 결과 재사용(ADR 0011): --mutation-from <mutation.json>을 주면 5의 mutation 단계 대신 CI mutation 잡이 올린
+mutation.json(아티팩트 mutation-result)을 쓴다. 조건(reuse_mutation): base 도구로 돈다, base..head에 .github/·tools/ci/
+변경이 없다, 파일의 base가 이 base와 같다, 파일의 head 커밋이 리드 저장소에 있고 그 트리가 이 head 트리와 같다,
+status가 measured·not_applicable(mutation.py 종료 0)이다. 하나라도 아니면 이유를 적고 지금처럼 로컬에서 돌린다.
+쓰면 head를 이 head로 바꾸고(ci_head에 원래 값) guard에 넘긴다. 옵션이 없으면 동작은 그대로다.
+
 종료 코드: 0 모두 통과, 1 하나라도 실패, 2 실행할 수 없음(커밋 없음, 병합 충돌 등).
 
 남은 위험: 5는 리드 컴퓨터에서 리드 권한으로 돈다. head 테스트가 마음먹고 결과를 위조하거나(예: 단계가 끝난 뒤에도
@@ -66,6 +72,9 @@ MERGE_IDENTITY = {
     "GIT_COMMITTER_NAME": "lead_check", "GIT_COMMITTER_EMAIL": "lead-check@example.invalid", "GIT_COMMITTER_DATE": "@0 +0000",
 }
 STEP_TIMEOUT_SECONDS = 150 * 60
+# CI mutation 결과를 다시 쓰지 않는 경로(ADR 0011). 바뀌면 CI 결과를 바뀐 워크플로·도구가 만들었을 수 있다.
+REUSE_BLOCKING_PREFIXES = (".github/", "tools/ci/")
+REUSE_OK_STATUSES = ("measured", "not_applicable")  # mutation.py가 종료 0으로 끝나는 status
 
 
 class CheckError(RuntimeError):
@@ -201,6 +210,42 @@ def run_head_oracle(py: str, tree: str, work: str, logs: str, env: dict[str, str
     return step("oracle-head(head oracle selftest.py, tools/oracle 바뀜)", code, detail) and ok
 
 
+def reuse_mutation(repo: str, base: str, head: str, data: bytes | None, tools_source: str) -> tuple[bytes | None, str]:
+    """CI mutation.json을 이 검사에 쓸 수 있는지(ADR 0011). (guard에 넘길 바이트 또는 None, 이유).
+
+    쓸 수 있으면 head를 이 검사의 head로 바꾼 바이트를 돌려준다(원래 head는 ci_head). CI head는 GitHub 병합 커밋이라
+    SHA가 다르다. 트리가 같고 base가 같으면 mutation.py의 입력(바뀐 파일, 양쪽 트리)이 같다.
+    """
+    if tools_source != "base":
+        return None, "부트스트랩(base에 tools/ci가 없다)"
+    blocking = sorted({p for c in cigit.diff_changes(repo, base, head, None, renames=True) for p in (c.path, c.old_path)
+                       if p and p.startswith(REUSE_BLOCKING_PREFIXES)})
+    if blocking:
+        return None, f"{', '.join(REUSE_BLOCKING_PREFIXES)} 변경이 있다: {', '.join(blocking[:5])}" + (" 외" if len(blocking) > 5 else "")
+    if data is None:
+        return None, "파일을 읽을 수 없다"
+    try:
+        doc = json.loads(data.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        return None, f"JSON이 아니다: {type(e).__name__}"
+    if not isinstance(doc, dict) or doc.get("schema_version") != 1:
+        return None, "schema_version이 1이 아니다"
+    if doc.get("base") != base:
+        return None, f"base가 다르다: {str(doc.get('base'))[:12]} != {base[:12]}"
+    ci_head = doc.get("head")
+    if not isinstance(ci_head, str) or len(ci_head) != 40 or cigit.rev_parse(repo, ci_head) != ci_head:
+        return None, f"head 커밋 {str(ci_head)[:12]}가 저장소에 없다(git fetch origin {ci_head} 또는 pull/<N>/merge)"
+    trees = [cigit.git(repo, "rev-parse", f"{c}^{{tree}}", check=False).strip() for c in (ci_head, head)]
+    if not trees[0] or trees[0] != trees[1]:
+        return None, f"head 트리가 다르다: CI {ci_head[:12]} {trees[0][:12]}, 이 검사 {head[:12]} {trees[1][:12]}"
+    if doc.get("status") not in REUSE_OK_STATUSES:
+        return None, f"status={doc.get('status')}"
+    doc["head"] = head
+    doc["ci_head"] = ci_head
+    out = (json.dumps(doc, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    return out, f"CI head {ci_head[:12]}(트리 {trees[0][:12]}), status={doc['status']}"
+
+
 def make_sandbox(repo: str, base: str, tip: str, head: str, folder: str) -> str:
     """head 코드를 돌릴 일회용 저장소. 리드 저장소를 원격으로 적지 않는다(FETCH_HEAD를 지운다)."""
     subprocess.run(["git", "init", "-q", folder], check=True, env=_git_env())
@@ -221,6 +266,22 @@ def make_sandbox(repo: str, base: str, tip: str, head: str, folder: str) -> str:
     return folder
 
 
+def run_local_mutation(py: str, ci_dir: str, sandbox: str, base: str, head: str, work: str, logs: str, head_env: dict[str, str],
+                       budget_minutes: float, step) -> tuple[bytes | None, bool]:
+    """base mutation.py를 일회용 저장소에서 돈다. (mutation.json 바이트, 통과)."""
+    mutation_json = os.path.join(work, "mutation.json")
+    code = run_step([py, "-I", "-B", os.path.join(ci_dir, "mutation.py"), "--repo", sandbox, "--base", base, "--head", head, "--out", mutation_json,
+                     "--work", os.path.join(work, "mutation"), "--summary", "", "--budget-minutes", str(budget_minutes)],
+                    work, os.path.join(logs, "mutation.log"), head_env, isolate=True)
+    mutation_bytes = read_bytes(mutation_json)
+    try:
+        mutation_status = json.loads((mutation_bytes or b"{}").decode("utf-8")).get("status")
+    except ValueError:
+        mutation_status = None
+    mutation_ok = step("mutation(바뀐 src만 Stryker)", code, f"status={mutation_status}. 로그 logs/mutation.log")
+    return mutation_bytes, mutation_ok
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="머지 전 독립 검사(PR의 ci.yml을 쓰지 않는다)")
     ap.add_argument("--repo", default=".")
@@ -230,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--card", action="append", default=[], help="카드 번호(T-xxx). 없으면 --head 이름·커밋 제목에서 찾는다")
     ap.add_argument("--budget-minutes", type=float, default=100, help="mutation 전체 시간(분)")
     ap.add_argument("--json-out", help="결과 JSON 경로(기본: 작업 폴더의 lead-check.json)")
+    ap.add_argument("--mutation-from", help="CI mutation 잡의 mutation.json(아티팩트 mutation-result). 조건이 맞으면 로컬 Stryker 대신 쓴다(ADR 0011)")
     args = ap.parse_args(argv)
     # 파일로 돌려도 진행이 바로 보이게 줄마다 내보낸다.
     sys.stdout.reconfigure(line_buffering=True)
@@ -273,6 +335,8 @@ def main(argv: list[str] | None = None) -> int:
         print("lead_check: [WARN] 부트스트랩: base에 tools/ci가 없어 head 커밋의 tools/ci로 돈다. 이 결과는 독립 검사가 아니다")
     if oracle_source == "head":
         print("lead_check: [WARN] 부트스트랩: base에 tools/oracle이 없어 head oracle로 돈다")
+    # CI mutation.json도 head 코드가 돌기 전에 메모리에 읽는다(ADR 0011).
+    ci_mutation_bytes = read_bytes(args.mutation_from) if args.mutation_from else None
     tools1 = os.path.join(work, "tools-1")
     shutil.rmtree(tools1, ignore_errors=True)
     extract(tools_tar, tools1)
@@ -342,16 +406,16 @@ def main(argv: list[str] | None = None) -> int:
                      "--out", testrun_json, "--work", os.path.join(work, "testrun")], work, os.path.join(logs, "testrun.log"), head_env, isolate=True)
     testrun_ok = step("test-run(base·head dotnet test)", code, "로그 logs/testrun.log")
     testrun_bytes = read_bytes(testrun_json)
-    mutation_json = os.path.join(work, "mutation.json")
-    code = run_step([py, "-I", "-B", os.path.join(ci_dir, "mutation.py"), "--repo", sandbox, "--base", base, "--head", head, "--out", mutation_json,
-                     "--work", os.path.join(work, "mutation"), "--summary", "", "--budget-minutes", str(args.budget_minutes)],
-                    work, os.path.join(logs, "mutation.log"), head_env, isolate=True)
-    mutation_bytes = read_bytes(mutation_json)
-    try:
-        mutation_status = json.loads((mutation_bytes or b"{}").decode("utf-8")).get("status")
-    except ValueError:
-        mutation_status = None
-    mutation_ok = step("mutation(바뀐 src만 Stryker)", code, f"status={mutation_status}. 로그 logs/mutation.log")
+    reused = None
+    if args.mutation_from:
+        reused, why = reuse_mutation(repo, base, head, ci_mutation_bytes, tools_source)
+        print(f"lead_check: {'CI mutation 결과를 쓴다' if reused else '[WARN] CI mutation 결과를 쓰지 않고 로컬에서 돈다'}: {why}")
+        mutation_reuse = {"from": os.path.abspath(args.mutation_from), "used": reused is not None, "reason": why}
+    if reused is not None:
+        mutation_bytes = reused
+        mutation_ok = step("mutation(CI 결과 재사용, ADR 0011)", 0, f"status={json.loads(reused.decode('utf-8')).get('status')}. {why}")
+    else:
+        mutation_bytes, mutation_ok = run_local_mutation(py, ci_dir, sandbox, base, head, work, logs, head_env, args.budget_minutes, step)
 
     # 6. base regression_guard: 도구를 새 폴더에 다시 쓰고 처음에 꺼낸 것과 같은지 본다.
     tools2 = os.path.join(work, f"tools-2-{int(time.time())}")
@@ -399,6 +463,8 @@ def main(argv: list[str] | None = None) -> int:
         "sensitive_paths": sensitive,
         "steps": steps,
     }
+    if args.mutation_from:
+        report["mutation_reuse"] = mutation_reuse
     out = args.json_out or os.path.join(work, "lead-check.json")
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)

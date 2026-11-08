@@ -3,7 +3,7 @@ using Scorecard.Core.Cases;
 
 namespace Scorecard.Core.Comparison;
 
-// 기준 자료와 결과 자료를 키로 맞춰 일치·값 불일치·누락·추가·중복을 낸다. docs/spec/metrics.md 4.3~4.8, 12.2·12.3(T-012).
+// 기준 자료와 결과 자료를 키로 맞춰 일치·값 불일치·누락·추가·중복을 낸다. docs/spec/metrics.md 4.3~4.8, 12.2·12.3(T-012), 13.2(T-013).
 // Compare는 순수 함수다. 파일·시각·환경 변수·난수를 쓰지 않는다. 비교는 서수, 숫자는 decimal·InvariantCulture.
 // 순서는 파일 경로 서수 → 줄 순서다. Dictionary는 찾기에만 쓰고 열거 순서를 출력에 쓰지 않는다.
 public static class CompareEngine
@@ -18,7 +18,7 @@ public static class CompareEngine
     public const string ItemMissing = "missing";
     public const string ItemExtra = "extra";
 
-    // 결과 쪽 같은 키의 둘째 행부터(스펙 12.2, T-012). 값을 대조하지 않는다.
+    // 결과 쪽 같은 키의 둘째 행부터(스펙 4.3, T-012). 그 행과 기준 행의 차이를 적는다(13.2, T-013).
     public const string ItemDuplicate = "duplicate";
 
     public const string KindNumber = "number";
@@ -216,29 +216,28 @@ public static class CompareEngine
     {
         var compare = definition.Compare;
 
-        // 결과 쪽 같은 키는 첫 행(결과 경로 서수 → 줄)으로 대조한다(12.2). 결과 행은 그 순서로 읽었다.
+        // 결과 쪽 같은 키의 첫 행(결과 경로 서수 → 줄)이 대표 행이다. 결과 행은 그 순서로 읽었다.
+        // 키마다 결과 행 수를 센다. 두 번 이상이면 그 기준 항목은 값과 상관없이 값 불일치다(13.2, T-013).
         var byKey = new Dictionary<string, Row>(StringComparer.Ordinal);
+        var rowsByKey = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var c in candidate)
         {
             byKey.TryAdd(c.Key, c);
+            rowsByKey[c.Key] = rowsByKey.GetValueOrDefault(c.Key) + 1;
         }
 
         var referenceByKey = reference.ToDictionary(r => r.Key, StringComparer.Ordinal);
         var outside = new int[compare.Count];
         var within = new int[compare.Count];
         var notNumber = new int[compare.Count];
+        var compared = 0;
         var items = new List<CompareItem>();
         int match = 0, mismatch = 0, missing = 0, withinItems = 0;
 
-        foreach (var r in reference)
+        // 기준 행과 결과 행 하나의 차이(4.5 칸 판정). 필드별 셈(fields[])은 기준에 키가 있는 결과 행마다 센다(13.2).
+        List<FieldDifference> Differences(Row r, Row c)
         {
-            if (!byKey.TryGetValue(r.Key, out var c))
-            {
-                missing++;
-                items.Add(new CompareItem(r.Key, ItemMissing, r.Source, null, []));
-                continue;
-            }
-
+            compared++;
             var differences = new List<FieldDifference>();
             for (var i = 0; i < compare.Count; i++)
             {
@@ -264,7 +263,21 @@ public static class CompareEngine
                 }
             }
 
-            var bad = differences.Any(d => d.Result != ResultWithin);
+            return differences;
+        }
+
+        // 기준 항목(기준 경로 서수 → 줄). 결과에 키가 있으면 대표 행의 위치와 차이를 적는다.
+        foreach (var r in reference)
+        {
+            if (!byKey.TryGetValue(r.Key, out var c))
+            {
+                missing++;
+                items.Add(new CompareItem(r.Key, ItemMissing, r.Source, null, []));
+                continue;
+            }
+
+            var differences = Differences(r, c);
+            var bad = rowsByKey[r.Key] > 1 || differences.Any(d => d.Result != ResultWithin);
             if (bad)
             {
                 mismatch++;
@@ -278,15 +291,15 @@ public static class CompareEngine
             items.Add(new CompareItem(r.Key, bad ? ItemMismatch : ItemMatch, r.Source, c.Source, differences));
         }
 
-        // 결과 쪽 항목(결과 경로 서수 → 줄): 기준에 없는 키의 첫 행은 extra, 같은 키의 둘째 행부터는 duplicate.
-        // duplicate는 값을 대조하지 않는다. reference는 그 키의 기준 행이고, 기준에 없는 키면 null이다.
+        // 결과 쪽 항목(결과 경로 서수 → 줄): 기준에 없는 키의 대표 행은 extra, 같은 키의 둘째 행부터는 duplicate.
+        // duplicate의 reference는 그 키의 기준 행이고 differences는 그 행과 기준 행의 차이다(13.2). 기준에 없는 키면 null과 []다.
         var extra = 0;
         foreach (var c in candidate)
         {
             referenceByKey.TryGetValue(c.Key, out var r);
             if (!ReferenceEquals(byKey[c.Key], c))
             {
-                items.Add(new CompareItem(c.Key, ItemDuplicate, r?.Source, c.Source, []));
+                items.Add(new CompareItem(c.Key, ItemDuplicate, r?.Source, c.Source, r is null ? [] : Differences(r, c)));
             }
             else if (r is null)
             {
@@ -295,7 +308,6 @@ public static class CompareEngine
             }
         }
 
-        var compared = reference.Count - missing;
         var fields = compare.Select((f, i) => new FieldSummary(
             f.Field, IsNumberField(f) ? KindNumber : KindText, f.Tolerance, f.TolerancePct,
             compared, outside[i], within[i], notNumber[i])).ToArray();

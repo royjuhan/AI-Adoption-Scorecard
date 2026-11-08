@@ -36,18 +36,18 @@ public sealed record CompareMetrics(
     IReadOnlyList<FieldSummary> Fields,
     IReadOnlyList<CompareItem> Items);
 
-// 항목 셈(스펙 4.4). Reference = Match + Mismatch + Missing, Candidate = Match + Mismatch + Extra + 중복 행(12.2).
-// 중복 행 수는 Items의 duplicate 수다. 셈 키를 따로 두지 않는다.
+// 항목 셈(스펙 4.4). Reference = Match + Mismatch + Missing, Candidate = Match + Mismatch + Extra + 중복 행(4.3).
+// 중복 행 수는 Items의 duplicate 수다. 셈 키를 따로 두지 않는다. 결과 쪽에 두 번 이상 나온 기준 키는 Mismatch다(13.2).
 // Within: 일치 항목 중 허용 오차 안의 차이가 하나 이상 있는 항목 수.
 public sealed record CompareCounts(int Reference, int Candidate, int Match, int Mismatch, int Missing, int Extra, int Within);
 
-// compare 필드 하나의 셈. Compared = 양쪽에 있는 항목 수. Outside·Within·NotNumber는 칸 수다.
+// compare 필드 하나의 셈. Compared = 기준에 키가 있는 결과 행 수(중복 행 포함, 13.2). Outside·Within·NotNumber는 그 행들의 칸 수다.
 public sealed record FieldSummary(
     string Field, string Kind, decimal? Tolerance, decimal? TolerancePct,
     int Compared, int Outside, int Within, int NotNumber);
 
 // 항목 하나. Status: match, mismatch, missing, extra, duplicate. 없는 쪽은 null.
-// duplicate는 결과 쪽 같은 키의 둘째 행부터다. Reference는 그 키의 기준 행(없으면 null), Differences는 비어 있다(12.2).
+// duplicate는 결과 쪽 같은 키의 둘째 행부터다. Reference는 그 키의 기준 행(없으면 null), Differences는 그 행과 기준 행의 차이다(없으면 비어 있다, 13.2).
 // Differences: 차이가 있는 compare 필드(compare 순서). 정규화 뒤 같은 텍스트, 숫자로 같은 값은 넣지 않는다.
 public sealed record CompareItem(
     string Key, string Status, CsvRow? Reference, CsvRow? Candidate, IReadOnlyList<FieldDifference> Differences);

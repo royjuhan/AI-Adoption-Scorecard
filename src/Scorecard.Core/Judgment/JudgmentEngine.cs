@@ -27,6 +27,7 @@ public static class JudgmentEngine
 
     // 순수 함수. times: 재지 않았으면 null. unexplainedKeys: 사람이 아직 보지 않았으면 null. 키는 검토 항목(11.3)의 키다(11.9).
     // 대조 오류가 있으면(CompareResult.Metrics가 null) 부르는 쪽이 판정하지 않는다(5절).
+    // 대조 결과가 이 정의에서 나온 것이 아니면 ArgumentException이다(5절 "정의와 대조 결과", T-013).
     public static JudgmentResult Judge(CaseDefinition definition, CompareMetrics metrics, JudgmentTimes? times = null, IReadOnlyList<string>? unexplainedKeys = null)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -35,6 +36,8 @@ public static class JudgmentEngine
         {
             throw new ArgumentException("대조 결과의 케이스 이름이 case.yaml name과 다르다.", nameof(metrics));
         }
+
+        CheckConsistent(definition, metrics, nameof(metrics));
 
         if (times is not null && (times.BeforeMinutes < 0 || times.ProcessMinutes < 0 || times.ReviewMinutes < 0))
         {
@@ -53,6 +56,48 @@ public static class JudgmentEngine
         return metrics.Status == CompareEngine.StatusNotVerified
             ? NotVerified(metrics, thresholds, defaults)
             : Measured(definition, metrics, thresholds, defaults, review, times, unexplainedKeys);
+    }
+
+    // 5절 "정의와 대조 결과"(T-013, 12.2): 대조 결과가 이 정의에서 나온 것인지 본다. 아니면 부르는 쪽 잘못이다(ArgumentException).
+    // inputs 없음 → 미검증 no_inputs. inputs가 있고 compare가 빔 → 미검증 no_compare_fields.
+    // 그 밖 → measured, 키 열 = inputs.key, fields[]의 필드 이름(순서) = compare 필드 이름.
+    // inputs.group이 있으면 모든 기준 행 머리 행에 그 열이 꼭 한 번 있다. 문턱은 대조가 쓰지 않으므로 보지 않는다.
+    private static void CheckConsistent(CaseDefinition definition, CompareMetrics metrics, string paramName)
+    {
+        var inputs = definition.Inputs;
+        var reason = inputs is null ? CompareEngine.ReasonNoInputs
+            : definition.Compare.Count == 0 ? CompareEngine.ReasonNoCompareFields
+            : null;
+        if (reason is not null)
+        {
+            if (metrics.Status != CompareEngine.StatusNotVerified || !string.Equals(metrics.Reason, reason, StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"대조 결과가 정의와 맞지 않는다: 미검증 {reason}이어야 한다.", paramName);
+            }
+
+            return;
+        }
+
+        if (metrics.Status != CompareEngine.StatusMeasured)
+        {
+            throw new ArgumentException("대조 결과가 정의와 맞지 않는다: measured여야 한다.", paramName);
+        }
+
+        if (!string.Equals(metrics.Key, inputs!.Key, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("대조 결과의 키 열이 case.yaml inputs.key와 다르다.", paramName);
+        }
+
+        if (!metrics.Fields.Select(f => f.Field).SequenceEqual(definition.Compare.Select(c => c.Field), StringComparer.Ordinal))
+        {
+            throw new ArgumentException("대조 결과의 compare 필드가 case.yaml compare와 다르다.", paramName);
+        }
+
+        if (inputs.Group is { } group
+            && metrics.Items.Any(i => i.Reference is { } row && row.Header.Count(h => string.Equals(h, group, StringComparison.Ordinal)) != 1))
+        {
+            throw new ArgumentException("기준 행 머리 행에 case.yaml inputs.group 열이 꼭 한 번 있어야 한다.", paramName);
+        }
     }
 
     // 11.9: 사람 입력 키는 검토 항목(불일치·추가 행·중복 행)의 키여야 하고 중복이 없어야 한다. 아니면 부르는 쪽 잘못이다.
@@ -105,12 +150,8 @@ public static class JudgmentEngine
     // 11.4 1행: 확인을 하지 않는다. 미검증 문장은 문턱을 읽지 않는다(11.6). 다음 할 일은 11.7.
     private static JudgmentResult NotVerified(CompareMetrics metrics, JudgmentThresholds thresholds, string[] defaults)
     {
-        var noInputs = metrics.Reason switch
-        {
-            CompareEngine.ReasonNoInputs => true,
-            CompareEngine.ReasonNoCompareFields => false,
-            _ => throw new ArgumentException($"미검증 이유가 4.3 표에 없다: {metrics.Reason}", nameof(metrics)),
-        };
+        // 미검증 이유는 CheckConsistent가 정의와 맞춰 보았다(no_inputs 또는 no_compare_fields, 5절).
+        var noInputs = string.Equals(metrics.Reason, CompareEngine.ReasonNoInputs, StringComparison.Ordinal);
 
         var todo = new List<JudgmentTodo>();
         if (noInputs)

@@ -75,6 +75,7 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-08 | T-019 M2-2 | 10 oracle 판 | schema 1·2 두 판을 expected `schema_version`으로 고름. 섞이면 분류 모두 DIFF. schema 1 판은 `ai`를 거절. PR (b) 뒤 첫 oracle 변경에서 삭제 | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 11 예제 | 공개 예제 다섯에 `ai`를 넣지 않음(모두 `source: rule`). TestData 표본 `ai-judgment`로 확인 | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 12 사용자 확인(LATER #20) | 스킬 대화에서 단계마다 AI 판단·추정 답을 보이고 맞음/바꾸기 뒤에만 `answers.yaml`을 쓴다. 엔진은 묻지 않는다 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 13 테스트 변경(PR (b)) | `confirm_existing_feature` 삭제·schema 2에 맞춰 단언을 고침: CheckAndOveruse·ConditionTable(`CHECK_EXISTING` 행)·Signoff·DefaultMark·InferredMark의 확인 항목은 `measure_minutes_per_item`만, ExampleGolden의 form-fill 기대는 확인 항목 대신 `existing_feature` 기본값 표시, ApiShape 두 개는 `RuleOpinion`·`StepAi`·`Source`·`Differs`를 더함. 지운 테스트 없음. 새 테스트 CaseAi·AiJudgment·ScorecardSkill | T-019 (b) |
 | 2026-11-08 | T-018 M2-1 | 1 출력 폴더 | 기본 `<케이스>/out`, `--out`은 케이스 폴더 밖이나 기본값과 같은 폴더. 같은 이름 파일은 덮어쓰고 다른 파일은 그대로, 오류면 아무것도 쓰지 않는다. `/examples/*/out/`는 gitignore | T-018 |
 | 2026-11-08 | T-018 M2-1 | 2 도움말 | 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령 `classify`·`compare`·`judge`는 숨긴다. `help --json`은 명령 넷 | T-018 |
 | 2026-11-08 | T-018 M2-1 | 3 사용자 명령 `--json` | 결과 객체 `schema_version` 1·`command`·`files`(출력 폴더 기준 상대 경로). 숫자·판정은 파일에만. 넓히는 일은 `report.md`(M2-3) | T-018 |

@@ -42,7 +42,7 @@ T-010 뒤에는 이 절의 사람 확인(4·5·11)과 원칙 변경 승인을 AD
 | 만들 단계를 고른다 | `scorecard build <case>` | ② 단계 중 먼저 만들 하나를 추천 → "이 단계 만들까요?" 예 / 아니오 / 나중에 → 예면 `build-request/` 번들 생성 |
 
 - 확인: 단계마다 "맞음 / 바꾸기"만 고른다. 바꿀 때만 사유를 한 줄 쓴다. 사유 없는 바꾸기는 확정되지 않는다. 스킬 대화나 스코어카드에서 고르고 `--review` 파일로 넣는다.
-- 모든 명령은 대화 없이 파일 입력(`--answers`, `--review` 등)만으로 돈다. `--json`이면 결과와 오류를 JSON 문서 하나로 낸다. 모든 JSON은 첫 키가 `"schema_version": 1`이다. 스키마는 `docs/spec/json-output.md`에 고정한다. 종료 코드: 성공 0, 입력 오류 2, 내부 오류 1.
+- 모든 명령은 대화 없이 파일 입력(`--answers`, `--review` 등)만으로 돈다. `--json`이면 결과와 오류를 JSON 문서 하나로 낸다. 모든 JSON은 첫 키가 정수 `schema_version`이다(값은 문서마다 정한다. classification.json은 2, ADR 0013). 스키마는 `docs/spec/json-output.md`에 고정한다. 종료 코드: 성공 0, 입력 오류 2, 내부 오류 1.
 - 내부 명령 `new`, `interview`, `classify`, `compare`, `measure`, `judge`, `review`, `report`, `propose`는 테스트·재현용으로 남긴다. 도움말에는 넷만 보인다.
 
 ### 3.2 단계마다 적는 답 10개와 기본값
@@ -57,7 +57,7 @@ T-010 뒤에는 이 절의 사람 확인(4·5·11)과 원칙 변경 승인을 AD
 | `current_actor` | 지금 누가 하나 | human / ai_each_time / program / mixed | human |
 | `minutes_per_item` | 건당 걸리는 시간(분) | 숫자 | null (측정 권고로 표시) |
 | `failure_impact` | 틀리면 무슨 일이 생기나 | internal_rework / external / safety_legal | internal_rework |
-| `existing_feature` | 기존 프로그램에 같은 기능이 있나 | yes / no / unknown | unknown (확인 항목으로 남김) |
+| `existing_feature` | 기존 프로그램에 같은 기능이 있나 | yes / no / unknown | unknown (기본값 표시로 남김. 기존 기능 여부는 AI가 판단한다) |
 | `human_signoff` | 사람이 최종 확인·서명하는 단계인가 | yes / no | no (단계마다 묻지 않는다. 3.1의 서명 단계 질문으로 채운다) |
 
 앞의 9개는 AI가 단계마다 체크리스트로 채운다(2절 6). `human_signoff`는 3.1의 서명 단계 질문으로 한 번 묻고 모든 단계에 값을 적는다(2026-11-07 사람 결정: ADR 0003).
@@ -81,7 +81,7 @@ Q4 frequency == rare and batch_size < 5
 
 AI가 추정한 답(단계의 `inferred`)이 쓰인 근거 문장 끝에는 `(AI 추정, 확인 필요)`를 붙인다. 기본값 표시가 같이 있으면 그 뒤에 둔다(2026-11-07 사람 결정: ADR 0004).
 
-이 트리의 결과는 "규칙 의견"이다. AI 판단(2절 6)과 다르면 스코어카드에 표시한다(2026-11-08 사람 결정: ADR 0010).
+이 트리의 결과는 "규칙 의견"이다. AI 판단(2절 6)과 다르면 스코어카드에 표시한다(2026-11-08 사람 결정: ADR 0010). AI 담당 ②M(학습 모델, 결정론)의 정의, 규칙 의견과 비교하는 값(②M은 ②), AI가 서명 단계를 ④가 아닌 담당으로 판단했을 때의 게이트는 `docs/spec/classification.md` 4.13이다(ADR 0013).
 
 ### 3.4 검증 지표와 판정 규칙
 
@@ -397,7 +397,7 @@ T-001이 끝까지 돌면 첫 주 토큰 비용과 걸린 시간을 `docs/decisi
 | 예제 | 업무 | 단계 수 | 기대 분류(요지) | 검증 자료 |
 | --- | --- | --- | --- | --- |
 | `table-compare` | 센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다 | 6 | 정상 신호 구간 선택·계산·표 채우기 = ②, 불규칙 신호 = ②+④, 최종 확인 = ④ | reference 30건 / candidate 30건, 불일치 3건·누락 1건 심어 둠 → 정확도 90%, 누락률 3.3%, 판정 "조건부" |
-| `form-fill` | 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다 | 5 | 양식 읽기·집계·보고서 = ②, 발송 = ④, `existing_feature: unknown` 1건 → 확인 항목 | reference 20건 / candidate 20건, 전부 일치 → 정확도 100%, 판정 "통과", AI 과잉 후보 1단계(`current_actor: ai_each_time`) |
+| `form-fill` | 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다 | 5 | 양식 읽기·집계·보고서 = ②, 발송 = ④, `existing_feature` 비움(기본값 unknown) 1건 → 기본값 표시 | reference 20건 / candidate 20건, 전부 일치 → 정확도 100%, 판정 "통과", AI 과잉 후보 1단계(`current_actor: ai_each_time`) |
 | `mixed-exceptions` | 자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다 | 5 | 접수 기록 = ②, 분류·답변 = ③(입력 양식 표준화 제안), 발송 = ④ | 자료 없음 → 전 항목 "미검증", 평가서에 측정 방법만 |
 | `signoff-final` | 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다 | 9 | 파일 정리·안정 기록 구간·값 계산·보고서 채우기 = ②, 흔들린 기록 구간 = ②+④, 해석 문장 = ③+④, 최종 확인·서명·제출 = ④(서명 단계, `human_signoff: yes`, 게이트 없음) | reference 20건 / candidate 20건, 불일치 4건·누락 1건 심어 둠 → 정확도 80%, 누락률 5% (문턱 95%·2% 미달. 판정은 판정 카드에서) |
 

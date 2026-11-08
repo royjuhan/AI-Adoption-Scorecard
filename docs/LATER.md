@@ -157,3 +157,9 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #24 | 데이터 9절 번호가 9.6 → 9.8로 9.7이 비어 보인다(PR (b)가 9절을 옮기며 사라짐) | docs/spec/data/classification.md |
 | 2026-11-08 | #24 | 스코어카드가 `source: ai`·`differs` 단계를 어떻게 보일지 M2-3에서 정한다 | report.md |
 | 2026-11-08 | #24 | `classify.py` 주석의 절 번호가 9절 기준이다. PR (b) 뒤 첫 oracle 변경에서 고친다 | tools/oracle/classify.py |
+| 2026-11-08 | #25 | 본문 4.1 "GATE는 SIGNOFF가 아닌 모든 잎 뒤에 붙는다"가 4.13 규칙 5(AI가 ④가 아니면 SIGNOFF 뒤에도 GATE)를 가리키지 않는다. "(AI 판단 예외는 4.13)"을 덧붙인다 | docs/spec/classification.md:52 |
+| 2026-11-08 | #25 | form-fill `answers.yaml` 주석이 "→ 확인 항목"으로 schema 1 설명 그대로다(예제 입력 바이트라 SHA 줄과 같이 고쳐야 한다) | examples/form-fill/answers.yaml |
+| 2026-11-08 | #25 | migration 커밋이 블록·SHA 줄 말고 데이터 9.6 머리·안내 줄도 지웠다. 옮기기의 결과라 동작 영향은 없지만 ADR 0004 "블록·SHA-256 줄만"과 글자는 다르다 | 7ca2005 |
+| 2026-11-08 | #25 | 스킬 7절이 case.yaml 단계를 answers.yaml과 "같게 둔다"고만 한다. 두 파일 단계가 어긋나면 check와 start의 분류가 다를 수 있다. 한쪽에서 읽게 하거나 어긋나면 알린다 | .claude/skills/scorecard/SKILL.md:94 |
+| 2026-11-08 | #25 | selftest.py 주석·라벨이 아직 9.x 절 번호다(classify.py와 같은 일, 다음 oracle 변경에서) | tools/oracle/selftest.py |
+| 2026-11-08 | #25 | AiJudgmentTests의 블록 비교가 텍스트 비교다. 다른 골든처럼 바이트로 맞추면 실패 메시지가 일관된다 | tests/Scorecard.Tests/Classification/AiJudgmentTests.cs |

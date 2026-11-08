@@ -157,7 +157,7 @@ python3 -I -B tools/oracle/selftest.py --repo .     # 계약: 종료 0 = 모든 
 
 `needs: [mutation, oracle, oracle-head, test-run]`, `if: always()`. 앞 잡이 실패해도 돈다. 세 artifact(mutation, oracle, testrun)를 `continue-on-error`로 받고, 없으면 "증거 없음"으로 본다. head 코드를 돌리지 않는다(위 "잡과 신뢰"). 순서: `setup-python` → checkout → base 도구 꺼내기 → 자기 검사 → artifact 받기 → `regression_guard.py --require-base-tools`.
 
-- 앞 잡의 결과: `needs`의 잡 넷(`mutation`, `oracle`, `oracle-head`, `test-run`)을 모두 `--job 이름=결과`로 넘긴다. `success`가 아니면 `job-result` FAIL이다(증거로 넘어가지 않는다). `mutation`·`oracle` 결과는 이유 줄에도 적는다(`MUTATION_RESULT`·`ORACLE_RESULT`). `test-run` 잡이 빨갛다는 것은 TRX를 못 얻었거나 head `tools/ci` 단위 테스트가 실패했다는 뜻이다. `oracle-head` 잡이 빨갛다는 것은 head `check.py`나 head `selftest.py`가 실패했다는 뜻이다. 단위 테스트가 `needs`와 `--job` 줄, 환경 변수(`needs.<잡>.result`)를 대조한다(T-011a).
+- 앞 잡의 결과: `needs`의 잡 넷(`mutation`, `oracle`, `oracle-head`, `test-run`)을 모두 `--job 이름=결과`로 넘긴다. `success`가 아니면 `job-result` FAIL이다(증거로 넘어가지 않는다). `mutation`·`oracle` 결과는 이유 줄에도 적는다(`MUTATION_RESULT`·`ORACLE_RESULT`). `test-run` 잡이 빨갛다는 것은 TRX를 못 얻었거나 head `tools/ci` 단위 테스트가 실패했다는 뜻이다. `oracle-head` 잡이 빨갛다는 것은 head `check.py`나 head `selftest.py`가 실패했다는 뜻이다. `tools/ci/test_regression_guard.py`의 `TestGuardJobsWiring.test_workflow_passes_every_needed_job`이 `needs`와 `--job` 줄, 환경 변수(`needs.<잡>.result`)를 대조한다(T-011a).
 - 카드 번호(`test-run-renamed`): `--card`(여러 번)와 `GITHUB_HEAD_REF`(PR 브랜치 이름, 예 `task/T-012-…`), 범위 안 병합이 아닌 커밋 제목에서 `T-숫자 3자리 이상`을 찾는다.
 
 ### C. CI 도구·원칙 파일 변경 (`ci-changed`, 증거: ADR)

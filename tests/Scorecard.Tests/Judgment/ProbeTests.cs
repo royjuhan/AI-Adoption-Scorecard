@@ -72,8 +72,9 @@ public class ProbeTests
         Assert.Contains(rows, r => JudgmentSpec.Cell(r[0]) == "P1" && r[3].Trim() == Rejected);
     }
 
-    // 11.11 P4: 결과 쪽 키 중복은 대조 오류가 아니라 항목 duplicate다(metrics.md 12.2). r0003의 둘째 행이 duplicate이고
-    // 기준 행 위치를 가진다. 첫 행으로 대조해 r0003은 일치다. 정확도·누락률은 그대로(100.0, 0.0)다.
+    // 6.6 P4: 결과 쪽 키 중복은 대조 오류가 아니라 항목 duplicate다(metrics.md 4.3). r0003의 둘째 행이 duplicate이고
+    // 기준 행 위치를 가진다. T-013(metrics.md 13.2): 결과 쪽에 두 번 나온 r0003은 두 행이 모두 기준과 같아도 값 불일치다(차이 []).
+    // 정확도는 19/20 = 95.0으로 문턱 95를 충족하고 누락률은 0.0이다. 그래서 판정은 6.6 표 그대로 조건부·보류 UNEXPLAINED다.
     [Fact]
     public void Candidate_side_duplicate_becomes_a_duplicate_item()
     {
@@ -88,9 +89,12 @@ public class ProbeTests
         Assert.NotNull(duplicate.Candidate);
         Assert.Equal(22, duplicate.Candidate.Line);
         Assert.Equal(5, duplicate.Reference.Line);
-        Assert.DoesNotContain(metrics.Items, i => i.Key == "r0003" && i.Status != CompareEngine.ItemDuplicate && i.Status != CompareEngine.ItemMatch);
-        Assert.Equal((20, 21, 20, 0), (metrics.Counts!.Reference, metrics.Counts.Candidate, metrics.Counts.Match, metrics.Counts.Extra));
-        Assert.Equal(("100.0", "0.0"), (JudgmentInput.Text(metrics.AccuracyPct!.Value), JudgmentInput.Text(metrics.MissingRatePct!.Value)));
+        var item = Assert.Single(metrics.Items, i => i.Key == "r0003" && i.Status != CompareEngine.ItemDuplicate);
+        Assert.Equal(CompareEngine.ItemMismatch, item.Status);
+        Assert.Empty(item.Differences);
+        Assert.Equal((20, 21, 19, 1, 0), (metrics.Counts!.Reference, metrics.Counts.Candidate, metrics.Counts.Match, metrics.Counts.Mismatch, metrics.Counts.Extra));
+        Assert.Equal(("95.0", "0.0"), (JudgmentInput.Text(metrics.AccuracyPct!.Value), JudgmentInput.Text(metrics.MissingRatePct!.Value)));
+        Assert.Equal(["r0003"], scene.BadKeys);
     }
 
     // 11.11 장면. 문턱 95·2·false. 사람 입력 칸으로 Unexplained를 채운다.

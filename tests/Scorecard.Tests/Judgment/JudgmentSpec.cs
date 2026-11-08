@@ -7,8 +7,8 @@ namespace Scorecard.Tests.Judgment;
 // 채택된 판정 스펙(docs/spec/judgment.md)의 표·블록을 읽는다. Core를 쓰지 않는다.
 // 스펙 4.13: Core는 기본값·결과 문자열·문장 틀·문구·focus_min을 internal 상수로 두고, 테스트가 이 표와 대조한다.
 // 표 모양(머리 행)은 스펙이 "바꾸지 않는다"고 정했다. 머리 행이 문서에 정확히 한 번 나와야 한다(SpecDocument.Table).
-// T-012(PR (b)): 판정·확인·읽은 문턱·다음 할 일·몰림·설명 안 됨·우선순위·예제 표는 11절 머리 행을 읽는다(11.17 test-engineer 1).
-// 문서가 표를 4·6·7절 자리로 옮겨도 머리 행은 그대로다.
+// T-012(PR (b))는 판정·확인·읽은 문턱·다음 할 일·몰림·설명 안 됨·우선순위·예제 표를 11절에서 읽었다.
+// T-013이 표를 4·6·7절 자리로 옮겼다(11.3 옮긴 곳 표). 머리 행은 그대로다. 아래 주석의 절 번호는 지금 자리다.
 internal static partial class JudgmentSpec
 {
     public const string Document = SpecDocument.JudgmentPath;
@@ -19,23 +19,26 @@ internal static partial class JudgmentSpec
     // 4.2
     public const string DefaultHeader = "| 키 | 기본값 | 근거 |";
 
-    // 11.4(T-012, 4.3을 대신한다)
+    // 4.3
     public const string VerdictHeader = "| 순서 | 근거 키 | 확인 결과 | 판정 | 판정 문장 틀 |";
 
-    // 11.5(T-012, 4.4를 대신한다)
+    // 4.4
     public const string CheckHeader = "| 확인 | 결과 | 걸리는 조건 | 확인 문장 틀 |";
 
     // 4.5
     public const string NumberHeader = "| 이름 | 값 | 뜻 |";
 
-    // 11.6(T-012, 4.6 표를 대신한다). 근거 키 대신 판정 표의 순서로 적는다(UNEXPLAINED가 순서 4·7 두 곳).
+    // 4.6. 근거 키 대신 판정 표의 순서로 적는다(UNEXPLAINED가 순서 4·7 두 곳).
     public const string ReadThresholdHeader = "| 순서 | 근거 키 | 읽은 문턱 |";
 
-    // 11.7(T-012, 4.7 표를 대신한다)
+    // 4.7
     public const string TodoHeader = "| 다음 할 일 | 나오는 때 | 문구 |";
 
-    // 11.3(T-012) 검토 항목. 표 순서가 {breakdown} 순서다.
+    // 4.9 검토 항목. 표 순서가 {breakdown} 순서다.
     public const string ReviewItemHeader = "| 검토 항목 | 항목 상태 | {breakdown} 이름 |";
+
+    // 5절(T-013) 정의와 대조 결과. "판정"은 예외 없이 판정, "거절"은 ArgumentException.
+    public const string DefinitionHeader = "| 정의 | 대조 결과 | Judge |";
 
     // 4.12. metrics.md·classification.md와 같은 글자다. 문서마다 한 번이다.
     public const string GuardHeader = "| 이름 | 샘플(`TestData/guard/…`) | 어댑터 |";
@@ -47,20 +50,20 @@ internal static partial class JudgmentSpec
     // 6.2
     public const string TimeHeader = "| time_must_drop | 적용 전 | 처리 | 검토 | TIME |";
 
-    // 11.8(T-012 M-A, 6.3 두 표를 대신한다)
+    // 6.3(M-A) 몰림 두 표
     public const string FocusHeader = "| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | inputs.group | FOCUS |";
     public const string FocusColumnsHeader = "| 열 값(행 1~6) | inputs.group | 불일치 행 | FOCUS | 걸린 값 |";
 
-    // 11.9(T-012, 6.4를 대신한다)
+    // 6.4
     public const string UnexplainedHeader = "| 불일치 | 추가 행 | 중복 행 | 사람 입력 | UNEXPLAINED |";
 
-    // 11.10(T-012, 6.5를 대신한다)
+    // 6.5
     public const string PriorityHeader = "| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 | 다음 할 일 |";
 
-    // 11.11(T-012) 탐침 재현.
+    // 6.6 탐침 재현.
     public const string ProbeHeader = "| 탐침 | 장면 | 사람 입력 | T-011 | T-012 |";
 
-    // 11.12(T-012) 예제 case.yaml에 더하는 줄, 예제 표(7.1 예제 표를 대신한다), expected 영향.
+    // 7.1 예제 case.yaml에 더하는 줄, 예제 표, expected 영향.
     public const string ExampleCaseHeader = "| 예제 | 더하는 줄 | 지금 SHA-256 | 더한 뒤 SHA-256 | 바이트 |";
     public const string ExampleHeader = "| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |";
     public const string ExpectedImpactHeader = "| 파일 | 지금 SHA-256 | 새 SHA-256 | 바뀐 줄 |";
@@ -69,8 +72,8 @@ internal static partial class JudgmentSpec
     public const string ShapeHeading = "### 3.2 judgment.json";
     public const string ApiHeading = "### 4.13 Core 공개 API (제안)";
 
-    // 11.9 compare-duplicate 판정 블록의 제목과 SHA-256 줄 머리.
-    public const string ReviewHeading = "### 11.9 설명 안 되는 검토 항목";
+    // 6.4 compare-duplicate 판정 블록의 제목과 SHA-256 줄 머리. T-013에서 블록이 11.9에서 6.4로 옮겼다.
+    public const string ReviewHeading = "### 6.4 설명 안 되는 검토 항목";
     public const string CompareDuplicateLinePrefix = "`compare-duplicate` judgment.json (schema_version 2, SHA-256 ";
 
     // 11.2: judgment.json schema_version(T-012에서 1 → 2).

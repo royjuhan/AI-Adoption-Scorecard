@@ -26,3 +26,22 @@ T-011a·T-012a·T-012b 리뷰와 M1 [재검토]에서 미룬 것을 한 카드�
 
 - `oracle-and-expected` 규칙: 이 카드는 expected를 바꾸지 않으므로 oracle과 같은 PR에 둘 수 있다. 1의 새 규칙이 예제 바이트를 바꾸면 PR을 나눈다.
 - 근거: T-011 카드 "T-011a 리뷰 지적", T-012 카드 "PR (a) 리뷰 지적"·"PR (b) 리뷰 지적", STATUS 재검토 기록(M1).
+
+## 바꾼 기존 테스트
+
+test-engineer. 지운 테스트·Skip 없음. [Fact]/[Theory] 수는 늘기만 했다. 이름은 그대로 두었다(바꾸면 빠진 테스트로 센다).
+
+- `DuplicateTests.Duplicate_row_values_are_not_compared`: 둘째 행도 대조한다(metrics.md 13.2). 이름은 T-012 때 것이고 뜻이 바뀌었다. 그 키는 `mismatch`, duplicate 항목에 차이 하나, `compared` 2.
+- `DuplicateTests.Each_repeat_is_its_own_duplicate_item`: 모든 행이 기준과 같아도 그 키는 `mismatch`(13.2). `compared` 3을 더 본다.
+- `DuplicateTests.Duplicates_across_candidate_files_follow_path_order`: k2는 결과 쪽에 두 번 나와 `mismatch`. 차이 수·셈·`compared` 4를 더 본다.
+- `DuplicateTests.Duplicates_count_as_candidate_rows_only`: "중복이 없을 때와 fields가 같다"는 옛 규칙이다. 중복 키는 `mismatch`, `compared`는 기준에 키가 있는 결과 행 수(13.2 셈 관계).
+- `DuplicateTests.First_candidate_row_is_compared_and_later_rows_are_duplicates`: 주석만(대표 행, 13.2). 단언은 그대로.
+- `KeyTests.Duplicate_keys_are_reported_from_the_second`: 결과 쪽 같은 키 k1은 `mismatch`(4.3). 셈 줄을 고쳤다.
+- `ProbeTests.Candidate_side_duplicate_becomes_a_duplicate_item`: P4의 r0003은 일치가 아니라 `mismatch`(정확도 95.0). 6.6 표의 판정은 그대로다.
+- `UnexplainedTests.Unexplained_table_row_gives_its_result`: 6.4 장면을 judgment.md 12.5대로 만든다(불일치 칸 − 중복 행 칸만큼 보통 불일치, 나머지는 중복 행).
+- `UnexplainedTests.Unexplained_table_covers_all_results`: "불일치 0·추가 0·중복 ≠ 0·found" → "중복 행 ≠ 0이고 사람 입력이 중복 행 키뿐인 found"(12.5). 뜻은 같다. 불일치 칸 ≥ 중복 행 칸을 더 본다.
+- `UnexplainedTests.One_key_covers_several_duplicate_items`: 세 번 나온 키는 불일치이기도 하다. 내역 "중복 행 2건" → "불일치 1건, 중복 행 2건", 항목 3.
+- `TodoTests.Review_items_text_counts_items_by_kind`: InlineData 두 줄. `(0, 0, 1, "중복 행 1건")`은 이제 나올 수 없다 → `(1, 0, 1, "불일치 1건, 중복 행 1건")`, `(1, 1, 2, …)` → `(3, 1, 2, "불일치 3건, 추가 행 1건, 중복 행 2건")`. 실행 이름(인자)이 바뀐다.
+- `JudgmentApiShapeTests.Unexplained_keys_must_be_distinct_mismatch_keys`: 장면의 불일치 키가 둘 → 셋(중복 행 키 포함). 거절·받는 키는 그대로.
+- 도우미 `JudgmentScene.BadKeys`(`JudgmentInput.cs`): 결과 쪽에 두 번 나온 기준 키를 불일치 키에 넣는다. 그래서 `ProbeTests` P4 두 행이 새 셈으로 6.6 표와 맞는다.
+- `JudgmentSpec.ReviewHeading`: 문서에 없는 `### 11.9 …` → `### 6.4 설명 안 되는 검토 항목`. 새 13.3 테스트가 쓴다. 표 머리 행 주석의 절 번호를 지금 자리로.

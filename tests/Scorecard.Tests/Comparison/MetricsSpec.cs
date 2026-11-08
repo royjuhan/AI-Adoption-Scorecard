@@ -38,6 +38,9 @@ internal static partial class MetricsSpec
     // 4.10. classification.md·synthetic-examples.md와 같은 글자다. 문서마다 한 번이다.
     public const string GuardHeader = "| 이름 | 샘플(`TestData/guard/…`) | 어댑터 |";
 
+    // 13.3(T-013) 결과 쪽 중복의 줄 순서 표. 12.5 compare-duplicate의 r2 두 행.
+    public const string LineOrderHeader = "| r2 결과 행 | 기준 항목 차이 | 중복 항목 차이 | 일치 | 값 불일치 | compared | outside |";
+
     // 7.1
     public const string ExampleHeader =
         "| 예제 | 상태 | 기준 행 | 결과 행 | 일치 | 값 불일치 | 누락 | 추가 | 허용오차 안 차이 | 정확도(%) | 누락률(%) |";

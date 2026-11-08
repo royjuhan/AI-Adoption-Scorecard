@@ -15,6 +15,9 @@
 #    예제 이름은 고정하지 않는다. examples/의 폴더 이름(서수)이고, 폴더마다 7절 블록이 하나 있어야 한다.
 #    metrics.md 12.5 compare-duplicate 블록, 13절 결과 쪽 중복 순서 표(T-013), case-schema.md 10.2 inputs.group 표.
 #    변형: 예제 CSV의 CRLF·CR·BOM·따옴표·마지막 줄바꿈 없음·끝 빈 행·칸 앞뒤 공백, answers.yaml의 CRLF·CR·BOM이 같은 바이트.
+#    text-check.md(T-014): 4.1~4.4·5.1~5.5 표(상수 = 표, 파서·맞추기·평균·점수 자료 장면), 3.1·3.2 새 속성 표,
+#    6.1 판정 장면, 7.2 계획 표로 CSV를 다시 만들어 7.3 블록과 비교, 7.4 블록 = oracle 출력, CSV 변형, PR (b) 모의
+#    (예제 사본 + reply-drafts 블록 → check.py 모두 MATCH, 바꾸면 그 파일만 DIFF). examples/reply-drafts가 있으면 파일 = 블록.
 # 2. 음성 대조: 예제 사본에서 expected 한 바이트, expected 삭제, 결과 CSV 값, answers.yaml 답을 바꾸면
 #    check.py가 DIFF·MISSING과 종료 코드 1을 낸다. 사본 그대로면 모두 MATCH, 종료 코드 0.
 #    파일 수는 고정하지 않는다. 사본 examples의 expected 파일 목록(check.py 대상 종류)에서 센다.
@@ -462,15 +465,17 @@ def check_v2_tables(spec: list) -> None:
     expect(J2.SCHEMA_VERSION == 2, '3.2 schema_version 2')
 
 
-def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path) -> None:
+def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path, tc_spec: list) -> None:
     names = example_names(examples)
     expect(len(names) > 0, '예제 폴더가 하나 이상')
     head = '| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |'
     listed = [tick(r[0]) for r in table(spec, head)]
-    expect(sorted(listed, key=ordinal_key) == names and len(set(listed)) == len(listed),
-           f'7.1 예제 표의 이름 = examples/ 폴더 이름 {listed} {names}')
+    # T-014: text-check.md 7.1 새 예제는 PR (b) 전이면 examples/에 없다. 있으면 확인 여섯이라 check_t014가 본다.
+    new = [n for n in tc_new_examples(tc_spec) if n in names]
+    expect(sorted(listed + new, key=ordinal_key) == names and len(set(listed + new)) == len(listed + new),
+           f'7.1 예제 표의 이름(+ text-check.md 새 예제) = examples/ 폴더 이름 {listed} {new} {names}')
     for name in names:
-        block, sha = v2_block(spec, f'`examples/{name}/expected/judgment.json` (')
+        block, sha = judgment_block(spec, tc_spec, name)
         got = J2.judgment_bytes(examples / name)
         expect(got == block, f'7.2~7.5 {name}: oracle 출력 = 스펙 블록')
         expect(sha256_hex(block) == sha and sha256_hex(got) == sha, f'7.2~7.5 {name}: SHA-256 줄 {sha}')
@@ -514,10 +519,14 @@ def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path) ->
 
     walk(json.loads(J2.judgment_bytes(examples / 'table-compare')), '')
     expect(list(seen) == [tick(r[0]) for r in rows], f'3.2 속성 경로 순서 = 표 ({list(seen)})')
+    allowed = [tick(r[0]) for r in table(tc_spec, '| 판정 새 속성 | 형식 | 뜻 |')]
     for name in names:
         before = list(seen)
         walk(json.loads(J2.judgment_bytes(examples / name)), '')
-        expect(list(seen) == before, f'3.2 {name}: 표 밖의 속성이 없다')
+        extra = [p for p in seen if p not in before]
+        expect(all(p in allowed for p in extra) and (not extra or name in new), f'3.2 {name}: 표 밖의 속성이 없다 {extra}')
+        for p in extra:
+            del seen[p]
     kinds = {'정수': lambda v: type(v) is int, '문자열': lambda v: isinstance(v, str), '객체': lambda v: isinstance(v, dict),
              '숫자': lambda v: type(v) in (int, float), '불리언': lambda v: isinstance(v, bool),
              '문자열 배열': lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
@@ -837,7 +846,7 @@ def check_v2_parser(repo: Path, cs_spec: list) -> None:
             expect_refused(label, lambda d=doc: parse_case(d, 'case.yaml'))
 
 
-def check_negative_v2(repo: Path, spec: list, examples: Path) -> None:
+def check_negative_v2(repo: Path, spec: list, examples: Path, tc_spec: list) -> None:
     """예제 사본 + 7.2~7.5 블록 → check.py 모두 MATCH. 바꾸면 그 파일만 DIFF·MISSING. 모두 지우면 대상이 아니다."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -847,7 +856,7 @@ def check_negative_v2(repo: Path, spec: list, examples: Path) -> None:
         names = example_names(copy / 'examples')
         paths = {}
         for name in names:
-            block, _sha = v2_block(spec, f'`examples/{name}/expected/judgment.json` (')
+            block, _sha = judgment_block(spec, tc_spec, name)
             paths[name] = copy / 'examples' / name / 'expected/judgment.json'
             paths[name].write_bytes(block)
         base = check_baseline(copy, report, f'judgment 사본 기준선(group 줄 + 블록 {len(names)}개)')
@@ -1026,6 +1035,379 @@ def check_variants(examples: Path) -> None:
                 expect(classification_bytes(data, 'answers.yaml') == want_cls, f'answers.yaml 변형 {name} {label}')
 
 
+# ---- T-014 (text-check.md: 체크리스트·가림 점수표) ----
+
+TC_NEW_EXAMPLE_HEAD = '| 새 예제 | inputs.group | 판정 | 근거 키 | 확인 여섯 | 다음 할 일 | 검토 항목 |'
+TC_FILES_HEAD = '| 예제 파일 | 만드는 곳 |'
+TC_EXAMPLE = 'reply-drafts'
+
+
+def tc_unescape(text: str) -> str:
+    """text-check.md 표 글의 \\n·\\t·\\uXXXX."""
+    return re.sub(r'\\(n|t|u[0-9A-Fa-f]{4})',
+                  lambda m: {'n': '\n', 't': '\t'}.get(m.group(1)) or chr(int(m.group(1)[1:], 16)), text)
+
+
+def tc_new_examples(tc_spec: list) -> list:
+    return [tick(r[0]) for r in table(tc_spec, TC_NEW_EXAMPLE_HEAD)]
+
+
+def judgment_block(spec: list, tc_spec: list, name: str):
+    """예제의 judgment.json 블록: text-check.md 새 예제면 그 문서, 아니면 judgment.md."""
+    source = tc_spec if name in tc_new_examples(tc_spec) else spec
+    return v2_block(source, f'`examples/{name}/expected/judgment.json` (')
+
+
+def walk_paths(value, prefix: str = '', seen=None) -> dict:
+    """JSON 값의 속성 경로(처음 나온 순서) → 값 목록. 배열 원소 객체는 경로[]."""
+    seen = {} if seen is None else seen
+    for k, v in value.items():
+        path = prefix + k
+        seen.setdefault(path, []).append(v)
+        if isinstance(v, dict):
+            walk_paths(v, path + '.', seen)
+        elif isinstance(v, list):
+            for x in v:
+                if isinstance(x, dict):
+                    seen.setdefault(path + '[]', []).append(x)
+                    walk_paths(x, path + '[].', seen)
+    return seen
+
+
+def tc_files(tc_spec: list) -> dict:
+    """7.3·7.4 블록: {예제 안 상대 경로: 바이트}. SHA-256·바이트 수 줄도 본다."""
+    out = {}
+    for rel, _where in table(tc_spec, TC_FILES_HEAD):
+        rel = tick(rel)
+        marker = f'`examples/{TC_EXAMPLE}/{rel}` ('
+        lines = [x for x in tc_spec if x.startswith(marker)]
+        expect(len(lines) == 1, f'T-014 7.3 {rel}: 줄이 한 번')
+        data = ('\n'.join(block_after(tc_spec, marker)) + '\n').encode('utf-8')
+        m = re.search(r'SHA-256 `([0-9a-f]{64})`, ([0-9,]+)바이트', lines[0])
+        expect(bool(m) and m.group(1) == sha256_hex(data) and m.group(2) == f'{len(data):,}', f'T-014 7.3 {rel}: SHA-256·바이트 줄')
+        out[rel] = data
+    return out
+
+
+def tc_write(folder: Path, files: dict, skip_expected: bool = True) -> Path:
+    for rel, data in files.items():
+        if skip_expected and rel.startswith('expected/'):
+            continue
+        (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+        (folder / rel).write_bytes(data)
+    return folder
+
+
+def tc_change(folder: Path, cell: str) -> None:
+    """바꾼 곳: `파일`, `파일`: `옛 글` → `새 글`[, …]. 파일마다 모든 곳을 바꾼다. 옛 글이 없으면 실패."""
+    if cell == '(없음)':
+        return
+    at = cell.index('`: `')
+    names = spans(cell[:at + 1])
+    pairs_ = [(tc_unescape(a), tc_unescape(b)) for a, b in re.findall(r'`([^`]*)` → `([^`]*)`', cell[at + 3:])]
+    expect(len(names) > 0 and len(pairs_) > 0, f'T-014 바꾼 곳 읽기: {cell}')
+    for name in names:
+        path = folder / name
+        text = path.read_bytes().decode('utf-8')
+        for old, new in pairs_:
+            expect(old in text, f'T-014 바꾼 곳 {name}: {old!r} 없음')
+            text = text.replace(old, new)
+        path.write_bytes(text.encode('utf-8'))
+
+
+def tc_generate(tc_spec: list) -> dict:
+    """7.2 계획 표와 글만으로 CSV 넷을 다시 만든다(synthetic-examples.md 4.2 SplitMix64·NextBelow)."""
+    plan = {k: v for k, v in table(tc_spec, '| 계획 | 값 |')}
+    mask = (1 << 64) - 1
+    state = [int(tick(plan['시드']))]
+
+    def below(n: int) -> int:
+        state[0] = (state[0] + 0x9E3779B97F4A7C15) & mask
+        z = state[0]
+        z = ((z ^ (z >> 30)) * 0xBF58476D1CE4E5B9) & mask
+        z = ((z ^ (z >> 27)) * 0x94D049BB133111EB) & mask
+        return ((z ^ (z >> 31)) * n) >> 64
+
+    def keyed(cell: str) -> tuple:
+        s = spans(cell)
+        digits = int(re.search(r'(\d+)자리', cell).group(1))
+        return s[-3] if len(s) == 4 else s[0], digits
+
+    def shuffle(xs: list) -> None:
+        for k in range(len(xs) - 1, 0, -1):
+            j = below(k + 1)
+            xs[k], xs[j] = xs[j], xs[k]
+
+    rows = int(tick(plan['행 수']))
+    key_col = spans(plan['키'])[0]
+    kp, kd = keyed(plan['키'])
+    topics = spans(plan['유형'])
+    actions = dict(re.findall(r'`([^`]+)` → `([^`]+)`', plan['처리 안내']))
+    focus = tick(plan['빠뜨릴 유형'])
+    tp, tmin, tspan = spans(plan['문의 번호'])
+    tmin, tspan = int(tmin), int(re.fullmatch(r'NextBelow\((\d+)\)', tspan).group(1))
+    greets, fillers, closings = spans(plan['인사']), spans(plan['덧붙임']), spans(plan['끝인사'])
+    raters = spans(plan['채점자'])
+    bp, bd = keyed(plan['가림 키'])
+    ai_scores = [int(x) for x in spans(plan['AI 점수'])]
+    human_scores = [int(x) for x in spans(plan['사람 점수'])]
+    penalty = int(tick(plan['빠진 항목 감점']))
+
+    keys = [f'{kp}{i + 1:0{kd}d}' for i in range(rows)]
+    topic = [topics[below(len(topics))] for _ in range(rows)]
+    ticket = [f'{tp}{tmin + below(tspan)}' for _ in range(rows)]
+    pick = [(below(len(greets)), below(len(fillers)), below(len(closings))) for _ in range(rows)]
+    pool = [i for i in range(rows) if topic[i] == focus]
+    expect(len(pool) >= 2, 'T-014 7.2 빠뜨릴 유형 행이 2개 이상')
+    omit_ticket = pool[below(len(pool))]
+    pool2 = [i for i in pool if i != omit_ticket]
+    omit_action = pool2[below(len(pool2))]
+    order = list(range(rows))
+    shuffle(order)
+    pairs_ = [(i, s) for i in range(rows) for s in ('ai', 'human')]
+    shuffle(pairs_)
+    blinds = [f'{bp}{k + 1:0{bd}d}' for k in range(len(pairs_))]
+    sheet = []
+    for rater in raters:
+        for k, (i, src) in enumerate(pairs_):
+            if src == 'ai':
+                v = ai_scores[below(len(ai_scores))] - (penalty if i in (omit_ticket, omit_action) else 0)
+            else:
+                v = human_scores[below(len(human_scores))]
+            sheet.append([rater, keys[i], blinds[k], str(v)])
+
+    def reply(i: int) -> str:
+        g, f, c = pick[i]
+        return ' '.join([greets[g],
+                         tick(plan['번호 빠진 문장']) if i == omit_ticket else tick(plan['번호 문장']).replace('{ticket}', ticket[i]),
+                         tick(plan['안내 빠진 문장']) if i == omit_action else tick(plan['안내 문장']).replace('{action}', actions[topic[i]]),
+                         fillers[f], closings[c]])
+
+    line = next(x for x in tc_spec if x.startswith('- `reference/replies.csv`: '))
+    heads = dict(zip(spans(line)[0::2], [h.split(',') for h in spans(line)[1::2]]))
+    expect(heads['reference/replies.csv'][0] == key_col, 'T-014 7.2 키 열 = 기준 머리 행 첫 칸')
+    body = {
+        'reference/replies.csv': [[keys[i], topic[i], ticket[i], actions[topic[i]]] for i in range(rows)],
+        'candidate/replies.csv': [[keys[i], reply(i)] for i in order],
+        'scores/sources.csv': [[blinds[k], keys[i], s] for k, (i, s) in enumerate(pairs_)],
+        'scores/sheet.csv': sheet,
+    }
+    out = {}
+    for rel, data_rows in body.items():
+        cells = heads[rel] + [c for r in data_rows for c in r]
+        expect(all(c and c == c.strip() and not any(x in c for x in ',"\n\r\t') for c in cells), f'T-014 7.2 {rel} 칸 규칙')
+        out[rel] = ''.join(','.join(r) + '\n' for r in [heads[rel]] + data_rows).encode('utf-8')
+    return out
+
+
+def tc_judge(folder: Path, times=None, unexplained=None):
+    case = parse_case((folder / 'case.yaml').read_bytes(), 'case.yaml')
+    run = compare_run(folder, case)
+    return J2.judge(case, run, times, unexplained), case, run
+
+
+def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> None:
+    from checklist import ABSENT, FOUND, SKIPPED, item_result
+    from oracle_case import ChecklistItem
+    import scores as SC
+
+    start = COUNT['ok']
+    # 상수 = 표(5.1~5.5, 4.3·4.4).
+    rows = table(tc_spec, '| 점수 문턱 | 기본값 | 근거 |')
+    expect([(tick(k), tick(v)) for k, v, _ in rows] == list(J2.SCORE_THRESHOLD_DEFAULTS), 'T-014 5.1 = SCORE_THRESHOLD_DEFAULTS')
+    rows = table(tc_spec, '| 점수 확인 | 결과 | 걸리는 조건 | 읽는 문턱 | 확인 문장 틀 |')
+    expect([(tick(c), tick(r), tick(t)) for c, r, _w, _th, t in rows] == list(J2.SCORE_CHECK_TABLE), 'T-014 5.2 = SCORE_CHECK_TABLE')
+    expect({tick(r): (() if th == '—' else tuple(spans(th))) for _c, r, _w, th, _t in rows} == J2.SCORE_CHECK_READS,
+           'T-014 5.2 읽는 문턱 = SCORE_CHECK_READS')
+    rows = table(tc_spec, '| 자리 | 근거 키 | 확인 결과 | 길 | 판정 | 판정 문장 틀 |')
+    got = [(tick(a), tick(k), None if r == '—' else tick(r), tick(p), tick(v), tick(t)) for a, k, r, p, v, t in rows]
+    expect(got == list(J2.SCORE_VERDICT_ROWS), 'T-014 5.3 = SCORE_VERDICT_ROWS')
+    rows = table(tc_spec, '| 자리 | 근거 키 | 확인 결과 | 길 | 읽은 문턱 |')
+    got = [(tick(a), None if k == '—' else tick(k), None if r == '—' else tick(r), tick(p), () if th == '—' else tuple(spans(th)))
+           for a, k, r, p, th in rows]
+    expect(got == list(J2.SCORE_READ_THRESHOLDS), 'T-014 5.4 = SCORE_READ_THRESHOLDS')
+    rows = table(tc_spec, '| 점수 할 일 | 나오는 때 | 문구 |')
+    expect([(tick(k), tick(t)) for k, _w, t in rows] == list(J2.SCORE_TODO_TABLE), 'T-014 5.5 = SCORE_TODO_TABLE')
+    rows = table(tc_spec, '| 가림 규칙 | 보는 곳 | 걸리는 조건 | 발견 위치·값 |')
+    expect(tuple(tick(r[0]) for r in rows) == SC.BLIND_RULES, 'T-014 4.4 가림 규칙 = BLIND_RULES')
+    rows = {tick(f): tuple(spans(c)) for f, c, _ in table(tc_spec, '| 파일 | 열 | 뜻 |')}
+    expect(list(rows.values()) == [SC.SHEET_COLUMNS, SC.SOURCE_COLUMNS], 'T-014 4.3 파일 열 = SHEET_COLUMNS·SOURCE_COLUMNS')
+
+    # 평균(4.3).
+    for total, n, mean in table(tc_spec, '| 점수 합 | 점수 수 | 평균 |'):
+        expect(SC.mean_text(int(total), int(n)).text == mean, f'T-014 4.3 평균 {total}/{n} = {mean}')
+
+    # 맞추기(4.2).
+    want_of = {'`found`': FOUND, '`absent`': ABSENT, '`skipped`': SKIPPED}
+    for item, ref, text, result in table(tc_spec, '| 항목 | 기준 칸 | 결과 문장 | 결과 |'):
+        if item == '`column`':
+            it, ref_cell = ChecklistItem('x', 'c', ()), tc_unescape(cell_value(ref))
+        else:
+            it, ref_cell = ChecklistItem('x', None, tuple(tick(item)[len('any: ['):-1].split(', '))), None
+        got = item_result(it, normalize(tc_unescape(cell_value(text))), None if ref_cell is None else normalize(ref_cell))
+        expect(got == want_of[result], f'T-014 4.2 맞추기 {item} {ref} {text}: {got}')
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        files = tc_files(tc_spec)
+        base = tc_write(tmp / 'base' / TC_EXAMPLE, files)
+
+        # 생성기(7.2) = CSV 블록.
+        for rel, data in tc_generate(tc_spec).items():
+            expect(files.get(rel) == data, f'T-014 7.2 생성기 = 7.3 {rel} 블록')
+
+        # expected = oracle 출력(7.4). answers.yaml·case.yaml 분류가 같다.
+        cls = classification_bytes(files['answers.yaml'], 'answers.yaml')
+        expect(classification_bytes(files['case.yaml'], 'case.yaml') == cls, 'T-014 7.4 answers.yaml·case.yaml 분류 같음')
+        outputs = {'expected/classification.json': cls, 'expected/metrics.json': metrics_bytes(base),
+                   'expected/judgment.json': J2.judgment_bytes(base)}
+        for rel, data in outputs.items():
+            expect(files.get(rel) == data, f'T-014 7.4 oracle 출력 = {rel} 블록 {sha256_hex(data)}')
+            print(f'  T-014 {rel}: oracle {sha256_hex(data)} {"same" if files.get(rel) == data else "DIFF"}')
+        real = repo / 'examples' / TC_EXAMPLE
+        if real.is_dir():  # PR (b) 뒤: 파일 = 블록, 표 밖 파일 없음.
+            got = sorted(str(p.relative_to(real)).replace(os.sep, '/') for p in real.rglob('*') if p.is_file())
+            expect(got == sorted(files), f'T-014 examples/{TC_EXAMPLE} 파일 목록 = 7.1 표 {got}')
+            for rel, data in files.items():
+                expect((real / rel).is_file() and (real / rel).read_bytes() == data, f'T-014 examples/{TC_EXAMPLE}/{rel} = 블록')
+
+        # 새 예제 표(7.1).
+        for name, group, verdict, rule, checks, todo, review in table(tc_spec, TC_NEW_EXAMPLE_HEAD):
+            expect(tick(name) == TC_EXAMPLE, f'T-014 7.1 새 예제 이름 {name}')
+            res, case, run = tc_judge(base)
+            expect(case.inputs.group == tick(group), 'T-014 7.1 inputs.group')
+            expect((res['verdict'], res['rule']) == (tick(verdict), tick(rule)), 'T-014 7.1 판정·근거 키')
+            expect([c['result'] for c in res['checks']] == spans(checks), 'T-014 7.1 확인 여섯')
+            expect([t['key'] for t in res['todo']] == ([] if todo == '—' else spans(todo)), 'T-014 7.1 다음 할 일')
+            items = [it for it in run.body['items'] if it['status'] in J2.REVIEW_STATUSES]
+            expect(J2.breakdown(items) == review, f'T-014 7.1 검토 항목 {J2.breakdown(items)}')
+
+        # 새 속성 표(3.1·3.2): 기존 표에 없는 경로 = 새 표(순서), 형식.
+        kinds = {'정수': lambda v: type(v) is int, '문자열': lambda v: isinstance(v, str), '객체': lambda v: isinstance(v, dict),
+                 '숫자': lambda v: type(v) in (int, float), '불리언': lambda v: isinstance(v, bool),
+                 '문자열 배열': lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
+                 '객체 배열': lambda v: isinstance(v, list) and all(isinstance(x, dict) for x in v),
+                 '문자열 또는 null': lambda v: v is None or isinstance(v, str),
+                 '숫자 또는 null': lambda v: v is None or type(v) in (int, float)}
+        for doc, head, data in ((met_spec, '| 새 속성 | 형식 | 뜻 |', outputs['expected/metrics.json']),
+                                (jud_spec, '| 판정 새 속성 | 형식 | 뜻 |', outputs['expected/judgment.json'])):
+            old = {tick(r[0]) for r in table(doc, '| 속성 | 형식 | 뜻 |')}
+            seen = walk_paths(json.loads(data))
+            rows = table(tc_spec, head)
+            new = [p for p in seen if p not in old]
+            expect(new == [tick(r[0]) for r in rows], f'T-014 {head} 경로 = 출력의 새 경로 {new}')
+            for path, form, _ in rows:
+                expect(form in kinds and all(kinds[form](v) for v in seen.get(tick(path), [])), f'T-014 {path} 형식 {form}')
+
+        # 파서 장면(4.1).
+        case_text = files['case.yaml'].decode('utf-8')
+        for cell, result, code, message in table(tc_spec, '| case.yaml 바꾼 곳 | 결과 | 코드 | 메시지 |'):
+            text = case_text
+            if cell != '(없음)':
+                old, new = (tc_unescape(x) for x in spans(cell))
+                expect(text.count(old) == 1, f'T-014 4.1 바탕에 한 번: {old!r}')
+                text = text.replace(old, new)
+            try:
+                parse_case(text.encode('utf-8'), 'case.yaml')
+                expect(result == '받음', f'T-014 4.1 {cell}: 받았다')
+            except OracleError as e:
+                expect(result == '오류' and tick(message) in str(e), f'T-014 4.1 {cell}: {e}')
+
+        # 점수 자료 장면(4.4).
+        for k, (cell, result, found, code) in enumerate(table(tc_spec, '| 점수 자료 바꾼 곳 | 결과 | 가림 발견 | 코드 |')):
+            folder = tmp / f'score{k:02d}' / TC_EXAMPLE
+            shutil.copytree(base, folder)
+            tc_change(folder, cell)
+            try:
+                blind = json.loads(metrics_bytes(folder))['scores']['blind']
+                rules = {}
+                for f in blind['findings']:
+                    expect(list(f) == ['rule', 'file', 'line', 'value'], f'T-014 4.4 발견 속성 {list(f)}')
+                    rules[f['rule']] = rules.get(f['rule'], 0) + 1
+                want = {} if found == '—' else {tick(m[0]): int(m[1]) for m in re.findall(r'(`[a-z_]+`) (\d+)건', found)}
+                expect(blind['status'] == tick(result) and rules == want, f'T-014 4.4 {cell}: {blind["status"]} {rules}')
+            except OracleError as e:
+                expect(result == '오류' and f'({tick(code)} 오류 입력' in str(e), f'T-014 4.4 {cell}: {e}')
+
+        # 판정 장면(6.1). 바탕 score-only = 6.2 case.yaml + reply-drafts scores/.
+        only = tmp / 'only' / 'score-only'
+        (only / 'scores').mkdir(parents=True)
+        (only / 'case.yaml').write_bytes(('\n'.join(block_after(tc_spec, '`score-only/case.yaml`:')) + '\n').encode('utf-8'))
+        for rel in ('scores/sources.csv', 'scores/sheet.csv'):
+            (only / rel).write_bytes(files[rel])
+        bases = {'reply-drafts': base, 'score-only': only}
+        scene_head = '| 장면 | 바탕 | 바꾼 곳 | 판정 | 근거 키 | 확인 결과 | 다음 할 일 |'
+        reasons = {}
+        for k, (scene, src, cell, verdict, rule, checks, todo) in enumerate(table(tc_spec, scene_head)):
+            folder = tmp / f'scene{k:02d}' / tick(src)
+            shutil.copytree(bases[tick(src)], folder)
+            tc_change(folder, cell)
+            res, _case, _run = tc_judge(folder)
+            got = (res['verdict'], res['rule'], [c['result'] for c in res['checks']], [t['key'] for t in res['todo']])
+            want = (tick(verdict), tick(rule), spans(checks), [] if todo == '—' else spans(todo))
+            expect(got == want, f'T-014 6.1 {scene}: {got}')
+            reasons[scene] = res['reason']
+        line = next(x for x in tc_spec if x.startswith('- "점수 문턱 기본값": '))
+        expect(spans(line)[-1] == reasons.get('점수 문턱 기본값'), f'T-014 6.1 기본값 판정 문장 {reasons.get("점수 문턱 기본값")}')
+        expect_refused('T-014 5.3 점수표만 + 검토 항목 키', lambda: tc_judge(only, None, []))
+        value = json.loads(metrics_bytes(only))
+        expect(list(value) == ['schema_version', 'case', 'compare', 'scores'] and value['compare']['reason'] == 'no_inputs',
+               'T-014 6.2 score-only metrics.json 모양')
+
+        # CSV 변형(4.6): 같은 바이트.
+        for label in _csv_variants(b'a\n'):
+            work = tmp / f'var-{label}' / TC_EXAMPLE
+            shutil.copytree(base, work)
+            for rel in [r for r in files if r.endswith('.csv')]:
+                (work / rel).write_bytes(_csv_variants(files[rel])[label])
+            expect(metrics_bytes(work) == outputs['expected/metrics.json'], f'T-014 CSV 변형 {label} metrics.json')
+            expect(J2.judgment_bytes(work) == outputs['expected/judgment.json'], f'T-014 CSV 변형 {label} judgment.json')
+
+        # 점수표가 없으면 바이트가 지금과 같다: scores·checklist를 지운 사본은 새 속성이 없다.
+        plain = tmp / 'plain' / TC_EXAMPLE
+        shutil.copytree(base, plain)
+        tc_change(plain, '`case.yaml`: `  score_gap_max: 0.5\\n` → ``')
+        text = (plain / 'case.yaml').read_text(encoding='utf-8')
+        cut = text.index('checklist:\n')
+        text = text[:cut] + text[text.index('# 시간 측정'):]
+        (plain / 'case.yaml').write_text(text + 'compare:\n  - {field: ticket}\n', encoding='utf-8')
+        (plain / 'candidate/replies.csv').write_bytes(files['reference/replies.csv'])
+        mvalue, jvalue = json.loads(metrics_bytes(plain)), json.loads(J2.judgment_bytes(plain))
+        expect('scores' not in mvalue and 'checklist' not in mvalue['compare'] and
+               all('missing_items' not in it for it in mvalue['compare']['items']), 'T-014 3.1 설정 없으면 새 속성 없음')
+        expect('score_gap_max' not in jvalue['thresholds'] and len(jvalue['checks']) == 5, 'T-014 3.2 설정 없으면 SCORE 없음')
+
+        # PR (b) 모의: 예제 사본에 reply-drafts(블록) → check.py 모두 MATCH, 바꾸면 그 파일만 DIFF.
+        copy = tmp / 'repo'
+        shutil.copytree(repo / 'examples', copy / 'examples')
+        tc_write(copy / 'examples' / TC_EXAMPLE, files, skip_expected=False)
+        report = tmp / 'report.json'
+        before = expected_files(repo / 'examples')
+        allx = check_baseline(copy, report, f'T-014 PR (b) 모의(examples + {TC_EXAMPLE})')
+        expect(len(allx) == len([p for p in before if f'/{TC_EXAMPLE}/' not in p]) + 3, f'T-014 PR (b) 모의: 대상 {len(allx)}개')
+        target = copy / 'examples' / TC_EXAMPLE / 'expected/metrics.json'
+        original = target.read_bytes()
+        flipped = bytearray(original)
+        flipped[len(flipped) // 2] ^= 0x01
+        scenario(copy, report, allx, 'T-014 metrics.json 한 바이트', lambda: target.write_bytes(bytes(flipped)),
+                 lambda: target.write_bytes(original), {f'examples/{TC_EXAMPLE}/expected/metrics.json': 'DIFF'})
+        sheet = copy / 'examples' / TC_EXAMPLE / 'scores/sheet.csv'
+        sheet_orig = sheet.read_bytes()
+        first = sheet_orig.split(b'\n')[1]
+        bumped = first[:-1] + bytes([first[-1] + (1 if first[-1:] < b'5' else -1)])
+        scenario(copy, report, allx, 'T-014 점수 하나', lambda: sheet.write_bytes(sheet_orig.replace(first, bumped, 1)),
+                 lambda: sheet.write_bytes(sheet_orig),
+                 {f'examples/{TC_EXAMPLE}/expected/metrics.json': 'DIFF', f'examples/{TC_EXAMPLE}/expected/judgment.json': 'DIFF'})
+        cand = copy / 'examples' / TC_EXAMPLE / 'candidate/replies.csv'
+        cand_orig = cand.read_bytes()
+        scenario(copy, report, allx, 'T-014 결과 문장(빠진 번호 채움)',
+                 lambda: cand.write_bytes(cand_orig.replace('문의하신 건을'.encode(), '문의하신 q397 건을'.encode())),
+                 lambda: cand.write_bytes(cand_orig),
+                 {f'examples/{TC_EXAMPLE}/expected/metrics.json': 'DIFF', f'examples/{TC_EXAMPLE}/expected/judgment.json': 'DIFF'})
+        check_determinism(copy, 'T-014 PR (b) 모의')
+    print(f"  T-014 점검 통과 {COUNT['ok'] - start}건")
+
+
 # ---- check.py 음성 대조·결정론 ----
 
 def run_check(repo: Path, report: Path, env=None):
@@ -1143,6 +1525,7 @@ def main(argv: list) -> int:
     jud_spec = (repo / 'docs/spec/judgment.md').read_text(encoding='utf-8').split('\n')
 
     cs_spec = (repo / 'docs/spec/case-schema.md').read_text(encoding='utf-8').split('\n')
+    tc_spec = (repo / 'docs/spec/text-check.md').read_text(encoding='utf-8').split('\n')
 
     check_classification(cls_spec)
     check_signoff_inferred(repo, cls_spec)
@@ -1153,13 +1536,14 @@ def main(argv: list) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         examples_v2 = v2_examples(repo, jud_spec, Path(tmp))
         check_v2_tables(jud_spec)
-        check_v2_examples(repo, jud_spec, met_spec, examples_v2)
+        check_v2_examples(repo, jud_spec, met_spec, examples_v2, tc_spec)
         check_v2_scenes(jud_spec)
         check_v2_probes(jud_spec)
         check_v2_parser(repo, cs_spec)
         check_variants(examples_v2)
         check_t013(jud_spec, met_spec)
-        check_negative_v2(repo, jud_spec, examples_v2)
+        check_negative_v2(repo, jud_spec, examples_v2, tc_spec)
+    check_t014(repo, tc_spec, jud_spec, met_spec)
     check_negative(repo)
     check_determinism(repo)
 

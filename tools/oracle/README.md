@@ -57,14 +57,16 @@
 | 파일 | 스펙 |
 | --- | --- |
 | `classify.py` | classification.md 3.2(JSON 모양), 4.1(트리 순서), 4.2(조건 표), 4.3(행 만들기), 4.4(값), 4.5(문장 틀·문구 표), 4.6(읽은 답 표, 기본값 표시), 4.7(확인 항목), 4.8(AI 과잉 후보), 4.12(추정 표시). 지시문 3.3 |
-| `compare.py` | metrics.md 2절(미검증이면 파일을 읽지 않음), 3.1(항목 순서, 메모리 결과의 기준 행 전부·머리 행), 3.2(속성 표, `items`에 쓰는 항목), 4.1(패턴, 이름 맞추기, 서수 정렬), 4.3(키), 4.4(항목·셈, 미검증 표), 4.5(숫자 모양, 허용 오차, 넘침), 4.8(퍼센트), 4.3·13.2(결과 쪽 키 중복: 항목 `duplicate`, 결과 쪽에 두 번 나온 기준 키는 값 불일치, 중복 항목에 기준과의 차이, `fields[].compared`는 중복 행 포함), 12.3(기준 파일의 `inputs.group` 열) |
-| `judge.py` | judgment.md 2절, 3.2·3.3(schema_version 2, 바이트), 4.2(기본값), 4.3(판정 표), 4.4(확인 표), 4.5·4.6(문장 값, 읽은 문턱 표), 4.7(다음 할 일 표), 4.8(몰림 M-A, `inputs.group`), 4.9(검토 항목, `{breakdown}`, 사람 입력 = 검토 항목 키), 4.10(시간), 5절(정의·대조 결과 검사, T-013). 대조는 `compare.py`의 메모리 결과 |
+| `compare.py` | metrics.md 2절(미검증이면 파일을 읽지 않음), 3.1(항목 순서, 메모리 결과의 기준 행 전부·머리 행), 3.2(속성 표, `items`에 쓰는 항목), 4.1(패턴, 이름 맞추기, 서수 정렬), 4.3(키), 4.4(항목·셈, 미검증 표), 4.5(숫자 모양, 허용 오차, 넘침), 4.8(퍼센트), 4.3·13.2(결과 쪽 키 중복: 항목 `duplicate`, 결과 쪽에 두 번 나온 기준 키는 값 불일치, 중복 항목에 기준과의 차이, `fields[].compared`는 중복 행 포함), 12.3(기준 파일의 `inputs.group` 열), text-check.md 3.1(새 속성 자리)·4.2(체크리스트 대조: 빠진 항목은 값 불일치, `missing_items`, 열 찾기 순서) |
+| `judge.py` | judgment.md 2절, 3.2·3.3(schema_version 2, 바이트), 4.2(기본값), 4.3(판정 표), 4.4(확인 표), 4.5·4.6(문장 값, 읽은 문턱 표), 4.7(다음 할 일 표), 4.8(몰림 M-A, `inputs.group`), 4.9(검토 항목, `{breakdown}`, 사람 입력 = 검토 항목 키), 4.10(시간), 5절(정의·대조 결과 검사, T-013), text-check.md 3.2·5절(`score_gap_max`, 확인 `SCORE`, 판정 행, 읽은 문턱, `rescore_blind`, 점수표만 길). 대조는 `compare.py`의 메모리 결과 |
+| `checklist.py` | text-check.md 4.2(공백 접기, 서수 부분 문자열, `column` 칸이 비면 요구하지 않음, `any`) |
+| `scores.py` | text-check.md 3.1(`scores` 모양), 4.3(점수표·출처 표, 평균 정수 셈, 분포, 건별 비교, 채점자별), 4.4(가림 규칙 셋과 순서). 오류 입력은 멈춘다(코드는 메시지에 적는다) |
 | `oracle_csv.py` | metrics.md 4.2(CSV 읽기), 4.6(정규화) |
-| `oracle_case.py` | case-schema.md 4.3(최상위), 4.4(단계, 답 10개 표, 기본값), 4.5(inputs·compare·thresholds. 문턱은 쓴 글 그대로 둔다), 4.6(값 형식), 4.13(inferred), 10.1·10.2(`inputs.group`: 선택, 빈 값·스칼라 아님·`key`·`compare` 필드와 같음은 멈춘다) |
+| `oracle_case.py` | case-schema.md 4.3(최상위), 4.4(단계, 답 10개 표, 기본값), 4.5(inputs·compare·thresholds. 문턱은 쓴 글 그대로 둔다), 4.6(값 형식), 4.13(inferred), 10.1·10.2(`inputs.group`: 선택, 빈 값·스칼라 아님·`key`·`compare` 필드와 같음은 멈춘다), text-check.md 4.1(`checklist`·`scores`·`score_gap_max`. 오류는 멈추고, 메시지 글은 4.1 표와 같다) |
 | `oracle_yaml.py` | case-schema.md 4.6(null 낱말, yes·no는 글), 4.7(받지 않는 기능), 4.8(인코딩·줄바꿈) |
 | `oracle_json.py` | classification.md 3.3(바이트 규칙, 이스케이프 표). metrics.md 3.3이 같은 표를 쓴다 |
 | `check.py` | ADR 0005 원문 3, T-010 수용 기준 3, T-011 수용 기준 7·8, classification.md 7.1 5(case.yaml 단계 = answers.yaml), ADR 0007 결정 4·ADR 0008 결정 4(판 하나) |
-| `selftest.py` | classification.md 4.10·6.1·6.2·6.5, metrics.md 3.3(변형)·4.1·4.5·4.6·4.8·4.10·12.2·12.3·12.5, case-schema.md 6.1·10.2, metrics.md 13.3(결과 쪽 중복 순서 표), judgment.md 3.2·3.3·4.2~4.9·4.12·5절·6.1~6.6·7.1~7.5 |
+| `selftest.py` | classification.md 4.10·6.1·6.2·6.5, metrics.md 3.3(변형)·4.1·4.5·4.6·4.8·4.10·12.2·12.3·12.5, case-schema.md 6.1·10.2, metrics.md 13.3(결과 쪽 중복 순서 표), judgment.md 3.2·3.3·4.2~4.9·4.12·5절·6.1~6.6·7.1~7.5, text-check.md 3.1·3.2·4.1~4.4·5.1~5.5·6.1·6.2·7.1~7.4(생성기를 7.2 표로 다시 만들어 블록과 비교, PR (b) 모의) |
 
 ### 규칙 값은 코드에 옮겨 적었다
 

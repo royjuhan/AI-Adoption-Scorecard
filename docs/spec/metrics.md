@@ -1717,3 +1717,10 @@ test-engineer(`tests/`, 바꾸는 이유를 PR 본문에): `DuplicateTests` 가�
 - `Each_repeat_is_its_own_duplicate_item`, `Duplicates_across_candidate_files_follow_path_order`, `Duplicates_count_as_candidate_rows_only`: 같은 키가 두 번 이상인 기준 항목은 `mismatch`, `fields[].compared`가 중복 행을 센다.
 - `Compare_duplicate_sample_matches_spec_block`: 테스트는 그대로다. 블록이 바뀌어 core-dev 구현 전에는 실패한다.
 - 새 테스트: 13.3 표(행마다 셈·차이·판정), 줄 순서 뒤집기(결과 행을 거꾸로 해도 `counts`·`fields` 같음).
+
+## 14. T-014 개정 (문장 결과 검증, 초안)
+
+- 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md`다. 이 절은 가리키기만 한다.
+- 체크리스트 대조는 대조의 한 종류다. 빠진 항목이 있으면 값 불일치다(text-check.md 4.2). 셈·정확도·누락률·오류 코드는 이 문서 그대로다.
+- metrics.json에 설정했을 때만 있는 속성: `compare.checklist`, `compare.items[].missing_items`, 최상위 `scores`(text-check.md 3.1). `schema_version`은 1 그대로다(ADR 0008 결정 1).
+- 3.2 속성 표와 4.7 오류 표는 바꾸지 않는다. 새 경로는 text-check.md 3.1 표, 점수 오류는 4.5 표다. 예제 4종 expected는 바이트 그대로다.

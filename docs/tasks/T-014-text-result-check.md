@@ -1,7 +1,7 @@
 # T-014 문장 결과 검증 (빈 곳 2)
 
 - 마일스톤: 빈 곳 카드(`docs/cases-public/README.md` 2절 2, 4절 3항 순서 첫째)
-- 상태: 스펙 작성 중
+- 상태: 스펙 채택(ADR 0005 결정 3, text-check.md 질문 1~12, ADR 0009). PR (a) 스펙·oracle
 
 ## 목표
 

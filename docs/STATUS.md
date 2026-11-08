@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | 0011 | `lead_check.py --mutation-from`: CI `mutation` 잡의 `mutation.json`을 다시 쓴다. 조건: base 도구, `.github/`·`tools/ci/` 변경 없음, base 같음, CI head 트리 = head 트리, status `measured`·`not_applicable`. 아니면 로컬 Stryker. 독립성이 조금 준다(ADR 남은 위험) | juhan 선택 | ADR 0011 PR |
 | 2026-11-08 | 0010 | 방향 수정. A: 도구는 온라인 AI 도구, 분류는 AI 판단 + 규칙 의견(다르면 표시), 검증 숫자는 Core, 오프라인·실행 시 AI 없음은 납품물만(가드는 납품물 템플릿으로 옮길 카드까지 그대로), exe 문답 없음, AI에 보낼 자료는 사용자가 정함(README 한 줄). B: 빈 곳 카드는 M2 뒤, 스펙 200줄, 리뷰 1회·막는 지적만·나머지 `docs/LATER.md`, [재검토]는 CI 빨간불만, oracle은 Core 대조·판정만, effort, M2 넷 순서와 v0.1.0-alpha. 지시문 1절·2절 머리말·1·6·7·3.1·3.3·3.5·5절·9절·10절·13절, CLAUDE.md, `.claude/agents/`. 2절 8·10은 그대로 | juhan 지시 | ADR 0010 PR |
 | 2026-11-08 | 0009 | 문장 결과 검증 두 길(checklist·scores), 판정 SCORE, oracle checklist.py·scores.py, 지시문 3.4(문장 결과 두 길·확인할 항목 없는 행 오류·점수 보류·점수표만·출처 표시 몰림, 조건부 문장 괄호). 12절 예제 표는 PR (b). 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-014 (a) |
 | 2026-11-08 | 0008 | schema_version 기준(받던 입력에서 속성 제거·이름·형식·뜻 변경일 때만 올림), 지시문 5절 judgment.json·3.4 안 본 검토 항목, oracle 판 하나(judge_v1 삭제), CI 설명 문구. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | #16 |

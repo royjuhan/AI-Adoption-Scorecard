@@ -273,9 +273,10 @@ T=$(mktemp -d) && git archive origin/main tools/ci | tar -x -C "$T"     # 이 �
 python3 -I "$T/tools/ci/lead_check.py" --repo . --base origin/main --head origin/<PR 브랜치> [--work <폴더>] [--card T-012]
 ```
 
+- CI mutation 결과 재사용(ADR 0011): `--mutation-from <mutation.json>`(CI 아티팩트 `mutation-result`)을 주면 4의 Stryker 대신 그 파일을 쓴다. base 도구이고, base..head에 `.github/`·`tools/ci/` 변경이 없고, 파일의 `base`가 같고, 파일의 `head` 커밋(GitHub 병합 커밋, 리드 저장소에 `git fetch`)의 트리가 head 트리와 같고, `status`가 `measured`·`not_applicable`일 때만이다. 아니면 WARN에 이유를 적고 로컬에서 돈다. 받는 명령은 ADR 0011.
 - 부트스트랩: main에 `tools/ci`가 없으면(T-010 PR) `git archive origin/<PR 브랜치> tools/ci`로 꺼내 부른다. 결과에 "부트스트랩 … 독립 검사가 아니다" WARN이 나온다.
 - 종료 코드: 0 모두 통과, 1 하나라도 실패, 2 실행할 수 없음(커밋 없음, 병합 충돌 → rebase).
-- 결과: 단계마다 `[PASS|FAIL] <단계>: …` 줄, guard의 FAIL·WARN 줄, 끝 줄 `lead_check: 통과|실패`. 작업 폴더에 `lead-check.json`(`ok`, `base`, `head`, `tools_source`, `sensitive_paths`, `steps[]`)과 `logs/`.
+- 결과: 단계마다 `[PASS|FAIL] <단계>: …` 줄, guard의 FAIL·WARN 줄, 끝 줄 `lead_check: 통과|실패`. 작업 폴더에 `lead-check.json`(`ok`, `base`, `head`, `tools_source`, `sensitive_paths`, `steps[]`, `--mutation-from`이면 `mutation_reuse`)과 `logs/`.
 - 민감한 경로: `.github/**`, `tools/**`, `.config/**`, `.claude/**`, `docs/decisions/**`, `CLAUDE.md`, `docs/README-instructions.md`, `global.json`이 바뀌었으면 목록을 WARN으로 적는다. 그러면 리드는 통과여도 `git diff <base> <head>` 전문을 새 reviewer(그 PR을 만들지 않은 세션)에게 보내고 막는 지적이 없을 때만 머지한다.
 
 하는 일(순서대로):

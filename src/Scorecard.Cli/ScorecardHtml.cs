@@ -1,0 +1,616 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
+using Scorecard.Core.Comparison;
+using Scorecard.Core.Report;
+
+namespace Scorecard.Cli;
+
+// 스코어카드 HTML 한 장. docs/spec/report.md 6절, 데이터 6절 구역 표.
+// 결과 객체(ScorecardResult) 하나만 받아 표시한다. 숫자·판정·문장을 만들지 않는다(지시문 2절 7, ADR 0004 결정 6).
+// 값 이름을 한국어 이름표로 바꾸는 것만 한다(표시). 막대 너비는 셈 그대로 flex 값으로 쓴다(나눗셈 없음).
+// 외부 파일·스크립트·글꼴·그림이 없다. 시각·난수가 없다. 줄바꿈은 LF, UTF-8(BOM 없음).
+internal static class ScorecardHtml
+{
+    public const string FileName = "scorecard.html";
+
+    // 한글·①~④는 그대로 두고 <>&"' 와 제어 문자만 바꾼다.
+    private static readonly HtmlEncoder Encoder = HtmlEncoder.Create(UnicodeRanges.All);
+
+    private static readonly Dictionary<string, (string Label, string Css)> Assignees = new(StringComparer.Ordinal)
+    {
+        ["①"] = ("① 기존 기능", "b1"),
+        ["②"] = ("② 규칙 SW", "b2"),
+        ["②M"] = ("②M 학습 모델", "b2m"),
+        ["③"] = ("③ AI 보조", "b3"),
+        ["④"] = ("④ 사람", "b4"),
+    };
+
+    private static readonly Dictionary<string, string> Actors = new(StringComparer.Ordinal)
+    {
+        ["human"] = "사람",
+        ["ai_each_time"] = "매번 AI",
+        ["program"] = "프로그램",
+        ["mixed"] = "혼합",
+    };
+
+    private static readonly Dictionary<string, string> RowKinds = new(StringComparer.Ordinal)
+    {
+        ["exception_review"] = "④ 예외 검토",
+        ["human_gate"] = "④ 게이트",
+        ["signoff"] = "④ 서명",
+    };
+
+    private static readonly Dictionary<string, (string Label, string Css)> Verdicts = new(StringComparer.Ordinal)
+    {
+        ["pass"] = ("통과", "v-good"),
+        ["conditional"] = ("조건부", "v-warn"),
+        ["hold"] = ("보류", "v-bad"),
+        ["not_verified"] = ("미검증", "v-na"),
+    };
+
+    private static readonly Dictionary<string, (string Label, string Css)> ItemStatuses = new(StringComparer.Ordinal)
+    {
+        ["match"] = ("오차 안", "v-good"),
+        ["mismatch"] = ("불일치", "v-bad"),
+        ["missing"] = ("누락", "v-warn"),
+        ["extra"] = ("추가", "v-na"),
+        ["duplicate"] = ("중복", "v-na"),
+    };
+
+    private static readonly Dictionary<string, string> CheckResults = new(StringComparer.Ordinal)
+    {
+        ["met"] = "충족",
+        ["not_met"] = "못 미침",
+        ["none"] = "없음",
+        ["not_reviewed"] = "사람 확인 전",
+        ["explained"] = "설명됨",
+        ["found"] = "몰림",
+        ["off"] = "쓰지 않음",
+        ["not_measured"] = "재지 않음",
+        ["few"] = "적음",
+        ["one_value"] = "값 하나",
+        ["spread"] = "고름",
+        ["revealed"] = "가림 깨짐",
+    };
+
+    private static readonly Dictionary<string, string> AnswersNotes = new(StringComparer.Ordinal)
+    {
+        ["missing"] = "answers.yaml이 케이스 폴더에 없어 추정 표시와 지금 하는 쪽을 보이지 않는다.",
+        ["invalid"] = "answers.yaml을 읽을 수 없어 추정 표시와 지금 하는 쪽을 보이지 않는다.",
+        ["mismatch"] = "answers.yaml의 단계가 classification.json과 달라 추정 표시와 지금 하는 쪽을 보이지 않는다.",
+    };
+
+    public static byte[] Render(ScorecardResult r)
+    {
+        ArgumentNullException.ThrowIfNull(r);
+        var h = new StringBuilder();
+        h.Append("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n");
+        h.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
+        h.Append("<title>AI 도입 스코어카드 · ").Append(E(r.Case)).Append("</title>\n");
+        h.Append("<style>\n").Append(CssLf).Append("</style>\n</head>\n<body>\n<div class=\"wrap\">\n");
+
+        Header(h, r);
+        Tiles(h, r);
+        h.Append("<div class=\"grid\">\n");
+        Steps(h, r);
+        h.Append("<aside class=\"side\">\n");
+        Proposal(h, r);
+        Gates(h, r);
+        h.Append("</aside>\n</div>\n");
+        Verification(h, r);
+        Todo(h, r);
+        Overview(h, r);
+        h.Append("</div>\n</body>\n</html>\n");
+        return CliJson.Utf8.GetBytes(h.ToString());
+    }
+
+    private static void Header(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<header>\n<div>\n<h1>AI 도입 스코어카드 <span class=\"case\">").Append(E(r.Case)).Append("</span></h1>\n");
+        if (r.Task is not null)
+        {
+            h.Append("<div class=\"task\">").Append(E(r.Task)).Append("</div>\n");
+        }
+
+        h.Append("</div>\n<div class=\"meta\">scorecard.json schema ").Append(I(ScorecardJson.SchemaVersion))
+            .Append("<br>같은 입력이면 같은 결과 · 숫자는 Scorecard.Core</div>\n</header>\n");
+        if (AnswersNotes.TryGetValue(r.Answers, out var note))
+        {
+            h.Append("<p class=\"notice\">").Append(E(note)).Append("</p>\n");
+        }
+    }
+
+    // 1구역 요약.
+    private static void Tiles(StringBuilder h, ScorecardResult r)
+    {
+        var s = r.Summary;
+        var v = r.Verification;
+        h.Append("<section class=\"tiles\" id=\"zone-1\">\n");
+
+        h.Append("<div class=\"tile\">\n<div class=\"q\">소프트웨어로 대체할 수 있는 단계</div>\n<div class=\"big\">")
+            .Append(I(s.Software)).Append("<small>/ ").Append(I(s.Steps)).Append("단계</small></div>\n<div class=\"stack\" aria-label=\"담당 구성\">");
+        foreach (var a in s.Assignees.Where(a => a.Count > 0))
+        {
+            h.Append("<span class=\"").Append(Assignees[a.Assignee].Css).Append("-fill\" style=\"flex:").Append(I(a.Count)).Append("\"></span>");
+        }
+
+        h.Append("</div>\n<div class=\"legend\">");
+        foreach (var a in s.Assignees.Where(a => a.Count > 0))
+        {
+            h.Append("<span><i class=\"").Append(Assignees[a.Assignee].Css).Append("-fill\"></i>").Append(E(Assignees[a.Assignee].Label)).Append(' ').Append(I(a.Count)).Append("</span>");
+        }
+
+        h.Append("</div>\n</div>\n");
+
+        h.Append("<div class=\"tile\">\n<div class=\"q\">정확한가</div>\n<div class=\"big\">");
+        if (v.AccuracyPct is { } accuracy)
+        {
+            h.Append(D(accuracy)).Append('%');
+        }
+        else
+        {
+            h.Append("<span class=\"na\">").Append(v.Status == "not_checked" ? "검증 전" : "미검증").Append("</span>");
+        }
+
+        if (v.Verdict is not null)
+        {
+            h.Append(Verdict(v.Verdict));
+        }
+
+        h.Append("</div>\n<div class=\"sub\">")
+            .Append(E(v.VerdictReason ?? (v.Status == "not_checked" ? "자료를 넣고 check를 돌리면 채워진다." : "검증 자료가 없다.")))
+            .Append("</div>\n</div>\n");
+
+        h.Append("<div class=\"tile\">\n<div class=\"q\">시간이 줄었나</div>\n<div class=\"big na\">");
+        h.Append(v.Time is { Result: "met" } ? "줄었다" : v.Time is { Result: "not_met" } ? "안 줄었다" : "시간 측정 필요");
+        h.Append("</div>\n<div class=\"sub\">").Append(E(v.Time?.Reason ?? "건당 시간이 없다.")).Append(" 절약 추정은 시간을 잰 뒤에 낸다.</div>\n</div>\n");
+
+        h.Append("<div class=\"tile\">\n<div class=\"q\">AI가 꼭 필요했나</div>\n<div class=\"big\">").Append(I(s.AiAssist))
+            .Append("<small>단계</small></div>\n<div class=\"sub\">실행 시 AI 보조(③) ").Append(I(s.AiAssist))
+            .Append("단계. AI 과잉 후보 ").Append(I(s.AiOveruse)).Append("단계. AI 판단과 규칙 의견이 다른 단계 ").Append(I(s.Differs)).Append("개.</div>\n</div>\n");
+        h.Append("</section>\n");
+    }
+
+    // 2구역 단계 표.
+    private static void Steps(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<section class=\"panel\" id=\"zone-2\">\n<h2>단계별 담당<span>맞음 ")
+            .Append(I(r.Summary.Kept)).Append(" · 바뀜 ").Append(I(r.Summary.Changed)).Append(" · 확인은 --review 파일로</span></h2>\n<div class=\"steps\">\n");
+        h.Append("<div class=\"row head\"><div>#</div><div>단계</div><div>지금 → 제안</div><div>근거</div><div class=\"ok\">확인</div></div>\n");
+        foreach (var s in r.Steps)
+        {
+            h.Append("<div class=\"row").Append(s.Differs ? " differs" : string.Empty).Append("\">\n");
+            h.Append("<div class=\"num\">").Append(I(s.Number)).Append("</div>\n");
+            h.Append("<div class=\"name\">").Append(E(s.Name)).Append("<div class=\"src\">")
+                .Append(s.Source == "ai" ? "<span class=\"chip ai\">AI 판단</span>" : "<span class=\"chip\">규칙 트리</span>");
+            if (s.Source == "ai")
+            {
+                h.Append(" <span class=\"chip\">규칙 의견 ").Append(E(s.RuleOpinion.Assignee)).Append(' ').Append(E(s.RuleOpinion.Rule)).Append("</span>");
+            }
+
+            if (s.Differs)
+            {
+                h.Append(" <span class=\"chip diff\">규칙 의견과 다름</span>");
+            }
+
+            h.Append("</div></div>\n<div class=\"move\">");
+            if (s.CurrentActor is not null)
+            {
+                h.Append("<span class=\"chip").Append(s.CurrentActor == "human" ? " human" : string.Empty).Append("\">")
+                    .Append(E(Actors.GetValueOrDefault(s.CurrentActor, s.CurrentActor))).Append("</span><span class=\"arrow\">→</span>");
+            }
+
+            h.Append(Badge(s.Assignee)).Append("</div>\n<div class=\"reason\">").Append(E(s.Reason));
+            if (s.Defaults.Count > 0)
+            {
+                h.Append(" <span class=\"chip mark\">기본값 ").Append(E(string.Join(", ", s.Defaults))).Append("</span>");
+            }
+
+            if (s.Inferred.Count > 0)
+            {
+                h.Append(" <span class=\"chip mark ai\">AI 추정 ").Append(E(string.Join(", ", s.Inferred))).Append("</span>");
+            }
+
+            h.Append("</div>\n");
+            foreach (var x in s.Extra)
+            {
+                h.Append("<div class=\"extra\"><span><span class=\"badge b4\">").Append(E(RowKinds.GetValueOrDefault(x.Kind, x.Kind)))
+                    .Append("</span></span><span class=\"reason\">").Append(E(x.Reason)).Append("</span></div>\n");
+            }
+
+            h.Append("<div class=\"ok\">").Append(Review(s.Review)).Append("</div>\n");
+            h.Append("</div>\n");
+        }
+
+        h.Append("</div>\n</section>\n");
+    }
+
+    private static string Review(StepReview review) => review.Status switch
+    {
+        "kept" => "<span class=\"btn on\">맞음</span>",
+        "changed" => "<span class=\"btn on chg\">바뀜 → " + E(review.Assignee ?? string.Empty) + "</span><div class=\"why\">" + E(review.Reason ?? string.Empty) + "</div>",
+        _ => "<span class=\"btn\">확인 전</span>",
+    };
+
+    // 3구역 제안 카드.
+    private static void Proposal(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<div class=\"card prop\" id=\"zone-3\">\n<div class=\"k\">제안 · 먼저 만들 단계</div>\n");
+        if (r.Proposal is { } p)
+        {
+            h.Append("<h3>").Append(I(p.Step)).Append("단계를 만들까요?</h3>\n<p>").Append(E(p.Name)).Append(". ").Append(E(p.Reason)).Append("</p>\n");
+            h.Append("<p class=\"cmd\">= <code>scorecard build ").Append(E(r.Case)).Append("</code> (의뢰서 번들, M2-4)</p>\n");
+        }
+        else
+        {
+            h.Append("<h3>만들 ② 단계가 없다</h3>\n<p>소프트웨어로 대체할 단계가 없다.</p>\n");
+        }
+
+        h.Append("</div>\n");
+    }
+
+    // 5구역 사람 게이트와 남는 위험.
+    private static void Gates(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<div class=\"card info\" id=\"zone-5\">\n<div class=\"k\">사람 게이트와 남는 위험</div>\n");
+        if (r.Gates.Count == 0)
+        {
+            h.Append("<p>사람 게이트가 없다.</p>\n");
+        }
+        else
+        {
+            h.Append("<ul>");
+            foreach (var g in r.Gates)
+            {
+                h.Append("<li><b>").Append(I(g.Step)).Append("단계</b> ").Append(E(RowKinds.GetValueOrDefault(g.Kind, g.Kind))).Append(": ").Append(E(g.Reason)).Append("</li>");
+            }
+
+            h.Append("</ul>\n");
+        }
+
+        if (r.Risks.Count > 0)
+        {
+            h.Append("<ul class=\"risks\">");
+            foreach (var n in r.Risks)
+            {
+                h.Append("<li>").Append(E(n.Text)).Append("</li>");
+            }
+
+            h.Append("</ul>\n");
+        }
+
+        h.Append("</div>\n");
+    }
+
+    // 4구역 검증.
+    private static void Verification(StringBuilder h, ScorecardResult r)
+    {
+        var v = r.Verification;
+        h.Append("<section class=\"panel verify\" id=\"zone-4\">\n<h2>검증");
+        if (v.Counts is { } head)
+        {
+            h.Append("<span>기준 ").Append(I(head.Reference)).Append("건 ↔ 결과 ").Append(I(head.Candidate)).Append("건</span>");
+        }
+
+        h.Append("</h2>\n<div class=\"vbody\">\n<div>\n");
+        if (v.Counts is { } c)
+        {
+            h.Append("<div class=\"counts\">");
+            Count(h, c.Match, "일치", string.Empty);
+            Count(h, c.Mismatch, "불일치", " bad");
+            Count(h, c.Missing, "누락", " warn");
+            Count(h, c.Extra, "추가", " na");
+            h.Append("</div>\n<div class=\"bar\" aria-label=\"대조 결과 비율\">");
+            Bar(h, c.Match, "fill-good");
+            Bar(h, c.Mismatch, "fill-bad");
+            Bar(h, c.Missing, "fill-warn");
+            Bar(h, c.Extra, "fill-na");
+            h.Append("</div>\n<div class=\"note\">일치 ").Append(I(c.Match)).Append("건 중 ").Append(I(c.Within)).Append("건은 허용오차 안의 차이. 누락률 ")
+                .Append(v.MissingRatePct is { } m ? D(m) + "%" : "—").Append(".</div>\n");
+        }
+        else
+        {
+            h.Append("<p class=\"note\">").Append(E(v.Status == "not_checked" ? "아직 check를 돌리지 않았다." : "대조할 자료가 없다(미검증).")).Append("</p>\n");
+        }
+
+        if (v.Verdict is not null)
+        {
+            h.Append("<div class=\"pattern\"><b>판정").Append(Verdict(v.Verdict)).Append("</b> ").Append(E(v.VerdictReason ?? string.Empty));
+            if (v.Thresholds is { } t)
+            {
+                h.Append("<br>문턱: 정확도 ").Append(D(t.AccuracyMin)).Append("% 이상, 누락률 ").Append(D(t.MissingMax)).Append("% 이하");
+            }
+
+            h.Append("</div>\n");
+        }
+
+        if (v.Checks.Count > 0)
+        {
+            h.Append("<ul class=\"checks\">");
+            foreach (var check in v.Checks)
+            {
+                h.Append("<li><span class=\"chip\">").Append(E(check.Rule)).Append(' ').Append(E(CheckResults.GetValueOrDefault(check.Result, check.Result)))
+                    .Append("</span> ").Append(E(check.Reason)).Append("</li>");
+            }
+
+            h.Append("</ul>\n");
+        }
+
+        h.Append("</div>\n<div class=\"diffs\">\n");
+        if (v.Items.Count > 0)
+        {
+            h.Append("<div class=\"d head\"><div>키</div><div>항목</div><div>기준 <span class=\"arrow\">→</span> 결과</div><div class=\"res\">결과</div></div>\n");
+            foreach (var item in v.Items)
+            {
+                var (label, css) = ItemStatuses.GetValueOrDefault(item.Status, (item.Status, "v-na"));
+                var diffs = item.Differences.Count == 0 ? new FieldDifference?[] { null } : item.Differences.Select(d => (FieldDifference?)d).ToArray();
+                foreach (var d in diffs)
+                {
+                    h.Append("<div class=\"d\"><div class=\"key mono\">").Append(E(item.Key)).Append("</div><div class=\"field mono\">")
+                        .Append(E(d?.Field ?? "—")).Append("</div><div class=\"vals mono\">");
+                    if (d is not null)
+                    {
+                        h.Append(E(d.Reference)).Append(" <span class=\"arrow\">→</span> ").Append(E(d.Candidate));
+                    }
+                    else
+                    {
+                        h.Append(item.Status == "missing" ? "있음 <span class=\"arrow\">→</span> 없음" : "없음 <span class=\"arrow\">→</span> 있음");
+                    }
+
+                    h.Append("</div><div class=\"res\"><span class=\"verdict ").Append(css).Append("\">").Append(E(label)).Append("</span></div></div>\n");
+                }
+            }
+
+            if (v.ItemsHidden > 0)
+            {
+                h.Append("<div class=\"note\">나머지 ").Append(I(v.ItemsHidden)).Append("개 항목은 metrics.json에 있다.</div>\n");
+            }
+        }
+        else if (v.Counts is not null)
+        {
+            h.Append("<p class=\"note\">차이가 있는 항목이 없다.</p>\n");
+        }
+
+        h.Append("</div>\n</div>\n</section>\n");
+    }
+
+    // 6구역 다음 할 일.
+    private static void Todo(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<section class=\"panel todo\" id=\"zone-6\">\n<h2>다음 할 일</h2>\n");
+        if (r.Todo.Count == 0)
+        {
+            h.Append("<p class=\"pad\">남은 할 일이 없다.</p>\n");
+        }
+        else
+        {
+            h.Append("<ol>");
+            foreach (var n in r.Todo)
+            {
+                h.Append("<li>").Append(E(n.Text)).Append("</li>");
+            }
+
+            h.Append("</ol>\n");
+        }
+
+        h.Append("</section>\n");
+    }
+
+    // 7구역 업무 개요와 입력 기록.
+    private static void Overview(StringBuilder h, ScorecardResult r)
+    {
+        h.Append("<section class=\"panel overview\" id=\"zone-7\">\n<h2>업무 개요와 입력 기록</h2>\n<div class=\"pad\">\n");
+        if (r.Intake is not null)
+        {
+            h.Append("<div class=\"label\">사용자가 말한 그대로(intake.md)</div>\n<div class=\"intake\">").Append(E(r.Intake)).Append("</div>\n");
+        }
+
+        h.Append("<div class=\"label\">단계 흐름</div>\n<ol class=\"flow\">");
+        foreach (var s in r.Steps)
+        {
+            h.Append("<li>").Append(E(s.Name)).Append(' ').Append(Badge(s.Assignee)).Append("</li>");
+        }
+
+        h.Append("</ol>\n<div class=\"label\">입력 SHA-256</div>\n");
+        Hashes(h, r.Inputs, "입력 파일이 없다.");
+        h.Append("<div class=\"label\">결과 파일 SHA-256</div>\n");
+        Hashes(h, r.Results, "결과 파일이 없다.");
+        if (r.Review is { } review)
+        {
+            h.Append("<div class=\"label\">확인 파일 SHA-256</div>\n");
+            Hashes(h, [review], string.Empty);
+        }
+
+        h.Append("<p class=\"foot\">이 파일은 scorecard.json과 같은 결과 객체에서 만들었다. 인쇄하면 PDF가 된다.</p>\n</div>\n</section>\n");
+    }
+
+    private static void Hashes(StringBuilder h, IReadOnlyList<FileHash> hashes, string empty)
+    {
+        if (hashes.Count == 0)
+        {
+            h.Append("<p class=\"note\">").Append(E(empty)).Append("</p>\n");
+            return;
+        }
+
+        h.Append("<ul class=\"hashes\">");
+        foreach (var x in hashes)
+        {
+            h.Append("<li><code>").Append(E(x.Path)).Append("</code> <span class=\"mono hash\">").Append(E(x.Sha256)).Append("</span></li>");
+        }
+
+        h.Append("</ul>\n");
+    }
+
+    private static void Count(StringBuilder h, int value, string label, string css) =>
+        h.Append("<div class=\"cnt").Append(css).Append("\"><b>").Append(I(value)).Append("</b><span>").Append(label).Append("</span></div>");
+
+    private static void Bar(StringBuilder h, int value, string css)
+    {
+        if (value > 0)
+        {
+            h.Append("<span class=\"").Append(css).Append("\" style=\"flex:").Append(I(value)).Append("\"></span>");
+        }
+    }
+
+    private static string Badge(string assignee) =>
+        Assignees.TryGetValue(assignee, out var a)
+            ? "<span class=\"badge " + a.Css + "\">" + E(a.Label) + "</span>"
+            : "<span class=\"badge\">" + E(assignee) + "</span>";
+
+    private static string Verdict(string verdict)
+    {
+        var (label, css) = Verdicts.GetValueOrDefault(verdict, (verdict, "v-na"));
+        return "<span class=\"verdict " + css + "\">" + E(label) + "</span>";
+    }
+
+    private static string E(string text) => Encoder.Encode(text);
+
+    private static string I(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private static string D(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+
+    // 시안(M2-스코어카드-시안.html)의 스타일. 390·900·1236px에서 가로 스크롤이 없게 한다.
+    // 원본 줄바꿈(Windows 체크아웃의 CRLF)과 상관없이 LF로 쓴다(결정론).
+    private static readonly string CssLf = Css.ReplaceLineEndings("\n");
+
+    private const string Css = """
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;
+--c1:#0f766e;--c1bg:#e6f6f4;--c2:#1d5bd8;--c2bg:#eaf1ff;--c2m:#0e7490;--c2mbg:#e4f5fa;--c3:#7c3aed;--c3bg:#f3edff;--c4:#b45309;--c4bg:#fff4e5;
+--good:#15803d;--goodbg:#e8f7ee;--warn:#b45309;--warnbg:#fff4e5;--bad:#c2410c;--badbg:#fff0ea;--na:#6b7280;--nabg:#f1f2f4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans CJK KR","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:14px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 28px 32px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.2px}
+.case{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin-left:8px;vertical-align:3px;color:var(--ink2)}
+.task{color:var(--ink2)}
+.meta{text-align:right;color:var(--ink3);font-size:12px;line-height:1.7}
+.notice{background:var(--warnbg);color:#7a3e05;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 14px}
+.tiles{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.tile .q{font-size:12.5px;color:var(--ink2);font-weight:600;margin-bottom:6px}
+.tile .big{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.tile .big small{font-size:14px;font-weight:600;color:var(--ink2);margin-left:4px}
+.tile .sub{font-size:12.5px;color:var(--ink2);margin-top:8px}
+.na{color:var(--na)}
+.big.na{font-size:22px}
+.verdict{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:5px;white-space:nowrap;letter-spacing:0}
+.v-bad{color:var(--bad);background:var(--badbg)}.v-good{color:var(--good);background:var(--goodbg)}.v-warn{color:var(--warn);background:var(--warnbg)}.v-na{color:var(--na);background:var(--nabg)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line2)}
+.stack span{display:block;height:100%}
+.legend{display:flex;gap:4px 10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.b1-fill{background:var(--c1)}.b2-fill{background:var(--c2)}.b2m-fill{background:var(--c2m)}.b3-fill{background:var(--c3)}.b4-fill{background:var(--c4)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel h2{font-size:15px;margin:0;padding:14px 16px 10px}
+.panel h2 span{font-weight:400;color:var(--ink3);font-size:12.5px;margin-left:6px}
+.steps .row{display:grid;grid-template-columns:24px 190px 136px minmax(0,1fr) 116px;column-gap:12px;padding:11px 14px;border-bottom:1px solid var(--line2);align-items:start}
+.steps .head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-top:8px;padding-bottom:8px;font-size:12px;color:var(--ink3);font-weight:600}
+.steps .num{color:var(--ink3);font-variant-numeric:tabular-nums}
+.steps .name{font-weight:600;min-width:0}
+.steps .src{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;font-weight:400}
+.steps .move{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.steps .move .arrow{display:none}
+.steps .reason{color:var(--ink2);font-size:13px;min-width:0}
+.steps .ok{text-align:right;grid-column:5;grid-row:1}
+.steps .ok .why{font-size:12px;color:var(--ink2);margin-top:4px;text-align:left}
+.steps .extra{grid-column:3 / -1;display:grid;grid-template-columns:136px minmax(0,1fr);column-gap:12px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.steps .extra .reason{font-size:12.5px}
+.steps .row.differs{background:#fffaf5}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.b1{color:var(--c1);background:var(--c1bg)}.b2{color:var(--c2);background:var(--c2bg)}.b2m{color:var(--c2m);background:var(--c2mbg)}.b3{color:var(--c3);background:var(--c3bg)}.b4{color:var(--c4);background:var(--c4bg)}
+.chip{display:inline-block;font-size:11.5px;color:var(--ink2);background:var(--nabg);border-radius:5px;padding:1px 6px;font-weight:400}
+.chip.human{color:var(--c4);background:var(--c4bg)}
+.chip.ai{color:var(--c3);background:var(--c3bg)}
+.chip.diff{color:var(--bad);background:var(--badbg);font-weight:700}
+.chip.mark{margin-top:2px}
+.btn{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--ink3);background:#fff;white-space:nowrap}
+.btn.on{border-color:#cfd8e6;background:#f4f7fb;color:var(--ink)}
+.btn.chg{border-color:var(--c4);color:var(--c4);background:var(--c4bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card.prop{border:2px solid var(--c2)}
+.card .k{font-size:11.5px;font-weight:700;color:var(--c2);letter-spacing:.2px;margin-bottom:4px}
+.card.info .k{color:var(--c4)}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{margin:0 0 8px;color:var(--ink2);font-size:13px}
+.card .cmd{font-size:12px;margin:8px 0 0}
+.card ul{margin:4px 0 0;padding-left:16px;color:var(--ink2);font-size:12.5px}
+.card li{margin-bottom:3px}
+.card ul.risks{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);list-style:square}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:#f3f4f6;border-radius:4px;padding:1px 5px;color:#333;overflow-wrap:anywhere}
+.verify,.todo,.overview{margin-top:16px}
+.vbody{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:0 16px 16px}
+.vbody>div{min-width:0}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:2px}
+.cnt{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.cnt b{display:block;font-size:20px;line-height:1.2}
+.cnt span{font-size:11.5px;color:var(--ink2)}
+.cnt.bad b{color:var(--bad)}.cnt.warn b{color:var(--warn)}.cnt.na b{color:var(--na)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;background:var(--line2)}
+.bar span{display:block;height:100%}
+.fill-good{background:#7fb07f}.fill-bad{background:#e07a52}.fill-warn{background:#e0a93f}.fill-na{background:#b8bcc4}
+.note{font-size:11.5px;color:var(--ink2);margin-top:6px}
+.pattern{margin-top:12px;border-radius:8px;background:var(--warnbg);color:#7a3e05;font-size:12.5px;padding:9px 11px}
+.pattern .verdict{vertical-align:0}
+.checks{margin:10px 0 0;padding-left:0;list-style:none;font-size:12.5px;color:var(--ink2)}
+.checks li{margin-bottom:5px}
+.diffs .d{display:grid;grid-template-columns:64px 120px minmax(0,1fr) 84px;column-gap:10px;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:12.5px;align-items:center}
+.diffs .d>div{min-width:0}
+.diffs .d.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3);font-weight:600}
+.diffs .res{text-align:right}
+.diffs .res .verdict{margin:0;vertical-align:0}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.arrow{color:var(--ink3);margin:0 4px}
+.todo ol{margin:0;padding:0 16px 14px 36px;color:var(--ink2);font-size:13px}
+.todo li{margin-bottom:4px}
+.pad{padding:0 16px 16px}
+.label{font-size:12px;font-weight:700;color:var(--ink3);margin:10px 0 4px}
+.intake{white-space:pre-wrap;color:var(--ink2);font-size:13px;background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:10px 12px}
+.flow{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.flow li{margin-bottom:3px}
+.hashes{margin:0;padding-left:0;list-style:none;font-size:12px;color:var(--ink2)}
+.hashes li{margin-bottom:4px}
+.hash{word-break:break-all;font-size:11.5px;color:var(--ink3)}
+.foot{font-size:11.5px;color:var(--ink3);margin:12px 0 0}
+@media (max-width:1040px){
+.grid{grid-template-columns:minmax(0,1fr)}
+.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
+.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vbody{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+.wrap{padding:16px 16px 24px}
+h1{font-size:19px}
+.case{margin-left:0}
+.meta{text-align:left}
+.tile{padding:12px 14px}
+.tile .big{font-size:24px}
+.steps .head{display:none}
+.steps .row{grid-template-columns:20px minmax(0,1fr);grid-template-areas:"num name" ". move" ". reason";row-gap:6px;padding:12px 14px}
+.steps .num{grid-area:num;padding-top:1px}
+.steps .name{grid-area:name;font-size:14.5px}
+.steps .move{grid-area:move;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px}
+.steps .move .arrow{display:inline;margin:0}
+.steps .reason{grid-area:reason}
+.steps .extra{grid-column:2;display:block;margin-top:2px;padding:8px 10px;border:0;border-radius:8px;background:#f6f7f9}
+.steps .extra .reason{display:inline;margin-left:6px}
+.steps .ok{grid-column:2;grid-row:auto;text-align:left}
+.diffs .d.head{display:none}
+.diffs .d{grid-template-columns:64px minmax(0,1fr) auto;grid-template-areas:"key field res" "key vals res";row-gap:2px}
+.diffs .d .key{grid-area:key}
+.diffs .d .field{grid-area:field}
+.diffs .d .vals{grid-area:vals}
+.diffs .d .res{grid-area:res}
+}
+@media (max-width:420px){
+.tiles{grid-template-columns:minmax(0,1fr);gap:8px}
+.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{body{background:#fff}.wrap{max-width:none}}
+
+""";
+}

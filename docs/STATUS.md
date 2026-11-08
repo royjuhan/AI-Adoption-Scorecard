@@ -23,8 +23,9 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
-- 진행 중: M2-2 스킬 `/scorecard`(T-019, PR 둘: (a) 스펙·oracle, (b) Core·expected·스킬). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23)은 끝났다.
-- 다음: M2-2 스킬 `/scorecard` → M2-3 HTML 스코어카드 → M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
+- 진행 중: M2-3 HTML 스코어카드(T-020). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23), M2-2(#24, #27)는 끝났다.
+- 다음: M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
+- 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
 - 기록: `docs/cases-public/README.md`의 공개 고객 사례 회사 이름은 juhan 직접 지시(2026-11-07 15:19)로 이 파일에만 둔다. 회사 자료(2절 10)가 아니라 공개된 사례의 이름이다. `examples/`·테스트·스펙에는 넣지 않는다. 2절 8·10과 13절은 그대로다.
@@ -55,6 +56,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-016 lead_check CI mutation 재사용 | #21 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0011. tools/ci 단위 테스트 168. 리뷰 1회 막는 지적 없음 |
 | T-017 sweeper | #22 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0012. 스펙 6개 200줄 이내 + `docs/spec/data/`, `spikes/` 삭제. 테스트 삭제 0. 리뷰 1회 막는 지적 없음 |
 | T-018 M2-1 명령 틀 | #23 | 2026-11-08 | 2084 | Cli 새 코드(lead_check 로컬 측정, measured) | 리뷰 1회 막는 지적 없음. Cli N6 허용 목록 `Scorecard.Core`(T-018 9). CI mutation 재사용은 이 환경에서 아티팩트 저장소가 막혀 로컬로 돌림 |
+| T-019a M2-2 schema 2 스펙·oracle | #24 | 2026-11-08 | 2084 | 해당 없음(src 변경 없음) | ADR 0013, juhan 확인(사용자 확인은 스킬 대화, 게이트는 트리). 리뷰 막는 지적 1(SIGNOFF+AI 비④ 게이트) 고침 |
+| T-019b M2-2 Core·expected·스킬 | #27 | 2026-11-08 | 2153 | 바뀐 Core 파일 합계 91.85%(base 91.38%) | ADR 0014. 민감 경로 전체 diff 리뷰 막는 지적 없음. #25·#26은 브랜치 기록·커밋 범위로 regression-guard에 걸려 닫고 다시 엶 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 
@@ -64,6 +67,18 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | T-020 M2-3 | 1 렌더러 자리 | 결과 객체는 Core(`Scorecard.Core.Report`, `ScorecardBuilder`·`ScorecardJson`), HTML 렌더러는 Cli(`ScorecardHtml`, 결과 객체만 받아 표시). ADR 0004 결정 6 규칙 8 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 2 `open` 입력 | 출력 폴더의 저장된 결과 JSON을 읽는다. 다시 분류·대조·판정하지 않는다. `schema_version`이 다르면 `result` 오류(2) | T-020 |
+| 2026-11-08 | T-020 M2-3 | 3 추정·지금 하는 쪽 | 케이스 폴더 `answers.yaml`에서 읽는다. 단계가 classification.json과 다르면 쓰지 않고 `answers` 상태(`missing`·`invalid`·`mismatch`)만 적는다 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 4 확인 파일 | YAML `steps: [{number, answer: keep\|change, assignee, reason}]`. 사유 없는 바꾸기는 확정하지 않고 입력 오류(2), 아무것도 쓰지 않는다 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 5 확인 뒤 | 기록만(`review`, 셈, 위험, 할 일). 다시 판정하지 않는다 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 6 출력 폴더 | `<케이스>/out` 그대로(덮어씀). 입력·결과·확인 파일 SHA-256을 결과 객체와 HTML 7구역에 기록. 실행마다 새 폴더는 LATER | T-020 |
+| 2026-11-08 | T-020 M2-3 | 7 schema_version | 스코어카드 결과 객체 1(새 문서) | T-020 |
+| 2026-11-08 | T-020 M2-3 | 8 제안 | ②·②M 가운데 지금 하는 쪽 `ai_each_time` → `human` → `mixed` → `program` → 모름, 같으면 번호 작은 단계 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 9 검증 항목 | 앞 20개만 보이고 나머지는 `items_hidden` 수 | T-020 |
+| 2026-11-08 | T-020 M2-3 | 10 골든 | 공개 예제 5종 + `ai-judgment`의 `scorecard.json`·`scorecard.html`을 tests TestData에(expected migration 아님) | T-020 |
+| 2026-11-08 | T-020 M2-3 | 11 G2·G3 | 명령 대상 `cli-open-case-valid`(샘플 `case-valid`, start → check → open) | T-020 |
+| 2026-11-08 | T-020 M2-3 | 12 화면 확인 | `tools/html-check/check.mjs`(Playwright) 390·900·1236px `scrollWidth <= innerWidth`, 외부 요청 없음. CI 잡은 LATER | T-020 |
 | 2026-11-08 | T-019 M2-2 | 1 AI 판단 입력 | 단계 항목 선택 키 `ai: {assignee, reason}`. 담당 `①` `②` `②M` `③` `④`, 근거는 비지 않은 문자열(case-schema 4.14) | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 2 ②M | 학습 모델(결정론): 미리 학습해 고정한 모델, 실행 때 AI 없음. ②의 한 갈래라 규칙 의견과 비교할 때 ② | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 3 출력 모양 | 단계마다 `name` 뒤 `source`(`ai`·`rule`), `rule_opinion {assignee, rule}`, `differs`. AI 단계의 `step` 행은 `rule` `AI`, 근거 그대로, 표시 없음 | T-019 (a) |

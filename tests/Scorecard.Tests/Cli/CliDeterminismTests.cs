@@ -44,7 +44,9 @@ public class CliDeterminismTests
 
         Assert.Empty(FolderSnapshot.Compare(before, FolderSnapshot.Take(work.Case, exclude: "out"), compareTime: true));
         var added = FolderSnapshot.Take(work.Case).Select(e => e.Path).Except(before.Select(e => e.Path)).ToArray();
-        Assert.Equal(explicitOut ? [] : ["out", "out/classification.json", "out/judgment.json", "out/metrics.json"], added.Order(StringComparer.Ordinal));
+        Assert.Equal(
+            explicitOut ? [] : ["out", "out/classification.json", "out/judgment.json", "out/metrics.json", "out/scorecard.html", "out/scorecard.json"],
+            added.Order(StringComparer.Ordinal));
     }
 
     // 사본 하나에서 start·check·내부 명령 셋을 돌려 표준 출력과 출력 파일을 모은다. 사본마다 다른 임시 경로다.

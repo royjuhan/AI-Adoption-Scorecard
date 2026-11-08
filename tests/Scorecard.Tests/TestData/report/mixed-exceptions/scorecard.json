@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "command": "open",
+  "files": [
+    "scorecard.json",
+    "scorecard.html"
+  ],
+  "case": "mixed-exceptions",
+  "task": "자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다",
+  "intake": "문의가 메일로 하루 15통쯤 온다. 형식이 정해져 있지 않다.\n메일이 오면 접수 기록을 남긴다. 그다음 문의 유형을 나누고 답변 초안을 쓴다.\n\n유형이 애매한 메일이 꽤 있다. 답변은 밖으로 나가므로 틀리면 곤란하다.\n처리가 끝나면 결과를 표에 기록한다.\n\n아직 AI를 써 보지 않았다. 비교할 결과 자료도 없다.",
+  "answers": "used",
+  "summary": {
+    "steps": 4,
+    "software": 2,
+    "assignees": [
+      {
+        "assignee": "①",
+        "count": 0
+      },
+      {
+        "assignee": "②",
+        "count": 2
+      },
+      {
+        "assignee": "②M",
+        "count": 0
+      },
+      {
+        "assignee": "③",
+        "count": 2
+      },
+      {
+        "assignee": "④",
+        "count": 0
+      }
+    ],
+    "differs": 0,
+    "ai_assist": 2,
+    "ai_overuse": 0,
+    "kept": 0,
+    "changed": 0,
+    "saving": "time_needed"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "메일 접수 기록",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 2,
+      "name": "문의 유형 분류",
+      "source": "rule",
+      "assignee": "③",
+      "rule": "Q3",
+      "reason": "입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 3,
+      "name": "답변 초안 쓰기",
+      "source": "rule",
+      "assignee": "③",
+      "rule": "Q3",
+      "reason": "입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 4,
+      "name": "처리 결과 기록",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매일 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    }
+  ],
+  "proposal": {
+    "step": 1,
+    "name": "메일 접수 기록",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "verification": {
+    "status": "not_verified",
+    "reason": "no_inputs",
+    "counts": null,
+    "accuracy_pct": null,
+    "missing_rate_pct": null,
+    "verdict": "not_verified",
+    "verdict_rule": "NOT_VERIFIED",
+    "verdict_reason": "검증 자료(case.yaml inputs)가 없어 미검증.",
+    "thresholds": {
+      "accuracy_min": 95,
+      "missing_max": 2,
+      "time_must_drop": true
+    },
+    "time": null,
+    "checks": [],
+    "items": [],
+    "items_hidden": 0
+  },
+  "gates": [
+    {
+      "step": 3,
+      "name": "답변 초안 쓰기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    }
+  ],
+  "risks": [
+    {
+      "key": "ai_assist",
+      "step": 2,
+      "text": "2단계 문의 유형 분류: 실행 시 AI 보조다. 자동 승인하지 않고 사람이 확인한다."
+    },
+    {
+      "key": "ai_assist",
+      "step": 3,
+      "text": "3단계 답변 초안 쓰기: 실행 시 AI 보조다. 자동 승인하지 않고 사람이 확인한다."
+    }
+  ],
+  "todo": [
+    {
+      "key": "add_data",
+      "step": 0,
+      "text": "기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다."
+    },
+    {
+      "key": "add_compare",
+      "step": 0,
+      "text": "case.yaml compare에 대조할 열과 허용 오차를 적는다."
+    },
+    {
+      "key": "measure_time",
+      "step": 0,
+      "text": "건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다."
+    },
+    {
+      "key": "confirm_thresholds",
+      "step": 0,
+      "text": "문턱에 기본값을 썼다(accuracy_min 95, missing_max 2, time_must_drop true). 맞는지 확인하고 case.yaml thresholds에 적는다."
+    },
+    {
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4단계."
+    },
+    {
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4단계. 확인 파일을 --review로 넣는다."
+    }
+  ],
+  "inputs": [
+    {
+      "path": "answers.yaml",
+      "sha256": "7a26167c0cbc662f8dede402b4e906457d7e1a32275bacf07dfc70c1479c6146"
+    },
+    {
+      "path": "case.yaml",
+      "sha256": "96f04387180ce242879bc91ae1ad516415538c6a84f411006b41616adcad189c"
+    },
+    {
+      "path": "intake.md",
+      "sha256": "6487074ad780a8c4b81113b8d6ec7218de77dc123e5d192d3a36c0897d89aa3f"
+    }
+  ],
+  "results": [
+    {
+      "path": "classification.json",
+      "sha256": "ef0b506ec3f443828e68ff67c8c3bac58491bc64dcca9f2c7c3322d43582e4aa"
+    },
+    {
+      "path": "metrics.json",
+      "sha256": "372e25df94129fd6254866022a0a0b4b9d5ae706410122e6f7d50d8bad8f3f65"
+    },
+    {
+      "path": "judgment.json",
+      "sha256": "12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f"
+    }
+  ],
+  "review": null
+}

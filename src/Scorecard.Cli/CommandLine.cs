@@ -33,6 +33,7 @@ internal static class CommandLine
     public const string Json = "--json";
     public const string Out = "--out";
     public const string Answers = "--answers";
+    public const string Review = "--review";
     public const string Help = "--help";
     public const string HelpShort = "-h";
 
@@ -43,7 +44,7 @@ internal static class CommandLine
     public static readonly IReadOnlyList<CommandSpec> All =
     [
         new(Start, true, [Answers, Out, Json], [Answers]),
-        new(Open, true, [Out, Json], []),
+        new(Open, true, [Review, Out, Json], []),
         new(Check, true, [Out, Json], []),
         new(Build, true, [Json], []),
         new(Classify, false, [Answers, Json], []),
@@ -51,7 +52,7 @@ internal static class CommandLine
         new(Judge, false, [Json], []),
     ];
 
-    private static readonly string[] ValueOptions = [Out, Answers];
+    private static readonly string[] ValueOptions = [Out, Answers, Review];
 
     // 도움말에 보이는 명령(표 순서).
     public static IReadOnlyList<string> VisibleNames => All.Where(c => c.Visible).Select(c => c.Name).ToArray();

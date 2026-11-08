@@ -38,6 +38,20 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - `--out` 검사는 `Path.GetFullPath` 뒤 서수 비교다. 대소문자를 무시하는 파일 시스템(Windows·macOS)에서 `Expected`처럼 대소문자만 다른 경로를 케이스 폴더 밖으로 볼 수 있다. Windows 러너에서 확인할 것.
 - 지시문 2절 2 "출력은 항상 새 폴더에": 기본 `out/`을 명령마다 다시 쓴다(같은 이름은 덮어씀). 실행마다 새 폴더가 필요한지는 M2-3에서 스코어카드 결과와 함께 본다.
 
+## M2-3(T-020)에서 미룬 것
+
+- `start`·`check`가 HTML을 같이 쓰는 일. 지금은 `open`만 `scorecard.html`을 쓴다(시안은 명령마다 HTML을 연다).
+- `--times`(시간 입력)와 절약 추정. 결과 객체 `summary.saving`은 늘 `time_needed`다. 사람 입력 판정도 같이.
+- `build --step <번호>`와 제안 카드의 "만들까요?" 받기(M2-4).
+- Excel 내보내기(`open --excel`).
+- 확인(`--review`) 뒤 다시 분류·판정. 지금은 기록만 한다.
+- 스킬 `/scorecard`가 확인 파일을 쓰고 `open --review`를 부르는 길. `SKILL.md`는 이 카드에서 바꾸지 않았다.
+- 지시문 2절 2 "출력은 항상 새 폴더에": 실행마다 새 폴더를 만들지 않는다. 대신 입력·결과 SHA-256을 남긴다(report.md 8절).
+- 검증 항목은 20개까지만 보인다. 전체 목록을 볼 길(접기·별도 파일).
+- `answers` 상태가 `mismatch`·`invalid`일 때 어느 단계·어느 오류인지 보이지 않는다.
+- `tools/html-check/check.mjs`는 CI 잡이 아니다. Playwright·브라우저가 필요하다. ci-dev 카드에서 잡으로.
+- 위 "M2-1(T-018)에서 미룬 것"의 `--review`, 입력 SHA-256, `open`의 HTML은 T-020에서 했다. `--times`, 입력 사본, 새 폴더는 남는다.
+
 ## T-014의 남은 일
 
 - `docs/tasks/T-014-text-result-check.md` "남은 일" 1~4. 요지: `case-schema.md` 표 옮기기, 지시문 12절 `reply-drafts` 행과 제목 "4종", 출처 표를 끝까지 못 읽었을 때 `blind` 검사 안 함(기록), -0 처리(기록).
@@ -143,3 +157,19 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #24 | 데이터 9절 번호가 9.6 → 9.8로 9.7이 비어 보인다(PR (b)가 9절을 옮기며 사라짐) | docs/spec/data/classification.md |
 | 2026-11-08 | #24 | 스코어카드가 `source: ai`·`differs` 단계를 어떻게 보일지 M2-3에서 정한다 | report.md |
 | 2026-11-08 | #24 | `classify.py` 주석의 절 번호가 9절 기준이다. PR (b) 뒤 첫 oracle 변경에서 고친다 | tools/oracle/classify.py |
+| 2026-11-08 | #25 | 본문 4.1 "GATE는 SIGNOFF가 아닌 모든 잎 뒤에 붙는다"가 4.13 규칙 5(AI가 ④가 아니면 SIGNOFF 뒤에도 GATE)를 가리키지 않는다. "(AI 판단 예외는 4.13)"을 덧붙인다 | docs/spec/classification.md:52 |
+| 2026-11-08 | #25 | form-fill `answers.yaml` 주석이 "→ 확인 항목"으로 schema 1 설명 그대로다(예제 입력 바이트라 SHA 줄과 같이 고쳐야 한다) | examples/form-fill/answers.yaml |
+| 2026-11-08 | #25 | migration 커밋이 블록·SHA 줄 말고 데이터 9.6 머리·안내 줄도 지웠다. 옮기기의 결과라 동작 영향은 없지만 ADR 0004 "블록·SHA-256 줄만"과 글자는 다르다 | 7ca2005 |
+| 2026-11-08 | #25 | 스킬 7절이 case.yaml 단계를 answers.yaml과 "같게 둔다"고만 한다. 두 파일 단계가 어긋나면 check와 start의 분류가 다를 수 있다. 한쪽에서 읽게 하거나 어긋나면 알린다 | .claude/skills/scorecard/SKILL.md:94 |
+| 2026-11-08 | #25 | selftest.py 주석·라벨이 아직 9.x 절 번호다(classify.py와 같은 일, 다음 oracle 변경에서) | tools/oracle/selftest.py |
+| 2026-11-08 | #25 | AiJudgmentTests의 블록 비교가 텍스트 비교다. 다른 골든처럼 바이트로 맞추면 실패 메시지가 일관된다 | tests/Scorecard.Tests/Classification/AiJudgmentTests.cs |
+| 2026-11-08 | M2-3 | `inferred`·`current_actor`를 케이스 폴더 answers.yaml에서 다시 분류해 읽는다. `start --answers`가 다른 파일을 썼거나 뒤에 답이 바뀌면 classification.json과 어긋난다(번호·이름만 비교). 실제로 쓴 답 파일 해시도 남지 않는다 | src/Scorecard.Core/Report/ScorecardBuilder.cs |
+| 2026-11-08 | M2-3 | classification.json 단계의 `rows`가 비면 IndexOutOfRange로 종료 1. `result` 오류(2)로(손으로 고친 파일만) | ScorecardBuilder.cs, ResultReader.cs |
+| 2026-11-08 | M2-3 | 자료 패턴 읽기가 실패하면(overlap·파일 없음) 자료 파일 해시를 말없이 뺀다. 입력 기록이 빈 것을 표시 | ScorecardBuilder.cs |
+| 2026-11-08 | M2-3 | html-check를 인자 없이 부르면 끝난다. 골든 6개 경로로 돌리는 명령을 카드나 스펙 6절에 적는다 | tools/html-check/check.mjs, report.md 6절 |
+| 2026-11-08 | M2-3 | `change`가 지금 담당과 같은 담당을 적어도 받는다("④를 ④로 바꿨다" 위험). 막을지 스펙 5절에서 | src/Scorecard.Core/Report/ReviewParser.cs |
+| 2026-11-08 | #27 | 스킬의 케이스 이름 규칙 "소문자·숫자·`-`"가 정규식 `^[a-z0-9]+(-[a-z0-9]+)*`보다 넓다(앞뒤 `-`, `--`). 틀리면 엔진이 막는다 | .claude/skills/scorecard/SKILL.md |
+| 2026-11-08 | #27 | 스킬 6.1의 "AI 판단(`rows[0]`)"은 `source: rule` 단계에서는 트리 행이다. source를 보고 표시하라는 한 줄 | .claude/skills/scorecard/SKILL.md |
+| 2026-11-08 | #27 | #24 행 "9.6 → 9.8로 9.7 빔"은 데이터 9절을 지워 해당이 없어졌다. 지운다 | docs/LATER.md |
+| 2026-11-08 | #27 | 사용자 확인 여부가 파일에 남지 않는다. 확인 없이 쓴 `ai`도 엔진은 받는다(ADR 0013 남은 위험). 스킬 골든 테스트는 제목·명령 줄만 본다 | SKILL.md, ScorecardSkillTests.cs |
+| 2026-11-08 | #27 | SIGNOFF + AI ③ + `failure_impact: external`(규칙 5)이 데이터 6.6 장면 표에는 있고 6.7 표본 파일에는 없다 | TestData/classification/ai-judgment/answers.yaml |

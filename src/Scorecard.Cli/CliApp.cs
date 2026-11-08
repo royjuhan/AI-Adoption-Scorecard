@@ -3,6 +3,7 @@ using Scorecard.Core.Cases;
 using Scorecard.Core.Classification;
 using Scorecard.Core.Comparison;
 using Scorecard.Core.Judgment;
+using Scorecard.Core.Report;
 
 namespace Scorecard.Cli;
 
@@ -20,12 +21,13 @@ public static class CliApp
         + "\n"
         + "명령:\n"
         + "  start <케이스> --answers <파일>  답 파일로 단계를 분류한다\n"
-        + "  open <케이스>                    출력 폴더의 결과 파일을 알린다\n"
+        + "  open <케이스>                    저장된 결과로 스코어카드 HTML을 쓴다\n"
         + "  check <케이스>                   기준·결과 자료를 대조하고 판정한다\n"
         + "  build <케이스>                   제작 의뢰서 번들을 만든다(M2-4)\n"
         + "\n"
         + "옵션:\n"
         + "  --answers <파일>  답 파일(answers.yaml). start에 필요하다\n"
+        + "  --review <파일>   확인 파일(review.yaml). open에서 받는다\n"
         + "  --out <폴더>      결과를 쓸 폴더. 기본값은 <케이스>/out\n"
         + "  --json            결과와 오류를 JSON 문서 하나로 낸다\n"
         + "  --help            이 도움말\n"
@@ -36,9 +38,6 @@ public static class CliApp
     public const int ExitSuccess = 0;
     public const int ExitInternalError = 1;
     public const int ExitInputError = 2;
-
-    // open이 찾는 결과 파일(이 순서로 알린다, 2절).
-    private static readonly string[] ResultFiles = [ClassificationJson.FileName, MetricsJson.FileName, JudgmentJson.FileName];
 
     // 인자를 받아 명령 하나를 돌린다. 종료 코드를 돌려준다(0 성공, 2 입력 오류, 1 내부 오류).
     // stdout·stderr에는 UTF-8 바이트를 직접 쓴다. --json이면 stdout에 JSON 문서 하나만 쓰고 stderr에는 쓰지 않는다.
@@ -140,7 +139,8 @@ public static class CliApp
         ]);
     }
 
-    // open: 출력 폴더의 결과 파일을 알린다. 아무것도 쓰지 않는다. HTML은 M2-3.
+    // open: 출력 폴더의 결과 파일과 케이스 입력으로 스코어카드를 쓴다(report.md 2·7절).
+    // 결과 객체는 Core(ScorecardBuilder)가 만든다. Cli는 HTML로 표시만 한다. 브라우저는 띄우지 않는다(G1 N2·N3).
     private static Outcome RunOpen(ParsedArguments parsed, string caseDirectory)
     {
         if (!Directory.Exists(caseDirectory))
@@ -154,18 +154,29 @@ public static class CliApp
             return Outcome.Fail(ExitInputError, [outputError]);
         }
 
-        // 이름 목록에서 서수로 찾는다. 대소문자를 무시하는 파일 시스템에서도 OS마다 결과가 같다(CaseParser와 같은 방식).
-        var names = Directory.Exists(output)
-            ? Directory.EnumerateFiles(output).Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal)
-            : [];
-        var found = ResultFiles.Where(names.Contains).ToArray();
+        var (sources, readErrors) = ScorecardBuilder.ReadDirectory(caseDirectory, output, parsed.Option(CommandLine.Review));
+        if (sources is null)
+        {
+            return Outcome.Fail(ExitInputError, readErrors);
+        }
 
-        var display = DisplayOutput(caseDirectory, parsed.Option(CommandLine.Out));
-        var text = found.Length == 0
-            ? "결과 파일이 없다. start나 check를 먼저 돌린다.\n"
-            : "결과 파일:\n" + string.Concat(found.Select(f => display + "/" + f + "\n"));
-        text += "스코어카드 HTML은 M2-3에서 생긴다.\n";
-        return Outcome.Ok(CliJson.Result(CommandLine.Open, found), CliJson.Utf8.GetBytes(text));
+        var built = ScorecardBuilder.Build(sources);
+        if (built.Scorecard is not { } scorecard)
+        {
+            return Outcome.Fail(ExitInputError, built.Errors);
+        }
+
+        string[] files = [ScorecardJson.FileName, ScorecardHtml.FileName];
+        var json = ScorecardJson.Render(scorecard, CommandLine.Open, files);
+        var header = string.Create(CultureInfo.InvariantCulture, $"스코어카드를 썼다: {scorecard.Case} ({scorecard.Summary.Steps}단계)\n");
+        var written = WriteOutputs(parsed, caseDirectory, CommandLine.Open, header,
+        [
+            (ScorecardJson.FileName, json),
+            (ScorecardHtml.FileName, ScorecardHtml.Render(scorecard)),
+        ]);
+
+        // --json 표준 출력 = scorecard.json 바이트(봉투 없음, ADR 0004 결정 6 규칙 5).
+        return written.ExitCode == ExitSuccess ? written with { Json = json } : written;
     }
 
     // 내부 명령 classify: --answers가 있으면 그 파일, 없으면 case.yaml의 steps.

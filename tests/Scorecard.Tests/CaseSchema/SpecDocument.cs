@@ -21,6 +21,9 @@ internal static class SpecDocument
     // T-011 판정 스펙(스펙 8절). 표·블록·SHA-256 줄을 읽는 규칙은 아래 Table·CodeBlocks·Line과 같다.
     public const string JudgmentPath = "docs/spec/judgment.md";
 
+    // T-014 스펙(docs/spec/text-check.md, 채택). 문장 결과 검증(체크리스트·가림 점수표).
+    public const string TextCheckPath = "docs/spec/text-check.md";
+
     // 4.4 기본값 표의 머리 행. 스펙이 "표 모양을 바꾸지 않는다"고 정했다(승인 결정 5).
     public const string DefaultsTableHeader = "| 키 | 질문 | 형식 | 선택지·범위 | 기본값 |";
 

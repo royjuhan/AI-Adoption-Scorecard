@@ -19,6 +19,13 @@ internal static class ClassificationInput
     // 공개 예제 4종(지시문 12절, 스펙 7절). signoff-final은 T-009(ADR 0003 남은 질문 2, signoff-final.md V1).
     public static readonly string[] Examples = ["table-compare", "form-fill", "mixed-exceptions", "signoff-final"];
 
+    // T-014 문장 결과 예제(text-check.md 7절). 위 4종의 스펙 표(classification·synthetic-examples·metrics·judgment)에는
+    // 넣지 않는다(text-check.md 11절). 예제 폴더 전체를 보는 테스트는 AllExamples를 쓴다.
+    public static readonly string[] TextCheckExamples = ["reply-drafts"];
+
+    // examples/ 아래 예제 폴더 전부(5종).
+    public static readonly string[] AllExamples = [.. Examples, .. TextCheckExamples];
+
     // 스펙 4.5 조합의 건수. Q4 경계(5) 앞뒤와 최솟값, 그보다 큰 값.
     public static readonly int[] BatchSizes = [1, 4, 5, 12];
 

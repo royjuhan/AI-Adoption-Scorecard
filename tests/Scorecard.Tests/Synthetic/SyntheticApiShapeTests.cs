@@ -15,10 +15,14 @@ public class SyntheticApiShapeTests
     // 4.13의 공개 타입 전부. SplitMix64는 internal이다.
     private static readonly string[] PublicTypes =
     [
+        // T-014(text-check.md)
         "SyntheticColumn",
         "SyntheticCsv",
         "SyntheticGenerator",
         "SyntheticPlan",
+        "SyntheticReplies",
+        "SyntheticReplyFiles",
+        "SyntheticReplyPlan",
         "SyntheticRow",
         "SyntheticTables",
     ];

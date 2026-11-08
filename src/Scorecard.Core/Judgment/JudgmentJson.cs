@@ -39,6 +39,12 @@ public static class JudgmentJson
             w.WriteNumber("accuracy_min", result.Thresholds.AccuracyMin);
             w.WriteNumber("missing_max", result.Thresholds.MissingMax);
             w.WriteBoolean("time_must_drop", result.Thresholds.TimeMustDrop);
+            if (result.Thresholds.ScoreGapMax is { } gap)
+            {
+                // text-check.md 3.2: scores가 있을 때만, 문턱 셋 뒤.
+                w.WriteNumber("score_gap_max", gap);
+            }
+
             w.WriteEndObject();
             w.WriteStartArray("defaults");
             foreach (var key in result.Defaults)

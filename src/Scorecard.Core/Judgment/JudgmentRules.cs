@@ -16,10 +16,16 @@ internal static class JudgmentRules
     public const string KeyMissingMax = "missing_max";
     public const string KeyTimeMustDrop = "time_must_drop";
 
+    // text-check.md 5.1 점수 문턱. scores가 있을 때만 읽는다. defaults에서 4.2 표의 셋 뒤다.
+    public const string KeyScoreGapMax = "score_gap_max";
+
     // 4.2 기본값. 지시문 12.1 값이다.
     public const decimal DefaultAccuracyMin = 95m;
     public const decimal DefaultMissingMax = 2m;
     public const bool DefaultTimeMustDrop = true;
+
+    // text-check.md 5.1 기본값: AI 평균이 사람 평균보다 낮지 않다(가장 보수적).
+    public const decimal DefaultScoreGapMax = 0m;
 
     // 4.8 몰림을 보는 최소 불일치 수.
     public const int FocusMin = 2;
@@ -37,12 +43,16 @@ internal static class JudgmentRules
     public const string OneValue = "one_value";
     public const string Spread = "spread";
 
+    // text-check.md 5.2 SCORE 확인 결과(met·not_met은 위 값을 같이 쓴다).
+    public const string Revealed = "revealed";
+
     // 4.7 다음 할 일 키.
     public const string TodoAddData = "add_data";
     public const string TodoAddCompare = "add_compare";
     public const string TodoMeasureTime = "measure_time";
     public const string TodoReviewItems = "review_items";
     public const string TodoAddGroup = "add_group";
+    public const string TodoRescoreBlind = "rescore_blind";
     public const string TodoConfirmThresholds = "confirm_thresholds";
 
     // 4.9 검토 항목: {breakdown} 이름과 그 항목 상태. 이 순서가 {breakdown} 순서다. match는 검토 항목이 아니다.
@@ -68,6 +78,10 @@ internal static class JudgmentRules
     public const int OrderFocus = 6;
     public const int OrderUnexplainedNotReviewed = 7;
     public const int OrderPass = 8;
+
+    // text-check.md 5.3 "4 뒤": 순서 4 뒤·순서 5 앞의 SCORE 두 행. 점수표만의 대조할 열 없음(NOT_VERIFIED)은 OrderNotVerified로 적는다.
+    public const int OrderScoreRevealed = 41;
+    public const int OrderScoreNotMet = 42;
 
     // 4.6 기본값 표시. 공백 하나 + 문구. classification.md 4.6과 같은 글자다.
     public const string DefaultMark = " (기본값 사용, 확인 필요)";
@@ -98,6 +112,27 @@ internal static class JudgmentRules
 
     public static string UnexplainedNotReviewedVerdict(string items, string breakdown) =>
         $"정확도·누락률은 문턱을 충족하나 검토할 항목 {items}건({breakdown})을 사람이 아직 보지 않았으므로 조건부.";
+
+    // text-check.md 5.3 판정 문장 틀(점수표).
+    public static string ScoreRevealedVerdict(string findings) =>
+        $"점수표에서 출처가 드러난 곳이 {findings}군데 있어 점수를 쓸 수 없으므로 보류.";
+
+    public static string ScoreNotMetVerdict(string aiMean, string humanMean, string scoreGapMax) =>
+        $"AI 결과 평균 {aiMean}점이 사람 결과 평균 {humanMean}점보다 {scoreGapMax}점 넘게 낮으므로 보류.";
+
+    // 5.2 문턱 0 문장(판정).
+    public static string ScoreZeroNotMetVerdict(string aiMean, string humanMean) =>
+        $"AI 결과 평균 {aiMean}점이 사람 결과 평균 {humanMean}점보다 낮으므로 보류.";
+
+    public const string ScoresNoCompareFieldsVerdict =
+        "점수는 문턱을 충족하나 대조할 열(case.yaml compare·checklist)이 없어 기준·결과 자료(case.yaml inputs)를 쓰지 않았으므로 조건부.";
+
+    public const string ScoresTimeNotMeasuredVerdict = "점수는 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.";
+
+    public static string ScoresTimeNotMetVerdict(string total, string before) =>
+        $"점수는 문턱을 충족하나 처리·검토 시간 {total}분이 적용 전 {before}분보다 짧지 않으므로 조건부.";
+
+    public const string ScoresPassVerdict = "점수가 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.";
 
     // 4.4 확인 문장 틀.
     public static string AccuracyCheck(bool met, string accuracyPct, string match, string reference, string accuracyMin) => met
@@ -138,6 +173,19 @@ internal static class JudgmentRules
 
     public static string FocusSpreadCheck(string bad, string group) => $"불일치 {bad}건이 {group} 열의 한 값에 몰리지 않았다.";
 
+    // text-check.md 5.2 SCORE 확인 문장 틀.
+    public static string ScoreRevealedCheck(string findings) =>
+        $"점수표에서 출처가 드러난 곳이 {findings}군데 있어 점수를 비교하지 않는다.";
+
+    public static string ScoreCheck(bool met, string aiMean, string aiRatings, string humanMean, string humanRatings, string scoreGapMax) => met
+        ? $"AI 결과 평균 {aiMean}점({aiRatings}개)이 사람 결과 평균 {humanMean}점({humanRatings}개)보다 {scoreGapMax}점 넘게 낮지 않다."
+        : $"AI 결과 평균 {aiMean}점({aiRatings}개)이 사람 결과 평균 {humanMean}점({humanRatings}개)보다 {scoreGapMax}점 넘게 낮다.";
+
+    // 5.2 문턱 0 문장(확인). "0점 넘게"는 뜻이 없어 쓰지 않는다.
+    public static string ScoreZeroCheck(bool met, string aiMean, string aiRatings, string humanMean, string humanRatings) => met
+        ? $"AI 결과 평균 {aiMean}점({aiRatings}개)이 사람 결과 평균 {humanMean}점({humanRatings}개)보다 낮지 않다."
+        : $"AI 결과 평균 {aiMean}점({aiRatings}개)이 사람 결과 평균 {humanMean}점({humanRatings}개)보다 낮다.";
+
     // 4.7 다음 할 일 문구.
     public const string AddDataText =
         "기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.";
@@ -146,6 +194,9 @@ internal static class JudgmentRules
     public const string MeasureTimeText = "건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다.";
     public const string AddGroupText = "불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.";
 
+    // text-check.md 5.5.
+    public const string RescoreBlindText = "출처가 드러나지 않게 가림 키를 새로 붙이고 점수를 다시 매긴다.";
+
     public static string ReviewItemsText(string items, string breakdown) => $"검토할 항목 {items}건({breakdown})을 보고 설명이 되는지 적는다.";
 
     public static string ConfirmThresholdsText(string defaults) =>
@@ -153,13 +204,26 @@ internal static class JudgmentRules
 
     // 4.6 읽은 문턱: 판정 표의 순서마다 그 행에 오기까지 읽은 문턱(4.2 순서).
     // "정확도·누락률은 충족하나"로 시작하는 문장은 앞 문턱도 읽은 것으로 본다. 순서 7은 시간(순서 5)을 지나 왔다.
-    public static string[] ReadThresholds(int order) => order switch
+    // 점수표가 있으면(text-check.md 5.4 표 대조): SCORE revealed는 앞 둘, not_met은 앞 둘 + score_gap_max, 순서 5~8은 넷이다.
+    public static string[] ReadThresholds(int order, bool scores = false) => order switch
     {
         OrderNotVerified => [],
         OrderAccuracy => [KeyAccuracyMin],
-        OrderMissing or OrderUnexplainedFound => [KeyAccuracyMin, KeyMissingMax],
+        OrderMissing or OrderUnexplainedFound or OrderScoreRevealed => [KeyAccuracyMin, KeyMissingMax],
+        OrderScoreNotMet => [KeyAccuracyMin, KeyMissingMax, KeyScoreGapMax],
+        _ when scores => [KeyAccuracyMin, KeyMissingMax, KeyTimeMustDrop, KeyScoreGapMax],
         _ => [KeyAccuracyMin, KeyMissingMax, KeyTimeMustDrop],
     };
+
+    // text-check.md 5.4 점수표만: 이 길이 읽는 문턱. 5.1: defaults도 이 길이 읽는 문턱(ScoresOnlyThresholds)만 적는다.
+    public static string[] ScoresOnlyReadThresholds(int order) => order switch
+    {
+        OrderScoreRevealed => [],
+        OrderScoreNotMet or OrderNotVerified => [KeyScoreGapMax],
+        _ => [KeyTimeMustDrop, KeyScoreGapMax],
+    };
+
+    public static readonly string[] ScoresOnlyThresholds = [KeyTimeMustDrop, KeyScoreGapMax];
 
     // 4.9 {breakdown}: 이름마다 수를 세어 0이 아닌 것만 "이름 N건"으로 쓰고 ", "로 잇는다. counts는 ReviewItems 순서다.
     public static string Breakdown(IReadOnlyList<int> counts) =>

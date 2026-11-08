@@ -23,6 +23,15 @@ internal static class CompareRules
     public const string CodeNumber = "number";
     public const string CodeNoRows = "no-rows";
 
+    // text-check.md 4.5 체크리스트 코드: 확인할 것이 없는 기준 행(4.2 규칙 10).
+    public const string CodeNoCheck = "no-check";
+
+    // text-check.md 4.5 점수 코드. metrics.md 4.7 코드는 같은 뜻으로 점수 파일에도 쓴다.
+    public const string CodeScore = "score";
+    public const string CodeSource = "source";
+    public const string CodeBlind = "blind";
+    public const string CodePair = "pair";
+
     // 4.7 inputs 오류(파일이 정해지기 전: pattern, 폴더·파일 없음, no-rows)의 Path. Source는 CaseParser.FileName("case.yaml").
     // 파서 오류(case-schema 4.9)의 필드 경로와 같은 표기다. ADR 0004 결정 6: source = 파일 이름, path = 필드 경로.
     public const string PathReference = "inputs.reference";
@@ -37,6 +46,32 @@ internal static class CompareRules
     // 4.6 텍스트 정규화: 줄바꿈(CRLF·CR)을 LF로, 앞뒤 공백(char.IsWhiteSpace)을 뗀다. 대소문자·유니코드 정규화는 하지 않는다.
     public static string Normalize(string cell) =>
         cell.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Trim();
+
+    // text-check.md 4.2 규칙 2: 공백 글자(char.IsWhiteSpace)가 이어진 곳을 U+0020 하나로 접고 앞뒤를 뗀다.
+    // 문장 칸·기준 칸·any 문구에 같이 쓴다. 정규화(Normalize) 뒤의 글에 쓴다.
+    public static string FoldSpaces(string text)
+    {
+        var folded = new StringBuilder(text.Length);
+        var space = false;
+        foreach (var ch in text)
+        {
+            if (char.IsWhiteSpace(ch))
+            {
+                space = true;
+                continue;
+            }
+
+            if (space && folded.Length > 0)
+            {
+                folded.Append(' ');
+            }
+
+            space = false;
+            folded.Append(ch);
+        }
+
+        return folded.ToString();
+    }
 
     // 4.5 숫자 읽기. InvariantCulture. 넘침·모양 밖은 false.
     public static bool TryNumber(string normalized, out decimal value) =>

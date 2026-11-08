@@ -1,0 +1,33 @@
+# 공개 합성 예제. 실제 업무·값 없음. 정답 표가 없는 문장 결과(답변 초안)를 체크리스트와 가림 점수표로 잰다(T-014).
+# 단계·답은 answers.yaml과 같다. reference/·candidate/·scores/는 합성 생성기로 만들었다.
+name: reply-drafts
+task: 문의 메일에 AI가 답변 초안을 쓰고 사람이 고쳐 보낸다
+steps:
+  - name: 문의 접수 기록
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 12, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 답변 초안 쓰기
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 12, exception_rate: 20, current_actor: ai_each_time, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 답변 확인·발송
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: daily, batch_size: 12, exception_rate: 10, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: reply_id
+  group: topic
+checklist:
+  text: reply
+  items:
+    - {item: ticket, column: ticket}
+    - {item: action, column: action}
+    - {item: closing, any: [감사합니다, 고맙습니다]}
+scores:
+  sheet: scores/sheet*.csv
+  sources: scores/sources.csv
+  min: 1
+  max: 5
+# 시간 측정 자료가 없는 예제다. 시간 조건은 끄고 체크리스트·점수만 본다.
+thresholds:
+  accuracy_min: 80
+  missing_max: 5
+  time_must_drop: false
+  score_gap_max: 0.5

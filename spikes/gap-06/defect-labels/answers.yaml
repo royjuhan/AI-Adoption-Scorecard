@@ -1,0 +1,10 @@
+# 공개 합성 예제. 실제 업무·값 없음. 범주 결과(T-015).
+name: defect-labels
+task: 부품 사진마다 결함 종류를 적는다. AI가 먼저 적고 사람이 결함 건을 다시 본다
+steps:
+  - name: 사진 모으기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 40, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결함 종류 적기
+    answers: {input_kind: image, rule_expressible: no, frequency: daily, batch_size: 40, exception_rate: 20, current_actor: ai_each_time, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 결함 건 확인
+    answers: {input_kind: image, rule_expressible: no, frequency: daily, batch_size: 8, exception_rate: 10, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}

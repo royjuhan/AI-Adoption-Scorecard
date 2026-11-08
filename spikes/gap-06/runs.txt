@@ -1,0 +1,4 @@
+# <상대 경로> [gap-runner 옵션]. 같은 폴더를 두 번 돌리면 out/은 마지막 실행이다.
+today --reviewed
+today
+defect-labels

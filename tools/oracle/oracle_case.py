@@ -1,5 +1,5 @@
 # case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13, T-012 개정(inputs.group), T-014(text-check.md 4.1: checklist·scores·
-# thresholds.score_gap_max)을 보고 짰다(src/는 읽지 않았다).
+# thresholds.score_gap_max), T-015(confusion.md 4.1: confusion·thresholds.recall_min·precision_min)를 보고 짰다(src/는 읽지 않았다).
 # 오류가 있는 입력은 모델을 만들지 않고 OracleError로 멈춘다. 엔진의 오류 줄은 흉내 내지 않는다.
 from __future__ import annotations
 
@@ -27,14 +27,17 @@ ANSWERS = (
 ANSWER_KEYS = tuple(a[0] for a in ANSWERS)
 
 # case-schema 4.3 최상위 키, 4.4 단계 항목 키, 4.5 inputs·compare·thresholds 키.
-TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'checklist', 'scores', 'thresholds')
+TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'checklist', 'scores', 'confusion',
+            'thresholds')  # confusion: T-015
 STEP_KEYS = ('name', 'answers', 'inferred')
 INPUT_KEYS = ('reference', 'candidate', 'key', 'group')  # group: T-012 개정(case-schema 10.2), 선택
 COMPARE_KEYS = ('field', 'tolerance', 'tolerance_pct')
-THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop', 'score_gap_max')  # score_gap_max: T-014
+THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop', 'score_gap_max',  # score_gap_max: T-014
+                  'recall_min', 'precision_min')  # T-015 confusion.md 4.1
 CHECKLIST_KEYS = ('text', 'items')  # T-014 text-check.md 4.1
 CHECKLIST_ITEM_KEYS = ('item', 'column', 'any')
 SCORES_KEYS = ('sheet', 'sources', 'min', 'max')
+CONFUSION_KEYS = ('field', 'positive')  # T-015 confusion.md 4.1
 AI_USAGE = ('build-time', 'runtime', 'hybrid')
 
 # case-schema 4.6 값 형식.
@@ -82,6 +85,8 @@ class Thresholds:
     missing_max_text: str | None
     time_must_drop: bool | None
     score_gap_max_text: str | None = None  # T-014. scores가 있을 때만 쓴다(text-check.md 4.1)
+    recall_min_text: str | None = None  # T-015. confusion이 있을 때만 쓴다(confusion.md 4.1)
+    precision_min_text: str | None = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +112,13 @@ class Scores:
 
 
 @dataclass(frozen=True)
+class Confusion:
+    """confusion.md 4.1 confusion. field: 허용 오차 없는 compare 필드. positive: 관심 범주(쓴 글 그대로, 쓴 순서)."""
+    field: str
+    positive: tuple
+
+
+@dataclass(frozen=True)
 class Case:
     name: str
     task: str
@@ -116,6 +128,7 @@ class Case:
     thresholds: Thresholds | None = None  # thresholds 키가 없거나 null이면 None
     checklist: Checklist | None = None  # T-014. 키가 없거나 null이면 None
     scores: Scores | None = None  # T-014. 키가 없거나 null이면 None
+    confusion: Confusion | None = None  # T-015. 키가 없거나 null이면 None
 
 
 class _Reader:
@@ -181,7 +194,9 @@ class _Reader:
         if len(frac) > 28 or value.copy_abs() > Decimal('79228162514264337593543950335'):
             raise OracleError(f'{self.source}:{node.line}: {path}: decimal로 그대로 담기지 않는 숫자는 oracle 범위 밖')
         if (low is not None and value < low) or (high is not None and value > high):
-            self.fail(node, path, f'범위 밖이다: {node.text}')
+            # case-schema 4.9 range 메시지 모양: `범위 밖이다 (<범위>): <값>`(6.4 블록 `(0 이상 100 이하)`, `(0 이상)`).
+            bounds = f'{low} 이상 {high} 이하' if high is not None else f'{low} 이상'
+            self.fail(node, path, f'범위 밖이다 ({bounds}): {node.text}')
         return node.text, value
 
     def boolean(self, node, path: str):
@@ -272,6 +287,7 @@ def parse_case(data: bytes, source: str) -> Case:
 
     checklist = _checklist(r, root, inputs, compare)
     scores = _scores(r, root)
+    confusion = _confusion(r, root, compare)
 
     thresholds = None
     thresholds_node = root.get('thresholds')
@@ -283,9 +299,15 @@ def parse_case(data: bytes, source: str) -> Case:
         gap, _ = r.number(m.get('score_gap_max'), 'thresholds.score_gap_max', Decimal(0), Decimal(100))
         if gap is not None and scores is None:
             r.fail(m.get('score_gap_max'), 'scores', 'score_gap_max가 있으면 scores가 있어야 한다')  # required
-        thresholds = Thresholds(acc, miss, drop, gap)
+        # T-015 confusion.md 4.1: recall_min·precision_min은 confusion이 있을 때만(required, 위치는 그 값).
+        rec, _ = r.number(m.get('recall_min'), 'thresholds.recall_min', Decimal(0), Decimal(100))
+        prec, _ = r.number(m.get('precision_min'), 'thresholds.precision_min', Decimal(0), Decimal(100))
+        for key, text in (('recall_min', rec), ('precision_min', prec)):
+            if text is not None and confusion is None:
+                r.fail(m.get(key), 'confusion', f'{key}이 있으면 confusion이 있어야 한다')  # required
+        thresholds = Thresholds(acc, miss, drop, gap, rec, prec)
 
-    return Case(name, task, steps, inputs, compare, thresholds, checklist, scores)
+    return Case(name, task, steps, inputs, compare, thresholds, checklist, scores, confusion)
 
 
 def _is_null(node) -> bool:
@@ -357,6 +379,38 @@ def _scores(r: _Reader, root: Mapping):
     if low >= high:
         r.fail(m.get('max'), 'scores.max', f'범위 밖이다 (min보다 커야 한다): {high}')  # range, 위치는 max 값
     return Scores(sheet, sources, low, high)
+
+
+def _confusion(r: _Reader, root: Mapping, compare: list):
+    """T-015 confusion.md 4.1 confusion. 오류 입력은 OracleError로 멈춘다(코드는 그 표의 것, 줄은 흉내 내지 않는다)."""
+    node = root.get('confusion')
+    if _is_null(node):
+        return None
+    m = r.mapping(node, 'confusion', CONFUSION_KEYS)
+    field_node = m.get('field')
+    fname = r.string(field_node, 'confusion.field', required=True)
+    pos_node = m.get('positive')
+    if _is_null(pos_node):
+        r.fail(pos_node if pos_node is not None else m, 'confusion.positive', '필수 필드가 없다')  # required
+    if not isinstance(pos_node, Sequence):
+        r.fail(pos_node, 'confusion.positive', '목록이어야 한다')  # type
+    if len(pos_node) == 0:
+        r.fail(pos_node, 'confusion.positive', '범주가 1개 이상 있어야 한다')  # required
+    positive, seen = [], {}
+    for k, x in enumerate(pos_node, start=1):
+        p = f'confusion.positive[{k}]'
+        value = r.string(x, p, required=True)
+        if value in seen:
+            r.fail(x, p, f'범주가 중복된다 (처음: confusion.positive[{seen[value]}])')  # duplicate
+        seen[value] = k
+        positive.append(value)
+    # compare가 있으면 inputs가 있어야 하므로(case-schema 4.9) 범주 필드가 compare에 있으면 inputs도 있다.
+    target = next((f for f in compare if f.field == fname), None)
+    if target is None:
+        r.fail(field_node, 'confusion.field', 'confusion.field는 compare에 있는 필드다')  # required
+    if target.is_number:
+        r.fail(field_node, 'confusion.field', 'confusion.field는 허용 오차가 없는 compare 필드다')  # conflict
+    return Confusion(fname, tuple(positive))
 
 
 def _answers(r: _Reader, step_map: Mapping, p: str) -> dict:

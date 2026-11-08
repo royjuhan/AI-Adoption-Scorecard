@@ -1,0 +1,53 @@
+# gap-06. 엔진: HEAD 8b32499 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
+== today --reviewed
+PARSE ok case=gap-06-today steps=3 inputs=set compare=1
+STEP 1 사진 모으기 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류.
+STEP 2 결함 종류 적기 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 2 ③ Q2 step: 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.
+  ROW 2 ④ GATE human_gate: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+STEP 3 결함 건 확인 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 3 ④ SIGNOFF step: 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+CLASSIFY rows=4
+COMPARE status=measured reason=null accuracy_pct=92.5 missing_rate_pct=2.5
+  COUNTS reference=40 candidate=39 match=37 mismatch=2 missing=1 extra=0 within=0
+  FILES reference=[reference/parts.csv] candidate=[candidate/parts.csv]
+  ITEM p01 missing 
+  ITEM p21 mismatch result outside 정상->긁힘
+  ITEM p38 mismatch result outside 찍힘->정상
+JUDGE verdict=pass rule=PASS: 정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.
+  CHECK ACCURACY met: 정확도 92.5%(37/40)가 문턱 90% 이상이다.
+  CHECK MISSING met: 누락률 2.5%(1/40)가 문턱 5% 이하다.
+  CHECK UNEXPLAINED explained: 검토할 항목 3건(불일치 3건)을 사람이 보고 모두 설명했다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS spread: 불일치 3건이 line 열의 한 값에 몰리지 않았다.
+  DEFAULTS []
+== today 
+PARSE ok case=gap-06-today steps=3 inputs=set compare=1
+STEP 1 사진 모으기 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류.
+STEP 2 결함 종류 적기 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 2 ③ Q2 step: 판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.
+  ROW 2 ④ GATE human_gate: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+STEP 3 결함 건 확인 | defaults=[minutes_per_item] checks=[measure_minutes_per_item] overuse=false
+  ROW 3 ④ SIGNOFF step: 사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.
+CLASSIFY rows=4
+COMPARE status=measured reason=null accuracy_pct=92.5 missing_rate_pct=2.5
+  COUNTS reference=40 candidate=39 match=37 mismatch=2 missing=1 extra=0 within=0
+  FILES reference=[reference/parts.csv] candidate=[candidate/parts.csv]
+  ITEM p01 missing 
+  ITEM p21 mismatch result outside 정상->긁힘
+  ITEM p38 mismatch result outside 찍힘->정상
+JUDGE verdict=conditional rule=UNEXPLAINED: 정확도·누락률은 문턱을 충족하나 검토할 항목 3건(불일치 3건)을 사람이 아직 보지 않았으므로 조건부.
+  CHECK ACCURACY met: 정확도 92.5%(37/40)가 문턱 90% 이상이다.
+  CHECK MISSING met: 누락률 2.5%(1/40)가 문턱 5% 이하다.
+  CHECK UNEXPLAINED not_reviewed: 검토할 항목 3건(불일치 3건)이 설명되는지 사람이 아직 보지 않았다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS spread: 불일치 3건이 line 열의 한 값에 몰리지 않았다.
+  TODO review_items: 검토할 항목 3건(불일치 3건)을 보고 설명이 되는지 적는다.
+  DEFAULTS []
+== defect-labels 
+PARSE errors 3
+  ERROR case.yaml:19:1: unknown-field confusion: 알 수 없는 필드다
+  ERROR case.yaml:27:3: unknown-field thresholds.recall_min: 알 수 없는 필드다
+  ERROR case.yaml:28:3: unknown-field thresholds.precision_min: 알 수 없는 필드다

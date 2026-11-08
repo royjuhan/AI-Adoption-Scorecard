@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "case": "defect-labels",
+  "steps": [
+    {
+      "number": 1,
+      "name": "사진 모으기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "결함 종류 적기",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "③",
+          "rule": "Q2",
+          "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다."
+        },
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": "결함 건 확인",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "④",
+          "rule": "SIGNOFF",
+          "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+        }
+      ]
+    }
+  ]
+}

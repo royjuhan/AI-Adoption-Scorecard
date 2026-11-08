@@ -12,6 +12,8 @@
 #   scores가 있으면 metrics.json 최상위에 scores(scores.py)를 더한다. 둘 다 없으면 바이트가 T-013과 같다.
 #   리뷰 2차 B1(text-check.md 4.2 규칙 10): compare 필드가 없고 체크리스트가 그 기준 행에 요구하는 항목이 하나도 없으면
 #   (any 항목이 없고 column 항목 칸이 모두 빔) no-check 오류다. 그 행은 어떤 결과 문장이든 일치가 되기 때문이다.
+# T-015(confusion.md 3.1·4.2): confusion이 있으면 그 범주 필드로 혼동행렬과 관심 범주별 재현율·정밀도를 센다(confusion.py).
+#   compare.confusion은 confusion이 있을 때만 쓴다(fields·checklist 뒤, items 앞). 없으면 바이트가 T-014와 같다.
 #
 # 사용: python3 tools/oracle/compare.py <케이스 폴더>
 #   표준 출력에 metrics.json 바이트를 쓴다. 범위 밖 입력이면 표준 오류에 이유, 종료 코드 2.
@@ -29,6 +31,7 @@ sys.dont_write_bytecode = True  # 저장소에 __pycache__를 쓰지 않는다.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from checklist import ABSENT, FOUND, SKIPPED, item_result  # noqa: E402
+from confusion import confusion_body  # noqa: E402
 from oracle_case import Case, CompareField, parse_case  # noqa: E402
 from oracle_common import EXACT, OracleError, ordinal_key, utf16_units, utf8_stdio  # noqa: E402
 from oracle_csv import read_table  # noqa: E402
@@ -471,6 +474,8 @@ def _compare_run(case_dir: Path, case: Case) -> CompareRun:
             'found': per_item[it.item][FOUND],
             'absent': per_item[it.item][ABSENT],
         } for it in cl.items]}
+    if case.confusion is not None:  # T-015 confusion.md 3.1: fields·checklist 뒤, items 앞.
+        body['confusion'] = confusion_body(case.confusion, ref, cand_by_key, repeated)
     body['items'] = items
     return CompareRun(body, ref, ref_headers)
 

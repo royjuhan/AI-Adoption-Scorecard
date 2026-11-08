@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "case": "gap-06-today",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "part_id",
+    "reference_files": [
+      "reference/parts.csv"
+    ],
+    "candidate_files": [
+      "candidate/parts.csv"
+    ],
+    "counts": {
+      "reference": 40,
+      "candidate": 39,
+      "match": 37,
+      "mismatch": 2,
+      "missing": 1,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 92.5,
+    "missing_rate_pct": 2.5,
+    "fields": [
+      {
+        "field": "result",
+        "kind": "text",
+        "tolerance": null,
+        "tolerance_pct": null,
+        "compared": 39,
+        "outside": 2,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "p01",
+        "status": "missing",
+        "reference": {
+          "file": "reference/parts.csv",
+          "line": 2
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "p21",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/parts.csv",
+          "line": 22
+        },
+        "candidate": {
+          "file": "candidate/parts.csv",
+          "line": 40
+        },
+        "differences": [
+          {
+            "field": "result",
+            "result": "outside",
+            "reference": "정상",
+            "candidate": "긁힘"
+          }
+        ]
+      },
+      {
+        "key": "p38",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/parts.csv",
+          "line": 39
+        },
+        "candidate": {
+          "file": "candidate/parts.csv",
+          "line": 21
+        },
+        "differences": [
+          {
+            "field": "result",
+            "result": "outside",
+            "reference": "찍힘",
+            "candidate": "정상"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# 공개 사례 1절 22번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 사양 조회 ② · 시공 ③ · 안전 ④. 과잉 후보: 사양 조회.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-22
+task: 매장 고객 질문에 상품 사양을 찾아 주고 시공 방법을 안내하며, 안전 질문은 사람이 답한다
+steps:
+  # 사양은 상품 표에서 찾는다(②). 지금 AI가 매번 한다(과잉 후보).
+  - name: 상품 사양 찾기
+    answers: {input_kind: table, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]
+  - name: 시공 방법 안내
+    answers: {input_kind: conversation, rule_expressible: no, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind, rule_expressible]
+  # 안전 질문은 사람이 답하고 책임진다(④). 서명 단계로 읽었다.
+  - name: 안전 질문 답하기
+    answers: {input_kind: conversation, current_actor: human, failure_impact: safety_legal, human_signoff: yes}
+    inferred: [input_kind, human_signoff]

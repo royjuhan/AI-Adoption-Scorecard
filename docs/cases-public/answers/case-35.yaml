@@ -1,0 +1,15 @@
+# 공개 사례 1절 35번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 사전 조회 ② · 모호 주소 ③ · 표본 G. 과잉 후보: 정형 주소.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-35
+task: 배송 주소를 주소 사전으로 맞추고 모호한 주소는 해석하며, 결과는 표본으로 검수한다
+steps:
+  # 지금 AI가 매번 한다(과잉 후보).
+  - name: 정형 주소 사전 조회
+    answers: {input_kind: fixed_form, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]
+  # 표본 검수(표본 G)는 이 단계의 게이트(failure_impact: external)로 적었다.
+  - name: 모호한 주소 해석
+    answers: {input_kind: free_doc, rule_expressible: no, current_actor: ai_each_time, failure_impact: external, human_signoff: no}
+    inferred: [input_kind, rule_expressible]

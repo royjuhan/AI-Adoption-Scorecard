@@ -1,0 +1,15 @@
+# 공개 사례 1절 46번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: ②M(기준: 임계값 ②) · 정비 ④.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-46
+task: 설비 센서 기록으로 고장 징후를 미리 알리고, 정비는 사람이 정한다
+steps:
+  # 학습 모델(②M). 비교 기준은 임계값 규칙(②)이다. 기준 규칙은 단계로 적지 않았다(비교용이다).
+  - name: 고장 징후 예측
+    answers: {input_kind: table, rule_expressible: no, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind, rule_expressible]
+  # 사람이 정하고 책임진다(④). 서명 단계로 읽었다.
+  - name: 정비 정하기
+    answers: {current_actor: human, human_signoff: yes}
+    inferred: [human_signoff]

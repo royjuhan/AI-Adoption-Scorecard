@@ -41,8 +41,8 @@ T-010 뒤에는 이 절의 사람 확인(4·5·11)과 원칙 변경 승인을 AD
 | 자료를 넣고 검증한다 | `scorecard check <case>` | `reference/`(사람이 만든 결과), `candidate/`(AI 적용 후 결과)를 읽기 전용으로 복사하고 해시를 남긴다. 대조, 건당 처리·검토 시간(파일 `--times`), 판정 제안(통과/조건부/보류/미검증) → 확인(`--review` 파일) → 스코어카드 갱신 |
 | 만들 단계를 고른다 | `scorecard build <case>` | ② 단계 중 먼저 만들 하나를 추천 → "이 단계 만들까요?" 예 / 아니오 / 나중에 → 예면 `build-request/` 번들 생성 |
 
-- 확인: 단계마다 "맞음 / 바꾸기"만 고른다. 바꿀 때만 사유를 한 줄 쓴다. 사유 없는 바꾸기는 확정되지 않는다. 스킬 대화나 스코어카드에서 고르고 `--review` 파일로 넣는다. exe 화면은 없다(ADR 0010).
-- exe에는 대화형 문답이 없다(ADR 0010). 모든 명령은 대화 없이 파일 입력(`--answers`, `--review` 등)만으로 돈다. `--json`이면 결과와 오류를 JSON 문서 하나로 낸다. 모든 JSON은 첫 키가 `"schema_version": 1`이다. 스키마는 `docs/spec/json-output.md`에 고정한다. 종료 코드: 성공 0, 입력 오류 2, 내부 오류 1.
+- 확인: 단계마다 "맞음 / 바꾸기"만 고른다. 바꿀 때만 사유를 한 줄 쓴다. 사유 없는 바꾸기는 확정되지 않는다. 스킬 대화나 스코어카드에서 고르고 `--review` 파일로 넣는다.
+- 모든 명령은 대화 없이 파일 입력(`--answers`, `--review` 등)만으로 돈다. `--json`이면 결과와 오류를 JSON 문서 하나로 낸다. 모든 JSON은 첫 키가 `"schema_version": 1`이다. 스키마는 `docs/spec/json-output.md`에 고정한다. 종료 코드: 성공 0, 입력 오류 2, 내부 오류 1.
 - 내부 명령 `new`, `interview`, `classify`, `compare`, `measure`, `judge`, `review`, `report`, `propose`는 테스트·재현용으로 남긴다. 도움말에는 넷만 보인다.
 
 ### 3.2 단계마다 적는 답 10개와 기본값
@@ -60,7 +60,7 @@ T-010 뒤에는 이 절의 사람 확인(4·5·11)과 원칙 변경 승인을 AD
 | `existing_feature` | 기존 프로그램에 같은 기능이 있나 | yes / no / unknown | unknown (확인 항목으로 남김) |
 | `human_signoff` | 사람이 최종 확인·서명하는 단계인가 | yes / no | no (단계마다 묻지 않는다. 3.1의 서명 단계 질문으로 채운다) |
 
-앞의 9개는 단계마다 묻는다. `human_signoff`는 3.1의 서명 단계 질문으로 한 번 묻고 모든 단계에 값을 적는다(2026-11-07 사람 결정: ADR 0003).
+앞의 9개는 AI가 단계마다 체크리스트로 채운다(2절 6). `human_signoff`는 3.1의 서명 단계 질문으로 한 번 묻고 모든 단계에 값을 적는다(2026-11-07 사람 결정: ADR 0003).
 
 ### 3.3 분류 결정 트리 (순서대로, 처음 걸리는 곳에서 멈춘다)
 
@@ -230,13 +230,13 @@ isolation: worktree
 ```
 ---
 name: cli-dev
-description: Scorecard.Cli를 구현한다 — 명령 넷(start·open·check·build)과 내부 명령, 번호 마법사, 확인 한 화면, AI용 입구(--json·오류 JSON·종료 코드), 단일 HTML 스코어카드와 Excel 내보내기, 제작 의뢰서 번들. Core 공개 API가 준비된 뒤에 쓴다.
+description: Scorecard.Cli를 구현한다 — 명령 넷(start·open·check·build)과 내부 명령, AI용 입구(--json·오류 JSON·종료 코드), 단일 HTML 스코어카드와 Excel 내보내기, 제작 의뢰서 번들. Core 공개 API가 준비된 뒤에 쓴다.
 tools: Read, Grep, Glob, Write, Edit, Bash
 isolation: worktree
 ---
 너는 빌더(CLI 담당)다. 수정할 수 있는 폴더는 src/Scorecard.Cli/뿐이다.
 1. Core의 공개 API만 쓴다. 판정·분류 로직을 CLI에 넣지 않는다.
-2. start 명령: 질문은 docs/spec/case-schema.md 4.4 순서대로 번호로 고른다. Enter면 기본값이고 키를 비워 둔다. human_signoff만 단계마다 묻지 않고 한 번 묻고 모든 단계에 명시한다. 답은 answers.yaml에 쓴다(2026-11-07 사람 결정: ADR 0004).
+2. start 명령: 묻지 않는다. 스킬(AI)이 만든 answers.yaml을 --answers로 받는다. 비운 키는 기본값이다. 확인은 --review 파일로 받는다(2026-11-08 사람 결정: ADR 0010).
 3. open 명령: docs/spec/report.md의 구역 순서대로 단일 HTML을 쓴다. Core의 결과 객체만 쓴다. 외부 파일·스크립트를 넣지 않는다. --excel이면 같은 내용을 Excel 시트로(2026-11-07 사람 결정: ADR 0004).
 4. build 명령: ② 단계 중 하나를 추천하고 "이 단계 만들까요?"에 예/아니오/나중에를 받는다. 예면 build-request/를 만들고, export-check.md에 사람 확인이 없으면 내보내기를 거부한다(2026-11-07 사람 결정: ADR 0004).
 5. 모든 출력은 새 폴더에. 입력을 덮어쓰지 않는다.
@@ -369,7 +369,7 @@ prototyper: spikes/, docs/ · test-engineer: tests/, cases/ · core-dev: src/Sco
 | --- | --- | --- | --- |
 | M0 저장소 세팅 | 2주 | LICENSE, README 골격, CI, CLAUDE.md, 에이전트 7개, 훅, 빈 솔루션, 스펙 초안 | G0: 새 PC에서 clone → `dotnet build && dotnet test` 통과. 작업 카드 1건이 스펙→테스트→구현→리뷰→PR까지 에이전트 흐름으로 완주 |
 | M1 Core | 3주 | case.yaml, 질문·기본값, 분류 트리, 대조, 지표, 판정, 합성 예제 생성기 | G1: 공개 예제 4종의 출력이 `expected/`와 일치. 분류 트리의 모든 분기에 단위 테스트 1개 이상. 네트워크 금지·결정론·원본 불변 테스트 통과 |
-| M2 CLI + 스코어카드 | 3주 | M2-1 명령 넷 틀 `start`·`open`·`check`·`build`(내부 명령 new·interview(--answers)·classify·compare·measure·judge·review·report·propose)와 AI용 입구(`--json`, 오류 JSON, 종료 코드) → M2-2 스킬 `/scorecard`(AI 분류·제안, 규칙 의견 병기) → M2-3 단일 HTML 스코어카드(390·900·1236px에서 가로 스크롤 없음) → M2-4 `build` 번들. 카드마다 스펙+구현 PR 하나. 끝나면 v0.1.0-alpha 태그. exe 문답 없음, Excel 내보내기는 M2 뒤(2026-11-08 사람 결정: ADR 0010) | G2: 예제 4종에서 `start --answers`→`open`→`build`까지 end-to-end 테스트 통과(사람용과 `--json` 둘 다). 명령 넷의 `--json` 출력이 결정론(G2) 테스트를 통과. 샘플 스코어카드(HTML)를 README에 게시. 비공개 사례 1건을 같은 exe로 로컬 실행해 요약만 README "사례"에 추가(2026-11-07 사람 결정: ADR 0004) |
+| M2 CLI + 스코어카드 | 3주 | M2-1 명령 넷 틀 `start`·`open`·`check`·`build`(내부 명령 new·interview(--answers)·classify·compare·measure·judge·review·report·propose)와 AI용 입구(`--json`, 오류 JSON, 종료 코드) → M2-2 스킬 `/scorecard`(AI 분류·제안, 규칙 의견 병기) → M2-3 단일 HTML 스코어카드(390·900·1236px에서 가로 스크롤 없음) → M2-4 `build` 번들. 카드마다 스펙+구현 PR 하나. 끝나면 v0.1.0-alpha 태그. Excel 내보내기는 M2 뒤(2026-11-08 사람 결정: ADR 0010) | G2: 예제 4종에서 `start --answers`→`open`→`build`까지 end-to-end 테스트 통과(사람용과 `--json` 둘 다). 명령 넷의 `--json` 출력이 결정론(G2) 테스트를 통과. 샘플 스코어카드(HTML)를 README에 게시. 비공개 사례 1건을 같은 exe로 로컬 실행해 요약만 README "사례"에 추가(2026-11-07 사람 결정: ADR 0004) |
 | M3 의뢰서 + 첫 제작 | 4주 | `scorecard-factory-template` 공개, `examples/form-fill`의 build-request 번들로 샘플 도구 제작 | G3: 다른 PC에서 템플릿 README만 보고 예제 의뢰서→샘플 도구(exe + 테스트 보고서)를 재현. 제작된 도구를 `scorecard compare`로 검증해 `expected/`와 일치 |
 | M4 릴리스 + 사후 검증 | 3주 | v0.1.0 릴리스(exe 첨부), README 한/영, CONTRIBUTING, 이슈 템플릿, release 에이전트 | G4: v0.1.0 태그와 릴리스 자산 게시. 외부 이슈·PR 1건 이상 처리 또는 비공개 사례의 사후 평가서 v2 요약 공개 |
 
@@ -442,7 +442,7 @@ thresholds:
   time_must_drop: true
 ```
 
-이 비공개 케이스의 기대 분류(사람 판단)는 1·2·4·5 = ②, 3 = ② + 예외는 ④, 6 = ③ 또는 ④, 7 = ④다. 이것은 통과 기준이 아니라 "공개 예제에서 통과한 도구가 실제 업무에서도 같은 판단을 내는지" 보는 로컬 확인용이다. 다르면 예제를 고치는 게 아니라, 어떤 질문·규칙이 빠졌는지 ADR로 적고 `examples/`에 그 구조를 가진 합성 예제를 추가한다.
+이 비공개 케이스의 기대 분류(사람 판단)는 1·2·4·5 = ②, 3 = ② + 예외는 ④, 6 = ③ 또는 ④, 7 = ④다. 이것은 통과 기준이 아니라 "공개 예제에서 통과한 도구가 실제 업무에서도 같은 판단을 내는지" 보는 로컬 확인용이다.
 
 ## 13. 하지 말 것
 

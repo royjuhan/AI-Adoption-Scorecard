@@ -191,8 +191,9 @@ internal sealed record SceneRow(string Key, IReadOnlyList<string> Types, string 
 // 메모리 장면 하나. 문턱 글이 null이면 그 키를 case.yaml에 쓰지 않는다(기본값, 4.2).
 // Group은 case.yaml inputs.group(null이면 키를 쓰지 않는다, 11.8 규칙 2). 몰림 문장의 {group}이다.
 // FocusValue는 found 문장의 {value}다(장면을 만든 쪽이 안다).
-// Duplicates는 결과 자료 끝에 한 번 더 넣는 행이다(11.3 중복 행, metrics.md 12.2). 기준 키나 추가 행 키를 쓴다.
-// 결과 자료에서 그 키의 첫 행이 앞에 있어야 한다(첫 행으로 대조한다). 누락 행의 키는 쓰지 않는다.
+// Duplicates는 결과 자료 끝에 한 번 더 넣는 행이다(4.9 중복 행, metrics.md 4.3). 기준 키나 추가 행 키를 쓴다.
+// 그 키의 대표 행(첫 행)은 앞에 그대로 있다. 누락 행의 키는 쓰지 않는다(쓰면 그 행이 대표 행이 된다).
+// T-013(metrics.md 4.3·13.2): 결과 쪽에 두 번 나온 기준 키는 값 불일치다. 그래서 BadKeys에 Duplicates의 기준 키도 든다.
 internal sealed record JudgmentScene(
     IReadOnlyList<string> Columns,
     IReadOnlyList<SceneRow> Rows,
@@ -227,14 +228,15 @@ internal sealed record JudgmentScene(
             .Concat(Extras.Select(r => Line(r, "1")))
             .Concat(Duplicates.Select(r => Line(r, "1"))));
 
-    public string[] BadKeys => Rows.Where(r => r.IsBad).Select(r => r.Key).ToArray();
+    // 불일치 키(기준 행 순서): 누락·값 불일치 행과, 결과 쪽에 두 번 나온 기준 키(T-013).
+    public string[] BadKeys => Rows.Where(r => r.IsBad || Duplicates.Any(d => d.Key == r.Key)).Select(r => r.Key).ToArray();
 
     public int Bad => BadKeys.Length;
 
-    // 11.3 검토 항목 수: 불일치 + 추가 행 + 중복 행.
+    // 4.9 검토 항목 수: 불일치 + 추가 행 + 중복 행.
     public int Items => Bad + Extras.Count + Duplicates.Count;
 
-    // 11.3 {breakdown}(표 순서: 불일치, 추가 행, 중복 행).
+    // 4.9 {breakdown}(표 순서: 불일치, 추가 행, 중복 행).
     public string Breakdown => JudgmentSpec.Breakdown(Bad, Extras.Count, Duplicates.Count);
 
     public CompareMetrics Metrics() => Metrics(Definition);

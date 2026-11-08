@@ -10,19 +10,16 @@
 #    classification.md 6.1 분기 표, 6.2 기본값 표시 표·"답 없는 단계" 블록, 6.5 TestData 표본(추정 표시).
 #    metrics.md 4.1 패턴 표 2개, 4.5 숫자 모양·칸 판정 표, 4.6 앞뒤 글자 표, 4.8 퍼센트 표.
 #    TestData: valid-full 값, guard case-valid 분류(기본값 표시 5행)·metrics(4.10 SHA-256·크기), 오류 표본은 멈춤.
-#    judgment.md T-011 판(judge_v1.py, expected judgment.json이 schema_version 1일 때만): 3.2 속성 표, 4.2~4.7 표,
-#    4.8 예제 열 표, 6.1~6.5 표(합성 장면), 7.1 예제 표, 7.2~7.5 블록·SHA-256 줄, 4.12 G2 표본 판정.
-#    judgment.md T-012 판(judge.py, 11절): 11.3~11.7 표(상수 = 표), 4.2·4.5·4.6 그대로인 표, 11.8~11.11 표(합성 장면·탐침),
-#    11.12 예제 case.yaml·예제 표, schema_version 2 블록(oracle 출력 = 블록), 11.14 G2 표본, 6.1·6.2 표.
-#    metrics.md 12.5 compare-duplicate 블록, case-schema.md 10.2 inputs.group 표.
+#    judgment.md(judge.py 하나, T-013에서 T-011 판을 지웠다): 3.2 속성 표, 4.2~4.7·4.9 표(상수 = 표), 6.1~6.6 표(합성 장면·탐침),
+#    7.1 예제 case.yaml·예제 표, 7.2~7.5 블록(oracle 출력 = 블록), 4.12 G2 표본, 5절 정의·대조 결과 표(T-013).
+#    예제 이름은 고정하지 않는다. examples/의 폴더 이름(서수)이고, 폴더마다 7절 블록이 하나 있어야 한다.
+#    metrics.md 12.5 compare-duplicate 블록, 13절 결과 쪽 중복 순서 표(T-013), case-schema.md 10.2 inputs.group 표.
 #    변형: 예제 CSV의 CRLF·CR·BOM·따옴표·마지막 줄바꿈 없음·끝 빈 행·칸 앞뒤 공백, answers.yaml의 CRLF·CR·BOM이 같은 바이트.
 # 2. 음성 대조: 예제 사본에서 expected 한 바이트, expected 삭제, 결과 CSV 값, answers.yaml 답을 바꾸면
 #    check.py가 DIFF·MISSING과 종료 코드 1을 낸다. 사본 그대로면 모두 MATCH, 종료 코드 0.
 #    파일 수는 고정하지 않는다. 사본 examples의 expected 파일 목록(check.py 대상 종류)에서 센다.
-#    judgment.json: 사본에 7.2~7.5 블록을 넣으면 그 종류가 대상이 되고 모두 MATCH. 한 바이트, 한 파일 삭제,
-#    case.yaml 문턱을 바꾸면 judgment.json만 DIFF·MISSING. 모두 지우면 대상에서 빠진다.
-#    T-012: group 줄을 넣은 사본에 schema_version 2 블록을 넣으면 모두 MATCH. 한 바이트, 한 파일 삭제, group 줄 삭제,
-#    판 섞기(한 예제만 1)는 DIFF·MISSING. 1 블록 + group 줄(PR (b)를 하다 만 것)도 DIFF.
+#    judgment.json: 사본에 7.2~7.5 블록을 넣으면 모두 MATCH. 한 바이트, 한 파일 삭제, group 줄 삭제, case.yaml 문턱,
+#    옛 판(schema_version 1) 파일 하나는 그 파일만 DIFF·MISSING. 모두 지우면 대상에서 빠진다.
 # 3. 결정론: 문화권·해시 시드 환경 변수를 바꿔 check.py를 돌려도 표준 출력·보고서 바이트가 같다(judgment.json 사본 포함).
 # 실패가 하나라도 있으면 종료 코드 1. 저장소 파일은 읽기만 한다(사본은 임시 폴더).
 from __future__ import annotations
@@ -34,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -43,18 +41,12 @@ sys.path.insert(0, str(HERE))
 
 import json  # noqa: E402
 
-import judge as J2  # noqa: E402  T-012 판(judgment.md 11절)
-import judge_v1 as J1  # noqa: E402  T-011 동결본
-from check import OPTIONAL_TARGETS, TARGETS, judgment_rules  # noqa: E402
+import judge as J2  # noqa: E402  판정(judgment.md 4절). T-013에서 T-011 판(judge_v1)을 지웠다.
+from check import OPTIONAL_TARGETS, TARGETS  # noqa: E402
 from classify import DEFAULT_MARK, INFERRED_MARK, classification_bytes, classify, to_json_value  # noqa: E402
 from compare import DEC_MAX, compare_run, is_supported_pattern, judge, matches, metrics_bytes, parse_number, percent  # noqa: E402
-# 아래 이름은 T-011 판(judge_v1)이다. 옛 점검 함수(check_judgment_*)가 쓴다. T-012 점검은 J2.<이름>을 쓴다.
-from judge_v1 import (CHECK_TABLE, CHECK_THRESHOLD, FOCUS_MIN, READ_THRESHOLDS, THRESHOLD_DEFAULTS, TODO_TABLE,  # noqa: E402
-                      VERDICT_TABLE, Times, _type_columns, judgment_bytes, judgment_value)
-from judge_v1 import DEFAULT_MARK as JUDGMENT_MARK  # noqa: E402
-from judge_v1 import judge as judge_case  # noqa: E402
 from oracle_case import ANSWER_KEYS, CompareField, parse_case  # noqa: E402
-from oracle_common import OracleError, sha256_hex, utf8_stdio  # noqa: E402
+from oracle_common import OracleError, ordinal_key, sha256_hex, utf8_stdio  # noqa: E402
 from oracle_csv import normalize  # noqa: E402
 from oracle_json import render  # noqa: E402
 
@@ -303,20 +295,16 @@ def check_testdata(repo: Path, cls_spec: list, met_spec: list) -> None:
 
 # ---- 판정 점검 (judgment.md) ----
 
-EXAMPLE_NAMES = ('table-compare', 'form-fill', 'mixed-exceptions', 'signoff-final')
+def example_names(examples: Path) -> list:
+    """예제 이름 = examples/ 아래 폴더 이름(서수). 고정 목록을 두지 않는다(T-011a 지적, T-013)."""
+    return sorted((p.name for p in examples.iterdir() if p.is_dir()), key=ordinal_key)
+
+
 J_BASE = {'accuracy_min': '0', 'missing_max': '100', 'time_must_drop': 'false'}  # 정확도·누락률이 늘 met인 문턱
 
 
 def tick(text: str) -> str:
     return text.strip('`')
-
-
-def judgment_block(spec: list, name: str):
-    """7.2~7.5: (블록 바이트, SHA-256 줄의 값)."""
-    marker = f'`examples/{name}/expected/judgment.json` (SHA-256 `'
-    line = next(x for x in spec if x.startswith(marker))
-    sha = re.search(r'SHA-256 `([0-9a-f]{64})`', line).group(1)
-    return ('\n'.join(block_after(spec, marker)) + '\n').encode('utf-8'), sha
 
 
 class Scenes:
@@ -369,12 +357,6 @@ def alternate(bad: list):
     return set(bad[0::2]), set(bad[1::2])
 
 
-def judge_folder(folder: Path, times=None, unexplained=None):
-    case = parse_case((folder / 'case.yaml').read_bytes(), 'case.yaml')
-    run = compare_run(folder, case)
-    return judge_case(case, run, times, unexplained), case, run
-
-
 def results_of(res: dict) -> dict:
     return {c['rule']: c['result'] for c in res['checks']}
 
@@ -391,292 +373,7 @@ def expect_refused(label: str, fn) -> None:
         expect(True, '')
 
 
-def check_judgment_tables(spec: list) -> None:
-    """상수 = 스펙 표(4.2~4.7). oracle은 실행 중에 스펙을 읽지 않으므로 여기서 대조한다."""
-    rows = table(spec, '| 키 | 기본값 | 근거 |')
-    expect([(tick(k), tick(v)) for k, v, _ in rows] == list(THRESHOLD_DEFAULTS), '4.2 기본값 표 = THRESHOLD_DEFAULTS')
-    rows = table(spec, '| 순서 | 근거 키 | 걸리는 결과 | 판정 | 판정 문장 틀 |')
-    got = [(int(o), tick(k), None if r == '—' else tick(r), tick(v), tick(t)) for o, k, r, v, t in rows]
-    expect(got == list(VERDICT_TABLE), '4.3 판정 표 = VERDICT_TABLE')
-    rows = table(spec, '| 확인 | 결과 | 조건 | 확인 문장 틀 |')
-    expect([(tick(c), tick(r), tick(t)) for c, r, _cond, t in rows] == list(CHECK_TABLE), '4.4 확인 표 = CHECK_TABLE')
-    rows = table(spec, '| 이름 | 값 | 뜻 |')
-    expect([(tick(k), int(tick(v))) for k, v, _ in rows] == [('focus_min', FOCUS_MIN)], '4.5 숫자 표 = FOCUS_MIN')
-    rows = table(spec, '| 근거 키 | 읽은 문턱 |')
-    got = {tick(k): tuple(spans(v)) for k, v in rows}
-    expect(got == READ_THRESHOLDS and list(got) == list(READ_THRESHOLDS), '4.6 읽은 문턱 표 = READ_THRESHOLDS')
-    line = next(x for x in spec if x.startswith('- 확인 문장: '))
-    expect(dict(re.findall(r'`([A-Z]+)` → `([a-z_]+)`', line)) == CHECK_THRESHOLD, '4.6 확인 문장 문턱 = CHECK_THRESHOLD')
-    line = next(x for x in spec if x.startswith('- 표시 글자는 '))
-    expect('공백 하나 + `' + JUDGMENT_MARK[1:] + '`' in line and JUDGMENT_MARK.startswith(' '), '4.6 표시 글자')
-    rows = table(spec, '| 다음 할 일 | 언제 | 문구 |')
-    expect([(tick(k), tick(t)) for k, _w, t in rows] == list(TODO_TABLE), '4.7 다음 할 일 표 = TODO_TABLE')
-
-
-def check_judgment_examples(repo: Path, spec: list) -> None:
-    # 7.2~7.5: oracle 출력 = 스펙 블록 = SHA-256 줄. 예제 파일이 이미 있으면(PR (b) 뒤) 그것도 같아야 한다.
-    for name in EXAMPLE_NAMES:
-        block, sha = judgment_block(spec, name)
-        got = judgment_bytes(repo / 'examples' / name)
-        expect(got == block, f'7절 {name}: oracle 출력 = 스펙 블록')
-        expect(sha256_hex(block) == sha, f'7절 {name}: 블록 SHA-256 = SHA-256 줄')
-        expect(sha256_hex(got) == sha, f'7절 {name}: oracle SHA-256 = SHA-256 줄')
-        print(f'  judgment {name}: oracle {sha256_hex(got)} spec {sha} {"same" if got == block else "DIFF"}')
-        file = repo / 'examples' / name / 'expected/judgment.json'
-        if file.exists():
-            expect(file.read_bytes() == block, f'7절 {name}: expected/judgment.json = 스펙 블록')
-
-    # 7.1 예제 표.
-    for name, verdict, rule, checks, todo, _s12 in table(spec, '| 예제 | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 12절 |'):
-        value = json.loads(judgment_bytes(repo / 'examples' / tick(name)))
-        expect(value['verdict'] == tick(verdict) and value['rule'] == tick(rule), f'7.1 {name} 판정·근거 키')
-        expect([c['result'] for c in value['checks']] == ([] if checks == '—' else spans(checks)), f'7.1 {name} 확인 다섯')
-        expect([t['key'] for t in value['todo']] == ([] if todo == '—' else spans(todo)), f'7.1 {name} 다음 할 일')
-
-    # 3.2 속성 표: 경로가 table-compare 출력에 처음 나오는 순서, 형식.
-    kinds = {'정수': lambda v: type(v) is int, '문자열': lambda v: isinstance(v, str), '객체': lambda v: isinstance(v, dict),
-             '숫자': lambda v: type(v) in (int, float), '불리언': lambda v: isinstance(v, bool),
-             '문자열 배열': lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
-             '객체 배열': lambda v: isinstance(v, list) and all(isinstance(x, dict) for x in v)}
-    rows = table(spec, '| 속성 | 형식 | 뜻 |')
-    seen: dict = {}
-
-    def walk(value, prefix: str) -> None:
-        for k, v in value.items():
-            path = prefix + k
-            seen.setdefault(path, []).append(v)
-            if isinstance(v, dict):
-                walk(v, path + '.')
-            elif isinstance(v, list):
-                for x in v:
-                    if isinstance(x, dict):  # 표는 객체 원소만 '[]'로 적는다(문자열 배열 defaults의 원소는 없다).
-                        seen.setdefault(path + '[]', []).append(x)
-                        walk(x, path + '[].')
-
-    for name in EXAMPLE_NAMES:
-        before = list(seen)
-        walk(json.loads(judgment_bytes(repo / 'examples' / name)), '')
-        if name == 'table-compare':
-            expect(list(seen) == [tick(r[0]) for r in rows], f'3.2 속성 경로 순서 = 표 ({list(seen)})')
-        else:
-            expect(list(seen)[:len(before)] == before and len(seen) == len(before), f'3.2 {name}: 표 밖의 속성이 없다')
-    for path, form, _ in rows:
-        expect(all(kinds[form](v) for v in seen.get(tick(path), [])), f'3.2 {path} 형식 {form}')
-    first = judgment_bytes(repo / 'examples/table-compare')
-    expect(first.startswith(b'{\n  "schema_version": 1,\n'), '3.2 첫 키 schema_version = 정수 1')
-
-    # 4.8 예제 열 표: 유형 열(규칙 1·2).
-    for name, header, key, _cmp, rest in table(spec, '| 예제 | 기준 머리 행 | 키 | `compare` | 남는 열(유형 열) |'):
-        folder = repo / 'tests/Scorecard.Tests/TestData/guard/case-valid' if 'case-valid' in name else repo / 'examples' / name
-        case = parse_case((folder / 'case.yaml').read_bytes(), 'case.yaml')
-        run = compare_run(folder, case)
-        expect([','.join(h) for _f, h in run.reference_headers] == [tick(header)], f'4.8 {name} 기준 머리 행')
-        expect(case.inputs.key == tick(key), f'4.8 {name} 키')
-        expect(_type_columns(case, run) == ([] if rest == '없음' else spans(rest)), f'4.8 {name} 유형 열')
-
-    # 4.12: G2 표본 case-valid 판정.
-    value = json.loads(judgment_bytes(repo / 'tests/Scorecard.Tests/TestData/guard/case-valid'))
-    res = {c['rule']: c['result'] for c in value['checks']}
-    expect(value['verdict'] == 'hold' and value['rule'] == 'ACCURACY' and '66.7%' in value['reason'] and '90%' in value['reason'],
-           '4.12 G2 표본: 보류 ACCURACY(66.7% < 90)')
-    expect(res['TIME'] == 'not_measured' and res['FOCUS'] == 'off' and len(value['todo']) == 3, '4.12 G2 표본: 시간·몰림·할 일 셋')
-    expect_refused('대조 오류 표본 guard/compare-invalid 판정',
-                   lambda: judgment_bytes(repo / 'tests/Scorecard.Tests/TestData/guard/compare-invalid'))
-
-
-def check_judgment_scenes(spec: list) -> None:
-    with tempfile.TemporaryDirectory() as tmp:
-        sc = Scenes(Path(tmp))
-
-        # 6.1 문턱 경계: 셈으로 비교. 표시 퍼센트도 표와 같다.
-        head = '| 기준 행 | 일치 | 누락 | 표시 정확도(%) | accuracy_min | ACCURACY | 표시 누락률(%) | missing_max | MISSING |'
-        for ref, match, miss, acc_pct, acc_min, acc_res, miss_pct, miss_max, miss_res in table(spec, head):
-            n, m, ms = int(ref), int(match), int(miss)
-            folder = sc.make(n, missing=set(range(ms)), mismatch=set(range(ms, n - m)),
-                             thresholds={'accuracy_min': acc_min, 'missing_max': miss_max, 'time_must_drop': 'false'})
-            res, _case, run = judge_folder(folder)
-            got = results_of(res)
-            expect(run.body['accuracy_pct'].text == acc_pct and run.body['missing_rate_pct'].text == miss_pct,
-                   f'6.1 {ref}/{match}/{miss} 표시 퍼센트')
-            expect(got['ACCURACY'] == tick(acc_res) and got['MISSING'] == tick(miss_res),
-                   f'6.1 {ref}/{match}/{miss} {acc_min}·{miss_max}: {got["ACCURACY"]}, {got["MISSING"]}')
-
-        # 3.3 decimal 자릿수: 문턱은 case.yaml 글 그대로.
-        folder = sc.make(3, mismatch={0}, thresholds={'accuracy_min': '66.6', 'missing_max': '0.0', 'time_must_drop': 'false'})
-        res, case, run = judge_folder(folder)
-        out = render(judgment_value(case, run))
-        expect(b'"accuracy_min": 66.6,' in out and b'"missing_max": 0.0,' in out and '문턱 66.6% 이상'.encode() in out,
-               '3.3 문턱 자릿수 66.6·0.0')
-
-        # 6.2 시간.
-        for tmd, before, proc, rev, want in table(spec, '| time_must_drop | 적용 전 | 처리 | 검토 | TIME |'):
-            folder = sc.make(10, thresholds={**J_BASE, 'time_must_drop': tick(tmd)})
-            times = None if before == '없음' else Times(Decimal(before), Decimal(proc), Decimal(rev))
-            res, _c, _r = judge_folder(folder, times)
-            expect(results_of(res)['TIME'] == tick(want), f'6.2 {tmd} {before} {proc} {rev}: {results_of(res)["TIME"]}')
-        folder = sc.make(10, thresholds={**J_BASE, 'time_must_drop': 'true'})
-        res, _c, _r = judge_folder(folder, Times(Decimal('10'), Decimal('1.25'), Decimal('1.2')))
-        expect('= 2.45분이' in res['checks'][3]['reason'], '4.5 {total}: 1.25 + 1.2 = 2.45')
-        res, _c, _r = judge_folder(folder, Times(Decimal('7'), Decimal('7'), Decimal('3')))
-        expect(res['rule'] == 'TIME' and '처리·검토 시간 10분이 적용 전 7분보다 짧지 않으므로' in res['reason'], '4.3 TIME not_met 문장')
-        expect_refused('5절 시간 음수', lambda: judge_folder(folder, Times(Decimal('10'), Decimal('-1'), Decimal('0'))))
-        expect_refused('4.4 시간 합 넘침({total} 모양 미정)', lambda: judge_folder(folder, Times(Decimal('1'), DEC_MAX, Decimal('1'))))
-
-        # 6.3 몰림(유형 열 하나).
-        def expand(cell: str) -> list:
-            out = []
-            for s in ([] if cell == '(없음)' else spans(cell)):
-                v, _, cnt = s.partition('×')
-                out += [cell_value(v)] * (int(cnt) if cnt else 1)
-            return out
-
-        for ref_t, bad_t, extra_t, has, want in table(spec, '| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | 유형 열 | FOCUS |'):
-            groups, used, bad = expand(ref_t), set(), []
-            for t in expand(bad_t):
-                i = next(k for k, g in enumerate(groups) if g == t and k not in used)
-                used.add(i)
-                bad.append(i)
-            missing, mismatch = alternate(bad)
-            cols = [('grp', groups)] if has == '있음' else []
-            folder = sc.make(len(groups), cols, missing, mismatch, expand(extra_t), J_BASE)
-            res, _c, _r = judge_folder(folder)
-            expect(results_of(res)['FOCUS'] == tick(want), f'6.3 {ref_t} | {bad_t} | {extra_t} | {has}: {results_of(res)["FOCUS"]}')
-
-        # 6.3 유형 열 여럿.
-        for col_t, bad_t, want, hit, shown in table(spec, '| 열 값(행 1~6) | 불일치 행 | FOCUS | 걸린 열 | 본 열 |'):
-            cols = []
-            for s in spans(col_t):
-                name, vals = s.split('=')
-                cols.append((name, ['' if c == '_' else c for c in vals]))
-            missing, mismatch = alternate([int(x) - 1 for x in tick(bad_t).split(',')])
-            res, _c, _r = judge_folder(sc.make(6, cols, missing, mismatch, (), J_BASE))
-            focus = res['checks'][4]
-            label = f'6.3 {col_t} | {bad_t}'
-            expect(focus['result'] == tick(want), f'{label}: {focus["result"]}')
-            if hit != '—':
-                expect(f'모두 {tick(hit)}인 행이다(' in focus['reason'], f'{label}: 걸린 열 {focus["reason"]}')
-            if shown != '—':
-                text = f'(본 열: {tick(shown)})' if focus['result'] == 'spread' else f'열({tick(shown)})이'
-                expect(text in focus['reason'], f'{label}: 본 열 {focus["reason"]}')
-
-        # 4.8 규칙 1: 여러 기준 파일. 한 파일에만 있는 열은 유형 열이 아니다. 열 순서가 달라도 된다.
-        a = 'id,grp,v\nr1,a,1\nr2,a,1\nr3,b,1\n'.encode()
-        b = 'id,v,only_b,grp\nr4,1,q,b\nr5,1,q,b\nr6,1,w,b\n'.encode()
-        folder = sc.make(0, thresholds=J_BASE, ref_files={'a.csv': a, 'b.csv': b})
-        (folder / 'candidate/a.csv').write_bytes('id,v\nr2,2\nr3,1\nr4,1\nr5,1\nr6,1\n'.encode())
-        res, case, run = judge_folder(folder)
-        expect(_type_columns(case, run) == ['grp'], '4.8 여러 기준 파일: 유형 열 grp만')
-        expect(res['checks'][4]['result'] == 'found' and '모두 grp = a인 행이다(a 2행 중 2행, 다른 값 4행 중 0행)' in res['checks'][4]['reason'],
-               f'4.8 여러 기준 파일: found {res["checks"][4]["reason"]}')
-        # 빈 이름 열은 유형 열이 아니다.
-        res, case, run = judge_folder(sc.make(4, [('', ['a', 'a', 'b', 'b'])], {0}, {1}, (), J_BASE))
-        expect(_type_columns(case, run) == [] and res['checks'][4]['result'] == 'off', '4.8 빈 이름 열은 유형 열이 아니다')
-
-        # 5절 이스케이프·표시: 큰따옴표는 JSON에서 \\". 제어 문자·64자 넘는 값은 표시 모양을 스펙이 정하지 않아 멈춘다.
-        res, case, run = judge_folder(sc.make(4, [('grp', ['a"b', 'a"b', 'c', 'c'])], {0}, {1}, (), J_BASE))
-        expect(b'= a\\"b' in render(judgment_value(case, run)), '3.3 유형 값의 큰따옴표 \\"')
-        expect_refused('4.5 제어 문자 값', lambda: judge_folder(sc.make(4, [('grp', ['a\x01', 'a\x01', 'c', 'c'])], {0}, {1}, (), J_BASE)))
-        long_value = 'x' * 65
-        expect_refused('4.5 65자 값', lambda: judge_folder(sc.make(4, [('grp', [long_value] * 2 + ['c'] * 2)], {0}, {1}, (), J_BASE)))
-        res, _c, _r = judge_folder(sc.make(4, [('grp', ['y' * 64] * 2 + ['c'] * 2)], {0}, {1}, (), J_BASE))
-        expect(('= ' + 'y' * 64 + '인') in res['reason'], '4.5 64자 값은 그대로')
-
-        # 6.4 설명 안 되는 불일치.
-        for nbad, given, want in table(spec, '| 불일치 | 사람 입력 | UNEXPLAINED |'):
-            missing, mismatch = alternate(list(range(int(nbad))))
-            folder = sc.make(10, missing=missing, mismatch=mismatch, thresholds=J_BASE)
-            _res, _c, run = judge_folder(folder)
-            keys = bad_keys_of(run)
-            human = None if given == '없음' else [] if given == '`[]`' else keys[:int(given.rstrip('건'))]
-            res, _c, _r = judge_folder(folder, None, human)
-            expect(results_of(res)['UNEXPLAINED'] == tick(want), f'6.4 {nbad} {given}: {results_of(res)["UNEXPLAINED"]}')
-            if tick(want) == 'found':
-                expect(res['rule'] == 'UNEXPLAINED' and f'불일치가 {len(human)}건 있으므로 보류.' in res['reason'], f'6.4 {nbad} {given} 판정')
-        folder = sc.make(10, missing={0}, mismatch={1}, thresholds=J_BASE)
-        expect_refused('5절 불일치가 아닌 키', lambda: judge_folder(folder, None, ['r0009']))
-        expect_refused('5절 중복 키', lambda: judge_folder(folder, None, ['r0000', 'r0000']))
-
-        # 6.5 우선순위: 확인 다섯을 표대로 만드는 장면을 짓고 판정을 본다.
-        head = '| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 |'
-        for acc, miss, unexp, tim, focus, verdict, rule in table(spec, head):
-            acc, miss, unexp, tim, focus = map(tick, (acc, miss, unexp, tim, focus))
-            bad = [] if unexp == 'none' else [0] if focus == 'few' else [0, 5] if focus == 'spread' else [0, 1]
-            cols = [] if focus == 'off' else [('grp', ['a'] * 10 if focus == 'one_value' else ['a'] * 5 + ['b'] * 5)]
-            missing, mismatch = alternate(bad)
-            th = {'accuracy_min': '0' if acc == 'met' else '100', 'missing_max': '100' if miss == 'met' else '0',
-                  'time_must_drop': 'false' if tim == 'off' else 'true'}
-            folder = sc.make(10, cols, missing, mismatch, (), th)
-            times = {'met': Times(Decimal(10), Decimal(6), Decimal(3)), 'not_met': Times(Decimal(10), Decimal(7), Decimal(3))}.get(tim)
-            human = {'explained': [], 'found': [f'r{bad[0]:04d}'] if bad else None}.get(unexp)
-            res, _c, _r = judge_folder(folder, times, human)
-            got = results_of(res)
-            label = f'6.5 {acc} {miss} {unexp} {tim} {focus}'
-            expect([got[k] for k in ('ACCURACY', 'MISSING', 'UNEXPLAINED', 'TIME', 'FOCUS')] == [acc, miss, unexp, tim, focus],
-                   f'{label}: 장면 {got}')
-            expect((res['verdict'], res['rule']) == (tick(verdict), tick(rule)), f'{label}: {res["verdict"]} {res["rule"]}')
-            # 4.7 "언제" 칸: 측정한 판정의 다음 할 일.
-            want_todo = [k for k, cond in (('measure_time', got['TIME'] == 'not_measured'),
-                                           ('review_mismatches', got['UNEXPLAINED'] == 'not_reviewed'),
-                                           ('add_type_column', got['FOCUS'] == 'off')) if cond]
-            expect([t['key'] for t in res['todo']] == want_todo, f'{label}: 다음 할 일 {[t["key"] for t in res["todo"]]}')
-            if 'review_mismatches' in want_todo:
-                expect(res['todo'][want_todo.index('review_mismatches')]['text'] == f'불일치 {len(bad)}건을 보고 설명이 되는지 적는다.',
-                       f'{label}: review_mismatches 문구')
-
-        # 4.6 기본값 표시와 4.7 confirm_thresholds: 기본값과 같은 값을 적은 장면에서 키 하나씩 뺀다(판정은 그대로).
-        read = {tick(k): tuple(spans(v)) for k, v in table(spec, '| 근거 키 | 읽은 문턱 |')}
-        defaults = dict(THRESHOLD_DEFAULTS)
-        full = {k: v for k, v in THRESHOLD_DEFAULTS}
-        g5 = [('grp', ['a'] * 50 + ['b'] * 50)]
-        met_time = Times(Decimal(10), Decimal(6), Decimal(3))
-        plans = {  # 근거 키 → (행 수, 유형 열, 누락, 값 불일치, 시간, 사람 입력)
-            'ACCURACY': (10, (), {0}, {1}, None, None),
-            'MISSING': (100, (), {0, 1, 2}, set(), None, None),
-            'UNEXPLAINED': (100, (), {0}, {1}, None, ['r0000']),
-            'TIME': (100, (), {0}, {1}, None, None),
-            'FOCUS': (100, g5, {0}, {1}, met_time, None),
-            'PASS': (100, (), set(), set(), met_time, None),
-        }
-        for rule, (n, cols, missing, mismatch, times, human) in plans.items():
-            for drop in (None,) + tuple(defaults):
-                th = {k: v for k, v in full.items() if k != drop}
-                res, _c, _r = judge_folder(sc.make(n, cols, missing, mismatch, (), th), times, human)
-                label = f'4.6 {rule} 기본값 {drop}'
-                expect(res['rule'] == rule, f'{label}: 근거 키 {res["rule"]}')
-                expect(res['reason'].endswith(JUDGMENT_MARK) == (drop in read[rule]), f'{label}: 판정 문장 표시')
-                for c in res['checks']:
-                    expect(c['reason'].endswith(JUDGMENT_MARK) == (drop is not None and CHECK_THRESHOLD.get(c['rule']) == drop),
-                           f'{label}: {c["rule"]} 확인 문장 표시')
-                expect(all(x['reason'].count(JUDGMENT_MARK) <= 1 for x in [res] + res['checks']), f'{label}: 표시 한 번')
-                expect(res['defaults'] == ([] if drop is None else [drop]), f'{label}: defaults {res["defaults"]}')
-                conf = [t['text'] for t in res['todo'] if t['key'] == 'confirm_thresholds']
-                want = [] if drop is None else [f'문턱에 기본값을 썼다({drop} {defaults[drop]}). 맞는지 확인하고 case.yaml thresholds에 적는다.']
-                expect(conf == want, f'{label}: confirm_thresholds {conf}')
-
-        # 미검증(4.3 1행, 4.7): 판정 문장은 문턱을 읽지 않는다. thresholds가 없으면 셋 다 기본값.
-        for inputs, reason, want_todo in ((False, 'no_inputs', ['add_data', 'add_compare', 'measure_time', 'confirm_thresholds']),
-                                          (True, 'no_compare_fields', ['add_compare', 'measure_time', 'confirm_thresholds'])):
-            res, _c, _r = judge_folder(sc.make(1, inputs=inputs, compare=False))
-            label = f'미검증 {reason}'
-            expect(res['verdict'] == 'not_verified' and res['rule'] == 'NOT_VERIFIED' and res['checks'] == [], f'{label}: 판정')
-            expect(res['reason'] == next(r[4] for r in VERDICT_TABLE if r[2] == reason), f'{label}: 문장(표시 없음)')
-            expect(res['defaults'] == [k for k, _ in THRESHOLD_DEFAULTS], f'{label}: defaults 4.2 순서')
-            expect([t['key'] for t in res['todo']] == want_todo, f'{label}: 다음 할 일 {[t["key"] for t in res["todo"]]}')
-            res, _c, _r = judge_folder(sc.make(1, inputs=inputs, compare=False, thresholds={**J_BASE, 'time_must_drop': 'false'}))
-            expect([t['key'] for t in res['todo']] == want_todo[:-2], f'{label}: time_must_drop false면 measure_time 없음')
-            res, _c, _r = judge_folder(sc.make(1, inputs=inputs, compare=False, thresholds={'missing_max': '3'}))
-            expect(res['defaults'] == ['accuracy_min', 'time_must_drop'] and
-                   res['todo'][-1]['text'].startswith('문턱에 기본값을 썼다(accuracy_min 95, time_must_drop true).'),
-                   f'{label}: 일부만 적으면 빈 키만 기본값')
-
-        # 4.12 결정론·원본 불변: 같은 입력 두 번 같은 바이트, 판정 뒤 metrics.json 바이트 그대로.
-        folder = sc.make(10, [('grp', ['a'] * 5 + ['b'] * 5)], {0}, {1}, (), J_BASE)
-        m1 = metrics_bytes(folder)
-        j1, j2 = judgment_bytes(folder), judgment_bytes(folder)
-        expect(j1 == j2 and metrics_bytes(folder) == m1, '4.12 같은 입력 같은 바이트, metrics.json 그대로')
-
-
-# ---- 판정 점검: T-012 판 (judgment.md 11절, judge.py) ----
+# ---- 판정 점검 (judgment.md 4절 규칙, judge.py) ----
 
 V2_EXAMPLE_CASE_HEAD = '| 예제 | 더하는 줄 | 지금 SHA-256 | 더한 뒤 SHA-256 | 바이트 |'
 
@@ -684,8 +381,7 @@ V2_EXAMPLE_CASE_HEAD = '| 예제 | 더하는 줄 | 지금 SHA-256 | 더한 뒤 S
 def v2_block(spec: list, prefix: str):
     """prefix로 시작하는 줄 뒤의 블록 가운데 schema_version 2인 것 하나: (바이트, 그 줄의 SHA-256).
 
-    PR (a)에서는 11절 블록, PR (b)에서 7절로 옮긴 뒤에는 7절 블록이 그것이다(11.17). 옛 판(1) 블록은 건너뛴다.
-    옮기는 동안 두 곳에 같은 블록·SHA-256이 있으면 하나로 본다. 다르면 실패한다.
+    7.2~7.5 블록과 6.4 compare-duplicate 블록이다. 같은 블록·SHA-256이 두 곳에 있으면 하나로 본다. 다르면 실패한다.
     """
     found = []
     for k, line in enumerate(spec):
@@ -707,23 +403,23 @@ def v2_block(spec: list, prefix: str):
 
 
 def v2_examples(repo: Path, spec: list, root: Path) -> Path:
-    """examples 사본에 11.12 표의 줄을 key 줄 바로 뒤에 넣는다. 이미 들어 있으면(PR (b) 뒤) 그대로 쓴다."""
+    """examples 사본에 7.1 표의 줄을 key 줄 바로 뒤에 넣는다. 이미 들어 있으면(PR (b) 뒤) 그대로 쓴다."""
     dst = root / 'examples'
     shutil.copytree(repo / 'examples', dst)
     rows = table(spec, V2_EXAMPLE_CASE_HEAD)
-    expect([tick(r[0]) for r in rows] == ['table-compare', 'signoff-final'], f'11.12 case.yaml 표 예제 {rows}')
+    expect([tick(r[0]) for r in rows] == ['table-compare', 'signoff-final'], f'7.1 case.yaml 표 예제 {rows}')
     for name, line, before, after, size in rows:
         path = dst / tick(name) / 'case.yaml'
         data = path.read_bytes()
         if sha256_hex(data) == tick(before):
             lines = data.split(b'\n')
             at = [i for i, x in enumerate(lines) if x.startswith(b'  key: ')]
-            expect(len(at) == 1, f'11.12 {name}: key 줄이 하나')
+            expect(len(at) == 1, f'7.1 {name}: key 줄이 하나')
             lines.insert(at[0] + 1, tick(line).encode('utf-8'))
             data = b'\n'.join(lines)
             path.write_bytes(data)
-        expect(sha256_hex(data) == tick(after), f'11.12 {name}: case.yaml SHA-256 {sha256_hex(data)}')
-        expect(f'{len(data):,}' == size.split(' → ')[1], f'11.12 {name}: case.yaml 바이트 {len(data)}')
+        expect(sha256_hex(data) == tick(after), f'7.1 {name}: case.yaml SHA-256 {sha256_hex(data)}')
+        expect(f'{len(data):,}' == size.split(' → ')[1], f'7.1 {name}: case.yaml 바이트 {len(data)}')
     return dst
 
 
@@ -738,61 +434,67 @@ def items_of(run, *statuses) -> list:
 
 
 def check_v2_tables(spec: list) -> None:
-    """상수 = 스펙 표. 11.3~11.7과 T-012에서 그대로인 4.2·4.5·4.6."""
+    """상수 = 스펙 표. 4.3~4.9과 T-012에서 그대로인 4.2·4.5·4.6."""
     rows = table(spec, '| 키 | 기본값 | 근거 |')
     expect([(tick(k), tick(v)) for k, v, _ in rows] == list(J2.THRESHOLD_DEFAULTS), 'T-012 4.2 기본값 표 = THRESHOLD_DEFAULTS')
     rows = table(spec, '| 검토 항목 | 항목 상태 | {breakdown} 이름 |')
     got = [(tuple(spans(st)), name) for _item, st, name in rows]
-    expect(got == [(tuple(a), b) for a, b in J2.BREAKDOWN_PARTS], f'11.3 검토 항목 표 = BREAKDOWN_PARTS {got}')
-    expect(tuple(x for st, _ in got for x in st) == J2.REVIEW_STATUSES, '11.3 검토 항목 상태 = REVIEW_STATUSES')
+    expect(got == [(tuple(a), b) for a, b in J2.BREAKDOWN_PARTS], f'4.9 검토 항목 표 = BREAKDOWN_PARTS {got}')
+    expect(tuple(x for st, _ in got for x in st) == J2.REVIEW_STATUSES, '4.9 검토 항목 상태 = REVIEW_STATUSES')
     rows = table(spec, '| 순서 | 근거 키 | 확인 결과 | 판정 | 판정 문장 틀 |')
     got = [(int(o), tick(k), None if r == '—' else tick(r), tick(v), tick(t)) for o, k, r, v, t in rows]
-    expect(got == list(J2.VERDICT_TABLE), '11.4 판정 표 = VERDICT_TABLE')
+    expect(got == list(J2.VERDICT_TABLE), '4.3 판정 표 = VERDICT_TABLE')
     rows = table(spec, '| 확인 | 결과 | 걸리는 조건 | 확인 문장 틀 |')
-    expect([(tick(c), tick(r), tick(t)) for c, r, _cond, t in rows] == list(J2.CHECK_TABLE), '11.5 확인 표 = CHECK_TABLE')
+    expect([(tick(c), tick(r), tick(t)) for c, r, _cond, t in rows] == list(J2.CHECK_TABLE), '4.4 확인 표 = CHECK_TABLE')
     rows = table(spec, '| 이름 | 값 | 뜻 |')
     expect([(tick(k), int(tick(v))) for k, v, _ in rows] == [('focus_min', J2.FOCUS_MIN)], 'T-012 4.5 숫자 표 = FOCUS_MIN')
     rows = table(spec, '| 순서 | 근거 키 | 읽은 문턱 |')
     got = {int(o): (() if v == '—' else tuple(spans(v))) for o, _k, v in rows}
-    expect(got == J2.READ_THRESHOLDS and list(got) == list(J2.READ_THRESHOLDS), '11.6 읽은 문턱 표 = READ_THRESHOLDS')
+    expect(got == J2.READ_THRESHOLDS and list(got) == list(J2.READ_THRESHOLDS), '4.6 읽은 문턱 표 = READ_THRESHOLDS')
     rules = {o: k for o, k, *_ in J2.VERDICT_TABLE}
-    expect(all(rules[int(o)] == tick(k) for o, k, _v in rows), '11.6 읽은 문턱 표의 근거 키 = 판정 표의 그 순서')
+    expect(all(rules[int(o)] == tick(k) for o, k, _v in rows), '4.6 읽은 문턱 표의 근거 키 = 판정 표의 그 순서')
     line = next(x for x in spec if x.startswith('- 확인 문장: '))
     expect(dict(re.findall(r'`([A-Z]+)` → `([a-z_]+)`', line)) == J2.CHECK_THRESHOLD, 'T-012 4.6 확인 문장 문턱 = CHECK_THRESHOLD')
     line = next(x for x in spec if x.startswith('- 표시 글자는 '))
     expect('공백 하나 + `' + J2.DEFAULT_MARK[1:] + '`' in line and J2.DEFAULT_MARK.startswith(' '), 'T-012 4.6 표시 글자')
     rows = table(spec, '| 다음 할 일 | 나오는 때 | 문구 |')
-    expect([(tick(k), tick(t)) for k, _w, t in rows] == list(J2.TODO_TABLE), '11.7 다음 할 일 표 = TODO_TABLE')
-    expect(J2.SCHEMA_VERSION == 2, '11.2 schema_version 2')
+    expect([(tick(k), tick(t)) for k, _w, t in rows] == list(J2.TODO_TABLE), '4.7 다음 할 일 표 = TODO_TABLE')
+    expect(J2.SCHEMA_VERSION == 2, '3.2 schema_version 2')
 
 
 def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path) -> None:
-    for name in EXAMPLE_NAMES:
+    names = example_names(examples)
+    expect(len(names) > 0, '예제 폴더가 하나 이상')
+    head = '| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |'
+    listed = [tick(r[0]) for r in table(spec, head)]
+    expect(sorted(listed, key=ordinal_key) == names and len(set(listed)) == len(listed),
+           f'7.1 예제 표의 이름 = examples/ 폴더 이름 {listed} {names}')
+    for name in names:
         block, sha = v2_block(spec, f'`examples/{name}/expected/judgment.json` (')
         got = J2.judgment_bytes(examples / name)
-        expect(got == block, f'11.13 {name}: oracle 출력 = 스펙 블록')
-        expect(sha256_hex(block) == sha and sha256_hex(got) == sha, f'11.13 {name}: SHA-256 줄 {sha}')
+        expect(got == block, f'7.2~7.5 {name}: oracle 출력 = 스펙 블록')
+        expect(sha256_hex(block) == sha and sha256_hex(got) == sha, f'7.2~7.5 {name}: SHA-256 줄 {sha}')
         print(f'  judgment(T-012) {name}: oracle {sha256_hex(got)} spec {sha} {"same" if got == block else "DIFF"}')
         file = repo / 'examples' / name / 'expected/judgment.json'
         if file.exists() and b'"schema_version": 2,' in file.read_bytes()[:40]:
-            expect(file.read_bytes() == block, f'11.13 {name}: expected/judgment.json(2) = 스펙 블록')
-        # 한 줄을 더해도 metrics.json·classification.json은 그대로다(11.12).
+            expect(file.read_bytes() == block, f'7.2~7.5 {name}: expected/judgment.json(2) = 스펙 블록')
+        # 한 줄을 더해도 metrics.json·classification.json은 그대로다(7.1).
         expect(metrics_bytes(examples / name) == (repo / 'examples' / name / 'expected/metrics.json').read_bytes(),
-               f'11.12 {name}: group 줄을 넣은 사본의 metrics.json = expected')
+               f'7.1 {name}: group 줄을 넣은 사본의 metrics.json = expected')
         want_cls = (repo / 'examples' / name / 'expected/classification.json').read_bytes()
         expect(classification_bytes((examples / name / 'case.yaml').read_bytes(), 'case.yaml') == want_cls,
-               f'11.12 {name}: group 줄을 넣은 사본의 case.yaml 분류 = expected')
+               f'7.1 {name}: group 줄을 넣은 사본의 case.yaml 분류 = expected')
 
     head = '| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |'
     for name, group, verdict, rule, checks, todo, review in table(spec, head):
         res, case, run = judge_folder2(examples / tick(name))
         got_group = case.inputs.group if case.inputs else None
-        expect(got_group == (None if group == '없음' else tick(group)), f'11.12 {name} inputs.group {got_group}')
-        expect((res['verdict'], res['rule']) == (tick(verdict), tick(rule)), f'11.12 {name} 판정·근거 키')
-        expect([c['result'] for c in res['checks']] == ([] if checks == '—' else spans(checks)), f'11.12 {name} 확인 다섯')
-        expect([t['key'] for t in res['todo']] == ([] if todo == '—' else spans(todo)), f'11.12 {name} 다음 할 일')
+        expect(got_group == (None if group == '없음' else tick(group)), f'7.1 {name} inputs.group {got_group}')
+        expect((res['verdict'], res['rule']) == (tick(verdict), tick(rule)), f'7.1 {name} 판정·근거 키')
+        expect([c['result'] for c in res['checks']] == ([] if checks == '—' else spans(checks)), f'7.1 {name} 확인 다섯')
+        expect([t['key'] for t in res['todo']] == ([] if todo == '—' else spans(todo)), f'7.1 {name} 다음 할 일')
         items = [it for it in run.body['items'] if it['status'] in J2.REVIEW_STATUSES]
-        expect(J2.breakdown(items) == ('' if review == '—' else review), f'11.12 {name} 검토 항목 {J2.breakdown(items)}')
+        expect(J2.breakdown(items) == ('' if review == '—' else review), f'7.1 {name} 검토 항목 {J2.breakdown(items)}')
 
     # 3.2 속성 표(T-012 그대로): 경로 순서·형식. 첫 키는 정수 2.
     rows = table(spec, '| 속성 | 형식 | 뜻 |')
@@ -811,23 +513,33 @@ def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path) ->
                         walk(x, path + '[].')
 
     walk(json.loads(J2.judgment_bytes(examples / 'table-compare')), '')
-    expect(list(seen) == [tick(r[0]) for r in rows], f'T-012 3.2 속성 경로 순서 = 표 ({list(seen)})')
-    expect(J2.judgment_bytes(examples / 'table-compare').startswith(b'{\n  "schema_version": 2,\n'), '11.2 첫 키 schema_version = 정수 2')
+    expect(list(seen) == [tick(r[0]) for r in rows], f'3.2 속성 경로 순서 = 표 ({list(seen)})')
+    for name in names:
+        before = list(seen)
+        walk(json.loads(J2.judgment_bytes(examples / name)), '')
+        expect(list(seen) == before, f'3.2 {name}: 표 밖의 속성이 없다')
+    kinds = {'정수': lambda v: type(v) is int, '문자열': lambda v: isinstance(v, str), '객체': lambda v: isinstance(v, dict),
+             '숫자': lambda v: type(v) in (int, float), '불리언': lambda v: isinstance(v, bool),
+             '문자열 배열': lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
+             '객체 배열': lambda v: isinstance(v, list) and all(isinstance(x, dict) for x in v)}
+    for path, form, _ in rows:
+        expect(all(kinds[form](v) for v in seen.get(tick(path), [])), f'3.2 {path} 형식 {form}')
+    expect(J2.judgment_bytes(examples / 'table-compare').startswith(b'{\n  "schema_version": 2,\n'), '3.2 첫 키 schema_version = 정수 2')
 
-    # 11.14 G2 표본.
+    # 4.12 G2 표본.
     guard = repo / 'tests/Scorecard.Tests/TestData/guard'
     out = J2.judgment_bytes(guard / 'case-valid')
     value = json.loads(out)
     line = next(x for x in spec if x.startswith('- 출력 바이트가 바뀐다(SHA-256 `'))
-    expect(sha256_hex(out) in line, f'11.14 G2 표본 SHA-256 {sha256_hex(out)}')
-    expect((value['verdict'], value['rule']) == ('hold', 'ACCURACY'), '11.14 G2 표본 보류 ACCURACY')
+    expect(sha256_hex(out) in line, f'4.12 G2 표본 SHA-256 {sha256_hex(out)}')
+    expect((value['verdict'], value['rule']) == ('hold', 'ACCURACY'), '4.12 G2 표본 보류 ACCURACY')
     expect([c['result'] for c in value['checks']] == ['not_met', 'not_met', 'not_reviewed', 'not_measured', 'off'],
-           '11.14 G2 표본 확인 다섯')
-    expect([t['key'] for t in value['todo']] == ['measure_time', 'review_items', 'add_group'], '11.14 G2 표본 다음 할 일')
-    expect('검토할 항목 5건(불일치 4건, 추가 행 1건)' in value['checks'][2]['reason'], '11.14 G2 표본 검토 항목 5건')
+           '4.12 G2 표본 확인 다섯')
+    expect([t['key'] for t in value['todo']] == ['measure_time', 'review_items', 'add_group'], '4.12 G2 표본 다음 할 일')
+    expect('검토할 항목 5건(불일치 4건, 추가 행 1건)' in value['checks'][2]['reason'], '4.12 G2 표본 검토 항목 5건')
     expect_refused('T-012 대조 오류 표본 guard/compare-invalid 판정', lambda: J2.judgment_bytes(guard / 'compare-invalid'))
 
-    # metrics.md 12.5 compare-duplicate: 블록 → 폴더 → metrics.json = 블록, 판정 = judgment.md 11.9 블록.
+    # metrics.md 12.5 compare-duplicate: 블록 → 폴더 → metrics.json = 블록, 판정 = judgment.md 6.4 블록.
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp) / 'compare-duplicate'
         for rel in ('case.yaml', 'reference/rows.csv', 'candidate/rows.csv'):
@@ -844,8 +556,7 @@ def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path) ->
                'metrics 12.2 결과 행 = 일치 + 값 불일치 + 추가 + 중복 행')
         jblock, jsha = v2_block(spec, '`compare-duplicate` judgment.json (')
         got = J2.judgment_bytes(folder)
-        expect(got == jblock and sha256_hex(got) == jsha, f'11.9 compare-duplicate judgment.json {sha256_hex(got)}')
-        expect_refused('T-011 판은 group·결과 쪽 중복을 거절', lambda: J1.judgment_bytes(folder))
+        expect(got == jblock and sha256_hex(got) == jsha, f'6.4 compare-duplicate judgment.json {sha256_hex(got)}')
         # 기준 쪽 중복은 지금처럼 오류다.
         (folder / 'reference/rows.csv').write_bytes(b'row_id,kind,value\nr1,a,10\nr1,a,10\n')
         expect_refused('metrics 12.2 기준 쪽 중복은 오류', lambda: metrics_bytes(folder))
@@ -874,7 +585,7 @@ def expand_types(cell: str) -> list:
 
 
 def human_keys(text: str, run):
-    """11.9 "사람 입력" 칸 → 키 목록. 불일치·추가 행·중복 행·일치 N개, '두 번'."""
+    """6.4 "사람 입력" 칸 → 키 목록. 불일치·추가 행·중복 행·일치 N개, '두 번'."""
     if text == '없음':
         return None
     if text == '`[]`':
@@ -912,8 +623,19 @@ def check_v2_scenes(spec: list) -> None:
         folder = sc.make(10, thresholds={**J_BASE, 'time_must_drop': 'true'})
         res = judge_folder2(folder, J2.Times(Decimal('10'), Decimal('1.25'), Decimal('1.2')))[0]
         expect('처리 1.25분 + 검토 1.2분 = 2.45분이' in res['checks'][3]['reason'], 'T-012 4.5 {review}는 검토 시간, {total} 2.45')
+        res = judge_folder2(folder, J2.Times(Decimal('7'), Decimal('7'), Decimal('3')))[0]
+        expect(res['rule'] == 'TIME' and '처리·검토 시간 10분이 적용 전 7분보다 짧지 않으므로' in res['reason'], '4.3 TIME not_met 문장')
+        expect_refused('5절 시간 음수', lambda: judge_folder2(folder, J2.Times(Decimal('10'), Decimal('-1'), Decimal('0'))))
+        expect_refused('4.4 시간 합 넘침({total} 모양 미정)',
+                       lambda: judge_folder2(folder, J2.Times(Decimal('1'), DEC_MAX, Decimal('1'))))
+        # 3.3 decimal 자릿수: 문턱은 case.yaml 글 그대로.
+        folder = sc.make(3, mismatch={0}, thresholds={'accuracy_min': '66.6', 'missing_max': '0.0', 'time_must_drop': 'false'})
+        _res, case, run = judge_folder2(folder)
+        out = render(J2.judgment_value(case, run))
+        expect(b'"accuracy_min": 66.6,' in out and b'"missing_max": 0.0,' in out and '문턱 66.6% 이상'.encode() in out,
+               '3.3 문턱 자릿수 66.6·0.0')
 
-        # 11.8 몰림(열 하나). 기준 자료에는 늘 grp 열이 있다. inputs.group이 없음이면 줄을 넣지 않는다.
+        # 6.3 몰림(열 하나). 기준 자료에는 늘 grp 열이 있다. inputs.group이 없음이면 줄을 넣지 않는다.
         head = '| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | inputs.group | FOCUS |'
         for ref_t, bad_t, extra_t, group, want in table(spec, head):
             groups, used, bad = expand_types(ref_t), set(), []
@@ -925,11 +647,11 @@ def check_v2_scenes(spec: list) -> None:
             folder = sc.make(len(groups), [('grp', groups)], missing, mismatch, expand_types(extra_t), J_BASE,
                              group=None if group == '없음' else tick(group))
             res = judge_folder2(folder)[0]
-            expect(results_of(res)['FOCUS'] == tick(want), f'11.8 {ref_t} | {bad_t} | {extra_t} | {group}: {results_of(res)["FOCUS"]}')
+            expect(results_of(res)['FOCUS'] == tick(want), f'6.3 {ref_t} | {bad_t} | {extra_t} | {group}: {results_of(res)["FOCUS"]}')
             todo = [t['key'] for t in res['todo']]
-            expect(('add_group' in todo) == (tick(want) == 'off'), f'11.8 {ref_t} | {group}: add_group {todo}')
+            expect(('add_group' in todo) == (tick(want) == 'off'), f'6.3 {ref_t} | {group}: add_group {todo}')
 
-        # 11.8 몰림(열 여럿).
+        # 6.3 몰림(열 여럿).
         head = '| 열 값(행 1~6) | inputs.group | 불일치 행 | FOCUS | 걸린 값 |'
         for col_t, group, bad_t, want, hit in table(spec, head):
             cols = []
@@ -937,7 +659,7 @@ def check_v2_scenes(spec: list) -> None:
                 name, vals = s.split('=')
                 cols.append((name, ['' if c == '_' else c for c in vals]))
             missing, mismatch = alternate([int(x) - 1 for x in tick(bad_t).split(',')])
-            label = f'11.8 {col_t} | {group} | {bad_t}'
+            label = f'6.3 {col_t} | {group} | {bad_t}'
             folder = sc.make(6, cols, missing, mismatch, (), J_BASE, group=None if group == '없음' else tick(group))
             if want.startswith(('대조 오류', '파서 오류')):
                 expect_refused(f'{label}: {want}', lambda f=folder: judge_folder2(f))
@@ -950,15 +672,16 @@ def check_v2_scenes(spec: list) -> None:
                 expect(focus['reason'].startswith(f'불일치 2건이 {tick(group)} 열의' if focus['result'] == 'spread'
                                                   else f'{tick(group)} 열이 기준 자료에서'), f'{label}: {focus["reason"]}')
 
-        # 11.9 설명 안 되는 검토 항목.
+        # 6.4 설명 안 되는 검토 항목.
         head = '| 불일치 | 추가 행 | 중복 행 | 사람 입력 | UNEXPLAINED |'
         for nbad, nextra, ndup, given, want in table(spec, head):
-            missing, mismatch = alternate(list(range(int(nbad))))
+            # T-013(metrics.md 4.3): 결과 쪽에 두 번 나온 기준 키는 불일치다. 불일치 칸은 그 키도 센다.
+            missing, mismatch = alternate(list(range(int(nbad) - int(ndup))))
             folder = sc.make(10, missing=missing, mismatch=mismatch, extra=('',) * int(nextra),
                              thresholds=J_BASE, dup=list(range(9, 9 - int(ndup), -1)))
             _res, _c, run = judge_folder2(folder)
             human = human_keys(given, run)
-            label = f'11.9 {nbad}/{nextra}/{ndup} {given}'
+            label = f'6.4 {nbad}/{nextra}/{ndup} {given}'
             if want == '거절':
                 expect_refused(label, lambda f=folder, h=human: judge_folder2(f, None, h))
                 continue
@@ -975,11 +698,11 @@ def check_v2_scenes(spec: list) -> None:
             if tick(want) == 'not_reviewed':
                 expect(res['rule'] == 'UNEXPLAINED' and res['verdict'] == 'conditional', f'{label}: 조건부 {res["rule"]}')
         folder = sc.make(10, missing={0}, mismatch={1}, extra=('',), thresholds=J_BASE)
-        expect_refused('11.9 없는 키', lambda: judge_folder2(folder, None, ['nope']))
+        expect_refused('6.4 없는 키', lambda: judge_folder2(folder, None, ['nope']))
         res = judge_folder2(folder, None, ['x000'])[0]
-        expect(res['rule'] == 'UNEXPLAINED' and res['verdict'] == 'hold', '11.9 추가 행 키를 적을 수 있다(카드 수용 기준 1)')
+        expect(res['rule'] == 'UNEXPLAINED' and res['verdict'] == 'hold', '6.4 추가 행 키를 적을 수 있다(카드 수용 기준 1)')
 
-        # 11.10 우선순위.
+        # 6.5 우선순위.
         head = '| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 | 다음 할 일 |'
         for acc, miss, unexp, tim, focus, verdict, rule, todo in table(spec, head):
             acc, miss, unexp, tim, focus = map(tick, (acc, miss, unexp, tim, focus))
@@ -994,13 +717,13 @@ def check_v2_scenes(spec: list) -> None:
             human = {'explained': [], 'found': [f'r{bad[0]:04d}'] if bad else None}.get(unexp)
             res = judge_folder2(folder, times, human)[0]
             got = results_of(res)
-            label = f'11.10 {acc} {miss} {unexp} {tim} {focus}'
+            label = f'6.5 {acc} {miss} {unexp} {tim} {focus}'
             expect([got[k] for k in ('ACCURACY', 'MISSING', 'UNEXPLAINED', 'TIME', 'FOCUS')] == [acc, miss, unexp, tim, focus],
                    f'{label}: 장면 {got}')
             expect((res['verdict'], res['rule']) == (tick(verdict), tick(rule)), f'{label}: {res["verdict"]} {res["rule"]}')
             expect([t['key'] for t in res['todo']] == ([] if todo == '—' else spans(todo)), f'{label}: 다음 할 일 {res["todo"]}')
 
-        # 11.6 읽은 문턱: 기본값과 같은 값을 적은 장면에서 키 하나씩 뺀다(판정은 그대로). 순서마다.
+        # 4.6 읽은 문턱: 기본값과 같은 값을 적은 장면에서 키 하나씩 뺀다(판정은 그대로). 순서마다.
         defaults = dict(J2.THRESHOLD_DEFAULTS)
         g5 = [('grp', ['a'] * 50 + ['b'] * 50)]
         met_time = J2.Times(Decimal(10), Decimal(6), Decimal(3))
@@ -1021,7 +744,7 @@ def check_v2_scenes(spec: list) -> None:
             for drop in (None,) + tuple(defaults):
                 th = {k: v for k, v in defaults.items() if k != drop}
                 res = judge_folder2(sc.make(n, cols, missing, mismatch, (), th, group=group), times, human)[0]
-                label = f'11.6 순서 {order} {rule} 기본값 {drop}'
+                label = f'4.6 순서 {order} {rule} 기본값 {drop}'
                 expect(res['rule'] == rule and (result is None or results_of(res)[rule] == result), f'{label}: {res["rule"]}')
                 expect(res['reason'].endswith(J2.DEFAULT_MARK) == (drop in J2.READ_THRESHOLDS[order]), f'{label}: 판정 문장 표시')
                 for c in res['checks']:
@@ -1056,7 +779,7 @@ def check_v2_scenes(spec: list) -> None:
 
 
 def check_v2_probes(spec: list) -> None:
-    """11.11 탐침. 장면은 탐침 이름으로 짓는다. T-011 칸은 judge_v1, T-012 칸은 judge."""
+    """6.6 탐침. 장면은 탐침 이름으로 짓는다. T-012 칸만 judge로 본다. T-011 칸은 기록이다(T-013에서 judge_v1을 지웠다)."""
     th = {'accuracy_min': '95', 'missing_max': '2', 'time_must_drop': 'false'}
     memo = [('memo', [''] * 39 + ['확인'])]
     with tempfile.TemporaryDirectory() as tmp:
@@ -1069,8 +792,8 @@ def check_v2_probes(spec: list) -> None:
             'P4': sc.make(20, thresholds=th, dup=[3]),
         }
         rows = table(spec, '| 탐침 | 장면 | 사람 입력 | T-011 | T-012 |')
-        expect({tick(r[0]) for r in rows} == set(scenes), f'11.11 탐침 이름 {[r[0] for r in rows]}')
-        for probe, _scene, given, old, new in rows:
+        expect({tick(r[0]) for r in rows} == set(scenes), f'6.6 탐침 이름 {[r[0] for r in rows]}')
+        for probe, _scene, given, _old, new in rows:
             folder = scenes[tick(probe)]
             case = parse_case((folder / 'case.yaml').read_bytes(), 'case.yaml')
             run = compare_run(folder, case)
@@ -1082,21 +805,16 @@ def check_v2_probes(spec: list) -> None:
                 human = items_of(run, 'extra')
             else:
                 human = spans(given)
-            label = f'11.11 {probe} {given}'
+            label = f'6.6 {probe} {given}'
             res = J2.judge(case, run, None, human)
             expect([res['verdict'], res['rule']] == spans(new), f'{label}: T-012 {res["verdict"]} {res["rule"]}')
-            if old == '거절':
-                expect_refused(f'{label}: T-011 거절', lambda: J1.judge(case, run, None, human))
-            else:
-                r1 = J1.judge(case, run, None, human)
-                expect([r1['verdict'], r1['rule']] == spans(old), f'{label}: T-011 {r1["verdict"]} {r1["rule"]}')
         # 카드 수용 기준 6: 지어낸 30행은 통과가 아니고, 39행이 빈 메모 열은 몰림이 아니다.
         p1 = judge_folder2(scenes['P1'])[0]
-        expect(p1['verdict'] != 'pass' and '추가 행 30건' in p1['reason'], '11.11 P1 지어낸 30행 → 통과 아님')
+        expect(p1['verdict'] != 'pass' and '추가 행 30건' in p1['reason'], '6.6 P1 지어낸 30행 → 통과 아님')
         p2 = judge_folder2(scenes['P2'])[0]
-        expect(results_of(p2)['FOCUS'] == 'off' and p2['rule'] != 'FOCUS', '11.11 P2 메모 열 → 몰림 아님')
+        expect(results_of(p2)['FOCUS'] == 'off' and p2['rule'] != 'FOCUS', '6.6 P2 메모 열 → 몰림 아님')
         p4 = compare_run(scenes['P4'], parse_case((scenes['P4'] / 'case.yaml').read_bytes(), 'case.yaml'))
-        expect(items_of(p4, 'duplicate') == ['r0003'] and p4.body['counts']['candidate'] == 21, '11.11 P4 결과 쪽 중복 = 항목')
+        expect(items_of(p4, 'duplicate') == ['r0003'] and p4.body['counts']['candidate'] == 21, '6.6 P4 결과 쪽 중복 = 항목')
 
 
 def check_v2_parser(repo: Path, cs_spec: list) -> None:
@@ -1119,19 +837,22 @@ def check_v2_parser(repo: Path, cs_spec: list) -> None:
             expect_refused(label, lambda d=doc: parse_case(d, 'case.yaml'))
 
 
-def check_negative_v2(repo: Path, spec: list, examples: Path, v1_active: bool) -> None:
-    """PR (b) 모양 사본: group 줄 + schema_version 2 블록 → check.py 모두 MATCH. 바꾸면 DIFF·MISSING."""
+def check_negative_v2(repo: Path, spec: list, examples: Path) -> None:
+    """예제 사본 + 7.2~7.5 블록 → check.py 모두 MATCH. 바꾸면 그 파일만 DIFF·MISSING. 모두 지우면 대상이 아니다."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         copy = tmp / 'repo'
         shutil.copytree(examples, copy / 'examples')
         report = tmp / 'report.json'
+        names = example_names(copy / 'examples')
         paths = {}
-        for name in EXAMPLE_NAMES:
+        for name in names:
             block, _sha = v2_block(spec, f'`examples/{name}/expected/judgment.json` (')
             paths[name] = copy / 'examples' / name / 'expected/judgment.json'
             paths[name].write_bytes(block)
-        base = check_baseline(copy, report, 'T-012 사본 기준선(group 줄 + 블록 4개)')
+        base = check_baseline(copy, report, f'judgment 사본 기준선(group 줄 + 블록 {len(names)}개)')
+        others = [p for p in expected_files(copy / 'examples') if not p.endswith('/judgment.json')]
+        expect(len(base) == len(others) + len(names), f'judgment 사본: 종류 하나가 예제마다 더해진다 ({len(base)})')
 
         target = paths['table-compare']
         original = target.read_bytes()
@@ -1152,40 +873,118 @@ def check_negative_v2(repo: Path, spec: list, examples: Path, v1_active: bool) -
                  lambda: case_path.write_bytes(case_orig.replace(b'  group: signal_type\n', b'')),
                  lambda: case_path.write_bytes(case_orig), {'examples/table-compare/expected/judgment.json': 'DIFF'})
 
-        mixed = paths['form-fill']
-        mixed_orig = mixed.read_bytes()
-        v1_bytes = J1.judgment_bytes(repo / 'examples/form-fill')
-        scenario(copy, report, base, 'T-012 판 섞기(form-fill만 schema_version 1)', lambda: mixed.write_bytes(v1_bytes),
-                 lambda: mixed.write_bytes(mixed_orig),
-                 {f'examples/{n}/expected/judgment.json': 'DIFF' for n in EXAMPLE_NAMES})
+        th_orig = case_orig
+        expect(th_orig.count(b'  accuracy_min: 85\n') == 1, 'judgment 음성 대조 문턱 찾기')
+        scenario(copy, report, base, 'case.yaml 문턱(85 → 95)',
+                 lambda: case_path.write_bytes(th_orig.replace(b'  accuracy_min: 85\n', b'  accuracy_min: 95\n')),
+                 lambda: case_path.write_bytes(th_orig), {'examples/table-compare/expected/judgment.json': 'DIFF'})
+
+        # T-013: 판 고르기가 없다. 옛 판(schema_version 1) 파일은 그 파일만 DIFF다(ADR 0007 결정 4).
+        old = paths['form-fill']
+        old_orig = old.read_bytes()
+        expect(old_orig.count(b'"schema_version": 2,') == 1, 'T-013 음성 대조 schema_version 찾기')
+        scenario(copy, report, base, 'T-013 옛 판 expected 하나(form-fill만 schema_version 1)',
+                 lambda: old.write_bytes(old_orig.replace(b'"schema_version": 2,', b'"schema_version": 1,')),
+                 lambda: old.write_bytes(old_orig), {'examples/form-fill/expected/judgment.json': 'DIFF'})
 
         rc, out, _ = run_check(copy, report)
-        expect(rc == 0 and statuses(out) == base, 'T-012 음성 대조 뒤 되돌리면 다시 모두 MATCH')
-        check_determinism(copy, 'T-012 사본')
+        expect(rc == 0 and statuses(out) == base, 'judgment 음성 대조 뒤 되돌리면 다시 모두 MATCH')
+        check_determinism(copy, 'judgment 사본')
 
-    if not v1_active:
-        print('  T-012 하다 만 PR (b)(1 블록 + group 줄): 저장소 expected가 이미 2라 건너뛴다')
-        return
+        for path in paths.values():
+            path.unlink()
+        after = check_baseline(copy, report, 'judgment.json을 모두 지운 사본')
+        expect(not any(p.endswith('/judgment.json') for p in after), 'judgment.json이 하나도 없으면 대상이 아니다')
+
+
+
+# ---- T-013 (metrics.md 13절 결과 쪽 중복, judgment.md 5절 정의·대조 결과) ----
+
+DUP_ORDER_HEAD = '| r2 결과 행 | 기준 항목 차이 | 중복 항목 차이 | 일치 | 값 불일치 | compared | outside |'
+CONSISTENT_HEAD = '| 정의 | 대조 결과 | Judge |'
+
+
+def _diff_text(item) -> str:
+    return ', '.join(f"{d['reference']} → {d['candidate']}" for d in item['differences']) or '—'
+
+
+def check_t013(spec: list, met_spec: list) -> None:
+    jblock, _jsha = v2_block(spec, '`compare-duplicate` judgment.json (')
     with tempfile.TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
-        copy = tmp / 'repo'
-        shutil.copytree(repo / 'examples', copy / 'examples')
-        report = tmp / 'report.json'
-        base = check_baseline(copy, report, 'T-011 expected 사본 기준선')
-        cases = {n: copy / 'examples' / n / 'case.yaml' for n in ('table-compare', 'signoff-final')}
-        originals = {n: p.read_bytes() for n, p in cases.items()}
+        folder = Path(tmp) / 'compare-duplicate'
+        for rel in ('case.yaml', 'reference/rows.csv', 'candidate/rows.csv'):
+            (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+            (folder / rel).write_bytes(('\n'.join(block_after(met_spec, f'`compare-duplicate/{rel}`:')) + '\n').encode('utf-8'))
+        cand = (folder / 'candidate/rows.csv').read_bytes()
+        expect(cand.count(b'\nr2,21\nr2,20\n') == 1, 'metrics 13.3 compare-duplicate r2 두 행 찾기')
+        case = parse_case((folder / 'case.yaml').read_bytes(), 'case.yaml')
+        rows = table(met_spec, DUP_ORDER_HEAD)
+        expect(len(rows) >= 4, f'metrics 13.3 순서 표 {len(rows)}행')
+        for vals, ref_diff, dup_diff, match, mismatch, compared, outside in rows:
+            a, b = [tick(x) for x in spans(vals)]
+            (folder / 'candidate/rows.csv').write_bytes(cand.replace(b'\nr2,21\nr2,20\n', f'\nr2,{a}\nr2,{b}\n'.encode()))
+            body = compare_run(folder, case).body
+            r2 = [it for it in body['items'] if it['key'] == 'r2']
+            label = f'metrics 13.3 r2 {a}, {b}'
+            expect([it['status'] for it in r2] == ['mismatch', 'duplicate'], f'{label}: 항목 상태 {[it["status"] for it in r2]}')
+            expect([_diff_text(it) for it in r2] == [ref_diff.replace('`', ''), dup_diff.replace('`', '')],
+                   f'{label}: 차이 {[_diff_text(it) for it in r2]}')
+            c, f = body['counts'], body['fields'][0]
+            expect((c['match'], c['mismatch'], f['compared'], f['outside']) == (int(match), int(mismatch), int(compared), int(outside)),
+                   f'{label}: 셈 {c["match"]} {c["mismatch"]} {f["compared"]} {f["outside"]}')
+            expect(J2.judgment_bytes(folder) == jblock, f'{label}: 판정 = 6.4 compare-duplicate 블록')
+        # 키가 기준에 없는 중복(r5)은 줄 순서를 바꿔도 extra 1 + duplicate 1이다.
+        (folder / 'candidate/rows.csv').write_bytes(cand.replace(b'r5,50\n', b'r5,X\n').replace(b'r5,55\n', b'r5,50\n')
+                                                    .replace(b'r5,X\n', b'r5,55\n'))
+        body = compare_run(folder, case).body
+        expect([(it['status'], it['differences']) for it in body['items'] if it['key'] == 'r5'] == [('extra', []), ('duplicate', [])],
+               'metrics 13.2 기준에 없는 키의 중복은 extra + duplicate(차이 없음)')
 
-        def put():
-            for n, p in cases.items():
-                p.write_bytes((examples / n / 'case.yaml').read_bytes())
+    # judgment.md 4.8: 결과 쪽 중복 행은 몰림에 더 들지 않는다. 그 키의 기준 행은 불일치로 한 번 든다(T-012b 리뷰 2).
+    with tempfile.TemporaryDirectory() as tmp:
+        sc = Scenes(Path(tmp))
+        grp = [('grp', ['a'] * 5 + ['b'] * 5)]
+        res = judge_folder2(sc.make(10, grp, {0}, {1}, (), J_BASE, group='grp', dup=[1]))[0]
+        focus = res['checks'][4]
+        expect(focus['result'] == 'found' and focus['reason'].startswith('불일치 2건이 모두 grp = a인 행이다'),
+               f'4.8 불일치 키의 중복 행은 몰림에 더 들지 않는다: {focus["reason"]}')
+        res = judge_folder2(sc.make(10, grp, {0}, {1}, (), J_BASE, group='grp', dup=[9]))[0]
+        expect(res['checks'][4]['result'] == 'spread' and res['checks'][4]['reason'].startswith('불일치 3건이'),
+               f'4.8 일치 키를 결과 쪽에 한 번 더 두면 그 키가 불일치로 든다: {res["checks"][4]["reason"]}')
 
-        def back():
-            for n, p in cases.items():
-                p.write_bytes(originals[n])
-
-        scenario(copy, report, base, 'T-012 group 줄만 넣고 expected는 1(PR (b)를 하다 만 것)', put, back,
-                 {f'examples/{n}/expected/judgment.json': 'DIFF' for n in cases})
-
+        # judgment.md 5절: 대조 결과가 정의에서 나온 것이 아니면 거절(ArgumentException).
+        folders = {
+            'none': sc.make(4, inputs=False, compare=False, thresholds=J_BASE),
+            'nocmp': sc.make(4, compare=False, thresholds=J_BASE),
+            'full': sc.make(4, mismatch={0}, thresholds=J_BASE),
+            'group': sc.make(4, [('grp', ['a', 'a', 'b', 'b'])], {0}, {1}, (), J_BASE, group='grp'),
+        }
+        cases = {k: parse_case((f / 'case.yaml').read_bytes(), 'case.yaml') for k, f in folders.items()}
+        runs = {k: compare_run(folders[k], cases[k]) for k in folders}
+        full = cases['full']
+        defs = {'`inputs` 없음': cases['none'], '`compare` 빔': cases['nocmp'], '`inputs`·`compare` 있음': full,
+                '`inputs.group` 있음': cases['group']}
+        made = {
+            ('`inputs`·`compare` 있음', '대조함, 키 열이 다름'): (replace(full, inputs=replace(full.inputs, key='w')), runs['full']),
+            ('`inputs`·`compare` 있음', '대조함, `compare` 필드가 다름'):
+                (replace(full, compare=[replace(full.compare[0], field='w')]), runs['full']),
+            ('`inputs.group` 있음', '대조함, 기준 행 머리 행에 그 열이 없음'):
+                (replace(full, inputs=replace(full.inputs, group='grp')), runs['full']),
+            ('`inputs.group` 있음', '대조함(같은 정의)'): (cases['group'], runs['group']),
+            ('`inputs`·`compare` 있음', '대조함(같은 정의)'): (full, runs['full']),
+        }
+        run_of = {'미검증 `no_inputs`': runs['none'], '미검증 `no_compare_fields`': runs['nocmp'], '대조함': runs['full']}
+        rows = table(spec, CONSISTENT_HEAD)
+        expect(len(rows) >= 10, f'5절 정의·대조 결과 표 {len(rows)}행')
+        for d, r, want in rows:
+            if d == '(이름)':
+                continue  # 케이스 이름은 oracle 대조 결과에 없다. C# 쪽만 본다.
+            case, run = made.get((d, r)) or (defs[d], run_of[r])
+            label = f'5절 {d} + {r}'
+            if want == '거절':
+                expect_refused(label, lambda c=case, x=run: J2.judge(c, x))
+            else:
+                expect(J2.judge(case, run)['verdict'] in ('pass', 'conditional', 'hold', 'not_verified'), f'{label}: 판정')
 
 # ---- 줄바꿈·인코딩 변형 (metrics 3.3 [P:eol], classification 2절 [P:eol]) ----
 
@@ -1206,7 +1005,7 @@ def _csv_variants(data: bytes) -> dict:
 
 
 def check_variants(examples: Path) -> None:
-    """examples: group 줄을 넣은 예제 사본(11.12). judgment.json은 T-012 판으로 본다."""
+    """examples: group 줄을 넣은 예제 사본(7.1). judgment.json은 T-012 판으로 본다."""
     with tempfile.TemporaryDirectory() as tmp:
         for name in ('table-compare', 'signoff-final', 'form-fill'):
             src = examples / name
@@ -1319,54 +1118,6 @@ def check_negative(repo: Path) -> None:
         expect(rc3 == 0 and statuses(out3) == base, '음성 대조 뒤 되돌리면 다시 모두 MATCH')
 
 
-def check_negative_judgment(repo: Path, spec: list) -> None:
-    """judgment.json 종류: 사본에 7.2~7.5 블록을 넣으면 대상이 되고, 바꾸면 DIFF·MISSING, 모두 지우면 대상에서 빠진다."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
-        copy = tmp / 'repo'
-        shutil.copytree(repo / 'examples', copy / 'examples')
-        report = tmp / 'report.json'
-        before = expected_files(copy / 'examples')
-        paths = {}
-        for name in EXAMPLE_NAMES:
-            block, _sha = judgment_block(spec, name)
-            path = copy / 'examples' / name / 'expected/judgment.json'
-            if not path.exists():
-                path.write_bytes(block)
-            paths[name] = path
-        base = check_baseline(copy, report, 'judgment 사본 기준선(블록 4개)')
-        expect(len(base) == len([p for p in before if not p.endswith('/judgment.json')]) + len(EXAMPLE_NAMES),
-               f'judgment 사본: 종류 하나가 예제마다 더해진다 ({len(base)})')
-
-        target = paths['signoff-final']
-        original = target.read_bytes()
-        flipped = bytearray(original)
-        flipped[len(flipped) // 3] ^= 0x01
-        scenario(copy, report, base, 'judgment.json 한 바이트', lambda: target.write_bytes(bytes(flipped)),
-                 lambda: target.write_bytes(original), {'examples/signoff-final/expected/judgment.json': 'DIFF'})
-
-        gone = paths['form-fill']
-        kept = gone.read_bytes()
-        scenario(copy, report, base, 'judgment.json 하나 삭제', gone.unlink, lambda: gone.write_bytes(kept),
-                 {'examples/form-fill/expected/judgment.json': 'MISSING'})
-
-        case_path = copy / 'examples/table-compare/case.yaml'
-        case_orig = case_path.read_bytes()
-        expect(case_orig.count(b'  accuracy_min: 85\n') == 1, 'judgment 음성 대조 문턱 찾기')
-        scenario(copy, report, base, 'case.yaml 문턱(85 → 95)',
-                 lambda: case_path.write_bytes(case_orig.replace(b'  accuracy_min: 85\n', b'  accuracy_min: 95\n')),
-                 lambda: case_path.write_bytes(case_orig), {'examples/table-compare/expected/judgment.json': 'DIFF'})
-
-        rc, out, _ = run_check(copy, report)
-        expect(rc == 0 and statuses(out) == base, 'judgment 음성 대조 뒤 되돌리면 다시 모두 MATCH')
-        check_determinism(copy, 'judgment 사본')
-
-        for path in paths.values():
-            path.unlink()
-        after = check_baseline(copy, report, 'judgment.json을 모두 지운 사본')
-        expect(not any(p.endswith('/judgment.json') for p in after), 'judgment.json이 하나도 없으면 대상이 아니다')
-
-
 def check_determinism(repo: Path, label: str = '저장소') -> None:
     with tempfile.TemporaryDirectory() as tmp:
         outs = set()
@@ -1398,18 +1149,7 @@ def main(argv: list) -> int:
     check_metrics_tables(met_spec)
     check_testdata(repo, cls_spec, met_spec)
 
-    # T-011 판: check.py가 이 판을 쓸 때(expected judgment.json이 모두 schema_version 1)만 본다(judgment.md 11.15).
-    folders = sorted(p.name for p in (repo / 'examples').iterdir() if p.is_dir())
-    v1_active = judgment_rules(repo / 'examples', folders)[0] is J1
-    if v1_active:
-        check_judgment_tables(jud_spec)
-        check_judgment_examples(repo, jud_spec)
-        check_judgment_scenes(jud_spec)
-        check_negative_judgment(repo, jud_spec)
-    else:
-        print('  T-011 판(judge_v1) 점검: expected judgment.json이 schema_version 1이 아니라 건너뛴다')
-
-    # T-012 판: 늘 본다.
+    # 판정(judge.py 하나). 예제 사본은 7.1 표의 group 줄이 들어간 것이다(저장소 예제에 이미 있으면 그대로).
     with tempfile.TemporaryDirectory() as tmp:
         examples_v2 = v2_examples(repo, jud_spec, Path(tmp))
         check_v2_tables(jud_spec)
@@ -1418,7 +1158,8 @@ def main(argv: list) -> int:
         check_v2_probes(jud_spec)
         check_v2_parser(repo, cs_spec)
         check_variants(examples_v2)
-        check_negative_v2(repo, jud_spec, examples_v2, v1_active)
+        check_t013(jud_spec, met_spec)
+        check_negative_v2(repo, jud_spec, examples_v2)
     check_negative(repo)
     check_determinism(repo)
 

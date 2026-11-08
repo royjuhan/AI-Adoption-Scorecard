@@ -55,7 +55,7 @@ import cigit  # noqa: E402
 GUARD_SCRIPT = "tools/ci/regression_guard.py"
 ORACLE_CHECK = "tools/oracle/check.py"
 ORACLE_SELFTEST = "tools/oracle/selftest.py"
-# regression_guard에 --job 이름=결과로 넘기는 잡. ci.yml regression-guard 잡의 needs와 같다(단위 테스트가 대조한다).
+# regression_guard에 --job 이름=결과로 넘기는 잡. ci.yml regression-guard 잡의 needs와 같다(`tools/ci/test_regression_guard.py`의 `TestGuardJobsWiring.test_workflow_passes_every_needed_job`이 대조한다).
 GUARD_JOBS = ("mutation", "oracle", "oracle-head", "test-run")
 TOOL_PATHS = ("tools/ci", "tools/oracle", ".github/workflows/ci.yml")
 SOLUTION = "AIAdoptionScorecard.sln"

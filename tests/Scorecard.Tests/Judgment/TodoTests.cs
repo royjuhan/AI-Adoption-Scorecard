@@ -140,16 +140,18 @@ public class TodoTests
         AssertTodo(judged, scene.Slots(), expected.ToArray());
     }
 
-    // 11.7 review_items 문구의 {items}·{breakdown}: 불일치·추가 행·중복 행을 11.3 표 순서로 센다. 0인 이름은 쓰지 않는다.
-    // 불일치 없이 추가 행·중복 행만 있어도 review_items가 나온다(검토 항목이다, T-012 카드 수용 기준 1).
+    // 4.7 review_items 문구의 {items}·{breakdown}: 불일치·추가 행·중복 행을 4.9 표 순서로 센다. 0인 이름은 쓰지 않는다.
+    // 불일치 없이 추가 행만 있어도 review_items가 나온다(검토 항목이다, T-012 카드 수용 기준 1).
+    // T-013(metrics.md 4.3): 기준 키의 중복 행은 그 키를 불일치로 센다. bad는 6.4 표의 불일치 칸처럼 그 키를 센 수다.
+    // 장면은 bad − duplicates만큼 보통 값 불일치를 두고, 나머지는 일치하던 기준 키를 결과 끝에 한 번 더 둔다(judgment.md 12.5).
     [Theory]
     [InlineData(2, 0, 0, "불일치 2건")]
     [InlineData(0, 3, 0, "추가 행 3건")]
-    [InlineData(0, 0, 1, "중복 행 1건")]
-    [InlineData(1, 1, 2, "불일치 1건, 추가 행 1건, 중복 행 2건")]
+    [InlineData(1, 0, 1, "불일치 1건, 중복 행 1건")]
+    [InlineData(3, 1, 2, "불일치 3건, 추가 행 1건, 중복 행 2건")]
     public void Review_items_text_counts_items_by_kind(int bad, int extras, int duplicates, string breakdown)
     {
-        var rows = JudgmentInput.Rows(20, mismatch: bad);
+        var rows = JudgmentInput.Rows(20, mismatch: bad - duplicates);
         var extraRows = Enumerable.Range(0, extras).Select(i => new SceneRow(JudgmentInput.ExtraKey(i), [], SceneRow.Match)).ToArray();
         var scene = new JudgmentScene(Columns: [], Rows: rows, Extras: extraRows, AccuracyMin: "0", MissingMax: "100", TimeMustDrop: "false")
         {
@@ -157,6 +159,7 @@ public class TodoTests
             Duplicates = Enumerable.Range(0, duplicates).Select(i => rows[^(i + 1)]).ToArray(),
         };
 
+        Assert.Equal(bad, scene.Bad);
         var judged = scene.Judge();
         var slots = scene.Slots();
 

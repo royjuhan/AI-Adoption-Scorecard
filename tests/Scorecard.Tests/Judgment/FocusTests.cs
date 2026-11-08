@@ -284,6 +284,60 @@ public partial class FocusTests
         }
     }
 
+    // 4.8 결과 쪽 중복 글머리(T-013, 카드 수용 기준 6): 이미 불일치인 키를 결과 쪽에 한 번 더 두어도 {bad}가 그대로다.
+    // 그 키의 duplicate 항목은 기준 행 위치를 가지지만 몰림 셈({bad}, {rows_in}, {rows_out})에 들지 않는다(규칙 3).
+    // 확인 문장이 중복 행이 없는 장면과 같다: "a 2행 중 2행, 다른 값 8행 중 0행".
+    [Fact]
+    public void Duplicate_of_a_mismatch_key_does_not_change_focus_counts()
+    {
+        var plain = DuplicateFocusScene(mismatch: [0, 5]);
+        var repeated = plain with { Duplicates = [plain.Rows[0]] };
+
+        var before = JudgmentInput.CheckOf(plain.Judge(), JudgmentSpec.Focus);
+        var after = JudgmentInput.CheckOf(repeated.Judge(), JudgmentSpec.Focus);
+
+        Assert.Equal(JudgmentInput.Found, after.Result);
+        Assert.Equal(before, after);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Focus, JudgmentInput.Found).Template, repeated.Slots()), after.Reason);
+        Assert.Contains("(a 2행 중 2행, 다른 값 8행 중 0행)", after.Reason, StringComparison.Ordinal);
+        Assert.Single(repeated.Metrics().Items, i => i.Status == CompareEngine.ItemDuplicate && i.Reference is not null);
+    }
+
+    // 4.8 결과 쪽 중복 글머리(T-013): 일치하던 기준 키를 결과 쪽에 한 번 더 두면 그 키가 값 불일치로 몰림에 든다(한 번만).
+    // 불일치 1건(few)이던 장면이 불일치 2건(둘 다 a)이 되어 found다. 기준 행 수는 그대로다: "a 2행 중 2행, 다른 값 8행 중 0행".
+    [Fact]
+    public void Duplicate_of_a_match_key_counts_that_key_once_for_focus()
+    {
+        var plain = DuplicateFocusScene(mismatch: [0]);
+        var repeated = plain with { Duplicates = [plain.Rows[5]] };
+
+        Assert.Equal(JudgmentInput.Few, JudgmentInput.CheckOf(plain.Judge(), JudgmentSpec.Focus).Result);
+        var judged = repeated.Judge();
+        var focus = JudgmentInput.CheckOf(judged, JudgmentSpec.Focus);
+
+        Assert.Equal([plain.Rows[0].Key, plain.Rows[5].Key], repeated.BadKeys);
+        Assert.Equal(JudgmentInput.Found, focus.Result);
+        Assert.Equal(JudgmentSpec.Fill(JudgmentSpec.FindCheck(JudgmentSpec.Focus, JudgmentInput.Found).Template, repeated.Slots()), focus.Reason);
+        Assert.Contains("불일치 2건이 모두 grp = a인 행이다(a 2행 중 2행, 다른 값 8행 중 0행)", focus.Reason, StringComparison.Ordinal);
+        Assert.Equal((JudgmentEngine.VerdictConditional, JudgmentEngine.RuleFocus), (judged.Verdict, judged.Rule));
+    }
+
+    // 4.8 중복 장면: 기준 10행, grp는 0행·5행만 a(나머지 b). mismatch 행은 값 불일치(누락이면 중복 행을 둘 수 없다). inputs.group = grp.
+    private static JudgmentScene DuplicateFocusScene(int[] mismatch) =>
+        new(
+            Columns: [JudgmentInput.Group],
+            Rows: Enumerable.Range(0, 10)
+                .Select(i => new SceneRow(JudgmentInput.Key(i), [i is 0 or 5 ? "a" : "b"], mismatch.Contains(i) ? SceneRow.Mismatch : SceneRow.Match))
+                .ToArray(),
+            Extras: [],
+            AccuracyMin: "0",
+            MissingMax: "100",
+            TimeMustDrop: "false")
+        {
+            Group = JudgmentInput.Group,
+            FocusValue = "a",
+        };
+
     private const string AddGroup = "add_group";
     private const string GroupPath = "inputs.group";
     private const string CompareErrorPrefix = "대조 오류 ";

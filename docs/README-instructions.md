@@ -92,7 +92,7 @@ AI가 추정한 답(단계의 `inferred`)이 쓰인 근거 문장 끝에는 `(AI
 | 재작업률(%) | 다시 처리한 건 / 전체 |
 | 완료당 비용 | (구축·검증비 + 운영·유지비 + 검토·재작업 비용) / 같은 품질로 완료한 건수 |
 
-판정(케이스의 `thresholds`로 숫자 조정): 통과 = 정확도 ≥ `accuracy_min` 그리고 누락률 ≤ `missing_max` 그리고 (처리+검토 시간) < 적용 전 시간. 조건부 = 정확도는 충족하나 시간이 줄지 않았거나 특정 유형에만 불일치가 몰림. 보류 = 정확도 미달 또는 설명 안 되는 불일치. 미검증 = 자료 없음(무엇을 재면 되는지 적는다). AI 과잉 후보 = `current_actor == ai_each_time`인데 분류가 ②.
+판정(케이스의 `thresholds`로 숫자 조정): 통과 = 정확도 ≥ `accuracy_min` 그리고 누락률 ≤ `missing_max` 그리고 (처리+검토 시간) < 적용 전 시간. 조건부 = 정확도는 충족하나 시간이 줄지 않았거나 특정 유형에만 불일치가 몰림, 또는 사람이 아직 안 본 검토 항목(불일치·추가 행·중복 행)이 있음. 보류 = 정확도 미달 또는 설명 안 되는 불일치(사람이 설명할 수 없다고 적은 검토 항목). 미검증 = 자료 없음(무엇을 재면 되는지 적는다). AI 과잉 후보 = `current_actor == ai_each_time`인데 분류가 ②.
 
 ### 3.5 스코어카드 (HTML 한 장)
 
@@ -170,7 +170,7 @@ AI-Adoption-Scorecard/                 (공개 저장소)
 └─ notebooks/
 ```
 
-`examples/*/expected/`에는 `classification.json`(단계별 분류·근거 키), `metrics.json`(정확도·누락률 등), `report-outline.json`(평가서 섹션별 핵심 값)이 들어간다. 테스트는 도구 출력과 이 세 파일을 비교한다. JSON 파일은 첫 키가 `schema_version`이다(2026-11-07 사람 결정: ADR 0004).
+`examples/*/expected/`에는 `classification.json`(단계별 분류·근거 키), `metrics.json`(정확도·누락률 등), `judgment.json`(판정·근거 문장·다음 할 일), `report-outline.json`(평가서 섹션별 핵심 값)이 들어간다. 테스트는 도구 출력과 이 파일들을 비교한다. JSON 파일은 첫 키가 `schema_version`이다(2026-11-07 사람 결정: ADR 0004).
 
 ## 6. 에이전트 정의 — `.claude/agents/` 에 그대로 만든다
 

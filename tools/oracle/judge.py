@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# oracle 판정(judgment.json schema_version 2). docs/spec/judgment.md 2절, 3.1~3.3, 4.1~4.10과 11절(T-012 개정)만 보고 짰다
-# (src/는 읽지 않았다, ADR 0005 결정 9). 11절이 바꾼 곳은 11절 표를 따른다. T-011 규칙(schema_version 1)은 judge_v1.py 동결본이다.
-# 대조는 oracle compare.py의 결과(metrics.md 3.1 메모리 결과: 항목과 기준 행 전부, metrics.md 12.2 duplicate 항목)를 쓴다.
-# 규칙 값(4.2 기본값, 11.3 검토 항목, 11.4 판정 표, 11.5 확인 표, 4.5 focus_min, 11.6 읽은 문턱, 11.7 다음 할 일)은
+# oracle 판정(judgment.json schema_version 2). docs/spec/judgment.md 2절, 3.1~3.3, 4.1~4.10, 5절만 보고 짰다
+# (src/는 읽지 않았다, ADR 0005 결정 9). T-013에서 T-011 판(judge_v1.py)과 판 고르기를 지웠다(ADR 0007 결정 4, ADR 0008).
+# 대조는 oracle compare.py의 결과(metrics.md 3.1 메모리 결과: 항목과 기준 행 전부, metrics.md 4.3 duplicate 항목)를 쓴다.
+# 규칙 값(4.2 기본값, 4.9 검토 항목, 4.3 판정 표, 4.4 확인 표, 4.5 focus_min, 4.6 읽은 문턱, 4.7 다음 할 일)은
 # 스펙 표를 손으로 옮겨 이 파일에 적었다. 실행 중에 스펙 문서를 읽지 않는다. selftest.py가 상수와 표를 대조한다.
 #
 # 사용: python3 tools/oracle/judge.py <케이스 폴더>
@@ -20,19 +20,19 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # 저장소에 __pycache__를 쓰지 않는다.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from compare import (DEC_MAX, ITEM_DUPLICATE, ITEM_EXTRA, ITEM_MISMATCH, ITEM_MISSING, STATUS_NOT_VERIFIED,  # noqa: E402
-                     CompareRun, _case_yaml, _fits, compare_run)
+from compare import (DEC_MAX, ITEM_DUPLICATE, ITEM_EXTRA, ITEM_MISMATCH, ITEM_MISSING, REASON_NO_COMPARE_FIELDS,  # noqa: E402
+                     REASON_NO_INPUTS, STATUS_MEASURED, STATUS_NOT_VERIFIED, CompareRun, _case_yaml, _fits, compare_run)
 from oracle_case import Case, parse_case  # noqa: E402
 from oracle_common import EXACT, OracleError, utf16_units, utf8_stdio  # noqa: E402
 from oracle_json import JsonNumber, render  # noqa: E402
 
-SCHEMA_VERSION = 2  # judgment.md 11.2: T-012가 속성 뜻을 바꿔 1 → 2(ADR 0004 결정 2)
+SCHEMA_VERSION = 2  # judgment.md 3.2: T-012가 속성 뜻을 바꿔 1 → 2(ADR 0004 결정 2)
 CASE_FILE = 'case.yaml'
 
 # 0절 판정 값.
 VERDICT_PASS, VERDICT_CONDITIONAL, VERDICT_HOLD, VERDICT_NOT_VERIFIED = 'pass', 'conditional', 'hold', 'not_verified'
 
-# 11.3: 검토 항목 = 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행.
+# 4.9: 검토 항목 = 불일치(값 불일치·누락) + 추가 행 + 결과 쪽 중복 행.
 REVIEW_STATUSES = (ITEM_MISMATCH, ITEM_MISSING, ITEM_EXTRA, ITEM_DUPLICATE)
 
 # 4.2 문턱 기본값 표(T-012 그대로). (키, 기본값 글). 표 순서가 defaults 순서다.
@@ -42,7 +42,7 @@ THRESHOLD_DEFAULTS = (
     ('time_must_drop', 'true'),
 )
 
-# 11.4 판정 표. (순서, 근거 키, 확인 결과, 판정, 판정 문장 틀). 위에서부터 처음 걸리는 행. PASS는 결과 없음(None).
+# 4.3 판정 표. (순서, 근거 키, 확인 결과, 판정, 판정 문장 틀). 위에서부터 처음 걸리는 행. PASS는 결과 없음(None).
 VERDICT_TABLE = (
     (1, 'NOT_VERIFIED', 'no_inputs', 'not_verified', '검증 자료(case.yaml inputs)가 없어 미검증.'),
     (1, 'NOT_VERIFIED', 'no_compare_fields', 'not_verified', '대조할 열(case.yaml compare)이 없어 미검증.'),
@@ -60,7 +60,7 @@ VERDICT_TABLE = (
     (8, 'PASS', None, 'pass', '정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.'),
 )
 
-# 11.5 확인 표. (확인, 결과, 확인 문장 틀). 확인 순서는 표에서 처음 나오는 순서다.
+# 4.4 확인 표. (확인, 결과, 확인 문장 틀). 확인 순서는 표에서 처음 나오는 순서다.
 CHECK_TABLE = (
     ('ACCURACY', 'met', '정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}% 이상이다.'),
     ('ACCURACY', 'not_met', '정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}%에 못 미친다.'),
@@ -89,7 +89,7 @@ FOCUS_MIN = 2
 # 4.6: 확인 문장이 쓰는 문턱(T-012 그대로). UNEXPLAINED·FOCUS는 문턱을 쓰지 않는다.
 CHECK_THRESHOLD = {'ACCURACY': 'accuracy_min', 'MISSING': 'missing_max', 'TIME': 'time_must_drop'}
 
-# 11.6 읽은 문턱 표. 판정 표의 순서마다. 판정 문장은 이 문턱 가운데 하나라도 기본값이면 표시를 붙인다.
+# 4.6 읽은 문턱 표. 판정 표의 순서마다. 판정 문장은 이 문턱 가운데 하나라도 기본값이면 표시를 붙인다.
 READ_THRESHOLDS = {
     1: (),
     2: ('accuracy_min',),
@@ -104,7 +104,7 @@ READ_THRESHOLDS = {
 # 4.6 표시 글자(classification.md 4.6과 같다): 공백 하나 + 괄호 글.
 DEFAULT_MARK = ' (기본값 사용, 확인 필요)'
 
-# 11.7 다음 할 일 표. (키, 문구). 표 순서가 todo 순서다. 언제 나오는지는 judge()가 표의 "나오는 때" 칸대로 정한다.
+# 4.7 다음 할 일 표. (키, 문구). 표 순서가 todo 순서다. 언제 나오는지는 judge()가 표의 "나오는 때" 칸대로 정한다.
 TODO_TABLE = (
     ('add_data', '기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 '
                  'case.yaml inputs에 파일 패턴과 키 열을 적는다.'),
@@ -115,7 +115,7 @@ TODO_TABLE = (
     ('confirm_thresholds', '문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.'),
 )
 
-# 11.3 {breakdown}: 0이 아닌 것만 이 순서로 ', '로 잇는다. (항목 상태들, 이름).
+# 4.9 {breakdown}: 0이 아닌 것만 이 순서로 ', '로 잇는다. (항목 상태들, 이름).
 BREAKDOWN_PARTS = (
     ((ITEM_MISMATCH, ITEM_MISSING), '불일치'),
     ((ITEM_EXTRA,), '추가 행'),
@@ -195,14 +195,14 @@ def effective_thresholds(case: Case):
     return values, defaults
 
 
-# ---- 확인 다섯 (4.4, 11.5) ----
+# ---- 확인 다섯 (4.4) ----
 
 def _cell(row, column: str) -> str:
     return row.values[row.header.index(column)]
 
 
 def _focus(case: Case, run: CompareRun, bad_rows: list):
-    """11.8 규칙 1~5(M-A). (결과, 문장 값 dict). 값은 기준 행의 칸만 본다. 결과 자료·추가 행·중복 행은 보지 않는다."""
+    """4.8 규칙 1~5(M-A). (결과, 문장 값 dict). 값은 기준 행의 칸만 본다. 결과 자료·추가 행·중복 행은 보지 않는다."""
     bad = len(bad_rows)
     if bad < FOCUS_MIN:
         return 'few', {}
@@ -248,7 +248,7 @@ def _time(values: dict, times: Times | None):
 
 
 def breakdown(items: list) -> str:
-    """11.3 {breakdown}: 불일치·추가 행·중복 행 가운데 0이 아닌 것을 이 순서로 '이름 N건'을 ', '로 잇는다."""
+    """4.9 {breakdown}: 불일치·추가 행·중복 행 가운데 0이 아닌 것을 이 순서로 '이름 N건'을 ', '로 잇는다."""
     parts = []
     for statuses, name in BREAKDOWN_PARTS:
         n = sum(1 for it in items if it['status'] in statuses)
@@ -257,8 +257,29 @@ def breakdown(items: list) -> str:
     return ', '.join(parts)
 
 
+def check_consistent(case: Case, run: CompareRun) -> None:
+    """5절(T-013): 대조 결과가 이 정의에서 나온 것인지 본다. 아니면 ArgumentException(부르는 쪽 잘못)이다.
+
+    케이스 이름은 oracle의 대조 결과에 없다(compare 부분만 있다). 그래서 이름 비교는 C# 쪽만 한다.
+    """
+    body = run.body
+    if case.inputs is None:
+        ok = body['status'] == STATUS_NOT_VERIFIED and body['reason'] == REASON_NO_INPUTS
+    elif not case.compare:
+        ok = body['status'] == STATUS_NOT_VERIFIED and body['reason'] == REASON_NO_COMPARE_FIELDS
+    else:
+        ok = (body['status'] == STATUS_MEASURED and body['key'] == case.inputs.key
+              and [f['field'] for f in body['fields']] == [f.field for f in case.compare])
+        group = case.inputs.group
+        if ok and group is not None:
+            ok = all(r.header.count(group) == 1 for r in run.reference_rows)
+    if not ok:
+        raise OracleError('대조 결과가 정의와 맞지 않는다 (ArgumentException 입력, 범위 밖)')
+
+
 def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_keys=None) -> dict:
-    """판정(4.1~4.10, 11절). 순수 함수. 반환: judgment.json의 schema_version·case 뒤 속성들(dict, 출력 순서)."""
+    """판정(4.1~4.10). 순수 함수. 반환: judgment.json의 schema_version·case 뒤 속성들(dict, 출력 순서)."""
+    check_consistent(case, run)
     values, defaults = effective_thresholds(case)
     body = run.body
     thresholds_json = {
@@ -314,7 +335,7 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
         except DecimalException:
             raise OracleError('문턱 셈에서 반올림이 생겼다 (oracle 범위 밖)') from None
 
-        # 11.9 설명 안 되는 검토 항목. 사람 입력: None(아직 안 봄) 또는 검토 항목 키 목록.
+        # 4.9 설명 안 되는 검토 항목. 사람 입력: None(아직 안 봄) 또는 검토 항목 키 목록.
         if unexplained_keys is not None:
             keys = list(unexplained_keys)
             review_keys = {it['key'] for it in review_items}
@@ -342,7 +363,7 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
             keys = (CHECK_THRESHOLD[name],) if name in CHECK_THRESHOLD else ()
             checks.append({'rule': name, 'result': results[name], 'reason': mark(text, keys)})
 
-        # 11.4: 순서대로 보고 처음 걸리는 행. PASS는 어느 행에도 걸리지 않을 때다.
+        # 4.3: 순서대로 보고 처음 걸리는 행. PASS는 어느 행에도 걸리지 않을 때다.
         row = next(r for r in VERDICT_TABLE if r[1] != 'NOT_VERIFIED' and (r[1] == 'PASS' or results[r[1]] == r[2]))
         order, rule, _result, verdict, template = row
         reason = mark(fill(template, slot), READ_THRESHOLDS[order])

@@ -173,15 +173,14 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 
 ### 4.5 inputs, compare, thresholds
 
-- T-012 개정(제안): `inputs`에 선택 키 `group`이 는다(10.1, 10.2).
-
-`inputs` (있으면 세 키 모두 필수):
+`inputs` (있으면 `reference`·`candidate`·`key`는 필수, `group`은 선택. `group`은 T-012, 10절):
 
 | 키 | 형식 | 규칙 |
 | --- | --- | --- |
 | `reference` | 문자열 | 케이스 폴더 기준 상대 경로. `/`로 시작하지 않고, `\`·`:`·`..` 조각이 없다(`format`) [S3 type-errors] |
 | `candidate` | 문자열 | 같음 |
 | `key` | 문자열 | 비어 있지 않음 |
+| `group` | 문자열 | 선택. 몰림을 볼 기준 자료의 유형 열 이름(`judgment.md` 4.8). 비어 있지 않음(`required`). `key`·`compare` 필드와 다른 이름(`conflict`). 키 없음·null = 적지 않음. 그 열이 자료에 있는지는 대조가 본다(`metrics.md` 4.7) |
 
 - `*` 같은 glob 문자는 그대로 저장한다. 해석은 T-006.
 
@@ -267,8 +266,6 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 
 ### 4.9 오류
 
-- T-012 개정(제안): `conflict`에 경우 하나(`inputs.group`이 `key`·`compare` 필드와 같음)가 는다(10.2).
-
 오류 하나는 `CaseError(Source, Line, Column, Code, Path, Message)`다.
 
 - `Source`: 파일 이름. `ParseDirectory`는 늘 `case.yaml`. 절대 경로를 쓰지 않는다 [P:missing-file].
@@ -304,7 +301,7 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 | `format` | 정수·숫자·불리언·이름·경로 모양 | 그 값 | `정수가 아니다: <값>` / `숫자가 아니다: <값>` (따옴표가 있으면 ` (따옴표 없이 쓴다)`) / `true 또는 false로 쓴다: <값>` / `소문자·숫자·'-'만, 64자까지 쓴다` / 경로 문구 |
 | `range` | 범위 밖 | 그 값 | `범위 밖이다 (<범위>): <값>` |
 | `duplicate` | 단계 이름·비교 필드·`inferred` 키(T-008) 중복 | 둘째 값 | `단계 이름이 중복된다 (처음: steps[n])` / `비교 필드가 중복된다 (처음: compare[n])` / `추정 답 키가 중복된다 (처음: steps[n].inferred[m])` |
-| `conflict` | `tolerance`와 `tolerance_pct` 같이 | 그 항목 시작 | `tolerance와 tolerance_pct 중 하나만 쓴다` |
+| `conflict` | `tolerance`와 `tolerance_pct` 같이 / `inputs.group`이 `key` 또는 `compare` 필드와 같음(T-012, 10.2) | 그 항목 시작 / 그 값 | `tolerance와 tolerance_pct 중 하나만 쓴다` / `group은 key·compare 필드와 다른 열을 쓴다` |
 
 모으기·순서:
 
@@ -348,8 +345,6 @@ T-008 전 제목은 "단계와 질문 9개"였다. T-008이 `human_signoff`(표 
 - → 승인 질문 12·13.
 
 ### 4.12 Core 공개 API (제안)
-
-- T-012 개정(제안): `CaseInputs`에 매개변수 `string? Group = null`이 는다(10.3).
 
 네임스페이스 `Scorecard.Core.Cases`. 스파이크 C와 같은 모양이다(`spikes/T-003/core/C-events/CaseModel.cs`).
 
@@ -722,6 +717,7 @@ case.yaml:16:15: type steps[4].inferred: 목록이어야 한다
 | 기본값 표 | 이 문서에서 머리 행이 `\| 키 \| 질문 \| 형식 \| 선택지·범위 \| 기본값 \|`인 표(4.4)를 읽는다. 10행(T-008 전 9행)의 다섯째 칸 기본값과, `answers` 없는 단계의 값이 같고 `IsDefault`가 모두 true |
 | `inferred` 오류(T-008) | 6.7 표본 = 블록, 오류 줄 = 블록. 4.13 글머리마다 테스트 안 문자열 하나 이상(목록 아님, null·매핑 원소, 키 아님, 중복, 값 없음, `answers` 없음, 빈 목록·null은 오류 없음) |
 | `IsInferred`(T-008) | 목록의 답만 true, 값·`IsDefault`는 그대로. `inferred` 없는 파일은 모두 false. 쓴 순서와 상관없다 |
+| `inputs.group`(T-012) | 10.2 표 각 행(머리 행 `\| inputs.group 줄 \| 결과 \| 코드 \| 메시지 \|`). `Group` 값, 오류 코드·메시지·위치 |
 | `human_signoff`(T-008) | 4.4 표 행이 다른 열거 행과 같은 테스트(기본값, 선택지, `enum`)를 그대로 탄다(표에서 읽으므로 새 코드 없이 늘어난다) |
 | 필드 누락 | 6.3의 4줄과 `ToString()` 목록이 같다 |
 | 형식 오류 | 6.4의 18줄과 같다 |
@@ -869,12 +865,12 @@ case.yaml:10:19: format thresholds.time_must_drop: true 또는 false로 쓴다: 
 - 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. 질문은 `judgment.md` 11.19의 6·7·8이다. 리드가 추천안을 채택한다(ADR 0005 결정 3).
 - 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 2(M-B 자동 유형 열이 우연 몰림을 잡는다)와 `judgment.md` 4.8 M-A 행 [읽음].
 - 근거: oracle `tools/oracle/oracle_case.py`(이 절 글만 보고 고쳤다). C# 파서는 PR (b)다(**미확인**).
-- 바꾸는 곳(PR (b)에서 제자리로. 10.5): 4.5 `inputs` 표와 머리 글, 4.9 `conflict` 행의 "언제", 4.12 `CaseInputs`, 7.2 표.
+- 바꾸는 곳(T-013에서 제자리로 옮겼다. 10.5): 4.5 `inputs` 표와 머리 글, 4.9 `conflict` 행의 "언제", 4.12 `CaseInputs`, 7.2 표.
 - 바꾸지 않는 곳: 4.3 최상위 키, 오류 코드 17개와 메시지 글, 4.4 답 10개, 6.1 블록(= `valid-full` = `guard/case-valid`. `group` 없음).
 
 ### 10.1 키
 
-- `inputs`에 선택 키 `group` 하나를 더한다. 뜻: 몰림을 볼 기준 자료의 유형 열 이름(`judgment.md` 11.8).
+- `inputs`에 선택 키 `group` 하나를 더한다. 뜻: 몰림을 볼 기준 자료의 유형 열 이름(`judgment.md` 4.8).
 - `reference`·`candidate`·`key` 셋은 지금처럼 필수다. `group`은 없어도 된다(키 없음·null = 적지 않음).
 - 4.5 `inputs` 표에 더할 행(PR (b)): 키 `group`, 형식 문자열, 규칙 "선택. 비어 있지 않음. `key`·`compare` 필드와 다른 이름(`conflict`)". 표 머리 글 "있으면 세 키 모두 필수"는 "있으면 `reference`·`candidate`·`key`는 필수, `group`은 선택"이 된다.
 - 형식 규칙은 `key`와 같다(스칼라 문자열, 앞뒤 공백만이면 빈 값).
@@ -914,10 +910,12 @@ public sealed record CaseInputs(string Reference, string Candidate, string Key, 
 
 ### 10.4 예제와 표본
 
-- 예제 `case.yaml` 둘에 한 줄씩 더한다(`judgment.md` 11.12): table-compare `  group: signal_type`, signoff-final `  group: record_kind`. 바이트·SHA-256은 그 표에 있다.
+- 예제 `case.yaml` 둘에 한 줄씩 더한다(`judgment.md` 7.1): table-compare `  group: signal_type`, signoff-final `  group: record_kind`. 바이트·SHA-256은 그 표에 있다.
 - `TestData/case-schema/valid-full`과 `guard/case-valid`는 바꾸지 않는다(6.1 블록과 같아야 한다).
 
 ### 10.5 PR (b)에서 옮길 곳
+
+- T-013에서 1~4를 옮겼다(4.5 표·머리 글, 4.9 `conflict` 행, 7.2 표). 4.12 블록과 5는 T-012b(#15)가 이미 했다.
 
 1. 4.5 `inputs` 표에 `group` 행과 머리 글(10.1).
 2. 4.9 표 `conflict` 행의 "언제"(10.2).

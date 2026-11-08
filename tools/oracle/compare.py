@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-# oracle 대조·지표. docs/spec/metrics.md 2절, 3.1~3.3, 4.1~4.8, 12절(T-012 개정)만 보고 짰다(src/는 읽지 않았다, ADR 0005 결정 9).
+# oracle 대조·지표. docs/spec/metrics.md 2절, 3.1~3.3, 4.1~4.8, 12절(T-012)·13절(T-013)만 보고 짰다(src/는 읽지 않았다, ADR 0005 결정 9).
 # 출발점은 T-006 스파이크 xcheck/compare.py(befaa0a, metrics.md 글만 보고 짠 것)다. 바꾼 곳은 README.
 # 오류 입력(4.7 오류 코드 13개)은 다루지 않는다. 만나면 OracleError로 멈춘다.
-# T-012(metrics.md 12절): 결과 쪽 키 중복은 오류가 아니라 항목 duplicate(둘째 이후 행, 12.2). 기준 쪽 중복은 오류 그대로.
+# T-012(metrics.md 12절): 결과 쪽 키 중복은 오류가 아니라 항목 duplicate(둘째 이후 행, 4.3). 기준 쪽 중복은 오류 그대로.
+# T-013(metrics.md 13절): 결과 쪽에 두 번 이상 나온 기준 키는 값과 상관없이 값 불일치다. 첫 행은 기준 항목에,
+#   둘째 이후 행은 duplicate 항목에 기준과의 차이를 적는다. 필드 셈은 기준에 키가 있는 결과 행마다 센다(줄 순서와 상관없다).
 # inputs.group 열은 기준 파일에서만 확인한다(12.3).
 #   inputs.group을 적었으면 기준 파일마다 그 열이 머리 행에 꼭 한 번 있어야 한다(column·duplicate-column, 기준 쪽만).
 #
@@ -306,11 +308,12 @@ def compare_run(case_dir: Path, case: Case) -> CompareRun:
     ref_headers = []
     ref = read_side(case_dir, ref_files, inputs.key, fields, ref_headers, group=inputs.group)
     cand_all = read_side(case_dir, cand_files, inputs.key, fields, allow_duplicates=True)
-    # T-012: 결과 쪽 같은 키의 첫 행으로 대조하고, 둘째 이후 행은 항목 duplicate다(12.2).
-    cand, dup_ids, seen = [], set(), set()
+    # 결과 쪽 같은 키의 첫 행(결과 파일 경로 서수 → 줄)이 대표 행, 둘째 이후 행은 항목 duplicate다(4.3, 13.2).
+    cand, dup_ids, seen, repeated = [], set(), set(), set()
     for c in cand_all:
         if c.key in seen:
             dup_ids.add(id(c))
+            repeated.add(c.key)
         else:
             seen.add(c.key)
             cand.append(c)
@@ -325,7 +328,20 @@ def compare_run(case_dir: Path, case: Case) -> CompareRun:
     ref_keys = {r.key for r in ref}
     per_field = {f.field: {RESULT_OUTSIDE: 0, RESULT_WITHIN: 0, RESULT_NOT_NUMBER: 0} for f in fields}
     items = []
-    match = mismatch = missing = within_items = 0
+    match = mismatch = missing = within_items = compared = 0
+
+    def differences(r, c) -> list:
+        """4.5 칸 판정. 기준에 키가 있는 결과 행마다 한 번 부르고 필드 셈에 더한다(13.2)."""
+        nonlocal compared
+        compared += 1
+        diffs = []
+        for f in fields:
+            res = judge(f, r.cells[f.field], c.cells[f.field])
+            if res is None:
+                continue
+            per_field[f.field][res] += 1
+            diffs.append({'field': f.field, 'result': res, 'reference': r.cells[f.field], 'candidate': c.cells[f.field]})
+        return diffs
 
     # 기준 항목(기준 파일 경로 서수 → 줄 순서), 그다음 결과 쪽 항목(추가·중복, 결과 파일 경로 서수 → 줄 순서. 3.1, 12.2).
     for r in ref:
@@ -335,36 +351,33 @@ def compare_run(case_dir: Path, case: Case) -> CompareRun:
             missing += 1
             items.append({'key': r.key, 'status': ITEM_MISSING, 'reference': ref_pos, 'candidate': None, 'differences': []})
             continue
-        diffs = []
-        for f in fields:
-            res = judge(f, r.cells[f.field], c.cells[f.field])
-            if res is None:
-                continue
-            per_field[f.field][res] += 1
-            diffs.append({'field': f.field, 'result': res, 'reference': r.cells[f.field], 'candidate': c.cells[f.field]})
-        bad = any(d['result'] != RESULT_WITHIN for d in diffs)
+        diffs = differences(r, c)
+        # 13.2: 결과 쪽에 두 번 이상 나온 키는 값과 상관없이 값 불일치다. 맞는 행이 앞에 와도 일치가 아니다.
+        bad = r.key in repeated or any(d['result'] != RESULT_WITHIN for d in diffs)
         if bad:
             mismatch += 1
         else:
             match += 1
             if diffs:
                 within_items += 1
-        if diffs:  # 차이 없는 일치는 items에 쓰지 않는다(3.2).
+        if diffs or bad:  # 차이 없는 일치는 items에 쓰지 않는다(3.2). 값 불일치는 차이가 없어도 쓴다(13.2).
             items.append({'key': r.key, 'status': ITEM_MISMATCH if bad else ITEM_MATCH, 'reference': ref_pos,
                           'candidate': {'file': c.file, 'line': c.line}, 'differences': diffs})
     extra = duplicate = 0
-    ref_pos_by_key = {r.key: {'file': r.file, 'line': r.line} for r in ref}
+    ref_by_key = {r.key: r for r in ref}
     for c in cand_all:
         if id(c) in dup_ids:
-            duplicate += 1  # 12.2: 기준에 그 키가 있으면 기준 위치, 없으면 null. 대조하지 않는다.
-            items.append({'key': c.key, 'status': ITEM_DUPLICATE, 'reference': ref_pos_by_key.get(c.key),
-                          'candidate': {'file': c.file, 'line': c.line}, 'differences': []})
+            duplicate += 1  # 13.2: 기준에 그 키가 있으면 기준 위치와 기준과의 차이, 없으면 null과 [].
+            r = ref_by_key.get(c.key)
+            items.append({'key': c.key, 'status': ITEM_DUPLICATE,
+                          'reference': {'file': r.file, 'line': r.line} if r is not None else None,
+                          'candidate': {'file': c.file, 'line': c.line},
+                          'differences': differences(r, c) if r is not None else []})
         elif c.key not in ref_keys:
             extra += 1
             items.append({'key': c.key, 'status': ITEM_EXTRA, 'reference': None,
                           'candidate': {'file': c.file, 'line': c.line}, 'differences': []})
 
-    compared = match + mismatch
     field_list = [{
         'field': f.field,
         'kind': KIND_NUMBER if f.is_number else KIND_TEXT,
@@ -375,8 +388,9 @@ def compare_run(case_dir: Path, case: Case) -> CompareRun:
         'within': per_field[f.field][RESULT_WITHIN],
         'not_number': per_field[f.field][RESULT_NOT_NUMBER],
     } for f in fields]
-    if match + mismatch + missing != len(ref) or match + mismatch + extra + duplicate != len(cand_all):
-        raise OracleError('셈이 맞지 않는다(oracle 내부 오류)')  # 3.2 counts.reference·candidate 정의(12.2 중복 포함).
+    if match + mismatch + missing != len(ref) or match + mismatch + extra + duplicate != len(cand_all) \
+            or compared != len(cand_all) - extra - sum(1 for c in cand_all if id(c) in dup_ids and c.key not in ref_keys):
+        raise OracleError('셈이 맞지 않는다(oracle 내부 오류)')  # 3.2 counts·fields[].compared 정의(13.2 중복 포함).
     return CompareRun({
         'status': STATUS_MEASURED, 'reason': None, 'key': inputs.key,
         'reference_files': ref_files, 'candidate_files': cand_files,

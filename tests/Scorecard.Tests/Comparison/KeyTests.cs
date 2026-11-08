@@ -14,7 +14,8 @@ public class KeyTests
     private static readonly Scorecard.Core.Cases.CaseDefinition Definition = CompareInput.Case(CompareInput.TextCase);
 
     // 중복 4종: 같은 파일, 결과 쪽, 공백을 떼고 같아진 키, 셋째 중복도 처음 위치를 가리킨다. 파일 사이는 MultiFileTests.
-    // T-012(metrics.md 12.2): 결과 쪽 둘째 행은 오류가 아니라 항목 duplicate다. 첫 행으로 대조해 k1은 일치다.
+    // T-012(metrics.md 12.2): 결과 쪽 둘째 행은 오류가 아니라 항목 duplicate다.
+    // T-013(4.3·13.2): 결과 쪽에 두 번 나온 k1은 두 행이 모두 기준과 같아도 값 불일치다.
     [Fact]
     public void Duplicate_keys_are_reported_from_the_second()
     {
@@ -23,9 +24,9 @@ public class KeyTests
             "reference/a.csv:4:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
         var candidateSide = CompareInput.Measured(CompareInput.Run(Definition, "id,v\nk1,a\n", "id,v\nk1,a\nk1,a\n"));
         Assert.Equal(
-            ["k1 match reference/a.csv:2 candidate/a.csv:2", "k1 duplicate reference/a.csv:2 candidate/a.csv:3"],
+            ["k1 mismatch reference/a.csv:2 candidate/a.csv:2", "k1 duplicate reference/a.csv:2 candidate/a.csv:3"],
             candidateSide.Items.Select(i => $"{i.Key} {i.Status} {i.Reference?.File}:{i.Reference?.Line} {i.Candidate?.File}:{i.Candidate?.Line}"));
-        Assert.Equal("ref=1 cand=2 match=1 mismatch=0 missing=0 extra=0 within=0 acc=100.0 miss=0.0", CompareInput.Counts(candidateSide));
+        Assert.Equal("ref=1 cand=2 match=0 mismatch=1 missing=0 extra=0 within=0 acc=0.0 miss=0.0", CompareInput.Counts(candidateSide));
         CompareInput.AssertErrors(
             CompareInput.Run(Definition, "id,v\nk1,a\n k1 ,b\n", "id,v\nk1,a\n"),
             "reference/a.csv:3:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");

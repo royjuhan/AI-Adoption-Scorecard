@@ -215,6 +215,7 @@ public partial class JudgmentApiShapeTests
     // 5절·11.9: 사람 입력 키가 검토 항목(불일치·추가 행·중복 행, 11.3)의 키가 아니거나 중복이면 ArgumentException.
     // 차이 없는 일치 항목의 키, 없는 키, 중복 키. 불일치가 없는 장면에 키를 넣어도 그렇다.
     // T-012(카드 수용 기준 1): 추가 행 키와 결과 쪽 중복 행 키는 받는다. T-011은 추가 행 키도 거절했다.
+    // T-013(metrics.md 4.3): 결과 쪽에 두 번 나온 기준 키는 값 불일치이기도 하다. 그래서 장면의 불일치 키는 셋(보통 둘 + 중복 행 키)이다.
     [Fact]
     public void Unexplained_keys_must_be_distinct_mismatch_keys()
     {
@@ -229,7 +230,8 @@ public partial class JudgmentApiShapeTests
         var metrics = scene.Metrics();
         var bad = scene.BadKeys;
         var match = scene.Rows.First(r => !r.IsBad && r.Key != duplicated.Key).Key;
-        Assert.Equal(2, bad.Length);
+        Assert.Equal(3, bad.Length);
+        Assert.Equal(duplicated.Key, bad[^1]);
         Assert.False(duplicated.IsBad);
 
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(definition, metrics, null, [match]));
@@ -241,7 +243,7 @@ public partial class JudgmentApiShapeTests
         var clean = JudgmentInput.Checks(JudgmentInput.Met, JudgmentInput.Met, JudgmentInput.NoneResult, JudgmentInput.Off, JudgmentInput.Few);
         Assert.ThrowsAny<ArgumentException>(() => JudgmentEngine.Judge(clean.Definition, clean.Metrics(), null, [clean.Rows[0].Key]));
 
-        // 바른 입력은 예외가 없다(빈 통과 방지). 불일치 키, 추가 행 키, 중복 행 키(일치하는 기준 키), 셋을 섞은 것.
+        // 바른 입력은 예외가 없다(빈 통과 방지). 불일치 키, 추가 행 키, 중복 행 키(결과 쪽에 두 번 나온 기준 키), 셋을 섞은 것.
         foreach (IReadOnlyList<string> keys in new[] { bad, ["x0001"], [duplicated.Key], [bad[0], "x0001", duplicated.Key] })
         {
             var judged = JudgmentEngine.Judge(definition, metrics, null, keys);

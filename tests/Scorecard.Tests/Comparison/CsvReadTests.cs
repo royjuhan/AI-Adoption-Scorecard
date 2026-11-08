@@ -222,6 +222,49 @@ public class CsvReadTests
             "reference/a.csv:3:4: number n: 숫자가 아니다: x");
     }
 
+    // 4.2 줄·열 번호(T-013 카드 수용 기준 6): 따옴표 칸 안의 CRLF는 줄바꿈 하나다(CR 하나, LF 하나로 두 번 세지 않는다).
+    // 칸 안 줄바꿈 뒤의 칸, 다음 행이 시작한 줄이 그 수만큼만 늘어난다. CR만·LF만·CRLF 여러 개·섞인 것 모두.
+    [Fact]
+    public void Crlf_inside_quoted_cell_counts_as_one_line()
+    {
+        var definition = CompareInput.Case(CompareInput.NumberAndTextCase);
+
+        // 2줄에서 시작한 k1 행의 t 칸이 3줄(CRLF 하나)·4줄(CRLF 둘)·5줄(CRLF 셋)까지 간다. 다음 행 k1이 그 다음 줄이다.
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\r\nk1,1,\"x\r\ny\"\r\nk1,2,b\r\n", CompareInput.GoodCsv),
+            "reference/a.csv:4:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\r\nk1,1,\"x\r\ny\r\nz\"\r\nk1,2,b\r\n", CompareInput.GoodCsv),
+            "reference/a.csv:5:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\nk1,1,\"\r\n\r\n\r\n\"\nk1,2,b\n", CompareInput.GoodCsv),
+            "reference/a.csv:6:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
+
+        // 섞인 줄바꿈: CRLF(1) + CR(1) + LF(1) = 세 줄. 칸 끝 CR 뒤 LF도 CRLF 하나다(칸 마지막 글자).
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\nk1,1,\"a\r\nb\rc\nd\"\nk1,2,b\n", CompareInput.GoodCsv),
+            "reference/a.csv:6:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\nk1,1,\"a\r\n\"\nk1,2,b\n", CompareInput.GoodCsv),
+            "reference/a.csv:4:1: duplicate-key id: 키가 중복된다: k1 (처음: reference/a.csv:2)");
+
+        // 닫히지 않은 따옴표 칸이 CR로 끝나도(파일 마지막 글자) 뒤 글자를 읽지 않는다. 오류는 여는 따옴표 위치다.
+        CompareInput.AssertErrors(
+            CompareInput.Run(definition, "id,n,t\nk1,1,\"a\r", CompareInput.GoodCsv),
+            "reference/a.csv:2:6: csv-syntax: 따옴표가 닫히지 않았다");
+
+        // 칸 안 CRLF 뒤 같은 행의 다음 칸: 3줄이고, 열은 그 줄 처음부터 센다(b, 닫는 따옴표, 쉼표 뒤 → 4열).
+        var textFirst = CompareInput.Case(CompareInput.InputsCase + "compare:\n  - {field: t}\n  - {field: n, tolerance: 0}\n");
+        CompareInput.AssertErrors(
+            CompareInput.Run(textFirst, "id,t,n\r\nk1,\"a\r\nb\",x\r\n", "id,t,n\nk1,a,1\n"),
+            "reference/a.csv:3:4: number n: 숫자가 아니다: x");
+
+        // 대조 결과의 행 위치(CsvRow.Line)도 같다. 값은 정규화 뒤 LF다(4.6).
+        var metrics = CompareInput.Measured(CompareInput.Run(definition, "id,n,t\r\nk1,1,\"x\r\ny\r\nz\"\r\nk2,2,b\r\n", "id,n,t\nk1,1,\"x\ny\nz\"\nk2,2,b\n"));
+        Assert.Equal(["k1 2 2", "k2 5 5"], metrics.Items.Select(i => $"{i.Key} {i.Reference!.Line} {i.Candidate!.Line}"));
+        Assert.Equal("x\ny\nz", metrics.Items[0].Reference!.Cells[2]);
+    }
+
     // 값 안의 NUL 등 제어 문자는 그대로 값이다(오류가 아니다).
     [Fact]
     public void Control_characters_in_values_are_kept()

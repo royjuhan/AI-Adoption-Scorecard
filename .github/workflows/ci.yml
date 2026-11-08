@@ -310,7 +310,7 @@ jobs:
           if-no-files-found: ignore
 
   # PR base 대비 회귀 신호를 막는다(ADR 0005 원문 1). 다른 잡이 실패해도 결과 파일을 읽고 판단한다.
-  # needs의 잡마다 --job 이름=결과를 넘긴다. success가 아니면 guard가 job-result FAIL을 낸다(단위 테스트가 대조한다).
+  # needs의 잡마다 --job 이름=결과를 넘긴다. success가 아니면 guard가 job-result FAIL을 낸다(`tools/ci/test_regression_guard.py`의 `TestGuardJobsWiring.test_workflow_passes_every_needed_job`이 대조한다).
   # head 코드를 하나도 돌리지 않는다(T-010 재리뷰 B4): dotnet을 깔지 않고, 빌드·테스트·head 스크립트를 돌리지 않는다.
   # python은 checkout 전에 깔고 절대 경로로 부른다(-I: 현재 폴더·PYTHON* 환경 변수를 보지 않는다).
   # base 커밋의 tools/ci를 돌린다(--require-base-tools).

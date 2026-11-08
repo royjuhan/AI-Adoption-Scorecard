@@ -917,7 +917,7 @@ steps:
 | `③` | `③` | 실행 시 AI 보조 |
 | `④` | `④` | 사람 |
 
-AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `ai`를 쓰지 않은 단계다. "행"은 `rows`의 담당과 근거 키다.
+AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `ai`를 쓰지 않은 단계다. "행"은 `rows`의 담당과 근거 키다. `human_signoff: yes` 행은 본문 9.3 규칙 5다: AI 담당의 비교 값이 ④가 아니면 `GATE` 조건일 때 ④ `GATE`가 붙는다. `PARTIAL`은 붙지 않는다.
 
 | 바꾼 답 | AI 담당 | 규칙 의견 | differs | AI 과잉 후보 | 행 |
 | --- | --- | --- | --- | --- | --- |
@@ -937,7 +937,13 @@ AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `
 | `input_kind: free_doc, failure_impact: external` | `④` | ③ `Q3` | true | false | ④ `AI` + ④ `GATE` |
 | `human_signoff: yes` | `④` | ④ `SIGNOFF` | false | false | ④ `AI` |
 | `human_signoff: yes` | `③` | ④ `SIGNOFF` | true | false | ③ `AI` |
-| `human_signoff: yes, failure_impact: external` | `②` | ④ `SIGNOFF` | true | false | ② `AI` |
+| `human_signoff: yes, failure_impact: external` | `②` | ④ `SIGNOFF` | true | false | ② `AI` + ④ `GATE` |
+| `human_signoff: yes, failure_impact: safety_legal` | `③` | ④ `SIGNOFF` | true | false | ③ `AI` + ④ `GATE` |
+| `human_signoff: yes, failure_impact: safety_legal` | `①` | ④ `SIGNOFF` | true | false | ① `AI` + ④ `GATE` |
+| `human_signoff: yes, failure_impact: external` | `②M` | ④ `SIGNOFF` | true | false | ②M `AI` + ④ `GATE` |
+| `human_signoff: yes, failure_impact: external` | `④` | ④ `SIGNOFF` | false | false | ④ `AI` |
+| `human_signoff: yes, failure_impact: internal_rework` | `③` | ④ `SIGNOFF` | true | false | ③ `AI` |
+| `human_signoff: yes, rule_expressible: partial, failure_impact: external` | `②` | ④ `SIGNOFF` | true | false | ② `AI` + ④ `GATE` |
 | `current_actor: ai_each_time` | (없음) | ② `ELSE` | false | true | ② `ELSE` |
 | `current_actor: ai_each_time` | `②M` | ② `ELSE` | false | true | ②M `AI` |
 | `current_actor: ai_each_time` | `③` | ② `ELSE` | true | false | ③ `AI` |

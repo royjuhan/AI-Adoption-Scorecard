@@ -14,7 +14,7 @@ classification.json이 바뀌면 oracle(`tools/oracle/classify.py`)과 expected�
 ## 결정
 
 1. **입력.** `answers.yaml`(·`case.yaml`) 단계 항목에 선택 키 `ai: {assignee, reason}`을 둔다. 담당은 `①` `②` `②M` `③` `④`, 근거는 비지 않은 문자열이다. 파서 규칙은 `case-schema.md` 4.14. `②M`은 학습 모델(결정론): 미리 학습해 고정한 모델을 규칙 SW처럼 돌리고 실행 때 AI를 부르지 않는다. ②의 한 갈래라 규칙 의견과 비교할 때 ②로 본다.
-2. **출력(schema 2).** 단계마다 `source`(`ai`·`rule`), `rule_opinion`(트리 `step` 행의 `assignee`·`rule`), `differs`(AI 담당의 비교 값 ≠ 규칙 의견 담당)를 `name` 뒤에 둔다. `source`가 `ai`면 `step` 행만 AI 행(`rule` `AI`, 근거 그대로, 표시 없음)으로 바꾼다. 부가 행(`PARTIAL`·`GATE`)은 트리 것을 그대로 둔다. 게이트는 "항상" 규칙이라 AI 판단으로 빠지지 않는다.
+2. **출력(schema 2).** 단계마다 `source`(`ai`·`rule`), `rule_opinion`(트리 `step` 행의 `assignee`·`rule`), `differs`(AI 담당의 비교 값 ≠ 규칙 의견 담당)를 `name` 뒤에 둔다. `source`가 `ai`면 `step` 행만 AI 행(`rule` `AI`, 근거 그대로, 표시 없음)으로 바꾼다. 부가 행(`PARTIAL`·`GATE`)은 트리 것을 그대로 둔다. 게이트는 "항상" 규칙이라 AI 판단으로 빠지지 않는다. 규칙 의견이 `SIGNOFF`여도 AI 담당의 비교 값이 ④가 아니면 `GATE` 조건일 때 트리 `GATE` 행을 붙인다(`classification.md` 9.3 규칙 5). `SIGNOFF` 뒤 게이트를 빼는 근거(단계 자체가 ④)가 없어지기 때문이다.
 3. **확인 항목.** `confirm_existing_feature`를 뺀다. `measure_minutes_per_item`은 측정 권고라 남긴다. AI 과잉 후보는 `rows[0]` 담당의 비교 값이 ②일 때(②M 포함)다.
 4. **schema_version 1 → 2.** ADR 0008 결정 1의 "받던 입력에서 값이 빠지거나 뜻이 바뀜"이다(예제 다섯의 `checks`, 단계 속성 셋). juhan 지시도 올림이다. expected는 ADR 0004 expected 변경 규칙을 따른다. 바뀌는 줄 수는 `classification.md` 데이터 9.7 표다.
 5. **두 PR(ADR 0007 방식).** PR (a): 스펙(`classification.md` 9절, `case-schema.md` 4.14), oracle, 이 ADR. PR (b): Core(파서·분류기·JSON), `expected migration:` 커밋, TestData 표본, 테스트, 스킬 `/scorecard`, Cli 골든. ADR 0010 B-12(카드마다 PR 하나)의 예외다.

@@ -184,6 +184,11 @@ def classify(case: Case, schema: int = SCHEMA_VERSION) -> list:
             add('PARTIAL', 'PARTIAL')
         if leaf != 'SIGNOFF' and _holds('GATE', values):
             add('GATE', 'GATE')
+        # 9.3 규칙 5(schema 2): SIGNOFF 단계라도 AI 담당의 비교 값이 ④가 아니면 GATE를 붙인다.
+        # 게이트를 빼는 근거는 step 행이 ④라는 것이다. 마지막 step 행이 ④일 때만 뺀다.
+        if (schema == 2 and leaf == 'SIGNOFF' and step.ai is not None
+                and COMPARE_AS[step.ai.assignee] != '④' and _holds('GATE', values)):
+            add('GATE', 'GATE')
 
         out = {'number': number, 'name': step.name}
         if schema == 1:
@@ -194,7 +199,7 @@ def classify(case: Case, schema: int = SCHEMA_VERSION) -> list:
                 raise OracleError('확인 항목 표와 조건 표가 어긋난다')  # 4.2 CHECK_EXISTING 행과 4.7 표는 같은 조건이다.
         else:
             # 9.1: 규칙 의견 = 트리 step 행의 담당·근거 키. AI 판단이 있으면 step 행만 AI 행으로 바꾼다.
-            # 부가 행(PARTIAL·GATE)은 트리 것을 그대로 둔다(9.1 규칙 4).
+            # 부가 행(PARTIAL·GATE)은 트리 것을 그대로 둔다(9.3 규칙 4). SIGNOFF 뒤 GATE만 규칙 5.
             opinion = {'assignee': rows[0]['assignee'], 'rule': rows[0]['rule']}
             if step.ai is not None:
                 rows[0] = {'kind': KIND_STEP, 'assignee': step.ai.assignee, 'rule': RULE_AI,

@@ -1681,7 +1681,12 @@ def check_schema2(repo: Path, cls_spec: list, tc_spec: list, cs_spec: list) -> d
         expect(got['ai_overuse_candidate'] == (overuse == 'true') and overuse in ('true', 'false'), f'{label}: AI 과잉 후보')
         expect(got['source'] == ('rule' if ai is None else 'ai'), f'{label}: source')
         plain = classify_one({**base, **change}, schema=2)
-        expect(got['rows'][1:] == plain['rows'][1:] and got['rule_opinion'] == plain['rule_opinion'], f'{label}: 부가 행·규칙 의견은 트리 것')
+        want_extra = plain['rows'][1:]
+        if ai is not None and plain['rule_opinion']['rule'] == 'SIGNOFF' and COMPARE_AS[ai] != '④':
+            # 9.3 규칙 5: 서명 단계를 AI가 ④ 아닌 담당으로 바꾸면 트리 GATE 행이 붙는다(PARTIAL은 아니다).
+            gated = classify_one({**base, **change, 'human_signoff': 'no'}, schema=2)
+            want_extra = [r for r in gated['rows'][1:] if r['rule'] == 'GATE']
+        expect(got['rows'][1:] == want_extra and got['rule_opinion'] == plain['rule_opinion'], f'{label}: 부가 행·규칙 의견은 트리 것')
         if ai is not None:
             expect(got['rows'][0]['reason'] == 'selftest 근거' and got['rows'][0]['rule'] == RULE_AI and not got['rows'][0]['used'],
                    f'{label}: AI 행 근거 그대로, 표시 없음')
@@ -1691,6 +1696,30 @@ def check_schema2(repo: Path, cls_spec: list, tc_spec: list, cs_spec: list) -> d
                    (got['rule_opinion']['assignee'], got['rule_opinion']['rule']), f'{label}: rule이면 규칙 의견 = rows[0]')
         seen.update({'differs ' + differs})
     expect(set(COMPARE_AS) | {'differs true', 'differs false'} <= seen, f'9.3 장면이 담당 다섯과 differs 둘을 모두 쓴다 {sorted(seen)}')
+    # 9.3 규칙 5: 서명 단계(SIGNOFF)의 AI 담당 × failure_impact. 비교 값이 ④가 아니고 GATE 조건이면 ④ GATE가 붙는다.
+    gate_reason = {fi: next(r['reason'] for r in classify_one({**base, 'failure_impact': fi}, schema=2)['rows'] if r['rule'] == 'GATE')
+                   for fi in ('external', 'safety_legal')}
+    for ai in ('①', '②', '②M', '③', '④'):
+        for fi in ('external', 'safety_legal', 'internal_rework'):
+            for extra in ({}, {'rule_expressible': 'partial'}, {'rule_expressible': 'no', 'existing_feature': 'yes'}):
+                answers = {**base, **extra, 'human_signoff': 'yes', 'failure_impact': fi}
+                label = f'9.3 규칙 5 서명 단계 AI {ai} / {fi} / {extra}'
+                got = classify_one(answers, ai=f'{{assignee: {ai}, reason: 서명 근거}}', schema=2)
+                gate = fi != 'internal_rework' and COMPARE_AS[ai] != '④'
+                expect([(r['kind'], r['assignee'], r['rule']) for r in got['rows']] ==
+                       [('step', ai, RULE_AI)] + ([('human_gate', '④', 'GATE')] if gate else []), f'{label}: 행')
+                expect(not gate or (got['rows'][1]['reason'] == gate_reason[fi] and got['rows'][1]['used'] == ('failure_impact',)),
+                       f'{label}: GATE 근거·읽은 답 = 트리 GATE 행')
+                expect(got['rule_opinion'] == {'assignee': '④', 'rule': 'SIGNOFF'} and got['differs'] == (ai != '④'),
+                       f'{label}: 규칙 의견·differs')
+                expect([(r['assignee'], r['rule']) for r in classify_one(answers, schema=2)['rows']] == [('④', 'SIGNOFF')]
+                       and [(r['assignee'], r['rule']) for r in classify_one(answers, schema=1)['rows']] == [('④', 'SIGNOFF')],
+                       f'{label}: ai 없으면 SIGNOFF 한 행(schema 1·2)')
+    # 붙은 GATE 행은 failure_impact가 추정이면 추정 표시를 단다(트리 GATE 행과 같다).
+    got = classify_one({**base, 'human_signoff': 'yes', 'failure_impact': 'external'}, inferred=['failure_impact'],
+                       ai='{assignee: ③, reason: 근거}', schema=2)
+    expect(len(got['rows']) == 2 and got['rows'][1]['reason'] == gate_reason['external'] + INFERRED_MARK,
+           '9.3 규칙 5: 붙은 GATE 행 추정 표시')
     # 기본값·추정 답이 있어도 AI 행에는 표시가 없다. 부가 행 표시는 그대로다.
     marked = {k: v for k, v in {**base, 'rule_expressible': 'partial'}.items() if k != 'human_signoff'}
     got = classify_one(marked, inferred=['rule_expressible'], ai='{assignee: ③, reason: 근거}', schema=2)

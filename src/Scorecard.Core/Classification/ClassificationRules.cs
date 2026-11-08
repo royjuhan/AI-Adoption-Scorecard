@@ -3,7 +3,8 @@ using System.Globalization;
 namespace Scorecard.Core.Classification;
 
 // 분류의 값·숫자·문장을 이 파일 한 곳에만 둔다(docs/spec/classification.md 4.9, 승인 결정 9).
-// 원본은 스펙 4.2 조건 표, 4.4 값 표, 4.5 문장 틀·문구 표, 4.6 기본값 표시, 4.7 확인 항목 표, 4.12 추정 표시다.
+// 원본은 스펙 4.2 조건 표, 4.4 값 표, 4.5 문장 틀·문구 표, 4.6 기본값 표시, 4.7 확인 항목 표, 4.12 추정 표시,
+// 4.13 AI 판단(비교 값 표, ADR 0013)이다.
 // 값을 바꾸려면 스펙 표를 먼저 고친다. 테스트가 스펙 표를 읽어 Core 동작과 대조한다.
 // 실행 중에 스펙 문서를 읽지 않는다. 비교는 서수, 숫자는 InvariantCulture다.
 internal static class ClassificationRules
@@ -13,6 +14,12 @@ internal static class ClassificationRules
     public const string AssigneeRuleSoftware = "②";
     public const string AssigneeRuntimeAi = "③";
     public const string AssigneeHuman = "④";
+
+    // 4.13 AI 담당 ②M: 학습 모델(결정론). 트리는 내지 않는다. 규칙 의견과 비교할 때 ②로 본다.
+    public const string AssigneeLearnedModel = "②M";
+
+    // 4.13 AI 판단 행의 근거 키.
+    public const string RuleAi = "AI";
 
     // 4.4 근거 키. SIGNOFF는 사람이 최종 확인·서명하는 단계다(ADR 0003).
     public const string RuleSignoff = "SIGNOFF";
@@ -34,11 +41,9 @@ internal static class ClassificationRules
     public const string PartialRuleExpressible = "partial";
     public static readonly string[] GateFailureImpacts = ["external", "safety_legal"];
     public const string OveruseCurrentActor = "ai_each_time";
-    public const string CheckExistingFeature = "unknown";
 
-    // 4.7 확인 항목 키.
+    // 4.7 확인 항목 키. confirm_existing_feature는 schema 2에서 뺐다(AI가 기존 기능 여부를 판단한다, ADR 0013).
     public const string CheckMeasureMinutesPerItem = "measure_minutes_per_item";
-    public const string CheckConfirmExistingFeature = "confirm_existing_feature";
 
     // 4.6 기본값 표시. 공백 하나 + 지시문 3.3 문구.
     public const string DefaultMark = " (기본값 사용, 확인 필요)";
@@ -100,6 +105,10 @@ internal static class ClassificationRules
         "safety_legal" => "안전·법규에 영향이 있으므로",
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "4.5 문구 표에 없는 failure_impact 값"),
     };
+
+    // 4.13 비교 값 표. AI 담당을 규칙 의견 담당과 비교할 값으로 바꾼다. ②M은 ②, 나머지는 그대로다.
+    public static string CompareValue(string assignee) =>
+        assignee == AssigneeLearnedModel ? AssigneeRuleSoftware : assignee;
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

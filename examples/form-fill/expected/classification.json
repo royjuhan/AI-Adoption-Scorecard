@@ -1,17 +1,22 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "form-fill",
   "steps": [
     {
       "number": 1,
       "name": "주문서 파일 모으기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item",
         "existing_feature"
       ],
       "checks": [
-        "measure_minutes_per_item",
-        "confirm_existing_feature"
+        "measure_minutes_per_item"
       ],
       "ai_overuse_candidate": false,
       "rows": [
@@ -26,6 +31,12 @@
     {
       "number": 2,
       "name": "주문서 양식 읽기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -45,6 +56,12 @@
     {
       "number": 3,
       "name": "품목·수량 집계",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -64,6 +81,12 @@
     {
       "number": 4,
       "name": "주간 보고서 만들기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

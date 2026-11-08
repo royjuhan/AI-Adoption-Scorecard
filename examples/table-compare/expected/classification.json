@@ -1,10 +1,16 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "table-compare",
   "steps": [
     {
       "number": 1,
       "name": "정상 신호 구간 선택",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -24,6 +30,12 @@
     {
       "number": 2,
       "name": "불규칙 신호 구간 선택",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -49,6 +61,12 @@
     {
       "number": 3,
       "name": "구간 평균 계산",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -68,6 +86,12 @@
     {
       "number": 4,
       "name": "결과표 채우기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

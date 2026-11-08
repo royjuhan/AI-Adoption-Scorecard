@@ -18,7 +18,12 @@ public sealed record CaseDefinition(
     CaseScores? Scores = null);
 
 // 단계 하나. Number는 1부터다. 오류 경로 steps[n]의 n과 같다.
-public sealed record CaseStep(int Number, string Name, StepAnswers Answers);
+// Ai는 AI가 적은 단계 담당과 근거다(스펙 4.14, ADR 0013). 적지 않으면 null이다. 답·inferred와 상관없다.
+public sealed record CaseStep(int Number, string Name, StepAnswers Answers, StepAi? Ai = null);
+
+// AI 판단 하나. Assignee는 ① ② ②M ③ ④ 중 하나다(스펙 4.14). ②M은 학습 모델(결정론)이고 ②의 한 갈래다(classification.md 4.13).
+// Reason은 쓴 글 그대로다.
+public sealed record StepAi(string Assignee, string Reason);
 
 // 답 10개. 순서는 스펙 4.4 표(지시문 3.2)와 같다.
 // HumanSignoff는 사람이 최종 확인·서명하는 단계인가(ADR 0003). 단계마다 묻지 않고 서명 단계를 한 번 물어 채운다.

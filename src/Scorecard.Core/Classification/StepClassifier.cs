@@ -7,6 +7,8 @@ namespace Scorecard.Core.Classification;
 // SIGNOFF → Q1 → Q2 → Q3 → Q4 → ELSE 순서로 보고 처음 걸리는 곳에서 멈춘다.
 // ELSE이고 rule_expressible이 partial이면 예외 검토 행, failure_impact가 external·safety_legal이면 게이트 행을 붙인다.
 // SIGNOFF 단계에는 부가 행을 붙이지 않는다. 사람이 서명하는 단계 뒤에 게이트를 또 두지 않는다(ADR 0003).
+// 단계에 ai가 있으면 step 행만 AI 행으로 바꾸고, 트리 step 행은 규칙 의견으로 남긴다(4.13, ADR 0013).
+// 부가 행은 트리 것을 그대로 둔다. SIGNOFF 단계라도 AI 담당의 비교 값이 ④가 아니면 게이트를 붙인다.
 // 순수 함수다. 파일·난수·시각·환경을 쓰지 않는다. 값·문장은 ClassificationRules에서 읽는다.
 public static class StepClassifier
 {
@@ -14,6 +16,10 @@ public static class StepClassifier
     public const string KindStep = "step";
     public const string KindExceptionReview = "exception_review";
     public const string KindHumanGate = "human_gate";
+
+    // 3.2 source 값. 단계에 ai가 있으면 ai, 없으면 rule.
+    public const string SourceAi = "ai";
+    public const string SourceRule = "rule";
 
     // 단계 순서는 case.yaml 순서다. 파싱 오류가 있는 케이스는 부르는 쪽이 걸러 낸다(5절).
     public static ClassificationResult Classify(CaseDefinition definition)
@@ -25,12 +31,17 @@ public static class StepClassifier
     private static StepClassification ClassifyStep(CaseStep step)
     {
         var a = step.Answers;
+        var ai = step.Ai;
         var defaults = DefaultKeys(a);
         var inferred = InferredKeys(a);
         var leaf = Decide(a);
 
+        // 4.13: ai가 있으면 step 행은 AI 행이다. 근거는 그대로 쓰고 표시를 붙이지 않는다(트리가 읽은 답이 아니다).
         // 4.3 행 순서: step → exception_review → human_gate.
-        var rows = new List<ClassificationRow> { Row(KindStep, leaf.Assignee, leaf.Rule, leaf.Used, leaf.Reason, defaults, inferred) };
+        var first = ai is null
+            ? Row(KindStep, leaf.Assignee, leaf.Rule, leaf.Used, leaf.Reason, defaults, inferred)
+            : new ClassificationRow(KindStep, ai.Assignee, RuleAi, [], ai.Reason);
+        var rows = new List<ClassificationRow> { first };
 
         // PARTIAL은 ELSE일 때만 붙는다. Q3·Q4에서 멈추면 붙지 않는다(4.1).
         if (leaf.Rule == RuleElse && a.RuleExpressible.Value == PartialRuleExpressible)
@@ -38,13 +49,26 @@ public static class StepClassifier
             rows.Add(Row(KindExceptionReview, AssigneeHuman, RulePartial, [StepQuestions.RuleExpressible.Key], PartialReason, defaults, inferred));
         }
 
-        // GATE는 SIGNOFF 밖의 모든 잎 뒤에 붙는다(지시문 3.3 "항상", ADR 0003).
-        if (leaf.Rule != RuleSignoff && GateFailureImpacts.Contains(a.FailureImpact.Value, StringComparer.Ordinal))
+        // GATE는 모든 잎 뒤에 붙는다(지시문 3.3 "항상"). 단 step 행이 사람(④)인 SIGNOFF 단계는 뺀다(ADR 0003).
+        // SIGNOFF 단계라도 AI 담당의 비교 값이 ④가 아니면 붙인다(4.13).
+        var signoffByHuman = leaf.Rule == RuleSignoff && CompareValue(first.Assignee) == AssigneeHuman;
+        if (!signoffByHuman && GateFailureImpacts.Contains(a.FailureImpact.Value, StringComparer.Ordinal))
         {
             rows.Add(Row(KindHumanGate, AssigneeHuman, RuleGate, [StepQuestions.FailureImpact.Key], GateReason(a.FailureImpact.Value), defaults, inferred));
         }
 
-        return new StepClassification(step.Number, step.Name, defaults, inferred, Checks(a), IsOveruseCandidate(a, leaf), rows.ToArray());
+        var differs = ai is not null && CompareValue(ai.Assignee) != leaf.Assignee;
+        return new StepClassification(
+            step.Number,
+            step.Name,
+            ai is null ? SourceRule : SourceAi,
+            new RuleOpinion(leaf.Assignee, leaf.Rule),
+            differs,
+            defaults,
+            inferred,
+            Checks(a),
+            IsOveruseCandidate(a, first),
+            rows.ToArray());
     }
 
     // 결정 트리의 잎 하나. Used는 잎을 정할 때 읽은 답이다(4.6 표).
@@ -108,26 +132,13 @@ public static class StepClassifier
         return new ClassificationRow(kind, assignee, rule, ordered, text);
     }
 
-    // 4.7 확인 항목. 값만 본다. 직접 쓴 값과 기본값이 같다. 순서는 4.7 표 순서다.
-    private static string[] Checks(StepAnswers a)
-    {
-        var checks = new List<string>();
-        if (a.MinutesPerItem.Value is null)
-        {
-            checks.Add(CheckMeasureMinutesPerItem);
-        }
+    // 4.7 확인 항목. 값만 본다. 직접 쓴 값과 기본값이 같다.
+    private static string[] Checks(StepAnswers a) =>
+        a.MinutesPerItem.Value is null ? [CheckMeasureMinutesPerItem] : [];
 
-        if (a.ExistingFeature.Value == CheckExistingFeature)
-        {
-            checks.Add(CheckConfirmExistingFeature);
-        }
-
-        return checks.ToArray();
-    }
-
-    // 4.8 AI 과잉 후보. step 행만 본다. 부가 행(④)은 보지 않는다. SIGNOFF(④)는 후보가 아니다.
-    private static bool IsOveruseCandidate(StepAnswers a, Leaf leaf) =>
-        a.CurrentActor.Value == OveruseCurrentActor && leaf.Assignee == AssigneeRuleSoftware;
+    // 4.8 AI 과잉 후보. step 행(Rows[0])만 본다. 부가 행(④)은 보지 않는다. 담당의 비교 값이 ②면 후보다(②M 포함).
+    private static bool IsOveruseCandidate(StepAnswers a, ClassificationRow first) =>
+        a.CurrentActor.Value == OveruseCurrentActor && CompareValue(first.Assignee) == AssigneeRuleSoftware;
 
     // 답 10개 중 IsDefault인 키.
     private static string[] DefaultKeys(StepAnswers a) => Ordered(Flags(a).Where(f => f.IsDefault).Select(f => f.Key));

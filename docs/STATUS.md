@@ -6,7 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
-| 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-019 (a) |
+| 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-08 11:39 "제안대로": 스킬 대화에서 확인, 게이트는 트리가 늘 붙임) | #24 |
 | 2026-11-08 | 0012 | sweeper: 스펙 6개를 본문(200줄 이내, 지금 동작)과 `docs/spec/data/`(테스트·oracle이 읽는 표·블록, 바이트 그대로)로 나눔. `SpecDocument` 상수 6개·`selftest.py` 경로 5개를 data로, 줄 선택 하나. 지시문 정리·`spikes/` 삭제. 가드·개수는 그대로 | juhan 지시 | sweeper PR |
 | 2026-11-08 | 0011 | `lead_check.py --mutation-from`: CI `mutation` 잡의 `mutation.json`을 다시 쓴다. 조건: base 도구, `.github/`·`tools/ci/` 변경 없음, base 같음, CI head 트리 = head 트리, status `measured`·`not_applicable`. 아니면 로컬 Stryker. 독립성이 조금 준다(ADR 남은 위험) | juhan 선택 | ADR 0011 PR |
 | 2026-11-08 | 0010 | 방향 수정. A: 도구는 온라인 AI 도구, 분류는 AI 판단 + 규칙 의견(다르면 표시), 검증 숫자는 Core, 오프라인·실행 시 AI 없음은 납품물만(가드는 납품물 템플릿으로 옮길 카드까지 그대로), exe 문답 없음, AI에 보낼 자료는 사용자가 정함(README 한 줄). B: 빈 곳 카드는 M2 뒤, 스펙 200줄, 리뷰 1회·막는 지적만·나머지 `docs/LATER.md`, [재검토]는 CI 빨간불만, oracle은 Core 대조·판정만, effort, M2 넷 순서와 v0.1.0-alpha. 지시문 1절·2절 머리말·1·6·7·3.1·3.3·3.5·5절·9절·10절·13절, CLAUDE.md, `.claude/agents/`. 2절 8·10은 그대로 | juhan 지시 | ADR 0010 PR |

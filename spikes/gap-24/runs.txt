@@ -1,3 +1,0 @@
-# <상대 경로> [gap-runner 옵션]
-image-step
-xlsx

@@ -363,16 +363,22 @@ steps:
     answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
 ```
 
-`examples/table-compare/expected/classification.json` (SHA-256 `44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5`):
+`examples/table-compare/expected/classification.json` (SHA-256 `84f6f31e2529546392f781f1249fdfd4a0039c3ad9ffb22d6debf05d324699c2`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "table-compare",
   "steps": [
     {
       "number": 1,
       "name": "정상 신호 구간 선택",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -392,6 +398,12 @@ steps:
     {
       "number": 2,
       "name": "불규칙 신호 구간 선택",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -417,6 +429,12 @@ steps:
     {
       "number": 3,
       "name": "구간 평균 계산",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -436,6 +454,12 @@ steps:
     {
       "number": 4,
       "name": "결과표 채우기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -482,23 +506,28 @@ steps:
     answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
 ```
 
-`examples/form-fill/expected/classification.json` (SHA-256 `b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc`):
+`examples/form-fill/expected/classification.json` (SHA-256 `e5f1a350b35ba1690024c081476494d3b9c36af6d265f46b754e59e9df262014`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "form-fill",
   "steps": [
     {
       "number": 1,
       "name": "주문서 파일 모으기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item",
         "existing_feature"
       ],
       "checks": [
-        "measure_minutes_per_item",
-        "confirm_existing_feature"
+        "measure_minutes_per_item"
       ],
       "ai_overuse_candidate": false,
       "rows": [
@@ -513,6 +542,12 @@ steps:
     {
       "number": 2,
       "name": "주문서 양식 읽기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -532,6 +567,12 @@ steps:
     {
       "number": 3,
       "name": "품목·수량 집계",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -551,6 +592,12 @@ steps:
     {
       "number": 4,
       "name": "주간 보고서 만들기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -596,16 +643,22 @@ steps:
     answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
 ```
 
-`examples/mixed-exceptions/expected/classification.json` (SHA-256 `46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df`):
+`examples/mixed-exceptions/expected/classification.json` (SHA-256 `ef0b506ec3f443828e68ff67c8c3bac58491bc64dcca9f2c7c3322d43582e4aa`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "mixed-exceptions",
   "steps": [
     {
       "number": 1,
       "name": "메일 접수 기록",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -625,6 +678,12 @@ steps:
     {
       "number": 2,
       "name": "문의 유형 분류",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -644,6 +703,12 @@ steps:
     {
       "number": 3,
       "name": "답변 초안 쓰기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -669,6 +734,12 @@ steps:
     {
       "number": 4,
       "name": "처리 결과 기록",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -715,16 +786,22 @@ steps:
     answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
 ```
 
-`examples/signoff-final/expected/classification.json` (SHA-256 `fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f`):
+`examples/signoff-final/expected/classification.json` (SHA-256 `fcda03d5b931ee3cb0ae256f10f875e1de9dacc260e0ca175dddecc632cdd279`):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "signoff-final",
   "steps": [
     {
       "number": 1,
       "name": "기록 파일 열기·정리",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -744,6 +821,12 @@ steps:
     {
       "number": 2,
       "name": "기준 구간 고르기(안정 기록)",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -763,6 +846,12 @@ steps:
     {
       "number": 3,
       "name": "기준 구간 고르기(흔들린 기록)",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -788,6 +877,12 @@ steps:
     {
       "number": 4,
       "name": "구간 값 계산·옮기기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -807,6 +902,12 @@ steps:
     {
       "number": 5,
       "name": "보고서 양식 채우기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -826,6 +927,12 @@ steps:
     {
       "number": 6,
       "name": "결과 해석 문장 쓰기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q2"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -851,6 +958,12 @@ steps:
     {
       "number": 7,
       "name": "최종 확인·서명·제출",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

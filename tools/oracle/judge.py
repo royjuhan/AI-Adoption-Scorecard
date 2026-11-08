@@ -8,9 +8,6 @@
 #   (길 "점수표만"). 점수표가 없으면 judgment.md 4절 그대로다(바이트가 T-013과 같다). 체크리스트는 대조 셈으로 들어온다.
 #   PR (a) 리뷰 뒤: 점수표만인데 inputs가 있고 대조할 열이 없으면(no_compare_fields) 통과가 아니라 조건부(5.3),
 #   점수표만은 읽지 않는 문턱을 defaults에 적지 않는다(5.1), score_gap_max가 0이면 "넘게" 없는 문장(5.2 문턱 0 문장 표).
-# T-015(docs/spec/confusion.md 5절): confusion이 있으면 확인 RECALL·PRECISION을 더하고(SCORE 뒤), 판정 표 순서 3 뒤에
-#   보류 두 행, 순서 7 뒤에 조건부 한 행을 넣는다. 순서 4 이후 행의 읽은 문턱에 recall_min·precision_min이 든다.
-#   confusion이 없으면 바이트가 T-014와 같다.
 #
 # 사용: python3 tools/oracle/judge.py <케이스 폴더>
 #   표준 출력에 judgment.json 바이트(시간·사람 입력 없음. judgment.md 8절 골든과 같다).
@@ -187,48 +184,6 @@ SCORE_TODO_TABLE = (
     ('rescore_blind', '출처가 드러나지 않게 가림 키를 새로 붙이고 점수를 다시 매긴다.'),
 )
 
-# ---- T-015 혼동행렬 (confusion.md 5절). judgment.md·text-check.md 표에 더하는 행이다. 기존 상수는 그대로다. ----
-
-# 5.1 혼동 문턱 기본값. confusion이 있을 때만 thresholds·defaults에 든다(점수 문턱 뒤).
-CONFUSION_THRESHOLD_DEFAULTS = (('recall_min', '95'), ('precision_min', '95'))
-
-# 5.2 혼동 확인 표. (확인, 결과, 확인 문장 틀). 확인 순서는 표에서 처음 나오는 순서이고 SCORE 뒤다.
-CONFUSION_CHECK_TABLE = (
-    ('RECALL', 'met', '관심 범주의 재현율이 모두 문턱 {recall_min}% 이상이다: {recall_all}.'),
-    ('RECALL', 'not_met', '재현율이 문턱 {recall_min}%에 못 미치는 관심 범주가 있다: {recall_low}.'),
-    ('RECALL', 'no_rows', '기준 자료에 행이 없는 관심 범주가 있어 재현율을 잴 수 없다: {no_rows}.'),
-    ('PRECISION', 'met', '관심 범주의 정밀도가 모두 문턱 {precision_min}% 이상이다: {precision_all}.'),
-    ('PRECISION', 'not_met', '정밀도가 문턱 {precision_min}%에 못 미치는 관심 범주가 있다: {precision_low}.'),
-)
-CONFUSION_CHECK_ORDER = tuple(dict.fromkeys(c for c, _r, _t in CONFUSION_CHECK_TABLE))
-# 5.2: 확인 문장이 읽는 문턱. 결과와 상관없다.
-CONFUSION_CHECK_READS = {'RECALL': ('recall_min',), 'PRECISION': ('precision_min',)}
-
-# 5.3 판정 행. (자리, 근거 키, 확인 결과, 판정, 판정 문장 틀). '3 뒤' = judgment.md 4.3 순서 3 뒤·4 앞(RECALL 먼저),
-# '7 뒤' = 순서 7 뒤·8(PASS) 앞.
-CONFUSION_VERDICT_ROWS = (
-    ('3 뒤', 'RECALL', 'not_met', 'hold', '관심 범주 {recall_low_classes}의 재현율이 문턱 {recall_min}%에 못 미치므로 보류.'),
-    ('3 뒤', 'PRECISION', 'not_met', 'hold', '관심 범주 {precision_low_classes}의 정밀도가 문턱 {precision_min}%에 못 미치므로 보류.'),
-    ('7 뒤', 'RECALL', 'no_rows', 'conditional',
-     '정확도·누락률은 문턱을 충족하나 기준 자료에 관심 범주 {no_rows}의 행이 없어 재현율을 잴 수 없으므로 조건부.'),
-)
-
-# 5.4 읽은 문턱. (자리, 근거 키, 확인 결과, 바탕, 더하는 문턱). 바탕 '순서 3'·'순서 8' = 그 순서 행이 이 길에서 읽는 문턱,
-# '그 행' = 걸린 행이 judgment.md 4.6·text-check.md 5.4대로 읽는 문턱. 자리 '4~8'은 순서 4, '4 뒤', 5~8의 모든 행이다.
-BASE_ORDER_3, BASE_ORDER_8, BASE_ROW = '순서 3', '순서 8', '그 행'
-CONFUSION_READ_THRESHOLDS = (
-    ('3 뒤', 'RECALL', 'not_met', BASE_ORDER_3, ('recall_min',)),
-    ('3 뒤', 'PRECISION', 'not_met', BASE_ORDER_3, ('recall_min', 'precision_min')),
-    ('4~8', None, None, BASE_ROW, ('recall_min', 'precision_min')),
-    ('7 뒤', 'RECALL', 'no_rows', BASE_ORDER_8, ('recall_min', 'precision_min')),
-)
-
-# 5.5 다음 할 일(더하는 것). judgment.md 4.7 표의 add_group 뒤(점수표가 있으면 rescore_blind 뒤), confirm_thresholds 앞.
-CONFUSION_TODO_TABLE = (
-    ('add_class_rows', '기준 자료에 관심 범주 {no_rows}의 행이 없다. case.yaml confusion.positive의 이름을 확인하고, '
-     '맞으면 그 범주의 행을 기준 자료와 결과 자료에 넣어 재현율을 잰다.'),
-)
-
 EMPTY_VALUE = '(빈 칸)'  # 4.5: 빈 값은 (빈 칸)
 SHOW_MAX = 64  # 4.5·metrics 4.7: 64자를 넘으면 자른다(자르는 모양은 범위 밖, show() 참고)
 
@@ -296,10 +251,6 @@ def effective_thresholds(case: Case):
     if case.scores is not None:  # T-014 text-check.md 5.1: scores가 있을 때만.
         given['score_gap_max'] = t.score_gap_max_text if t else None
         table = THRESHOLD_DEFAULTS + SCORE_THRESHOLD_DEFAULTS
-    if case.confusion is not None:  # T-015 confusion.md 5.1: confusion이 있을 때만, 점수 문턱 뒤.
-        given['recall_min'] = t.recall_min_text if t else None
-        given['precision_min'] = t.precision_min_text if t else None
-        table = table + CONFUSION_THRESHOLD_DEFAULTS
     values, defaults = {}, []
     for key, default in table:
         if given[key] is None:
@@ -398,13 +349,6 @@ def check_consistent(case: Case, run: CompareRun) -> None:
                 and [e['item'] for e in got['entries']] == [i.item for i in cl.items]
     # T-014 5.6: 점수표 집계는 정의에 scores가 있을 때만 있다.
     ok = ok and ((run.scores is None) == (case.scores is None))
-    # T-015 confusion.md 5.6: 혼동행렬은 정의에 confusion이 있을 때만 있고, 범주 필드·관심 범주(순서)가 정의와 같다.
-    got = body.get('confusion')
-    if case.confusion is None:
-        ok = ok and got is None
-    else:
-        ok = ok and body['status'] == STATUS_MEASURED and got is not None and got['field'] == case.confusion.field \
-            and [p['class'] for p in got['positive']] == list(case.confusion.positive)
     if not ok:
         raise OracleError('대조 결과가 정의와 맞지 않는다 (ArgumentException 입력, 범위 밖)')
 
@@ -425,15 +369,11 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
     scores = run.scores
     if scores is not None:  # T-014 text-check.md 5.1·3.3: thresholds 끝에.
         thresholds_json['score_gap_max'] = JsonNumber(values['score_gap_max'])
-    conf = body.get('confusion')
-    if conf is not None:  # T-015 confusion.md 3.2: 점수 문턱 뒤.
-        thresholds_json['recall_min'] = JsonNumber(values['recall_min'])
-        thresholds_json['precision_min'] = JsonNumber(values['precision_min'])
 
     def mark(text: str, keys) -> str:
         return text + DEFAULT_MARK if any(k in defaults for k in keys) else text
 
-    todo_table = _todo_table(scores is not None, conf is not None)
+    todo_table = _todo_table(scores is not None)
     todo_when = {k: False for k, _ in todo_table}
     slot = {'defaults': ', '.join(f'{k} {values[k]}' for k in defaults)}
     score_result = None
@@ -547,12 +487,6 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
         results['FOCUS'], focus_slot = _focus(case, run, bad_rows)
         slot.update(focus_slot)
 
-        conf_results, no_rows = {}, []
-        if conf is not None:  # T-015 confusion.md 5.2.
-            conf_results, conf_slot, no_rows = _confusion(values, conf)
-            slot.update(conf_slot)
-            todo_when['add_class_rows'] = bool(no_rows)
-
         sentences = {(c, r): t for c, r, t in CHECK_TABLE}
         checks = []
         for name in CHECK_ORDER:
@@ -561,51 +495,24 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
             checks.append({'rule': name, 'result': results[name], 'reason': mark(text, keys)})
         if scores is not None:
             checks.append(score_check())  # T-014 5.2: 다섯 뒤.
-        conf_sentences = {(c, r): t for c, r, t in CONFUSION_CHECK_TABLE}
-        for name in (CONFUSION_CHECK_ORDER if conf is not None else ()):  # T-015 5.2: SCORE 뒤.
-            text = fill(conf_sentences[(name, conf_results[name])], slot)
-            checks.append({'rule': name, 'result': conf_results[name], 'reason': mark(text, CONFUSION_CHECK_READS[name])})
 
         # 4.3: 순서대로 보고 처음 걸리는 행. PASS는 어느 행에도 걸리지 않을 때다.
         # T-014 5.3: 점수표가 있으면 순서 4 뒤에 SCORE 두 행. 5~8행의 읽은 문턱에 score_gap_max(5.4).
-        # T-015 confusion.md 5.3: 혼동행렬이 있으면 순서 3 뒤에 RECALL·PRECISION 보류, 순서 7 뒤에 RECALL no_rows 조건부.
-        def row_read(order: int) -> tuple:
-            """그 순서 행이 이 길(표 대조)에서 읽는 문턱(judgment.md 4.6, text-check.md 5.4)."""
-            if scores is not None and order >= 5:
-                return next(th for z, k, res, path, th in SCORE_READ_THRESHOLDS if path == PATH_TABLE and z == '5~8')
-            return READ_THRESHOLDS[order]
-
-        def plus(read: tuple, zone: str, rule=None, result=None) -> tuple:
-            """T-015 5.4: 혼동행렬이 있으면 더하는 문턱."""
-            if conf is None:
-                return read
-            add = next(th for z, k, res, _base, th in CONFUSION_READ_THRESHOLDS if z == zone and k == rule and res == result)
-            return read + add
-
-        def conf_hit(zone: str, rule: str, result: str, read: tuple) -> tuple:
-            row = next(x for x in CONFUSION_VERDICT_ROWS if x[0] == zone and x[1] == rule and x[2] == result)
-            return (rule, row[3], row[4], plus(read, zone, rule, result))
-
         hit = None
         for r in VERDICT_TABLE:
             if r[1] == 'NOT_VERIFIED':
                 continue
-            if r[0] == 4 and conf is not None:
-                failed = next((n for n in CONFUSION_CHECK_ORDER if conf_results[n] == 'not_met'), None)
-                if failed is not None:
-                    hit = conf_hit('3 뒤', failed, 'not_met', READ_THRESHOLDS[3])
-                    break
             if r[0] == 5 and scores is not None and score_result in ('revealed', 'not_met'):
                 row = score_row('SCORE', score_result)
                 read = next(th for z, k, res, path, th in SCORE_READ_THRESHOLDS
                             if path == PATH_TABLE and k == 'SCORE' and res == score_result)
-                hit = (row[1], row[4], row[5], plus(read, '4~8'))
-                break
-            if r[1] == 'PASS' and conf is not None and conf_results['RECALL'] == 'no_rows':
-                hit = conf_hit('7 뒤', 'RECALL', 'no_rows', row_read(8))
+                hit = (row[1], row[4], row[5], read)
                 break
             if r[1] == 'PASS' or results[r[1]] == r[2]:
-                hit = (r[1], r[3], r[4], plus(row_read(r[0]), '4~8') if r[0] >= 4 else row_read(r[0]))
+                read = READ_THRESHOLDS[r[0]]
+                if scores is not None and r[0] >= 5:
+                    read = next(th for z, k, res, path, th in SCORE_READ_THRESHOLDS if path == PATH_TABLE and z == '5~8')
+                hit = (r[1], r[3], r[4], read)
                 break
         rule, verdict, template, read = hit
         reason = mark(fill(template, slot), read)
@@ -621,59 +528,12 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
     }
 
 
-def _todo_table(with_scores: bool, with_confusion: bool = False) -> tuple:
-    """4.7 표. 점수표가 있으면 add_group 뒤에 T-014 5.5 행을, 혼동행렬이 있으면 그 뒤에 T-015 5.5 행을 넣는다."""
+def _todo_table(with_scores: bool) -> tuple:
+    """4.7 표. 점수표가 있으면 add_group 뒤에 T-014 5.5 행을 넣는다."""
+    if not with_scores:
+        return TODO_TABLE
     at = [k for k, _ in TODO_TABLE].index('add_group') + 1
-    extra = (SCORE_TODO_TABLE if with_scores else ()) + (CONFUSION_TODO_TABLE if with_confusion else ())
-    return TODO_TABLE[:at] + extra + TODO_TABLE[at:]
-
-
-def _class_name(value: str) -> str:
-    return show(value)
-
-
-def recall_entry(p: dict) -> str:
-    """T-015 5.2 {recall_all}·{recall_low}의 한 범주: `<범주> <재현율>%(<맞힘>/<기준 행>, 놓침 <N>건)`."""
-    return f"{_class_name(p['class'])} {p['recall_pct'].text}%({p['hit']}/{p['reference']}, 놓침 {p['miss']}건)"
-
-
-def precision_entry(p: dict) -> str:
-    """T-015 5.2 {precision_all}·{precision_low}의 한 범주. 결과 쪽에서 그 범주로 적은 행이 없으면 `<범주> 결과 0건`."""
-    if p['predicted'] == 0:
-        return f"{_class_name(p['class'])} 결과 0건"
-    return f"{_class_name(p['class'])} {p['precision_pct'].text}%({p['hit']}/{p['predicted']}, 오판 {p['false_alarm']}건)"
-
-
-def _confusion(values: dict, conf: dict):
-    """T-015 confusion.md 5.2 RECALL·PRECISION. (결과 dict, 문장 값, 기준 행이 없는 관심 범주). 셈으로 비교한다."""
-    recall_low, precision_low, no_rows = [], [], []
-    try:
-        with localcontext(EXACT):
-            recall_min, precision_min = Decimal(values['recall_min']), Decimal(values['precision_min'])
-            for p in conf['positive']:
-                if p['reference'] == 0:
-                    no_rows.append(p)
-                elif Decimal(p['hit'] * 100) < recall_min * p['reference']:
-                    recall_low.append(p)
-                if p['predicted'] > 0 and Decimal(p['hit'] * 100) < precision_min * p['predicted']:
-                    precision_low.append(p)
-    except DecimalException:
-        raise OracleError('혼동 문턱 셈에서 반올림이 생겼다 (oracle 범위 밖)') from None
-    results = {
-        'RECALL': 'not_met' if recall_low else ('no_rows' if no_rows else 'met'),
-        'PRECISION': 'not_met' if precision_low else 'met',
-    }
-    slot = {
-        'recall_min': values['recall_min'], 'precision_min': values['precision_min'],
-        'recall_all': ', '.join(recall_entry(p) for p in conf['positive'] if p['reference'] > 0),
-        'recall_low': ', '.join(recall_entry(p) for p in recall_low),
-        'recall_low_classes': ', '.join(_class_name(p['class']) for p in recall_low),
-        'precision_all': ', '.join(precision_entry(p) for p in conf['positive']),
-        'precision_low': ', '.join(precision_entry(p) for p in precision_low),
-        'precision_low_classes': ', '.join(_class_name(p['class']) for p in precision_low),
-        'no_rows': ', '.join(_class_name(p['class']) for p in no_rows),
-    }
-    return results, slot, no_rows
+    return TODO_TABLE[:at] + SCORE_TODO_TABLE + TODO_TABLE[at:]
 
 
 def _score(values: dict, scores: dict):

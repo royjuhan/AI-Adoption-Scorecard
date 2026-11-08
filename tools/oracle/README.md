@@ -1,6 +1,6 @@
 # oracle: 스펙만 보고 짠 독립 구현
 
-- 근거: ADR 0005 원문 3·결정 9, T-010 수용 기준 3, T-011 수용 기준 7(판정), T-012 수용 기준 8(판정 보강), T-013 수용 기준 1~3·7(결과 쪽 중복의 셈, 정의 검사, 판 하나), T-015 수용 기준 7(혼동행렬, ADR 0010 결정 5).
+- 근거: ADR 0005 원문 3·결정 9, T-010 수용 기준 3, T-011 수용 기준 7(판정), T-012 수용 기준 8(판정 보강), T-013 수용 기준 1~3·7(결과 쪽 중복의 셈, 정의 검사, 판 하나).
 - 엔진(`src/`)과 따로 짠 Python 구현이다. `docs/spec/`과 지시문만 보고 짰다. `src/`는 열지 않았다.
 - CI `oracle` 잡이 예제마다 `expected/` 바이트를 다시 만들어 비교한다(base `check.py`). `regression-guard`는 기존 expected를 바꾼 커밋을 이 결과로 허용한다.
 - `tools/oracle`이 바뀐 PR에서는 `oracle-head` 잡과 머지 전 `tools/ci/lead_check.py`가 head의 `check.py`와 `selftest.py`를 돌린다.
@@ -57,22 +57,21 @@
 | 파일 | 스펙 |
 | --- | --- |
 | `classify.py` | classification.md 3.2(JSON 모양), 4.1(트리 순서), 4.2(조건 표), 4.3(행 만들기), 4.4(값), 4.5(문장 틀·문구 표), 4.6(읽은 답 표, 기본값 표시), 4.7(확인 항목), 4.8(AI 과잉 후보), 4.12(추정 표시). 지시문 3.3 |
-| `compare.py` | metrics.md 2절(미검증이면 파일을 읽지 않음), 3.1(항목 순서, 메모리 결과의 기준 행 전부·머리 행), 3.2(속성 표, `items`에 쓰는 항목), 4.1(패턴, 이름 맞추기, 서수 정렬), 4.3(키), 4.4(항목·셈, 미검증 표), 4.5(숫자 모양, 허용 오차, 넘침), 4.8(퍼센트), 4.3·13.2(결과 쪽 키 중복: 항목 `duplicate`, 결과 쪽에 두 번 나온 기준 키는 값 불일치, 중복 항목에 기준과의 차이, `fields[].compared`는 중복 행 포함), 12.3(기준 파일의 `inputs.group` 열), text-check.md 3.1(새 속성 자리)·4.2(체크리스트 대조: 빠진 항목은 값 불일치, `missing_items`, 열 찾기 순서, 규칙 10 확인할 것이 없는 기준 행은 `no-check`로 멈춤)·4.3 규칙 2(대조 `measured`이면 기준 키를 `scores.py`에 넘긴다), confusion.md 3.1(`compare.confusion` 자리: `fields`·`checklist` 뒤, `items` 앞. 추가 행은 넘기지 않는다) |
-| `judge.py` | judgment.md 2절, 3.2·3.3(schema_version 2, 바이트), 4.2(기본값), 4.3(판정 표), 4.4(확인 표), 4.5·4.6(문장 값, 읽은 문턱 표), 4.7(다음 할 일 표), 4.8(몰림 M-A, `inputs.group`), 4.9(검토 항목, `{breakdown}`, 사람 입력 = 검토 항목 키), 4.10(시간), 5절(정의·대조 결과 검사, T-013), text-check.md 3.2·5절(`score_gap_max`, 확인 `SCORE`, 문턱 0 문장, 판정 행, 읽은 문턱, `rescore_blind`, 점수표만 길: 읽는 문턱만 `defaults`, `inputs`가 있고 대조할 열이 없으면 조건부 + `add_compare`), confusion.md 3.2·5절(`recall_min`·`precision_min` 기본값 95, 확인 `RECALL`·`PRECISION`과 범주 글, 판정 행 `3 뒤`·`7 뒤`, 읽은 문턱 표, `add_class_rows`, 5.6 정의 검사). 대조는 `compare.py`의 메모리 결과 |
+| `compare.py` | metrics.md 2절(미검증이면 파일을 읽지 않음), 3.1(항목 순서, 메모리 결과의 기준 행 전부·머리 행), 3.2(속성 표, `items`에 쓰는 항목), 4.1(패턴, 이름 맞추기, 서수 정렬), 4.3(키), 4.4(항목·셈, 미검증 표), 4.5(숫자 모양, 허용 오차, 넘침), 4.8(퍼센트), 4.3·13.2(결과 쪽 키 중복: 항목 `duplicate`, 결과 쪽에 두 번 나온 기준 키는 값 불일치, 중복 항목에 기준과의 차이, `fields[].compared`는 중복 행 포함), 12.3(기준 파일의 `inputs.group` 열), text-check.md 3.1(새 속성 자리)·4.2(체크리스트 대조: 빠진 항목은 값 불일치, `missing_items`, 열 찾기 순서, 규칙 10 확인할 것이 없는 기준 행은 `no-check`로 멈춤)·4.3 규칙 2(대조 `measured`이면 기준 키를 `scores.py`에 넘긴다) |
+| `judge.py` | judgment.md 2절, 3.2·3.3(schema_version 2, 바이트), 4.2(기본값), 4.3(판정 표), 4.4(확인 표), 4.5·4.6(문장 값, 읽은 문턱 표), 4.7(다음 할 일 표), 4.8(몰림 M-A, `inputs.group`), 4.9(검토 항목, `{breakdown}`, 사람 입력 = 검토 항목 키), 4.10(시간), 5절(정의·대조 결과 검사, T-013), text-check.md 3.2·5절(`score_gap_max`, 확인 `SCORE`, 문턱 0 문장, 판정 행, 읽은 문턱, `rescore_blind`, 점수표만 길: 읽는 문턱만 `defaults`, `inputs`가 있고 대조할 열이 없으면 조건부 + `add_compare`). 대조는 `compare.py`의 메모리 결과 |
 | `checklist.py` | text-check.md 4.2(공백 접기, 서수 부분 문자열, `column` 칸이 비면 요구하지 않음, `any`) |
 | `scores.py` | text-check.md 3.1(`scores` 모양), 4.3(점수표·출처 표, 평균 정수 셈, 분포, 건별 비교, 채점자별), 4.3 규칙 2(대조 `measured`이면 출처 표의 건은 기준 키), 4.4(가림 규칙 넷과 순서, `source_column`은 열 이름도 ASCII 소문자로, 가림 키 조각은 영문자 묶음과 숫자 묶음, `source_pattern` 표시 몰림: 표시, 키의 꼴·글자 수(UTF-16)·글자 종류·작은 쪽, 키는 채점자와 상관없이·열과 파일은 두 출처를 매긴 채점자 행만, 센 건 = 출처 표의 건 수, 몰림 문턱, 발견 위치). 오류 입력은 멈춘다(코드는 메시지에 적는다) |
-| `confusion.py` | confusion.md 4.2(결과 범주: 누락·결과 쪽 중복은 결과 없음, 범주 목록 = 기준 ∪ 짝지은 결과 ∪ 관심 범주 서수 순, 0이 아닌 칸만 기준 범주 → 결과 범주 순·결과 없음은 끝, 관심 범주별 셈, 퍼센트는 metrics.md 4.8 셈·분모 0이면 null). 칸 합이 기준 행 수와 다르면 멈춘다 |
 | `oracle_csv.py` | metrics.md 4.2(CSV 읽기), 4.6(정규화) |
-| `oracle_case.py` | case-schema.md 4.3(최상위), 4.4(단계, 답 10개 표, 기본값), 4.5(inputs·compare·thresholds. 문턱은 쓴 글 그대로 둔다), 4.6(값 형식), 4.13(inferred), 10.1·10.2(`inputs.group`: 선택, 빈 값·스칼라 아님·`key`·`compare` 필드와 같음은 멈춘다), text-check.md 4.1(`checklist`·`scores`·`score_gap_max`. 오류는 멈추고, 메시지 글은 4.1 표와 같다), confusion.md 4.1(`confusion`·`recall_min`·`precision_min`. 범주 필드는 허용 오차 없는 `compare` 필드, 관심 범주 1개 이상·비지 않은 글·서수 중복 금지. 메시지 글은 4.1 파서 장면 표와 같다) |
+| `oracle_case.py` | case-schema.md 4.3(최상위), 4.4(단계, 답 10개 표, 기본값), 4.5(inputs·compare·thresholds. 문턱은 쓴 글 그대로 둔다), 4.6(값 형식), 4.13(inferred), 10.1·10.2(`inputs.group`: 선택, 빈 값·스칼라 아님·`key`·`compare` 필드와 같음은 멈춘다), text-check.md 4.1(`checklist`·`scores`·`score_gap_max`. 오류는 멈추고, 메시지 글은 4.1 표와 같다) |
 | `oracle_yaml.py` | case-schema.md 4.6(null 낱말, yes·no는 글), 4.7(받지 않는 기능), 4.8(인코딩·줄바꿈) |
 | `oracle_json.py` | classification.md 3.3(바이트 규칙, 이스케이프 표). metrics.md 3.3이 같은 표를 쓴다 |
 | `check.py` | ADR 0005 원문 3, T-010 수용 기준 3, T-011 수용 기준 7·8, classification.md 7.1 5(case.yaml 단계 = answers.yaml), ADR 0007 결정 4·ADR 0008 결정 4(판 하나) |
-| `selftest.py` | classification.md 4.10·6.1·6.2·6.5, metrics.md 3.3(변형)·4.1·4.5·4.6·4.8·4.10·12.2·12.3·12.5, case-schema.md 6.1·10.2, metrics.md 13.3(결과 쪽 중복 순서 표), judgment.md 3.2·3.3·4.2~4.9·4.12·5절·6.1~6.6·7.1~7.5, text-check.md 3.1·3.2·4.1~4.5(4.2 체크리스트 장면 표, 4.4 가림 장면 표·키 표시 표·작은 쪽 표·몰림 문턱 표·몰림 예 표·센 건 48건 합성, 4.5 체크리스트 코드 표. 장면 표의 바꾼 곳은 `; `로 묶고, 출처·채점자 행에만 바꾸기와 다른 파일로 행 옮기기를 읽는다)·5.1~5.5·6.1·6.2·7.1~7.4(생성기를 7.2 표로 다시 만들어 블록과 비교, PR (b) 모의), confusion.md 3.1·3.2(새 속성 표)·4.1(키 표, 파서 장면 표)·4.2(셈 장면 표와 규칙 3~6)·5.1~5.5(상수 = 표, 범주 글 표)·5.6·6.1(판정 장면 표, 판정 문장 글머리)·7.1~7.4(생성기를 7.2 계획 표로 다시 만들어 CSV 블록과 비교, 시드가 가장 작음, 블록 = oracle 출력, PR (b) 모의, CSV 변형) |
+| `selftest.py` | classification.md 4.10·6.1·6.2·6.5, metrics.md 3.3(변형)·4.1·4.5·4.6·4.8·4.10·12.2·12.3·12.5, case-schema.md 6.1·10.2, metrics.md 13.3(결과 쪽 중복 순서 표), judgment.md 3.2·3.3·4.2~4.9·4.12·5절·6.1~6.6·7.1~7.5, text-check.md 3.1·3.2·4.1~4.5(4.2 체크리스트 장면 표, 4.4 가림 장면 표·키 표시 표·작은 쪽 표·몰림 문턱 표·몰림 예 표·센 건 48건 합성, 4.5 체크리스트 코드 표. 장면 표의 바꾼 곳은 `; `로 묶고, 출처·채점자 행에만 바꾸기와 다른 파일로 행 옮기기를 읽는다)·5.1~5.5·6.1·6.2·7.1~7.4(생성기를 7.2 표로 다시 만들어 블록과 비교, PR (b) 모의) |
 
 ### 규칙 값은 코드에 옮겨 적었다
 
 - 조건 표, 문장 틀·문구 표, 읽은 답 표, 답 10개 표, 퍼센트 셈은 스펙 표를 손으로 옮겨 상수로 두었다. 실행 중에 스펙 문서를 읽지 않는다.
-- 판정도 같다: 기본값 표, 검토 항목 표, 판정 표, 확인 표, `focus_min`, 읽은 문턱 표, 다음 할 일 표를 `judge.py` 상수로 옮겼다. T-014 점수 표(text-check.md 5절), T-015 혼동 표(confusion.md 5.1~5.5)도 같다.
+- 판정도 같다: 기본값 표, 검토 항목 표, 판정 표, 확인 표, `focus_min`, 읽은 문턱 표, 다음 할 일 표를 `judge.py` 상수로 옮겼다.
 - 이유: 스펙 표와 expected를 같이 바꾸면 oracle이 저절로 따라가지 않게 하려는 것이다. 표가 바뀌면 prototyper가 oracle을 고쳐야 녹색이 된다. expected 변경에 독립된 확인이 한 번 더 든다.
 - `selftest.py`만 스펙 문서를 읽는다. 상수와 스펙 예시 표가 어긋나면 실패한다. 판정 상수는 표 자체와도 바로 대조한다(4.2~4.7).
 
@@ -144,18 +143,9 @@
 - 공개 예제 4종에는 Q1·Q4, 이미지·대화 입력, 여러 CSV 파일, 따옴표 CSV, `inferred`가 없다. `check.py`는 이 경로를 보지 않는다. `selftest.py`의 스펙 표 대조와 TestData 표본이 일부를 본다.
 - 판정도 같다. 예제 4종은 모두 `time_must_drop: false`이거나 미검증이고, 시간·사람 입력이 없다. `check.py`는 판정 표 가운데 `NOT_VERIFIED`·`ACCURACY`·`FOCUS`·`PASS`만 본다. `MISSING`·`UNEXPLAINED`·`TIME`, 기본값 표시는 `selftest.py`의 합성 장면(judgment.md 4.6·5절·6.1~6.6)만 본다.
 - 결과 쪽 키 중복은 공개 예제에 없다. `selftest.py`의 `compare-duplicate`(metrics.md 12.5), 13.3 순서 표, 합성 장면만 본다.
-- 혼동행렬(T-015)은 PR (b) 뒤 `defect-labels` 하나만 `check.py`가 본다. `no_rows`·`PRECISION` 보류, 기본값 표시, 범주 필드의 빈 칸·결과 쪽 중복은 `selftest.py`의 confusion.md 4.2·6.1 장면만 본다. 점수표와 혼동행렬을 같이 쓴 장면은 없다(confusion.md 9절 5). 파서 오류의 코드는 oracle이 내지 않는다(메시지만 본다).
 - Windows에서는 돌려 보지 않았다(미확인).
 
 ## 검증 기록 (2026-11-07, 이 환경)
-
-### T-015 PR (a) (2026-11-08)
-
-- `check.py --repo .`: 예제 5종 15파일 모두 MATCH, 종료 코드 0. 예제 expected는 그대로다. main `8b32499`의 oracle(base)로 이 트리를 보아도 15개 MATCH다.
-- `selftest.py --repo .`: 통과 2110, 실패 0. 시작 전 main 트리는 1763이었다. T-015 점검은 347건이다(confusion.md 3.1·3.2·4.1·4.2·5.1~5.6·6.1·7.1~7.4, PR (b) 모의).
-- PR (b) 모양 사본(`examples/defect-labels/`에 confusion.md 7.3·7.4 블록): 이 oracle로 `check.py` 18개 MATCH, `selftest.py --repo <사본>` 통과 2125, 실패 0. main oracle(base)은 이 사본에서 DIFF 3이다(`confusion`을 모른다). 그래서 PR (a)가 먼저다.
-- 음성 대조(스펙을 바꿈): 셈 장면 칸 하나, 판정 장면 판정, 확인 문장 글자, 시드, 파서 메시지, 범주 글, CSV 블록 한 글자, 새 속성 형식, 읽은 문턱, 판정 문장 글머리를 하나씩 바꾸면 모두 실패한다(1~2건). 되돌리면 통과.
-- Python 3.11, 3.12, 3.13에서 `check.py` 표준 출력 바이트가 같고 `selftest.py`가 통과한다(2110). `python3 -I -B`로 돈다.
 
 ### T-013
 

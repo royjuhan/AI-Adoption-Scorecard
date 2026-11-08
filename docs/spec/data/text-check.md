@@ -662,7 +662,7 @@ p3,d11,b24,4
 
 ### 7.4 expected
 
-`examples/reply-drafts/expected/classification.json` (SHA-256 `1afc62bde367be829223ca10fc6a0b21a4e196c0caf91962c66f463d5ebec16e`, 1,853바이트):
+`examples/reply-drafts/expected/classification.json` (SHA-256 `1afc62bde367be829223ca10fc6a0b21a4e196c0caf91962c66f463d5ebec16e`, 2,247바이트):
 
 ```json
 {

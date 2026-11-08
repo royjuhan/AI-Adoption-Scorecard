@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [
+    "build-request/spec.md",
+    "build-request/io-schema.json",
+    "build-request/acceptance.md",
+    "build-request/samples/README.md",
+    "build-request/context.json",
+    "build-request/export-check.md"
+  ],
+  "case": "mixed-exceptions",
+  "step": 1,
+  "proposal": {
+    "step": 1,
+    "name": "메일 접수 기록",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "candidates": [
+    1,
+    4
+  ]
+}

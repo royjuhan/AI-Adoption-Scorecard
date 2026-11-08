@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case": "table-compare",
+  "task": "센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다",
+  "step": {
+    "number": 1,
+    "name": "정상 신호 구간 선택",
+    "assignee": "②",
+    "rule": "ELSE",
+    "source": "rule",
+    "current_actor": "human",
+    "input_kind": "table",
+    "frequency": "weekly",
+    "batch_size": 30,
+    "exception_rate": 5,
+    "minutes_per_item": null,
+    "failure_impact": "internal_rework"
+  },
+  "summary": {
+    "steps": 4,
+    "software": 4,
+    "differs": 0,
+    "ai_assist": 0,
+    "ai_overuse": 0
+  },
+  "verification": {
+    "status": "measured",
+    "counts": {
+      "reference": 30,
+      "candidate": 30,
+      "match": 27,
+      "mismatch": 2,
+      "missing": 1,
+      "extra": 1,
+      "within": 4
+    },
+    "accuracy_pct": 90.0,
+    "missing_rate_pct": 3.3,
+    "verdict": "conditional",
+    "verdict_rule": "FOCUS",
+    "thresholds": {
+      "accuracy_min": 85,
+      "missing_max": 5,
+      "time_must_drop": false
+    }
+  }
+}

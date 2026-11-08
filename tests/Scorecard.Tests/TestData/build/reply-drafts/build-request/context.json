@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case": "reply-drafts",
+  "task": "문의 메일에 AI가 답변 초안을 쓰고 사람이 고쳐 보낸다",
+  "step": {
+    "number": 1,
+    "name": "문의 접수 기록",
+    "assignee": "②",
+    "rule": "ELSE",
+    "source": "rule",
+    "current_actor": "human",
+    "input_kind": "fixed_form",
+    "frequency": "daily",
+    "batch_size": 12,
+    "exception_rate": 5,
+    "minutes_per_item": null,
+    "failure_impact": "internal_rework"
+  },
+  "summary": {
+    "steps": 3,
+    "software": 1,
+    "differs": 0,
+    "ai_assist": 1,
+    "ai_overuse": 0
+  },
+  "verification": {
+    "status": "measured",
+    "counts": {
+      "reference": 12,
+      "candidate": 12,
+      "match": 10,
+      "mismatch": 2,
+      "missing": 0,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 83.3,
+    "missing_rate_pct": 0.0,
+    "verdict": "conditional",
+    "verdict_rule": "FOCUS",
+    "thresholds": {
+      "accuracy_min": 80,
+      "missing_max": 5,
+      "time_must_drop": false
+    }
+  }
+}

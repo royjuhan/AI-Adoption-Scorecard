@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [
+    "build-request/spec.md",
+    "build-request/io-schema.json",
+    "build-request/acceptance.md",
+    "build-request/samples/README.md",
+    "build-request/samples/output.csv",
+    "build-request/context.json",
+    "build-request/export-check.md"
+  ],
+  "case": "form-fill",
+  "step": 2,
+  "proposal": {
+    "step": 2,
+    "name": "주문서 양식 읽기",
+    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다."
+  },
+  "candidates": [
+    1,
+    2,
+    3,
+    4
+  ]
+}

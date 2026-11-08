@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [],
+  "case": "table-compare",
+  "step": null,
+  "proposal": {
+    "step": 1,
+    "name": "정상 신호 구간 선택",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "candidates": [
+    1,
+    2,
+    3,
+    4
+  ]
+}

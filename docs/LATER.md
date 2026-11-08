@@ -33,7 +33,7 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - `--review`·`--times` 파일 입력. ADR 0010 번호 표는 `--review`를 M2-1에 두지만 파일 모양 스펙이 없다. 결과 객체가 정해지는 M2-3 쪽 카드에서 모양과 함께 넣는다(STATUS 잠정 결정 T-018 10).
 - `check`의 자료 읽기 전용 사본과 입력 SHA-256(지시문 2절 2, 3.1). `start`가 답 파일 사본을 케이스 폴더에 남기는 일(시안 "남는 것 answers.yaml"). 스코어카드 7구역과 함께.
 - `open`의 HTML 스코어카드(M2-3). 지금은 결과 파일 목록만 알린다.
-- `build`의 추천·"이 단계 만들까요?"·예/아니오/나중에를 받는 길(#20 지적, ADR 0004 표의 `--step <번호>`)과 번들·`export-check.md`(M2-4). 지금은 `unavailable`(2).
+- `build`의 추천·"이 단계 만들까요?"·예/아니오/나중에를 받는 길(#20 지적, ADR 0004 표의 `--step <번호>`)과 번들·`export-check.md`(M2-4). T-021에서 했다(`build-request.md`).
 - 지시문 4절 CLI 행 "System.CommandLine"과 다르다(인자 해석을 직접 짰다, 잠정 결정 T-018 8). 지시문 5절 `docs/spec/commands.md`는 만들지 않았다. 명령은 `json-output.md`에 있다.
 - `--out` 검사는 `Path.GetFullPath` 뒤 서수 비교다. 대소문자를 무시하는 파일 시스템(Windows·macOS)에서 `Expected`처럼 대소문자만 다른 경로를 케이스 폴더 밖으로 볼 수 있다. Windows 러너에서 확인할 것.
 - 지시문 2절 2 "출력은 항상 새 폴더에": 기본 `out/`을 명령마다 다시 쓴다(같은 이름은 덮어씀). 실행마다 새 폴더가 필요한지는 M2-3에서 스코어카드 결과와 함께 본다.
@@ -42,7 +42,7 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 
 - `start`·`check`가 HTML을 같이 쓰는 일. 지금은 `open`만 `scorecard.html`을 쓴다(시안은 명령마다 HTML을 연다).
 - `--times`(시간 입력)와 절약 추정. 결과 객체 `summary.saving`은 늘 `time_needed`다. 사람 입력 판정도 같이.
-- `build --step <번호>`와 제안 카드의 "만들까요?" 받기(M2-4).
+- `build --step <번호>`와 제안 카드의 "만들까요?" 받기(M2-4). T-021에서 했다.
 - Excel 내보내기(`open --excel`).
 - 확인(`--review`) 뒤 다시 분류·판정. 지금은 기록만 한다.
 - 스킬 `/scorecard`가 확인 파일을 쓰고 `open --review`를 부르는 길. `SKILL.md`는 이 카드에서 바꾸지 않았다.
@@ -51,6 +51,16 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - `answers` 상태가 `mismatch`·`invalid`일 때 어느 단계·어느 오류인지 보이지 않는다.
 - `tools/html-check/check.mjs`는 CI 잡이 아니다. Playwright·브라우저가 필요하다. ci-dev 카드에서 잡으로.
 - 위 "M2-1(T-018)에서 미룬 것"의 `--review`, 입력 SHA-256, `open`의 HTML은 T-020에서 했다. `--times`, 입력 사본, 새 폴더는 남는다.
+
+## M2-4(T-021)에서 미룬 것
+
+- 가드(네트워크·LLM·외부 프로세스 금지)를 납품물 템플릿 검사로 옮기는 일(ADR 0010, CLAUDE.md). 템플릿이 M3다. `src/` 가드는 그대로(STATUS 잠정 결정 T-021 12).
+- `--review`로 바꾼 담당을 build가 따르는 일. 지금은 결과 객체의 단계 행 담당만 본다(사람이 ②를 ④로 바꿔도 `--step`이 받는다).
+- 입력 쪽 합성 샘플(입력 형태별 양식). 지금은 출력 열 샘플만이다. 체크리스트 예제(reply-drafts)는 기준 자료 열(`ticket`·`action`)이 샘플에 없다.
+- 스킬 `/scorecard`의 build 안내(`--step`, 사람 확인 줄은 사람이 적는다). `.claude/skills/`라 ADR이 필요하다.
+- README 샘플 스코어카드 게시, 비공개 사례 요약(10절 M2 G2의 나머지), v0.1.0-alpha 태그.
+- 확인 전 실행이 출력 폴더의 `export-check.md`를 덮어쓴다. 사람이 다른 줄에 적은 메모는 사라진다(확인이 무효가 된 경우만).
+- 이전 실행의 `build-request/`가 남아 있으면(다른 단계·번들 밖 파일) 사람이 비워야 한다. 실행마다 새 폴더는 M2-3 LATER와 같은 일이다.
 
 ## T-014의 남은 일
 
@@ -173,3 +183,10 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #27 | #24 행 "9.6 → 9.8로 9.7 빔"은 데이터 9절을 지워 해당이 없어졌다. 지운다 | docs/LATER.md |
 | 2026-11-08 | #27 | 사용자 확인 여부가 파일에 남지 않는다. 확인 없이 쓴 `ai`도 엔진은 받는다(ADR 0013 남은 위험). 스킬 골든 테스트는 제목·명령 줄만 본다 | SKILL.md, ScorecardSkillTests.cs |
 | 2026-11-08 | #27 | SIGNOFF + AI ③ + `failure_impact: external`(규칙 5)이 데이터 6.6 장면 표에는 있고 6.7 표본 파일에는 없다 | TestData/classification/ai-judgment/answers.yaml |
+| 2026-11-08 | M2-4 | `changed`·`unsigned`일 때 사람이 서명한 `export-check.md`를 새 초안으로 덮어써 서명이 사라진다. 편집기가 끝 줄바꿈만 지워도 `changed`. 끝 빈 줄 차이 허용이나 원인 안내 | src/Scorecard.Cli/CliApp.cs |
+| 2026-11-08 | M2-4 | answers.yaml 파싱 오류를 build가 알리지 않고 case.yaml 답으로 넘어간다(내보내는 내용과 확인 내용은 같아 거짓 통과는 아님) | src/Scorecard.Core/Build/BuildRequestBuilder.cs |
+| 2026-11-08 | M2-4 | 확인 전·`changed`·`hits` 뒤에도 예전에 확인한 `build-request/`가 새 초안 옆에 남는다. 안내 문구 | docs/spec/build-request.md 4.5 |
+| 2026-11-08 | #28 | check.mjs가 외부 요청을 세기만 하고 막지 않는다. context.route로 file: 밖은 abort | tools/html-check/check.mjs |
+| 2026-11-08 | #28 | check.mjs 비교가 innerWidth 기준이다. 스크롤바가 보이는 환경을 위해 documentElement.clientWidth로. 안쪽 overflow-x 칸은 보지 않는다 | tools/html-check/check.mjs |
+| 2026-11-08 | #28 | Core가 --review 상대 경로를 현재 폴더 기준으로 읽는다(Core는 현재 폴더를 읽지 않는다). Cli에서 Path.GetFullPath로 넘긴다 | src/Scorecard.Core/Report/ScorecardBuilder.cs, CliApp.cs |
+| 2026-11-08 | #28 | json-output.md 11절 5 "open: 결과 파일 목록만 알린다"가 지금 동작과 다르다 | docs/spec/json-output.md |

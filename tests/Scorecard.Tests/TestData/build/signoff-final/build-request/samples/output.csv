@@ -1,0 +1,11 @@
+record_id,range_start,range_end,range_avg,record_kind
+s01,10,10,22.25,type-a
+s02,20,20,34.50,type-b
+s03,30,30,46.75,type-a
+s04,40,40,59.00,type-b
+s05,50,50,71.25,type-a
+s06,60,60,83.50,type-b
+s07,70,70,95.75,type-a
+s08,80,80,108.00,type-b
+s09,90,90,120.25,type-a
+s10,100,100,132.50,type-b

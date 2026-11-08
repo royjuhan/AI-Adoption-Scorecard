@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case": "mixed-exceptions",
+  "task": "자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다",
+  "step": {
+    "number": 1,
+    "name": "메일 접수 기록",
+    "assignee": "②",
+    "rule": "ELSE",
+    "source": "rule",
+    "current_actor": "human",
+    "input_kind": "fixed_form",
+    "frequency": "daily",
+    "batch_size": 15,
+    "exception_rate": 5,
+    "minutes_per_item": null,
+    "failure_impact": "internal_rework"
+  },
+  "summary": {
+    "steps": 4,
+    "software": 2,
+    "differs": 0,
+    "ai_assist": 2,
+    "ai_overuse": 0
+  },
+  "verification": {
+    "status": "not_verified",
+    "counts": null,
+    "accuracy_pct": null,
+    "missing_rate_pct": null,
+    "verdict": "not_verified",
+    "verdict_rule": "NOT_VERIFIED",
+    "thresholds": {
+      "accuracy_min": 95,
+      "missing_max": 2,
+      "time_must_drop": true
+    }
+  }
+}

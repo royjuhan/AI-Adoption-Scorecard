@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "step": 3,
+  "input": {
+    "kind": "table"
+  },
+  "output": {
+    "key": "record_id",
+    "columns": [
+      {
+        "name": "record_id",
+        "role": "key",
+        "type": "text",
+        "tolerance": null,
+        "tolerance_pct": null
+      },
+      {
+        "name": "range_start",
+        "role": "compare",
+        "type": "number",
+        "tolerance": 0,
+        "tolerance_pct": null
+      },
+      {
+        "name": "range_end",
+        "role": "compare",
+        "type": "number",
+        "tolerance": 0,
+        "tolerance_pct": null
+      },
+      {
+        "name": "range_avg",
+        "role": "compare",
+        "type": "number",
+        "tolerance": null,
+        "tolerance_pct": 1.0
+      },
+      {
+        "name": "record_kind",
+        "role": "group",
+        "type": "text",
+        "tolerance": null,
+        "tolerance_pct": null
+      }
+    ]
+  }
+}

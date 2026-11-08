@@ -57,7 +57,7 @@ public class CliErrorTests
         Assert.False(Directory.Exists(Path.Combine(work.Case, CliApp.DefaultOutFolder)), "오류면 출력 폴더를 만들지 않는다.");
     }
 
-    // 데이터 6.1 블록 = build --json 표준 출력.
+    // 데이터 6.1 블록 = build --json 표준 출력(start 전이라 classification.json 없음, T-021).
     [Fact]
     public void Build_error_json_equals_spec_block()
     {
@@ -70,6 +70,7 @@ public class CliErrorTests
     }
 
     // 6.2 표의 코드 = Cli가 내는 코드. 6.3 표가 종료 2 코드를 모두 쓴다. internal은 아래 테스트.
+    // T-021: build가 생겨 unavailable을 뺐다(쓰는 곳이 없다, build-request.md 10절 11). 표와 같은지 보는 단언은 그대로다.
     [Fact]
     public void Cli_error_codes_match_spec_table()
     {
@@ -82,7 +83,6 @@ public class CliErrorTests
                 ["argument"] = 2,
                 ["file"] = 2,
                 ["output"] = 2,
-                ["unavailable"] = 2,
                 ["internal"] = 1,
             },
             table);

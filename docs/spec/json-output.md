@@ -8,7 +8,7 @@
 
 - 실행 파일 `scorecard`의 명령 일곱(사용자 명령 넷, 내부 명령 셋), 인자 규칙, 출력 폴더, 표준 출력, 결과 객체, 오류 JSON, 종료 코드.
 - Cli는 Core 공개 API를 부르고 바이트를 쓴다. 분류·대조·판정 로직은 Core에만 있다(CLAUDE.md).
-- 범위 밖(8절): 제작 의뢰서 번들(M2-4), `--times` 파일, 입력 사본, Excel. 스코어카드 HTML·`--review`·입력 SHA-256은 M2-3(`report.md`)에서 더했다.
+- 범위 밖(8절): `--times` 파일, 입력 사본, Excel. 스코어카드 HTML·`--review`·입력 SHA-256은 M2-3(`report.md`), `build`의 번들·`--step`은 M2-4(`build-request.md`)에서 더했다.
 
 ## 2. 명령
 
@@ -18,7 +18,7 @@
 - `start`: `--answers <파일>`(필수)을 `CaseParser.Parse(바이트, 파일 이름)`로 읽고 `StepClassifier.Classify`로 분류해 출력 폴더에 `classification.json`을 쓴다. 케이스 폴더는 있어야 한다. `case.yaml`은 읽지 않는다.
 - `check`: `case.yaml`을 읽고 `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null)를 거쳐 `metrics.json`·`judgment.json`을 쓴다. 미검증 케이스도 성공(0)이다.
 - `open`: 출력 폴더의 결과 파일로 스코어카드 결과 객체(`scorecard.json`)와 HTML(`scorecard.html`)을 쓴다. `--review <파일>`을 받는다. `--json` 표준 출력은 `scorecard.json` 바이트다. 규칙은 `report.md`(M2-3, T-020). 케이스 폴더는 있어야 한다.
-- `build`: 입력 오류 `unavailable`(2)로 끝난다. 번들은 M2-4다.
+- `build`: `--step`이 없으면 먼저 만들 ② 단계를 추천만 하고(아무것도 쓰지 않음, 0), `--step <번호>`면 제작 의뢰서 번들을 쓴다. 사람 확인(`export-check.md`)이 없으면 초안만 쓰고 2다. 규칙은 `build-request.md`(M2-4, T-021).
 - `classify`: `--answers`가 있으면 그 파일, 없으면 `case.yaml`의 `steps`로 분류한다. 두 길은 공개 예제에서 같은 바이트를 낸다.
 - `compare`, `judge`: `check`의 앞 반쪽과 전체다.
 - 내부 명령은 파일을 쓰지 않는다. 성공하면 결과 문서(classification.json·metrics.json·judgment.json과 같은 바이트)를 표준 출력에 쓴다. `--json`이 없어도 같다. `--json`은 오류 모양만 바꾼다(6절).
@@ -26,7 +26,7 @@
 
 ## 3. 인자 규칙
 
-- 옵션은 `--json`, `--help`·`-h`(값 없음)와 `--out <폴더>`, `--answers <파일>`(값 하나)이다. `--이름=값` 모양은 받지 않는다.
+- 옵션은 `--json`, `--help`·`-h`(값 없음)와 `--out <폴더>`, `--answers <파일>`, `--review <파일>`, `--step <번호>`(값 하나)이다. `--이름=값` 모양은 받지 않는다.
 - `-`로 시작하는 낱말은 옵션이다. 값 옵션 뒤 낱말이 없거나 `--`로 시작하면 "옵션 값이 없다"다.
 - 위치 인자는 명령, 케이스 폴더 순이다. 더 있으면 "남는 인자다".
 - 명령마다 받는 옵션은 데이터 2절 표다. 표에 없는 옵션은 "이 명령에 없는 옵션이다"다. 모르는 옵션도 같다.
@@ -64,11 +64,11 @@
 
 - 오류 JSON: `schema_version`(1), `exit_code`, `errors`. `errors` 원소는 `code`, `source`, `line`, `column`, `path`, `message` 순이다(`CaseError` 여섯 값). 예는 데이터 6.1 블록이다.
 - Core 오류(파서 `case-schema.md` 4.9, 대조 `metrics.md` 4.7, 문장 결과 `text-check.md` 4.5)는 값·순서 그대로 쓴다. Cli가 고치지 않는다.
-- Cli 오류 코드는 데이터 6.2 표다: `argument`, `file`, `output`, `unavailable`(모두 2), `internal`(1). `source`는 파일과 상관없으면 빈 문자열, 위치가 없으면 `line`·`column`은 0이다.
+- Cli 오류 코드는 데이터 6.2 표다: `argument`, `file`, `output`(모두 2), `internal`(1). `unavailable`은 T-021에서 뺐다(쓰는 곳이 없다). `source`는 파일과 상관없으면 빈 문자열, 위치가 없으면 `line`·`column`은 0이다.
 - `path`는 인자 오류에서 인자 이름(`command`, `case`, `--out` 같은 옵션)이다. 파일 경로가 아니다.
 - 답 파일 오류의 `source`는 파일 이름(`Path.GetFileName`)이다. 절대 경로를 쓰지 않는다.
 - `internal`의 `message`는 예외 타입 이름만이다. 예외 메시지에는 절대 경로가 들 수 있다.
-- 종료 코드: 0 성공(미검증·보류 판정 포함), 2 입력 오류(인자, 파일 없음, 파싱·대조 오류, 출력 폴더, 아직 없는 기능), 1 내부 오류(예상하지 못한 예외. `Judge`의 `ArgumentException` 포함, `judgment.md` 3.4).
+- 종료 코드: 0 성공(미검증·보류 판정, `build`의 추천만 포함), 2 입력 오류(인자, 파일 없음, 파싱·대조 오류, 출력 폴더, 사람 확인 없는 내보내기), 1 내부 오류(예상하지 못한 예외. `Judge`의 `ArgumentException` 포함, `judgment.md` 3.4).
 - 인자 오류는 데이터 6.3 표로 테스트한다. 표의 행마다 종료 코드와 첫 오류의 다섯 값이 같다.
 
 ## 7. 결정론·원본 불변·G1·G2·G3
@@ -82,7 +82,7 @@
 ## 8. 뒤 카드로 미룬 것
 
 - (해결, T-020) `open`의 HTML 스코어카드와 스코어카드 결과 객체: `report.md`.
-- `build`의 번들·`export-check.md`·예/아니오/나중에: M2-4(`build-request.md`).
+- (해결, T-021) `build`의 번들·`export-check.md`·예/아니오/나중에: `build-request.md`.
 - `--times` 파일, `check`의 자료 읽기 전용 사본: 뒤 카드. 지금은 "이 명령에 없는 옵션이다"다. `--review`와 입력 SHA-256은 T-020에서 `open`에 더했다(`report.md` 5절, 4.9).
 - AI 판단과 규칙 의견(`source`, `rule_opinion`): M2-2.
 - 목록은 `docs/LATER.md` "M2-1에서 미룬 것"에도 있다.
@@ -93,6 +93,6 @@
 2. 도움말: 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령은 숨긴다.
 3. 사용자 명령 `--json`: 결과 객체 `schema_version`·`command`·`files`. 숫자는 파일에, 넓히는 일은 `report.md`.
 4. 내부 명령: 파일을 쓰지 않고 결과 문서를 표준 출력에 쓴다.
-5. `open`: 결과 파일 목록만 알린다(T-020에서 스코어카드를 쓰게 바뀌었다, `report.md`). `build`: `unavailable`(2).
+5. `open`: 결과 파일 목록만 알린다(T-020에서 스코어카드를 쓰게 바뀌었다, `report.md`). `build`: `unavailable`(2)(T-021에서 번들을 쓰게 바뀌었다, `build-request.md`).
 6. 인자 해석은 직접 짠다. 지시문 4절의 System.CommandLine은 G1 N6(Cli 허용 목록) 추가가 필요해 쓰지 않는다.
 7. 오류 JSON·결과 객체 쓰기는 Cli에 둔다(판정이 없다). 스코어카드 결과 객체는 M2-3에서 Core에 둔다(ADR 0004 결정 6 규칙 8).

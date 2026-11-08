@@ -186,3 +186,7 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | M2-4 | `changed`·`unsigned`일 때 사람이 서명한 `export-check.md`를 새 초안으로 덮어써 서명이 사라진다. 편집기가 끝 줄바꿈만 지워도 `changed`. 끝 빈 줄 차이 허용이나 원인 안내 | src/Scorecard.Cli/CliApp.cs |
 | 2026-11-08 | M2-4 | answers.yaml 파싱 오류를 build가 알리지 않고 case.yaml 답으로 넘어간다(내보내는 내용과 확인 내용은 같아 거짓 통과는 아님) | src/Scorecard.Core/Build/BuildRequestBuilder.cs |
 | 2026-11-08 | M2-4 | 확인 전·`changed`·`hits` 뒤에도 예전에 확인한 `build-request/`가 새 초안 옆에 남는다. 안내 문구 | docs/spec/build-request.md 4.5 |
+| 2026-11-08 | #28 | check.mjs가 외부 요청을 세기만 하고 막지 않는다. context.route로 file: 밖은 abort | tools/html-check/check.mjs |
+| 2026-11-08 | #28 | check.mjs 비교가 innerWidth 기준이다. 스크롤바가 보이는 환경을 위해 documentElement.clientWidth로. 안쪽 overflow-x 칸은 보지 않는다 | tools/html-check/check.mjs |
+| 2026-11-08 | #28 | Core가 --review 상대 경로를 현재 폴더 기준으로 읽는다(Core는 현재 폴더를 읽지 않는다). Cli에서 Path.GetFullPath로 넘긴다 | src/Scorecard.Core/Report/ScorecardBuilder.cs, CliApp.cs |
+| 2026-11-08 | #28 | json-output.md 11절 5 "open: 결과 파일 목록만 알린다"가 지금 동작과 다르다 | docs/spec/json-output.md |

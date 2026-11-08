@@ -139,3 +139,7 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #23 | G1 D1(시각·난수·환경 변수·현재 폴더)이 Core에만 걸린다. Cli에도 거는 카드 | tests/Guards |
 | 2026-11-08 | #23 | 사람용 안내 문구의 문자열 보간: 숫자를 넣게 되면 InvariantCulture | CliApp.cs:122·135 |
 | 2026-11-08 | #23 | ADR 0011 재사용이 이 클라우드 환경에서 안 된다. `gh run download`의 아티팩트 저장소(`productionresultssa*.blob.core.windows.net`)가 네트워크 정책에 막힌다. CI가 mutation 요약을 잡 로그에 찍게 하면 API로 읽을 수 있다 | tools/ci, ci.yml |
+| 2026-11-08 | #24 | schema 1로 되돌리는 길이 없다. PR (b) 뒤 oracle schema 1 판을 지우면 옛 expected를 다시 검사할 수 없다(의도대로지만 되돌릴 때는 git 기록에서) | tools/oracle/classify.py |
+| 2026-11-08 | #24 | 데이터 9절 번호가 9.6 → 9.8로 9.7이 비어 보인다(PR (b)가 9절을 옮기며 사라짐) | docs/spec/data/classification.md |
+| 2026-11-08 | #24 | 스코어카드가 `source: ai`·`differs` 단계를 어떻게 보일지 M2-3에서 정한다 | report.md |
+| 2026-11-08 | #24 | `classify.py` 주석의 절 번호가 9절 기준이다. PR (b) 뒤 첫 oracle 변경에서 고친다 | tools/oracle/classify.py |

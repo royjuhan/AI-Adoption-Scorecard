@@ -38,6 +38,8 @@ import sys
 import tempfile
 from dataclasses import replace
 from decimal import Decimal
+from fractions import Fraction
+from math import comb
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -1100,24 +1102,66 @@ def tc_write(folder: Path, files: dict, skip_expected: bool = True) -> Path:
     return folder
 
 
-def tc_change(folder: Path, cell: str) -> None:
-    """바꾼 곳: `파일`, `파일`: `옛 글` → `새 글`[, …][; `파일`: …]. 파일마다 모든 곳을 바꾼다. 옛 글이 없으면 실패.
+def _tc_sources(folder: Path) -> dict:
+    """그때의 scores/sources.csv: 가림 키 → 출처. 바탕 CSV는 따옴표가 없다(7.2)."""
+    lines = (folder / 'scores/sources.csv').read_text(encoding='utf-8').split('\n')
+    head = lines[0].split(',')
+    return {c[head.index('blind')]: c[head.index('source')] for c in (x.split(',') for x in lines[1:] if x)}
 
-    파일이 다른 묶음은 `; `로 잇는다(리뷰 2차 B1 장면, text-check.md 4.2·6.1).
+
+def _tc_scoped(text: str, kind: str, value: str, source_of: dict):
+    """데이터 행(줄바꿈 포함) 가운데 범위 안인지: 출처 `x` 행(가림 키의 출처), 채점자 `x` 행(rater 칸)."""
+    lines = text.split('\n')
+    head = lines[0].split(',')
+    col = head.index('blind' if kind == '출처' else 'rater')
+    out = []
+    for k, line in enumerate(lines[:-1]):
+        cells = line.split(',')
+        hit = k > 0 and line != '' and (source_of.get(cells[col]) if kind == '출처' else cells[col]) == value
+        out.append((line + '\n', hit))
+    return out, lines[-1]
+
+
+def tc_change(folder: Path, cell: str) -> None:
+    """바꾼 곳(text-check.md 4.4 장면 표 머리말). 묶음은 `; `로 잇고 차례로 한다. 옛 글이 없으면 실패.
+
+    - `파일`, `파일`: `옛 글` → `새 글`[, …]: 파일마다 모든 곳을 바꾼다.
+    - `파일`[, …] (출처 `ai` 행): …: 그 출처의 데이터 행(행 끝 줄바꿈 포함)에서만 바꾼다. (채점자 `p2` 행)도 같다.
+      행의 출처는 그 묶음 전 scores/sources.csv에서 그 행 가림 키의 출처다(리뷰 4차 장면).
+    - `파일`의 출처 `ai` 행 → `새 파일`: 그 행을 새 파일로 옮긴다. 새 파일 머리 행은 원래 파일과 같다.
     """
     if cell == '(없음)':
         return
     for group in re.split(r'(?<=`); (?=`)', cell):
-        at = group.index('`: `')
-        names = spans(group[:at + 1])
-        pairs_ = [(tc_unescape(a), tc_unescape(b)) for a, b in re.findall(r'`([^`]*)` → `([^`]*)`', group[at + 3:])]
+        move = re.fullmatch(r'`([^`]+)`의 (출처|채점자) `([^`]+)` 행 → `([^`]+)`', group)
+        if move:
+            name, kind, value, target = move.groups()
+            text = (folder / name).read_bytes().decode('utf-8')
+            rows, tail = _tc_scoped(text, kind, value, _tc_sources(folder))
+            moved = [line for line, hit in rows if hit]
+            expect(len(moved) > 0 and not (folder / target).exists(), f'T-014 바꾼 곳 옮기기: {group}')
+            (folder / name).write_bytes((''.join(line for line, hit in rows if not hit) + tail).encode('utf-8'))
+            (folder / target).write_bytes((rows[0][0] + ''.join(moved)).encode('utf-8'))
+            continue
+        m = re.fullmatch(r'((?:`[^`]+`(?:, )?)+?)(?: \((출처|채점자) `([^`]+)` 행\))?: (`.*)', group)
+        expect(bool(m), f'T-014 바꾼 곳 읽기: {group}')
+        names = spans(m.group(1))
+        pairs_ = [(tc_unescape(a), tc_unescape(b)) for a, b in re.findall(r'`([^`]*)` → `([^`]*)`', m.group(4))]
         expect(len(names) > 0 and len(pairs_) > 0, f'T-014 바꾼 곳 읽기: {group}')
+        source_of = _tc_sources(folder) if m.group(2) else None
         for name in names:
             path = folder / name
             text = path.read_bytes().decode('utf-8')
-            for old, new in pairs_:
-                expect(old in text, f'T-014 바꾼 곳 {name}: {old!r} 없음')
-                text = text.replace(old, new)
+            if m.group(2) is None:
+                for old, new in pairs_:
+                    expect(old in text, f'T-014 바꾼 곳 {name}: {old!r} 없음')
+                    text = text.replace(old, new)
+            else:
+                rows, tail = _tc_scoped(text, m.group(2), m.group(3), source_of)
+                for old, new in pairs_:
+                    expect(any(hit and old in line for line, hit in rows), f'T-014 바꾼 곳 {name} ({m.group(3)} 행): {old!r} 없음')
+                    rows = [(line.replace(old, new) if hit else line, hit) for line, hit in rows]
+                text = ''.join(line for line, _hit in rows) + tail
             path.write_bytes(text.encode('utf-8'))
 
 
@@ -1239,6 +1283,50 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
     expect([(tick(k), tick(t)) for k, _w, t in rows] == list(J2.SCORE_TODO_TABLE), 'T-014 5.5 = SCORE_TODO_TABLE')
     rows = table(tc_spec, '| 가림 규칙 | 보는 곳 | 걸리는 조건 | 발견 위치·값 |')
     expect(tuple(tick(r[0]) for r in rows) == SC.BLIND_RULES, 'T-014 4.4 가림 규칙 = BLIND_RULES')
+    # 4.4 표시 몰림(리뷰 4차·재검토): 문턱 표 = 상수, 몰림 예 = leaning, 표시 넷.
+    rows = table(tc_spec, '| 몰림 문턱 | 값 | 조건 |')
+    expect([(tick(k), int(v)) for k, v, _ in rows] ==
+           [('min_split', SC.PATTERN_MIN_SPLIT), ('minority_per', SC.PATTERN_MINORITY_PER), ('share_per', SC.PATTERN_SHARE_PER)],
+           'T-014 4.4 몰림 문턱 = PATTERN_*')
+    for a, h, n, want in table(tc_spec, '| AI 쪽 건 | 사람 쪽 건 | 센 건 | 걸리나 |'):
+        expect(SC.leaning(int(a), int(h), int(n)) == (want == '예'), f'T-014 4.4 몰림 예 {a}·{h}·{n}')
+    worst = max(Fraction(2 * sum(comb(c, j) for j in range(c // SC.PATTERN_MINORITY_PER + 1)), 2 ** c)
+                for c in range(SC.PATTERN_MIN_SPLIT, 2001))
+    expect(worst == Fraction(2, 256), f'T-014 4.4 몰림: 가림이 맞을 때 걸릴 확률 최대 {worst} = 2/256(부호 검정)')
+    expect(SC.marks_of('b01') == {('text', 'b01'), ('shape', 'b'), ('first', 'b')} and SC.marks_of('01') == {('text', '01')}
+           and SC.marks_of('') == set() and SC.marks_of('사람05') == {('text', '사람05'), ('shape', '사람'), ('first', '사')}
+           and SC.marks_of('01x') == {('text', '01x'), ('shape', 'x'), ('last', 'x')}, 'T-014 4.4 표시 넷')
+    # 4.4 키의 표시(꼴·글자 종류·작은 쪽): 키 표시 표, 작은 쪽 표.
+    rows = table(tc_spec, '| 가림 키 | 꼴 | 글자 수 | 글자 종류 | 숫자 줄 |')
+    expect(len(rows) >= 8, 'T-014 4.4 키 표시 표 행 수')
+    for key, form, length, kinds, numbers in rows:
+        key, form = tick(key), tick(form)
+        want_kinds = {('class', c) for c in spans(kinds)}
+        want_numbers = () if numbers == '—' else tuple(int(x) for x in numbers.split(', '))
+        added = want_kinds | {('form', form), ('length', int(length))}
+        got = SC.key_marks(key)
+        expect(SC.form(key) == form and added <= got and got - added == SC.marks_of(key)
+               and SC.number_row(key) == want_numbers, f'T-014 4.4 키 표시 {key}')
+    rows = table(tc_spec, '| 키 하나 | 키 둘 | 작은 쪽 |')
+    expect(len(rows) >= 8, 'T-014 4.4 작은 쪽 표 행 수')
+    for one, two, low in rows:
+        want = None if low == '—' else tick(low)
+        expect(SC.lower_key(tick(one), tick(two)) == want and SC.lower_key(tick(two), tick(one)) == want,
+               f'T-014 4.4 작은 쪽 {one}·{two}')
+    # 4.4 센 건 N = 출처 표의 건 수(갈린 건이 아니다): 48건 가운데 AI 키 11개만 x면 4 × 11 < 48이라 안 걸리고 12개면 걸린다.
+    def _n_findings(renamed: int) -> list:
+        sources, pos = {}, {}
+        for i in range(1, 49):
+            odd, even = f'b{2 * i - 1:03d}', f'b{2 * i:03d}'
+            ka, kh = (odd, even) if i % 2 else (even, odd)  # 작은 쪽은 24건씩
+            if i <= renamed:
+                ka = 'x' + ka[1:]
+            for key, source in ((ka, 'ai'), (kh, 'human')):
+                sources[key] = (f'i{i:02d}', source)
+                pos[key] = ('scores/sources.csv', len(pos) + 2)
+        return SC._pattern_findings(sources, pos, {}, {})
+    expect(_n_findings(11) == [] and [v for _f, _l, _c, v in _n_findings(12)] == ['x001', 'b002'],
+           'T-014 4.4 센 건 = 출처 표의 건 수(48건, x 11개 안 걸림·12개 걸림)')
     rows = {tick(f): tuple(spans(c)) for f, c, _ in table(tc_spec, '| 파일 | 열 | 뜻 |')}
     expect(list(rows.values()) == [SC.SHEET_COLUMNS, SC.SOURCE_COLUMNS], 'T-014 4.3 파일 열 = SHEET_COLUMNS·SOURCE_COLUMNS')
 

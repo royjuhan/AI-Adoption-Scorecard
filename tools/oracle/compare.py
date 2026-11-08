@@ -317,7 +317,9 @@ def compare_run(case_dir: Path, case: Case) -> CompareRun:
         raise OracleError('케이스 폴더가 없다 (file 오류 입력, 범위 밖)')
     from scores import score_body  # scores.py가 find_files를 이 모듈에서 가져간다.
     taken = set(run.body['reference_files']) | set(run.body['candidate_files'])
-    return CompareRun(run.body, run.reference_rows, run.reference_headers, score_body(case_dir, case, taken))
+    # 4.3 규칙 2(리뷰 4차 N1): 대조가 inputs 파일을 읽었으면 출처 표의 건은 기준 자료의 키여야 한다.
+    keys = {r.key for r in run.reference_rows} if run.body['status'] == STATUS_MEASURED else None
+    return CompareRun(run.body, run.reference_rows, run.reference_headers, score_body(case_dir, case, taken, keys))
 
 
 def _compare_run(case_dir: Path, case: Case) -> CompareRun:

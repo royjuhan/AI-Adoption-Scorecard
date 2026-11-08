@@ -131,3 +131,11 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - signoff-final.md 삭제(T-009 승인·스파이크·테스트 변경 기록. 블록은 classification·synthetic-examples·metrics 7.5)
 - guard-tests.md: 텍스트 검사 비교표(V01~V18), 4.4 안 비교, G3·G2 가짜 대상 결과표, 6.2 PR 확인 절차, 7절 테스트 목록, 9절 스파이크 단계, 승인 질문 13개
 - solution-skeleton.md: 패키지 목록, R3 GitHub 조회 기록, `cases/` 패턴 비교표, 9절 스파이크 단계, 승인 질문 10개·승인 결과(결과는 본문에 반영)
+| 2026-11-08 | #23 | `--out` 검사가 글자 비교라 심볼릭 링크로 우회된다(링크로 연 케이스에 실제 하위 경로를 주면 expected 덮어씀). 경로 조각마다 링크를 풀어 비교 | src/Scorecard.Cli/CliApp.cs |
+| 2026-11-08 | #23 | 빈 문자열 인자(`check ""`, `--out ""`)가 `internal`(종료 1). `argument` 오류(2)로 | src/Scorecard.Cli/CommandLine.cs |
+| 2026-11-08 | #23 | "케이스 폴더 없음" 오류 문구가 명령마다 다르다(start·open vs check·compare·judge) | json-output.md 6.3 |
+| 2026-11-08 | #23 | `--review`는 ADR 0010 표에서 M2-1인데 M2-3으로 미뤘다. M2-3 카드 수용 기준에 적는다 | ADR 0010, T-018 |
+| 2026-11-08 | #23 | 기본 `out/` 덮어쓰기, 입력 사본·SHA-256 없음은 2절 2와 다르다. M2-3에서 다룬다 | 지시문 2절 2 |
+| 2026-11-08 | #23 | G1 D1(시각·난수·환경 변수·현재 폴더)이 Core에만 걸린다. Cli에도 거는 카드 | tests/Guards |
+| 2026-11-08 | #23 | 사람용 안내 문구의 문자열 보간: 숫자를 넣게 되면 InvariantCulture | CliApp.cs:122·135 |
+| 2026-11-08 | #23 | ADR 0011 재사용이 이 클라우드 환경에서 안 된다. `gh run download`의 아티팩트 저장소(`productionresultssa*.blob.core.windows.net`)가 네트워크 정책에 막힌다. CI가 mutation 요약을 잡 로그에 찍게 하면 API로 읽을 수 있다 | tools/ci, ci.yml |

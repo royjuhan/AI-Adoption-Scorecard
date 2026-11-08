@@ -21,8 +21,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
-- 진행 중: M2-1 명령 틀. ADR 0010(#20), lead_check 재사용(#21, ADR 0011), sweeper(#22, ADR 0012)는 끝났다.
-- 다음: M2-1 명령 틀(start·open·check·build, `--json`) → M2-2 스킬 `/scorecard` → M2-3 HTML 스코어카드 → M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
+- 진행 중: M2-2 스킬 `/scorecard`(T-019, PR 둘: (a) 스펙·oracle, (b) Core·expected·스킬). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23)은 끝났다.
+- 다음: M2-2 스킬 `/scorecard` → M2-3 HTML 스코어카드 → M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
 - 기록: `docs/cases-public/README.md`의 공개 고객 사례 회사 이름은 juhan 직접 지시(2026-11-07 15:19)로 이 파일에만 둔다. 회사 자료(2절 10)가 아니라 공개된 사례의 이름이다. `examples/`·테스트·스펙에는 넣지 않는다. 2절 8·10과 13절은 그대로다.
@@ -52,6 +52,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | ADR 0010 방향 수정 | #20 | 2026-11-08 | 1995 | 해당 없음(문서만) | 리뷰 1회 막는 지적 없음 |
 | T-016 lead_check CI mutation 재사용 | #21 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0011. tools/ci 단위 테스트 168. 리뷰 1회 막는 지적 없음 |
 | T-017 sweeper | #22 | 2026-11-08 | 1995 | 해당 없음(src 변경 없음) | ADR 0012. 스펙 6개 200줄 이내 + `docs/spec/data/`, `spikes/` 삭제. 테스트 삭제 0. 리뷰 1회 막는 지적 없음 |
+| T-018 M2-1 명령 틀 | #23 | 2026-11-08 | 2084 | Cli 새 코드(lead_check 로컬 측정, measured) | 리뷰 1회 막는 지적 없음. Cli N6 허용 목록 `Scorecard.Core`(T-018 9). CI mutation 재사용은 이 환경에서 아티팩트 저장소가 막혀 로컬로 돌림 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 

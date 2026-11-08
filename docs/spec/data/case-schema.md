@@ -31,6 +31,7 @@
 | `name` | 문자열 | 예 | 케이스 안에서 서수 비교로 중복 금지(`duplicate`). 유니코드 정규화는 하지 않는다. NFC `가`와 NFD `가`는 다른 이름이다 [P:nfc-nfd] |
 | `answers` | 매핑 | 아니오 | 없거나 null이면 10개 모두 기본값 |
 | `inferred` | 문자열 목록 | 아니오 | T-008. AI가 추정한 답의 키. 원소는 아래 `answers` 표의 키이고, 그 답은 `answers`에 값이 있어야 한다. 없거나 null이면 추정 답이 없다. 4.13 |
+| `ai` | 매핑 | 아니오 | M2-2. AI가 적은 단계 담당(`assignee`: ① ② ②M ③ ④)과 근거(`reason`). 둘 다 필수. 없거나 null이면 AI 판단이 없다. 4.14 |
 
 | 키 | 질문 | 형식 | 선택지·범위 | 기본값 |
 | --- | --- | --- | --- | --- |
@@ -174,7 +175,8 @@ public sealed record CaseDefinition(
     IReadOnlyList<CaseStep> Steps, CaseInputs? Inputs,
     IReadOnlyList<CompareField> Compare, CaseThresholds Thresholds);
 
-public sealed record CaseStep(int Number, string Name, StepAnswers Answers);   // Number는 1부터
+public sealed record CaseStep(int Number, string Name, StepAnswers Answers, StepAi? Ai = null);   // Number는 1부터. Ai는 M2-2(4.14)
+public sealed record StepAi(string Assignee, string Reason);
 
 // T-008: 10번째 HumanSignoff. 위치 매개변수라 기존 9인자 생성은 컴파일되지 않는다.
 public sealed record StepAnswers(

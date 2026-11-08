@@ -1,7 +1,8 @@
 # judgment (T-011 스펙: 판정)
 
 - 상태: 채택됨(2026-11-07, 리드가 추천안 1~12 채택. ADR 0005 결정 3. 기록은 카드 "잠정 결정"과 `docs/STATUS.md`). 이전 상태: 초안. ADR 0005 결정 3에 따라 승인 질문은 juhan에게 묻지 않고 추천안을 채택한다. 추천안은 회귀를 막는 쪽(기존 expected 바이트 유지, 기존 테스트 축소 없음)으로 골랐다. 질문과 채택 기록은 문서 끝.
-- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 문서 끝 11절. 검토 항목(불일치 + 추가 행 + 결과 쪽 중복 행), 사람이 아직 보지 않은 검토 항목은 조건부 `UNEXPLAINED`, 몰림 M-A(`inputs.group`), judgment.json `schema_version` 2. PR (a)는 옛 표·블록을 그대로 두고 11절에 새 표·블록을 둔다. 제자리로 옮기는 것은 PR (b)다(11.17). 옛 절 머리에 "T-012 개정" 글머리로 옮길 곳을 적었다.
+- T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 검토 항목(불일치 + 추가 행 + 결과 쪽 중복 행), 사람이 아직 보지 않은 검토 항목은 조건부 `UNEXPLAINED`, 몰림 M-A(`inputs.group`), judgment.json `schema_version` 2. 왜 바꿨는지는 11절(기록).
+- T-013 개정(초안, 12절): T-012 표·글을 4·6·7절 제자리로 옮기고 T-011 표·블록을 지웠다(T-012 잠정 결정 12). 5절에 정의·대조 결과가 어긋나면 `ArgumentException`(12.2). 지금 규칙은 1~10절이다.
 - 작업 카드: `docs/tasks/T-011-judgment.md`. 판정 카드는 T-010에서 T-011로 번호가 바뀌었다(ADR 0005 결정 1).
 - 출발점: 지시문 3.4 판정 문장·3.5 4구역·6구역·12절 표 [읽음], `metrics.md` 3.1(`CsvRow`)·4.8 권고·11절·승인 질문 16 [읽음], `case-schema.md` 4.5(`thresholds`)·승인 질문 11 [읽음], `synthetic-examples.md` 4.7 [읽음], `signoff-final.md` [읽음], ADR 0004 결정 2·6과 expected 변경 규칙 [읽음], `src/Scorecard.Core/Comparison/` [읽음].
 - 작성: prototyper, 2026-11-07
@@ -15,8 +16,9 @@
 - `[T11:S0]`~`[T11:S8]`: 스파이크 단계(10절). `[T11:P:무리]`: S4 `PROBE` 줄. `[T11:spec 표]`: S8 `PROBE spec` 줄.
 - **미확인**: 실험하지 않았거나 이 환경에서 확인할 수 없는 것.
 - 판정 값: `pass`(통과), `conditional`(조건부), `hold`(보류), `not_verified`(미검증). 지시문 3.4의 넷이다.
-- 불일치 = 값 불일치(`mismatch`) + 누락(`missing`) 항목. 기준 행만 센다. 추가 행(`extra`)은 넣지 않는다. `metrics.md` 4.4의 항목이다.
-- 유형 열 = 기준 자료 머리 행의 열 가운데 키 열·`compare` 필드가 아닌 열(4.8).
+- 불일치 = 값 불일치(`mismatch`) + 누락(`missing`) 항목. 기준 행만 센다. 추가 행(`extra`)·중복 행(`duplicate`)은 넣지 않는다. `metrics.md` 4.4의 항목이다.
+- 검토 항목 = 불일치 + 추가 행 + 결과 쪽 중복 행(4.9). 사람이 보고 설명이 되는지 적는 대상이다.
+- 유형 열 = `case.yaml` `inputs.group`에 적은 기준 자료의 열 하나(4.8). T-011의 "키·대조 열 밖의 열 전부"(M-B)는 T-012에서 없앴다.
 - `CompareMetrics`·`CompareItem`·`CsvRow`·`MetricsJson`은 `metrics.md` 4.11, `CaseDefinition`·`CaseThresholds`는 `case-schema.md`의 이름이다. G1·G2·G3, D1, R1~R4는 `docs/spec/guard-tests.md`의 이름이다.
 
 ## 1. 범위
@@ -45,10 +47,10 @@
 
 ## 2. 입력
 
-- `CaseDefinition` 하나. 쓰는 것: `Name`, `Inputs.Key`, `Compare`(필드 이름), `Thresholds`(`AccuracyMin`, `MissingMax`, `TimeMustDrop`). `Steps`는 읽지 않는다.
+- `CaseDefinition` 하나. 쓰는 것: `Name`, `Inputs`(`Key`, `Group`), `Compare`(필드 이름), `Thresholds`(`AccuracyMin`, `MissingMax`, `TimeMustDrop`). `Steps`는 읽지 않는다. 대조 결과가 이 정의에서 나온 것이어야 한다(5절).
 - `CompareMetrics` 하나(`CompareEngine` 결과, `metrics.md` 3.1). 쓰는 것: `Status`, `Reason`, `Counts`, `AccuracyPct`, `MissingRatePct`, `Items`(상태와 기준 행 `CsvRow`). 오류가 있어 `Metrics`가 null이면 판정하지 않는다(5절).
 - 시간 `JudgmentTimes`(선택). 건당 분. 적용 전, 처리, 검토 셋(4.10). 재지 않았으면 null. M2 `measure`가 만든다.
-- 사람 입력 "설명 안 되는 불일치 키"(선택). 불일치 항목의 키 목록(4.9). 사람이 아직 보지 않았으면 null, 보고 모두 설명했으면 빈 목록. M2-4 `review`가 만든다.
+- 사람 입력 "설명 안 되는 검토 항목 키"(선택). 검토 항목의 키 목록(4.9). 사람이 아직 보지 않았으면 null, 보고 모두 설명했으면 빈 목록. M2-4 `review`가 만든다.
 - 파일을 읽지 않는다. 판정은 순수 함수다(4.12).
 - 같은 `CompareMetrics`가 metrics.json의 원본이다. 판정은 metrics.json 파일을 다시 읽지 않는다(`metrics.md` 9절 8의 답: `CompareResult`를 그대로 받는다). 유형 열 값은 metrics.json에 없고 메모리 결과 `CsvRow`에만 있기 때문이다(`metrics.md` 승인 질문 16).
 
@@ -59,8 +61,6 @@
 `JudgmentResult` 하나(4.13). 판정, 근거 키, 판정 문장, 쓴 문턱, 기본값을 쓴 문턱 키, 확인 다섯(미검증이면 없음), 다음 할 일.
 
 ### 3.2 judgment.json
-
-- T-012 개정(제안): `schema_version`이 2가 되고 확인 결과의 뜻과 다음 할 일 키가 바뀐다(11.2, 11.12). 이 절의 블록·표는 PR (b)에서 고친다(11.17).
 
 Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
@@ -79,14 +79,14 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 ```
 
 - 위 블록은 모양 설명이다. 실제 바이트는 7절 블록처럼 배열 원소도 한 줄에 하나다.
-- 첫 키는 `schema_version`이다. 값은 정수 `1`(ADR 0004 결정 2). 속성을 빼거나 이름·뜻을 바꾸는 카드가 값을 올리고 expected를 같이 고친다(ADR 0004 expected 변경 규칙).
+- 첫 키는 `schema_version`이다. 값은 정수 `2`(ADR 0004 결정 2). T-012가 확인 결과의 뜻과 다음 할 일 키를 바꿔 1에서 올렸다(11.2). 올리는 기준은 ADR 0008 결정 1이다. 올리는 카드는 expected를 같이 고친다(ADR 0004 expected 변경 규칙).
 - 쓰지 않는 것: 절대 경로, 입력 해시, 대조 셈(`counts`. metrics.json에 있다), 시간 값 원본, 사람 입력 원본. 숫자는 확인 문장 안에 글자로 들어간다.
 
 속성 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 순서는 파일 안 순서다. `[]`는 배열 원소다.
 
 | 속성 | 형식 | 뜻 |
 | --- | --- | --- |
-| `schema_version` | 정수 | 파일 모양 버전. 지금 `1`. 늘 첫 키 |
+| `schema_version` | 정수 | 파일 모양 버전. 지금 `2`. 늘 첫 키 |
 | `case` | 문자열 | `case.yaml`의 `name` |
 | `verdict` | 문자열 | `pass`, `conditional`, `hold`, `not_verified` |
 | `rule` | 문자열 | 판정 근거 키(4.3) |
@@ -110,7 +110,7 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 `classification.md` 3.3·`metrics.md` 3.3과 같다: `Utf8JsonWriter`(리플렉션 직렬화 없음), 들여쓰기 2칸, 줄바꿈 `\n`(CR 0개), 끝에 `\n` 하나, UTF-8(BOM 없음), `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`.
 
-- `schema_version`은 `WriteNumber(int)`로 `1`. 문턱 숫자는 `decimal` 그대로 `WriteNumber(decimal)`. 자릿수가 남는다: `85`, `1.0`, `66.6`, `0.0` [T11:P:decimals].
+- `schema_version`은 `WriteNumber(int)`로 `2`. 문턱 숫자는 `decimal` 그대로 `WriteNumber(decimal)`. 자릿수가 남는다: `85`, `1.0`, `66.6`, `0.0` [T11:P:decimals].
 - 문장 안의 숫자도 `decimal`을 `InvariantCulture`로 쓴 글자다. 퍼센트는 대조 결과 값(`metrics.md` 4.8, 늘 소수 한 자리)을 그대로 쓴다. 문턱은 `case.yaml` 글자 그대로다(`85`는 `85`, `90.0`은 `90.0`).
 - 이스케이프는 `classification.md` 3.3 표와 같다. 유형 값에 큰따옴표가 있으면 `\"`다 [T11:P:escape]. 이모지(U+1F600)는 `\uD83D\uDE00`(서로게이트 쌍)이다(`classification.md` 3.3 [P:escape]). T-011a에서 고쳤다: 이전 글은 글자 그대로라고 적었다.
 - 같은 입력이면 같은 바이트다. 확인: 다른 프로세스, 다른 경로 사본, `LANG=de_DE.UTF-8` 프로세스 [T11:S3 det-cmp]. 문화권 7종(Invariant, de-DE, tr-TR, ar-SA, ko-KR, fr-CH, th-TH)에서 SHA-256이 하나 [T11:S3 culture]. Python 독립 구현이 예제 4종과 G2 표본에서 같은 바이트를 냈다 [T11:S3 xcheck].
@@ -136,11 +136,12 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 해석:
 
 1. 대조가 미검증(`metrics.md` 4.4)이면 판정도 미검증이다. 확인을 하지 않는다.
-2. 확인 다섯을 늘 모두 계산한다(4.4): 정확도, 누락률, 설명 안 되는 불일치, 시간, 몰림.
-3. 판정 표(4.3)를 위에서부터 보고 처음 걸리는 행에서 멈춘다. 보류 → 조건부 → 통과 순서다. 보류가 조건부보다 앞이다(조건부는 "정확도는 충족하나"로 시작한다).
+2. 확인 다섯을 늘 모두 계산한다(4.4): 정확도, 누락률, 설명 안 되는 검토 항목, 시간, 몰림.
+3. 판정 표(4.3)를 위에서부터 보고 처음 걸리는 행에서 멈춘다. 보류 → 조건부 → 통과 순서다. 보류가 조건부보다 앞이다(조건부는 "정확도는 충족하나"로 시작한다). 사람이 아직 보지 않은 검토 항목은 조건부의 마지막이다(4.3 순서 7).
 4. 문턱 비교는 셈(`counts`)으로 한다. 표시 퍼센트로 비교하지 않는다(`metrics.md` 4.8 권고). 1799/2000은 `90.0`으로 보이지만 문턱 90에 못 미친다 [T11:P:count-vs-display].
 5. 누락률 초과는 원문에 보류·조건부 어느 쪽에도 없다. 통과의 조건이므로 통과는 아니다. 보류로 둔다(**해석**, 질문 2).
 6. 판정 문장·확인 문장·다음 할 일 문구는 Core가 만든다(CLAUDE.md "판정·분류 로직은 Scorecard.Core에만").
+7. T-013(ADR 0008 결정 3): 지시문 3.4를 해석 3·4.9에 맞췄다. 조건부에 "또는 사람이 아직 안 본 검토 항목(불일치·추가 행·중복 행)이 있음", 보류의 "설명 안 되는 불일치" 뒤에 "(사람이 설명할 수 없다고 적은 검토 항목)". 위 블록은 T-011 때 읽은 원문 그대로 둔다.
 
 ### 4.2 문턱 기본값
 
@@ -158,53 +159,54 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 ### 4.3 판정 표
 
-- T-012 개정(제안): 판정 표는 11.4로 바뀐다(`UNEXPLAINED` 조건부 순서 7, 통과 순서 8). PR (b)까지는 이 표가 테스트 대상이다.
+테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 위에서부터 보고 처음 걸리는 행이 판정이다. "확인 결과"는 그 근거 키의 확인 결과(4.4)다. 문장 틀의 `{…}`는 4.5의 값이다.
 
-테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 위에서부터 보고 처음 걸리는 행이 판정이다. "걸리는 결과"는 그 근거 키의 확인 결과(4.4)다. 같은 순서의 행은 둘 중 하나가 걸린다. 문장 틀의 `{…}`는 4.5의 값으로 바꾼다.
-
-| 순서 | 근거 키 | 걸리는 결과 | 판정 | 판정 문장 틀 |
+| 순서 | 근거 키 | 확인 결과 | 판정 | 판정 문장 틀 |
 | --- | --- | --- | --- | --- |
 | 1 | `NOT_VERIFIED` | `no_inputs` | `not_verified` | `검증 자료(case.yaml inputs)가 없어 미검증.` |
 | 1 | `NOT_VERIFIED` | `no_compare_fields` | `not_verified` | `대조할 열(case.yaml compare)이 없어 미검증.` |
 | 2 | `ACCURACY` | `not_met` | `hold` | `정확도 {accuracy_pct}%가 문턱 {accuracy_min}%에 못 미치므로 보류.` |
 | 3 | `MISSING` | `not_met` | `hold` | `누락률 {missing_rate_pct}%가 문턱 {missing_max}%를 넘으므로 보류.` |
-| 4 | `UNEXPLAINED` | `found` | `hold` | `사람이 설명할 수 없다고 적은 불일치가 {unexplained}건 있으므로 보류.` |
+| 4 | `UNEXPLAINED` | `found` | `hold` | `사람이 설명할 수 없다고 적은 검토 항목 키가 {unexplained}개 있으므로 보류.` |
 | 5 | `TIME` | `not_measured` | `conditional` | `정확도·누락률은 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.` |
 | 5 | `TIME` | `not_met` | `conditional` | `정확도·누락률은 문턱을 충족하나 처리·검토 시간 {total}분이 적용 전 {before}분보다 짧지 않으므로 조건부.` |
 | 6 | `FOCUS` | `found` | `conditional` | `정확도·누락률은 문턱을 충족하나 불일치 {bad}건이 모두 {group} = {value}인 행이므로 조건부.` |
-| 7 | `PASS` | — | `pass` | `정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.` |
+| 7 | `UNEXPLAINED` | `not_reviewed` | `conditional` | `정확도·누락률은 문턱을 충족하나 검토할 항목 {items}건({breakdown})을 사람이 아직 보지 않았으므로 조건부.` |
+| 8 | `PASS` | — | `pass` | `정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.` |
 
 - 1행의 결과는 대조 결과의 `reason`(`metrics.md` 4.4)이다. 미검증이면 확인이 없다(`checks` = `[]`).
-- `PASS`는 위의 어느 행에도 걸리지 않을 때다. 확인 결과로 보면: 정확도·누락률 `met`, 설명 안 되는 불일치 `found` 아님, 시간 `off`·`met`, 몰림 `found` 아님.
+- T-011과 다른 곳(T-012): 4행 문장(불일치 → 검토 항목 키), 새 7행, `PASS`가 순서 8.
 - 시간(5)이 몰림(6)보다 앞이다. 둘 다 걸리면 시간이다. 확인 다섯은 `checks`에 모두 남으므로 몰림도 보인다.
-- → 질문 1, 2.
+- `PASS`는 확인 결과로 보면: 정확도·누락률 `met`, 검토 항목 `none`·`explained`, 시간 `off`·`met`, 몰림 `found` 아님.
+- 순서 7을 `FOCUS` 뒤에 둔 이유: 재검토 권고다. 몰림·시간이 걸리면 그 문장이 더 구체적이다. table-compare는 `FOCUS`로 남는다(카드 수용 기준 5). 사람이 안 본 항목은 `checks`와 `review_items`에 늘 남는다.
+- 보지 않은 항목을 보류로 두지 않는다(4.9 U-A를 고르지 않은 이유와 같다). 자료만 넣은 첫 판정이 늘 보류가 되면 "설명 안 됨"과 "아직 안 봄"이 구별되지 않는다. → 11.19 질문 4.
 
 ### 4.4 확인 다섯
 
-- T-012 개정(제안): 확인 표는 11.5로 바뀐다(검토 항목, `FOCUS` `off`·`one_value`·`spread`). PR (b)까지는 이 표가 테스트 대상이다.
+테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 확인 순서는 표에서 처음 나오는 순서(`ACCURACY` → `MISSING` → `UNEXPLAINED` → `TIME` → `FOCUS`)다. "걸리는 조건"의 숫자는 대조 셈(`counts`)과 문턱이다.
 
-테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 확인 순서는 표에서 처음 나오는 순서(`ACCURACY` → `MISSING` → `UNEXPLAINED` → `TIME` → `FOCUS`)다. "조건"의 숫자는 대조 셈(`counts`)과 문턱이다.
-
-| 확인 | 결과 | 조건 | 확인 문장 틀 |
+| 확인 | 결과 | 걸리는 조건 | 확인 문장 틀 |
 | --- | --- | --- | --- |
 | `ACCURACY` | `met` | `match × 100 ≥ accuracy_min × reference` | `정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}% 이상이다.` |
 | `ACCURACY` | `not_met` | 그 밖 | `정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}%에 못 미친다.` |
 | `MISSING` | `met` | `missing × 100 ≤ missing_max × reference` | `누락률 {missing_rate_pct}%({missing}/{reference})가 문턱 {missing_max}% 이하다.` |
 | `MISSING` | `not_met` | 그 밖 | `누락률 {missing_rate_pct}%({missing}/{reference})가 문턱 {missing_max}%를 넘는다.` |
-| `UNEXPLAINED` | `none` | 불일치 0건 | `불일치가 없다.` |
-| `UNEXPLAINED` | `not_reviewed` | 불일치 1건 이상, 사람 입력 없음(null) | `불일치 {bad}건이 설명되는지 사람이 아직 보지 않았다.` |
-| `UNEXPLAINED` | `explained` | 사람 입력이 빈 목록 | `불일치 {bad}건을 사람이 보고 모두 설명했다.` |
-| `UNEXPLAINED` | `found` | 사람 입력에 키가 1개 이상 | `불일치 {bad}건 중 {unexplained}건을 사람이 설명할 수 없다고 적었다.` |
+| `UNEXPLAINED` | `none` | 검토 항목 0건 | `검토할 항목(불일치·추가 행·중복 행)이 없다.` |
+| `UNEXPLAINED` | `not_reviewed` | 검토 항목 1건 이상, 사람 입력 없음(null) | `검토할 항목 {items}건({breakdown})이 설명되는지 사람이 아직 보지 않았다.` |
+| `UNEXPLAINED` | `explained` | 사람 입력이 빈 목록 | `검토할 항목 {items}건({breakdown})을 사람이 보고 모두 설명했다.` |
+| `UNEXPLAINED` | `found` | 사람 입력에 키가 1개 이상 | `검토할 항목 {items}건({breakdown}) 중 키 {unexplained}개를 사람이 설명할 수 없다고 적었다.` |
 | `TIME` | `off` | `time_must_drop`이 `false` | `시간 조건을 쓰지 않는다(time_must_drop: false).` |
 | `TIME` | `not_measured` | `time_must_drop`이 `true`, 시간 없음(null) | `시간을 재지 않았다.` |
 | `TIME` | `met` | `process + review < before` | `처리 {process}분 + 검토 {review}분 = {total}분이 적용 전 {before}분보다 짧다.` |
 | `TIME` | `not_met` | 그 밖(같으면 줄지 않았다) | `처리 {process}분 + 검토 {review}분 = {total}분이 적용 전 {before}분보다 짧지 않다.` |
 | `FOCUS` | `few` | 불일치가 `focus_min`(4.5)보다 적음 | `불일치가 {bad}건이라 몰림을 보지 않는다.` |
-| `FOCUS` | `off` | 유형 열이 없음(4.8) | `기준 자료에 키·대조 열 밖의 열이 없어 불일치 {bad}건이 한 유형에 몰렸는지 볼 수 없다.` |
-| `FOCUS` | `one_value` | 모든 유형 열이 기준 자료에서 값 하나뿐 | `키·대조 열 밖의 열({columns})이 기준 자료에서 모두 값이 하나뿐이라 몰림을 볼 수 없다.` |
-| `FOCUS` | `found` | 어떤 유형 열에서 불일치가 모두 한 값(4.8) | `불일치 {bad}건이 모두 {group} = {value}인 행이다({value} {rows_in}행 중 {bad}행, 다른 값 {rows_out}행 중 0행).` |
-| `FOCUS` | `spread` | 그 밖 | `불일치 {bad}건이 한 값에 몰린 열이 없다(본 열: {columns}).` |
+| `FOCUS` | `off` | `inputs.group`을 적지 않음 | `case.yaml inputs.group에 유형 열을 적지 않아 불일치 {bad}건이 한 유형에 몰렸는지 보지 않는다.` |
+| `FOCUS` | `one_value` | 그 열이 기준 자료에서 값 하나뿐 | `{group} 열이 기준 자료에서 값이 하나뿐이라 몰림을 볼 수 없다.` |
+| `FOCUS` | `found` | 불일치가 모두 그 열의 한 값(4.8) | `불일치 {bad}건이 모두 {group} = {value}인 행이다({value} {rows_in}행 중 {bad}행, 다른 값 {rows_out}행 중 0행).` |
+| `FOCUS` | `spread` | 그 밖 | `불일치 {bad}건이 {group} 열의 한 값에 몰리지 않았다.` |
 
+- T-011과 다른 곳(T-012): `UNEXPLAINED` 네 행, `FOCUS` `off`·`one_value`·`spread` 세 행. `{review}`는 4.5처럼 검토 시간(분)이다. 검토 항목 수는 `{items}`로 따로 둔다.
+- `FOCUS`의 `{bad}`는 불일치 수다. 추가 행·중복 행은 몰림에 들지 않는다(4.8 규칙 3).
 - 셈은 정수와 decimal이다. 나눗셈을 쓰지 않는다. `reference`는 0이 아니다(기준 행이 0이면 대조가 `no-rows` 오류다, `metrics.md` 4.7).
 - 문턱 비교는 decimal 반올림 없이 정확히 한다(곱이 29자리를 넘어도). 예: `accuracy_min`의 소수 자릿수가 길어 `accuracy_min × reference`가 유효 숫자 29자리를 넘어도 반올림한 곱으로 비교하지 않는다. 곱 넘침은 5절.
 - 시간 합 `process + review`가 decimal 범위를 넘으면 `not_met`이다. 예외가 새지 않는다 [T11:P:time overflow].
@@ -215,9 +217,9 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 문장 틀의 값:
 
 - `{accuracy_pct}`·`{missing_rate_pct}`: 대조 결과의 퍼센트(소수 한 자리). `{match}`·`{missing}`·`{reference}`: `counts`. `{accuracy_min}`·`{missing_max}`: 쓴 문턱(4.2). 숫자는 `InvariantCulture`.
-- `{bad}`: 불일치 수(0절). `{unexplained}`: 사람이 적은 키 수.
+- `{bad}`: 불일치 수(0절). `{unexplained}`: 사람이 적은 키 수(4.9). `{items}`: 검토 항목 수. `{breakdown}`: 검토 항목의 내역(4.9 표).
 - `{process}`·`{review}`·`{before}`: 받은 시간. `{total}`: `process + review`(decimal 셈, 자릿수는 decimal 덧셈 그대로. `1.25 + 1.2` = `2.45`) [T11:P:decimals].
-- `{group}`: 몰린 유형 열 이름. `{value}`: 그 값. `{rows_in}`: 기준 행 가운데 그 값인 행 수. `{rows_out}`: 나머지 기준 행 수. `{columns}`: 유형 열 이름을 이름 서수 순으로 `, `로 이은 것(`spread`는 값이 둘 이상인 열만, `one_value`는 모든 유형 열).
+- `{group}`: `inputs.group`의 열 이름. `{value}`: 몰린 값. `{rows_in}`: 기준 행 가운데 그 값인 행 수. `{rows_out}`: 나머지 기준 행 수. T-011의 `{columns}`는 T-012에서 없앴다.
 - 이름·값은 `metrics.md` 4.7 메시지와 같은 방식으로 보인다: 제어 문자는 `\uXXXX`, 64자를 넘으면 자르고 `…`. 빈 값은 `(빈 칸)`.
 
 숫자. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다.
@@ -230,109 +232,81 @@ Core가 바이트를 만든다(`JudgmentJson.Render`). 모양:
 
 ### 4.6 기본값 표시
 
-- T-012 개정(제안): 아래 읽은 문턱 표는 11.6(근거 키 대신 순서)으로 바뀐다. 표시 규칙은 그대로다.
-
 - 표시 글자는 `classification.md` 4.6과 같다: 공백 하나 + `(기본값 사용, 확인 필요)`. 문장 끝에 한 번.
 - 확인 문장: 그 확인이 쓰는 문턱이 기본값일 때. `ACCURACY` → `accuracy_min`, `MISSING` → `missing_max`, `TIME` → `time_must_drop`. `UNEXPLAINED`·`FOCUS`는 문턱을 쓰지 않는다.
 - 판정 문장: 그 행에 오기까지 읽은 문턱(아래 표) 가운데 하나라도 기본값일 때. "정확도는 충족하나"로 시작하는 문장은 앞의 판단에 기댄 것이라 앞 문턱도 읽은 것으로 본다(`classification.md` 4.6의 "앞 분기에서 넘어온 답"과 같다).
 
-읽은 문턱. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다.
+읽은 문턱. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 판정 표(4.3)의 순서마다 그 행에 오기까지 읽은 문턱이다. 판정 문장은 이 가운데 하나라도 기본값이면 표시를 붙인다(위 규칙).
 
-| 근거 키 | 읽은 문턱 |
-| --- | --- |
-| `NOT_VERIFIED` | — |
-| `ACCURACY` | `accuracy_min` |
-| `MISSING` | `accuracy_min`, `missing_max` |
-| `UNEXPLAINED` | `accuracy_min`, `missing_max` |
-| `TIME` | `accuracy_min`, `missing_max`, `time_must_drop` |
-| `FOCUS` | `accuracy_min`, `missing_max`, `time_must_drop` |
-| `PASS` | `accuracy_min`, `missing_max`, `time_must_drop` |
+| 순서 | 근거 키 | 읽은 문턱 |
+| --- | --- | --- |
+| 1 | `NOT_VERIFIED` | — |
+| 2 | `ACCURACY` | `accuracy_min` |
+| 3 | `MISSING` | `accuracy_min`, `missing_max` |
+| 4 | `UNEXPLAINED` | `accuracy_min`, `missing_max` |
+| 5 | `TIME` | `accuracy_min`, `missing_max`, `time_must_drop` |
+| 6 | `FOCUS` | `accuracy_min`, `missing_max`, `time_must_drop` |
+| 7 | `UNEXPLAINED` | `accuracy_min`, `missing_max`, `time_must_drop` |
+| 8 | `PASS` | `accuracy_min`, `missing_max`, `time_must_drop` |
 
+- 순서 7 문장은 "정확도·누락률은 문턱을 충족하나"로 시작하고 시간(순서 5)을 지나 왔다. 그래서 셋 다 읽었다.
+- 확인 문장의 표시(그 확인이 쓰는 문턱)는 위 규칙 그대로다.
 - 미검증 문장은 문턱을 읽지 않는다. mixed-exceptions는 기본값 셋을 썼지만 판정 문장에 표시가 없다. 대신 `defaults`와 `confirm_thresholds`에 남는다(7.4).
 
 ### 4.7 다음 할 일
 
-- T-012 개정(제안): 다음 할 일은 11.7로 바뀐다(`review_mismatches` → `review_items`, `add_type_column` → `add_group`).
-
 지시문 3.4 "미검증 = 자료 없음(무엇을 재면 되는지 적는다)", 3.5 6구역 "다음 할 일 — 확보할 기준 자료, 재야 할 시간, 확인할 질문" [읽음]. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `todo` 순서는 이 표 순서다.
 
-| 다음 할 일 | 언제 | 문구 |
+| 다음 할 일 | 나오는 때 | 문구 |
 | --- | --- | --- |
 | `add_data` | 미검증 `no_inputs` | `기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.` |
 | `add_compare` | 미검증(둘 다) | `case.yaml compare에 대조할 열과 허용 오차를 적는다.` |
 | `measure_time` | `TIME` = `not_measured`, 또는 미검증이고 `time_must_drop`이 `true` | `건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다.` |
-| `review_mismatches` | `UNEXPLAINED` = `not_reviewed` | `불일치 {bad}건을 보고 설명이 되는지 적는다.` |
-| `add_type_column` | `FOCUS` = `off` | `불일치가 한 유형에 몰렸는지 보려면 기준 자료에 유형 열(키·대조 열 밖의 열)을 더한다.` |
+| `review_items` | `UNEXPLAINED` = `not_reviewed` | `검토할 항목 {items}건({breakdown})을 보고 설명이 되는지 적는다.` |
+| `add_group` | `FOCUS` = `off` | `불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.` |
 | `confirm_thresholds` | 기본값을 쓴 문턱이 있음 | `문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.` |
 
+- 키 이름을 바꾼 이유: `review_mismatches`는 추가 행·중복 행을 담지 못한다. `add_type_column`은 "자료에 열을 더하라"였다. M-A에서는 있는 열 이름을 `case.yaml`에 적는 일이다. 뜻이 바뀐 키를 옛 이름으로 두면 스킬·스코어카드가 옛 뜻으로 읽는다. → 11.19 질문 9.
+- `add_group`은 불일치가 `focus_min` 이상일 때만 나온다(`few`가 먼저다). 예제 form-fill은 나오지 않는다.
 - `{defaults}`: 기본값을 쓴 키와 값을 4.2 순서로 `, `로 잇는다. 예: `accuracy_min 95, missing_max 2, time_must_drop true`.
 - `no_compare_fields` 미검증은 `add_data` 없이 `add_compare`부터다(`inputs`는 있다).
 - 통과·할 일 없음이면 `todo`는 `[]`다(form-fill, 7.3).
 
-### 4.8 "특정 유형에만 불일치가 몰림"
+### 4.8 "특정 유형에만 불일치가 몰림" (M-A)
 
-- T-012 개정(제안): 몰림은 M-A(`case.yaml` `inputs.group` 열 하나, 기준 행만)로 바뀐다(11.8). 적지 않으면 `off`다.
+몰림은 `case.yaml` `inputs.group`에 적은 기준 자료의 열 하나만 본다(M-A, T-012). 예시 표는 6.3이다.
 
-`metrics.md` 승인 질문 16은 어느 열로 몰림을 볼지를 이 카드로 넘겼다 [읽음]. 예제 열 [읽음]:
+규칙:
 
-| 예제 | 기준 머리 행 | 키 | `compare` | 남는 열(유형 열) |
-| --- | --- | --- | --- | --- |
-| table-compare | `log_id,signal_type,start_index,length,mean_value` | `log_id` | `start_index`, `length`, `mean_value` | `signal_type` |
-| form-fill | `order_id,item,quantity` | `order_id` | `item`, `quantity` | 없음 |
-| signoff-final | `record_id,record_kind,range_start,range_end,range_avg` | `record_id` | `range_start`, `range_end`, `range_avg` | `record_kind` |
-| G2 표본 case-valid | `row_id,start,mean,label` | `row_id` | `start`, `mean`, `label` | 없음 |
+1. 불일치가 `focus_min`보다 적으면 `few`. 열을 보지 않는다.
+2. `inputs.group`을 적지 않았으면(키 없음·null) `off`.
+3. 열은 `inputs.group` 하나다. 값은 기준 행의 그 칸(정규화 뒤, `metrics.md` 4.6)이다. 결과 자료의 값, 추가 행, 중복 행은 보지 않는다.
+4. 기준 행에서 그 열의 값이 하나뿐이면 `one_value`.
+5. 불일치 행의 값이 모두 같으면 `found`. 아니면 `spread`.
 
-어느 열을 볼지(안):
+- 열이 있는지는 대조가 본다. 모든 기준 파일의 머리 행에 꼭 한 번 있어야 한다. 없으면 `column`, 둘 이상이면 `duplicate-column` 대조 오류다(`metrics.md` 12.3). 그래서 판정은 늘 열을 찾는다. 결과 자료에는 이 열이 없어도 된다.
+- `inputs.group`이 키 열이나 `compare` 필드와 같으면 파서 오류(`conflict`)다(`case-schema.md` 10.2). 키는 행마다 다르고, 대조 열은 결과 값과 섞여 몰림 근거가 흐려진다. T-011의 "유형 열 = 키·대조 열 밖의 열"을 그대로 둔다.
+- 우연 몰림: 사람이 고른 열에서도 불일치 2건이 우연히 한 값일 수 있다(예: 40행 중 39행이 같은 값). M-A는 그 열을 사용자가 골랐다는 점만 다르다. 비율 조건(T-011 F3: 불일치 가운데 한 값의 비율)을 더하지 않는다. 지시문에 없는 숫자가 생긴다(**미확인**: 실제 자료에서의 빈도). → 11.19 질문 6.
+- 적지 않으면 몰림을 보지 않는다. 그래서 table-compare에서 `group`을 빼면 판정이 `FOCUS`에서 `UNEXPLAINED`(사람이 안 봄)로 바뀐다. 사람이 모두 설명하면 통과가 된다(12절 "조건부"와 다르다). 그래서 예제에 한 줄을 더한다(7.1). → 11.19 질문 8.
+- 결과 쪽 중복(T-013, `metrics.md` 4.3): 결과 쪽에 두 번 나온 기준 키는 값 불일치라 그 기준 행이 불일치로 한 번 든다. 그 키의 `duplicate` 항목은 더 들지 않는다(규칙 3). 그래서 이미 불일치인 키를 결과 쪽에 한 번 더 두어도 `{bad}`가 그대로다. 일치하던 키를 한 번 더 두면 그 키가 불일치로 든다 [T13:selftest].
+- T-011의 M-B·F1~F3 비교와 M-A 영향 표는 T-013에서 지웠다. 근거는 T-011 카드와 git 기록(`b8f8326` 이 문서 4.8)이다.
 
-| 안 | 유형 열 | `case.yaml`·파서 | 예제 파일 | 기존 테스트 | 예제 판정 |
-| --- | --- | --- | --- | --- | --- |
-| M-A | `inputs.group`(새 선택 키)에 적은 열 하나 | 바뀐다(`CaseInputs`, `CaseReader`, `CompareEngine`이 열 확인) | table-compare·signoff-final `case.yaml`에 한 줄. `synthetic-examples.md` 7.2·7.5 블록·SHA-256 줄, `signoff-final.md` 파일 표가 같이 바뀐다 | 2건 실패(`CaseYamlTests.Case_data_keys_match_spec_table` × 2) [T11:S7c] | 적으면 M-B와 같다. 적지 않으면 table-compare가 통과(12절과 다름) |
-| M-B (추천) | 기준 머리 행의 열 가운데 키 열·`compare` 필드가 아닌 열 전부 | 그대로 | 그대로 | 그대로 [T11:S2] | 12절과 같다(7절) |
-| M-C | M-A + 키가 없으면 M-B | M-A와 같다 | 그대로 | M-A와 같다 | M-B와 같다 |
+### 4.9 "설명 안 되는 불일치"와 검토 항목
 
-- 추천 M-B. 기존 파일 바이트를 하나도 바꾸지 않고 12절 판정을 낸다(ADR 0005 리드 지시: 회귀를 막는 쪽). 지시문 13절 "카드에 없는 기능을 만들지 않는다"에도 맞다(새 스키마 키가 없다).
-- M-B의 위험: 우연히 값이 같은 열(담당자, 날짜 등)로 몰림이 걸릴 수 있다. 걸리면 판정이 통과에서 조건부로 내려간다. 통과를 내지 않는 쪽으로 틀리고, 판정 문장에 열과 값이 나오므로 사람이 본다. 실제 업무 자료에서 얼마나 걸리는지는 **미확인**. 자주 걸리면 그때 M-C(열을 고정하는 `inputs.group`)를 별도 카드로 더한다. 그 변경은 스키마 변경이라 예제 `case.yaml`을 바꾸지 않는 방식(선택 키, 예제에는 적지 않음)으로 한다.
-- M-A의 영향(스파이크 S7c, 추천하지 않음): 아래 "M-A 영향" 글머리.
+검토 항목은 사람이 보고 설명이 되는지 적어야 하는 대조 항목이다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 표 순서가 `{breakdown}`의 순서다.
 
-유형 열 규칙(M-B):
+| 검토 항목 | 항목 상태 | {breakdown} 이름 |
+| --- | --- | --- |
+| 불일치 | `mismatch`, `missing` | 불일치 |
+| 추가 행 | `extra` | 추가 행 |
+| 중복 행 | `duplicate` | 중복 행 |
 
-1. 후보 열: 모든 기준 파일의 머리 행에 꼭 한 번 있는 이름. 키 열, `compare` 필드, 빈 이름은 뺀다. 한 파일에만 있는 열과 한 머리 행에 둘 이상 있는 이름(쓰지 않는 열의 중복은 대조 오류가 아니다, `metrics.md` 4.7)은 유형 열이 아니다 [T11:P:focus multi-file, dup-column, empty-name].
-2. 열 이름 서수 순(UTF-16 코드 단위)으로 본다. 파일 순서·머리 행 순서와 상관없다 [T11:P:focus multi-file files-ba].
-3. 값은 기준 행의 칸(정규화 뒤, `metrics.md` 4.6)이다. 결과 자료의 값은 보지 않는다. 추가 행은 보지 않는다 [T11:P:focus extra-rows-ignored].
-4. 불일치가 `focus_min`보다 적으면 `few`. 후보 열이 없으면 `off`.
-5. 열마다: 기준 행 값이 하나뿐이면 건너뛴다. 불일치 행의 값이 모두 같으면 그 열에서 `found`. 처음 `found`인 열에서 멈춘다.
-6. `found`인 열이 없으면, 건너뛰지 않은 열이 있으면 `spread`, 모두 건너뛰었으면 `one_value`.
+- 항목 상태는 `metrics.md` 4.3·4.4의 `items[].status`다. 허용오차 안 차이가 있는 일치(`match`)는 검토 항목이 아니다.
+- `{items}`: 검토 항목 수. `{breakdown}`: 위 표의 이름마다 수를 세어 0이 아닌 것만 `이름 N건`으로 쓰고 `, `로 잇는다. 예: `불일치 3건, 추가 행 1건`.
+- 정확도·누락률은 그대로다. 분모는 기준 행, 일치·누락만 센다(`metrics.md` 4.4). 추가 행·중복 행은 문턱 셈에 들지 않는다. 지어낸 행은 사람 검토로 판정에 닿는다(4.3 순서 4·7). → 11.19 질문 1.
+- 사람 입력의 키는 검토 항목의 키다(아래). 한 키에 항목이 둘 이상일 수 있다(결과 쪽에 세 번 나온 키, 추가 키의 중복). 그래서 `{unexplained}`는 키 수다.
 
-- 규칙 1의 엔진 해석(카드 잠정 결정 14): 엔진은 기준 행의 `CsvRow` 머리 행만 본다. 그래서 유형 열은 "기준 행이 있는 기준 파일의 머리 행" 교집합이다. 머리 행만 있는 기준 파일은 교집합에 들지 않는다. 유형 열이 늘 수만 있어 판정은 규칙 1 글과 같거나 더 엄하다. oracle은 규칙 1 글대로 모든 기준 파일을 본다. 그래서 머리 행만 있는 기준 파일이 있는 장면에서 두 구현이 다르다(그 파일 머리 행에 없거나 두 번 있는 열이 있을 때). 테스트·예제는 이 장면을 쓰지 않는다. 뒤 카드에서 `CompareMetrics`에 파일별 머리 행을 더해 맞춘다.
-- "에만"은 불일치가 모두 한 값이고, 그 값이 아닌 기준 행이 있다(값이 하나뿐인 열은 건너뜀)는 뜻으로 읽었다. 그 값의 행이 모두 불일치일 필요는 없다(table-compare: `irregular` 12행 중 3행).
-
-몰림 정의(안):
-
-| 정의 | 내용 | table-compare | signoff-final | 숫자 |
-| --- | --- | --- | --- | --- |
-| F1 (추천) | 불일치 `focus_min`건 이상이 모두 한 값 | `found`(3건 모두 `irregular`) | `spread`(`unsteady` 3, `steady` 1) | `focus_min` 2 |
-| F2 | F1 + 그 값 행의 불일치 비율이 다른 값보다 높음 | `found` | `spread` | 없음. F1이면 늘 참이라 F1과 같다 |
-| F3 | 불일치 가운데 한 값의 비율이 기준 이상(예: 75%) | `found` | `found`(4건 중 3건, 75%) | 비율 하나를 새로 정해야 한다 |
-
-- F1을 추천한다. 원문 "에만"에 가장 가깝고, 새 숫자가 `focus_min` 하나다. F3은 지시문에 없는 비율을 만든다. signoff-final은 정확도 미달로 어느 정의든 보류라 판정이 같다.
-
-M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확인과 예제 `case.yaml` 두 줄을 넣고 전체 테스트):
-
-- 바뀌는 파일: 예제 `case.yaml` 2개(table-compare `451a22ac…` → `e99d669a…`, 1,640 → 1,661바이트. signoff-final `a12835ea…` → `e11e7b68…`, 2,595 → 2,616바이트), `synthetic-examples.md` 7.2·7.5 블록과 SHA-256 줄, `signoff-final.md` 파일 표 1행. 스키마 문서(`case-schema.md` 4.5 `inputs` 표)도 고쳐야 한다.
-- expected 8개(`classification.json`·`metrics.json` × 4)는 바이트 그대로다(골든 테스트 통과).
-- 통과하지 않는 기존 테스트 2건: `CaseYamlTests.Case_data_keys_match_spec_table`(table-compare, signoff-final). 이 테스트는 `synthetic-examples.md` 4.8 표의 `inputs` 칸(세 값)으로 `CaseInputs`를 만들어 비교한다. 표와 테스트의 읽는 법을 같이 고쳐야 한다(테스트 변경. 약화는 아님). 나머지 1,280건은 통과했다.
-- 예제 `case.yaml` 변경은 regression-guard의 expected 규칙 밖이지만 공개 예제의 바이트를 바꾼다. M-B는 이 변경이 모두 없다.
-- → 질문 5.
-
-### 4.9 "설명 안 되는 불일치"
-
-- T-012 개정(제안): 사람이 설명할 것은 불일치에서 검토 항목(불일치·추가 행·중복 행)으로 넓어진다. 아직 보지 않았으면 조건부다(11.3, 11.4, 11.9).
-
-- 엔진은 불일치가 "설명되는지" 알 수 없다. 설명은 업무 지식이다(예: "불규칙 신호라 사람도 구간이 다르다"). 자료만으로 정하면 엔진이 사용자 대신 판단하게 된다(지시문 13절 "엔진은 사용자 서술을 … 이해하지 않는다").
-- 그래서 사람 입력으로 받는다(안 U-B, 추천). 확인 한 화면(`review`, M2-4)에서 사람이 불일치(값 불일치·누락) 목록을 보고 설명이 안 되는 키를 적는다. 판정은 그 키 목록만 받는다.
-  - 키 목록이 null(아직 보지 않음): `not_reviewed`. 보류하지 않는다. 다음 할 일 `review_mismatches`.
-  - 빈 목록: `explained`. 키가 있으면 `found` → 보류(4.3 4행).
-  - 키는 불일치 항목의 키여야 하고 중복이 없어야 한다. 아니면 `ArgumentException`(부르는 쪽 잘못) [T11:P:args].
+- 엔진은 검토 항목이 "설명되는지" 알 수 없다. 설명은 업무 지식이다(예: "불규칙 신호라 사람도 구간이 다르다"). 자료만으로 정하면 엔진이 사용자 대신 판단하게 된다(지시문 13절). 그래서 사람 입력으로 받는다(U-B, T-011에서 고름).
 
 | 안 | 내용 | table-compare | 문제 |
 | --- | --- | --- | --- |
@@ -340,8 +314,12 @@ M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확
 | U-B (추천) | 사람이 적은 키만. 보지 않았으면 `not_reviewed`(보류 아님) | 조건부 | 사람이 보기 전까지는 다음 할 일로만 남는다 |
 | U-C | 몰린 유형 밖의 불일치를 "설명 안 됨"으로 본다 | 조건부 | 몰림과 설명을 같은 것으로 센다. signoff-final처럼 흩어지면 모두 설명 안 됨이 된다. 근거가 없다 |
 
-- U-B에서 판정은 사람 입력이 들어오면 바뀔 수 있다(조건부 → 보류). 그래서 `checks`에 `not_reviewed`를 남기고, 스코어카드 6구역에 `review_mismatches`가 나온다.
-- → 질문 6.
+- 사람 입력: 검토 항목(위 표)의 키 목록. null = 아직 보지 않음, 빈 목록 = 보고 모두 설명함, 키가 있음 = 그 키는 설명할 수 없음.
+- 키는 검토 항목의 키여야 한다(불일치·추가 행·중복 행). 차이 없는 일치·허용오차 안 차이만 있는 키, 없는 키, 같은 키 두 번은 `ArgumentException`(부르는 쪽 잘못). T-011과 같은 방식이다.
+- 추가 행 키를 적을 수 있다(T-012 카드 수용 기준 1). T-011은 `ArgumentException`이었다.
+- 키 하나가 항목 여럿을 덮는다(위 글머리). 판정은 키 수를 센다.
+- `review`(M2-4) 화면은 검토 항목 셋을 모두 보여야 한다(**미확인**, M2-4). → 11.19 질문 5.
+- 예시 표와 `compare-duplicate` 판정 블록은 6.4다.
 
 ### 4.10 시간
 
@@ -372,13 +350,11 @@ M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확
 - 추천 O-B. 기존 expected 바이트를 바꾸지 않는다(ADR 0005 regression-guard가 막는 "기존 expected 수정"이 없다). `compare`(대조) = metrics.json, `judge`(판정) = judgment.json으로 내부 명령과 파일이 하나씩 맞는다(ADR 0004 규칙 5).
 - 판정이 대조와 따로 바뀌어도 metrics.json을 건드리지 않는다. 판정 규칙을 고치는 카드는 judgment.json만 바꾼다.
 - expected 영향: 새 파일 `examples/*/expected/judgment.json` 4개 추가. 기존 파일 수정·삭제 없음 [T11:S7 examples]. 새 파일을 넣으면 기존 테스트 `Example_folder_has_exactly_the_planned_files`가 4건 실패한다 [T11:S7a]. 목록에 `expected/judgment.json`을 더하면 통과한다(계획에 새 파일을 더하는 변경. 테스트 수는 그대로 1,284) [T11:S7b].
-- 지시문 5절 문구(리드가 고친다, 제안): "`classification.json`(단계별 분류·근거 키), `metrics.json`(정확도·누락률 등), `judgment.json`(판정·근거 문장·다음 할 일), `report-outline.json`(평가서 섹션별 핵심 값)". "이 세 파일"은 "이 파일들"로.
+- 지시문 5절 문구(T-013에서 고쳤다, ADR 0008 결정 2): "`classification.json`(단계별 분류·근거 키), `metrics.json`(정확도·누락률 등), `judgment.json`(판정·근거 문장·다음 할 일), `report-outline.json`(평가서 섹션별 핵심 값)". "이 세 파일"은 "이 파일들"로.
 - oracle(ADR 0005, `tools/oracle/`): judgment.json은 이 문서 4절의 표와 글만으로 같은 바이트를 낼 수 있게 썼다. Python 독립 구현(`spikes/T-011/xcheck/judge.py`)이 예제 4종에서 같은 바이트를 냈다 [T11:S3 xcheck]. oracle에 옮길 때는 새 모듈(예: `tools/oracle/judgment.py`)로 더하고, 대조는 oracle의 `compare`를 쓴다. 유형 열(4.8 규칙 1)을 정하려면 기준 파일마다 머리 행이 필요하다. oracle은 prototyper가 스펙만 보고 고친다(ADR 0005 결정 9).
 - → 질문 7, 8.
 
 ### 4.12 결정론·원본 불변·G1·G2·G3
-
-- T-012 개정(제안): G2 표본 판정·바이트는 11.14로 바뀐다. 등록 이름은 그대로다.
 
 - `Judge`는 순수 함수다. 난수·시각·환경 변수·현재 폴더·파일을 쓰지 않는다. 비교는 서수, 숫자는 decimal·`InvariantCulture`. `Dictionary`·`HashSet`은 찾기에만 쓰고 출력 순서는 표 순서·열 이름 서수다.
 - 입력(`CaseDefinition`, `CompareMetrics`)을 바꾸지 않는다. 판정 전후 metrics.json 바이트가 같다 [T11:P:determinism].
@@ -390,14 +366,15 @@ M-A 영향 [T11:S7c] (따로 clone에 `CaseInputs.Group`·파서·대조 열 확
 | --- | --- | --- |
 | `judge-case-valid` | `case-valid` (기존. 바꾸지 않는다) | `CaseParser.ParseDirectory` → `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null) → 출력 폴더의 `judgment.json` 한 파일 |
 
-- 표본 판정: 보류 `ACCURACY`(66.7% < 90), 시간 `not_measured`, 몰림 `off`(유형 열 없음), 다음 할 일 셋 [T11:S3 judge-case-valid]. 숫자가 문장에 들어가므로 문화권(R4)을 본다.
+- 표본 `case-valid`(T-012에서 바꾸지 않았다). 표본 `case-valid`에는 `inputs.group`이 없다. 표본 파일은 바꾸지 않는다.
+- 표본 판정(T-012): 보류 `ACCURACY`(66.7% < 90). 확인 다섯 `not_met`, `not_met`, `not_reviewed`(검토 항목 5건: 불일치 4건, 추가 행 1건), `not_measured`, `off`. 다음 할 일 `measure_time`, `review_items`, `add_group` [T12:O].
+- 출력 바이트가 바뀐다(SHA-256 `c955e9e236ba726db289aafe0729d880fbc98c988a30c2daf62ea91086412fb1`). G2·G3는 같은 실행 안의 비교라 그대로 통과한다(T-012b에서 확인).
+- 숫자가 문장에 들어가므로 문화권(R4)을 본다.
 - 결과 [T11:S5]: 전체 테스트 1,284개 통과(1,282 + G2·G3 각 1). 새 샘플이 없다. 기준선 `bf2568e`의 `Real_targets_use_case_samples_not_basic`은 샘플 목록(중복 뺀 것)만 봐서, 고치지 않고 통과했다. 그 뒤 T-010 리뷰(`9ae47a2`)가 이 테스트에 `이름=샘플` 쌍의 정확한 목록 비교를 더했다 [읽음 `CoreGuardTargetTests.cs`]. 그래서 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록 `case-invalid`, `case-valid`, `compare-invalid`는 그대로다.
 - 판정 오류 표본은 없다. 판정에는 입력 오류가 없다(대조 오류는 `compare-invalid`가 본다. 인자 예외는 5절).
 - 음성 대조 [T11:S6]: (a) 문장 숫자를 `CultureInfo.CurrentCulture`로 쓰면 빌드·G1은 통과하고 G2가 `G2 R4 문화권: out/judgment.json SHA-256 다름`으로 잡는다(`Core_target_is_deterministic(judge-case-valid)` 1건 실패). (b) 판정 안에서 `DateTime.Now`를 읽으면 G1(D1)이 잡는다(`Core_has_no_clock_random_or_environment_references` 1건 실패).
 
 ### 4.13 Core 공개 API (제안)
-
-- T-012 개정(제안): 바뀌는 곳은 11.16이다. 아래 블록의 `SchemaVersion`은 PR (b)에서 2로 고친다.
 
 네임스페이스 `Scorecard.Core.Judgment`. 스파이크 후보와 같은 모양이다.
 
@@ -439,7 +416,8 @@ public sealed record JudgmentResult(
 ```
 
 - 기본값·결과 문자열·문장 틀·문구·`focus_min`은 `internal` `JudgmentRules.cs` 한 파일에 둔다(`classification.md` 4.9와 같은 방식). 테스트가 이 문서의 표를 읽어 Core 동작과 대조한다. 실행 중에 이 문서를 읽지 않는다.
-- Core 파일 4개: `JudgmentModel.cs`, `JudgmentRules.cs`, `JudgmentEngine.cs`, `JudgmentJson.cs`. 기존 Core 파일은 바꾸지 않는다(M-B). 값 표시는 기존 `internal` `CompareRules.Show`를 쓴다(같은 어셈블리).
+- Core 파일 4개: `JudgmentModel.cs`, `JudgmentRules.cs`, `JudgmentEngine.cs`, `JudgmentJson.cs`. 값 표시는 기존 `internal` `CompareRules.Show`를 쓴다(같은 어셈블리). T-012가 `CaseInputs.Group`(`case-schema.md` 4.12)과 `CompareEngine.ItemDuplicate`(`metrics.md` 4.11)를 더했다.
+- `Judge`는 검토 항목을 `CompareMetrics.Items`의 상태로 센다. 몰림은 `definition.Inputs.Group`과 기준 행 `CsvRow`의 그 칸만 본다.
 - → 질문 10.
 
 ## 5. 예외
@@ -449,7 +427,8 @@ public sealed record JudgmentResult(
 | `definition`·`metrics`가 null | `ArgumentNullException` | [T11:P:args null] |
 | `metrics.Case`가 `definition.Name`과 다름 | `ArgumentException` | [T11:P:args name-mismatch] |
 | 시간 값이 음수 | `ArgumentOutOfRangeException` | [T11:P:args negative-time] |
-| 사람 입력 키가 불일치 항목이 아니거나 중복 | `ArgumentException` | [T11:P:args unexplained-*] |
+| 사람 입력 키가 검토 항목의 키가 아니거나 중복 | `ArgumentException` | 4.9 |
+| 대조 결과가 정의에서 나온 것이 아님(아래 표) | `ArgumentException` | 12.2 |
 | 대조 오류(`CompareResult.Metrics`가 null) | 판정하지 않는다. 부르는 쪽이 대조 오류를 보인다(종료 코드 2) | 2절 |
 | `inputs` 없음 / `compare` 빔 | 미검증. `checks` = `[]`. 다음 할 일 4.7 | 4.3 |
 | `thresholds` 일부만 적음 | 빈 키만 기본값. 그 키만 `defaults`·표시 | 4.2, 4.6 |
@@ -457,8 +436,29 @@ public sealed record JudgmentResult(
 | 시간을 받았는데 `time_must_drop: false` | 시간을 보지 않는다(`off`) | 4.4 |
 | 유형 열 값에 큰따옴표·이모지·제어 문자 | 문장에는 `CompareRules.Show` 표시, JSON은 3.3 이스케이프 | [T11:P:escape] |
 | 유형 열 값이 빈 칸 | `(빈 칸)`으로 보인다. 빈 칸끼리 같은 값 | 6.3 |
-| 머리 행이 다른 기준 파일 여럿 | 모든 파일에 꼭 한 번 있는 열만 유형 열 | [T11:P:focus multi-file] |
-| 불일치는 있는데 추가 행만 다른 유형 | 추가 행은 보지 않는다 | [T11:P:focus extra-rows-ignored] |
+| 불일치는 있는데 추가 행만 다른 유형 | 추가 행은 보지 않는다 | 4.8 규칙 3 |
+
+정의와 대조 결과(T-013). `Judge`는 대조 결과가 이 정의에서 나온 것인지 본다. 아니면 `ArgumentException`(부르는 쪽 잘못, 종료 1)이다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "판정"은 예외 없이 판정한다는 뜻이다. "대조함"은 `measured`, "미검증"은 `not_verified`와 그 `reason`이다. 대조 결과는 정의 칸과 같은 모양의 다른 장면에서 만든다.
+
+| 정의 | 대조 결과 | Judge |
+| --- | --- | --- |
+| `inputs` 없음 | 미검증 `no_inputs` | 판정 |
+| `inputs` 없음 | 미검증 `no_compare_fields` | 거절 |
+| `inputs` 없음 | 대조함 | 거절 |
+| `compare` 빔 | 미검증 `no_compare_fields` | 판정 |
+| `compare` 빔 | 미검증 `no_inputs` | 거절 |
+| `compare` 빔 | 대조함 | 거절 |
+| `inputs`·`compare` 있음 | 대조함(같은 정의) | 판정 |
+| `inputs`·`compare` 있음 | 미검증 `no_inputs` | 거절 |
+| `inputs`·`compare` 있음 | 대조함, 키 열이 다름 | 거절 |
+| `inputs`·`compare` 있음 | 대조함, `compare` 필드가 다름 | 거절 |
+| `inputs.group` 있음 | 대조함(같은 정의) | 판정 |
+| `inputs.group` 있음 | 대조함, 기준 행 머리 행에 그 열이 없음 | 거절 |
+| (이름) | `metrics.Case`가 `definition.Name`과 다름 | 거절 |
+
+- 규칙: `Inputs`가 null이면 미검증 `no_inputs`, `Inputs`가 있고 `Compare`가 비면 미검증 `no_compare_fields`, 그 밖이면 `measured`이고 `metrics.Key` = `Inputs.Key`, `Fields`의 필드 이름(순서) = `Compare`의 필드 이름이어야 한다. `Inputs.Group`이 있으면 모든 기준 행 `CsvRow.Header`에 그 이름이 꼭 한 번 있어야 한다.
+- `CompareEngine.CompareDirectory(dir, definition)`의 결과를 같은 `definition`으로 넘기면 늘 맞다. 거절은 부르는 쪽이 다른 정의를 섞었을 때뿐이다.
+- 이름 행은 C#만 본다. oracle의 대조 결과에는 케이스 이름이 없다.
 
 - 문턱 곱 넘침(카드 잠정 결정 17): 4.4 조건의 곱이 decimal 범위를 넘어도 예외 없이 부호대로 비교한다. `case.yaml`을 파서로 읽으면 생기지 않는다(문턱 0 이상 100 이하, `case-schema.md` 4.5. 셈은 `int`).
 
@@ -505,96 +505,183 @@ public sealed record JudgmentResult(
 
 ### 6.3 몰림
 
-- T-012 개정(제안): 이 두 표는 11.8의 두 표(`inputs.group` 칸)로 바뀐다.
+몰림(열 하나). 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `a×5`는 값 `a`인 행 5개, `(빈 칸)`은 빈 값, `(없음)`은 행이 없음이다. 불일치는 값 불일치·누락을 번갈아 둔다. 기준 자료에는 늘 `grp` 열이 있다. "inputs.group"이 `없음`이면 `case.yaml`에 키를 적지 않았다.
 
-유형 열 하나(`grp`). 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `a×5`는 값 `a`인 행 5개, `(빈 칸)`은 빈 값, `(없음)`은 행이 없음이다. "유형 열"이 `없음`이면 기준 자료에 `grp` 열이 없다(키·`compare` 열뿐). 불일치는 값 불일치·누락을 번갈아 둔다.
-
-| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | 유형 열 | FOCUS |
+| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | inputs.group | FOCUS |
 | --- | --- | --- | --- | --- |
-| `a×5`, `b×5` | (없음) | (없음) | 있음 | `few` |
-| `a×5`, `b×5` | `a` | (없음) | 있음 | `few` |
+| `a×5`, `b×5` | (없음) | (없음) | `grp` | `few` |
+| `a×5`, `b×5` | `a` | (없음) | `grp` | `few` |
 | `a×5`, `b×5` | `a`, `a` | (없음) | 없음 | `off` |
-| `a×5`, `b×5` | `a`, `a` | (없음) | 있음 | `found` |
-| `a×10` | `a`, `a` | (없음) | 있음 | `one_value` |
-| `a×5`, `b×5` | `a`, `b` | (없음) | 있음 | `spread` |
-| `a×5`, `b×5` | `a×5` | (없음) | 있음 | `found` |
-| `a×9`, `b×1` | `a×9` | (없음) | 있음 | `found` |
-| `(빈 칸)×5`, `b×5` | `(빈 칸)`, `(빈 칸)` | (없음) | 있음 | `found` |
-| `a×5`, `A×5` | `a`, `A` | (없음) | 있음 | `spread` |
-| `a×5`, `b×5` | `a`, `a` | `b`, `b`, `b` | 있음 | `found` |
+| `a×5`, `b×5` | `a`, `a` | (없음) | `grp` | `found` |
+| `a×10` | `a`, `a` | (없음) | `grp` | `one_value` |
+| `a×10` | `a`, `a` | (없음) | 없음 | `off` |
+| `a×5`, `b×5` | `a`, `b` | (없음) | `grp` | `spread` |
+| `a×5`, `b×5` | `a×5` | (없음) | `grp` | `found` |
+| `a×9`, `b×1` | `a×9` | (없음) | `grp` | `found` |
+| `(빈 칸)×5`, `b×5` | `(빈 칸)`, `(빈 칸)` | (없음) | `grp` | `found` |
+| `a×5`, `A×5` | `a`, `A` | (없음) | `grp` | `spread` |
+| `a×5`, `b×5` | `a`, `a` | `b`, `b`, `b` | `grp` | `found` |
+| `a×5`, `b×5` | `a`, `b` | `a`, `a`, `a` | `grp` | `spread` |
+| `(빈 칸)×39`, `x×1` | `(빈 칸)`, `(빈 칸)` | (없음) | 없음 | `off` |
+| `(빈 칸)×39`, `x×1` | `(빈 칸)`, `(빈 칸)` | (없음) | `grp` | `found` |
 
-유형 열 여럿. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `p=aaabbb`는 열 `p`의 행 1~6 값이다(글자 하나가 한 행, `_`는 빈 칸). 머리 행은 `id,<열들>,v`, 키 `id`, `compare`는 `v`다. 불일치 행은 1부터 센다. "걸린 열"은 `found` 문장의 `{group} = {value}`, "본 열"은 `spread`·`one_value` 문장의 `{columns}`다.
+- 끝 두 행이 탐침 P2(6.6)의 모양이다. 적지 않으면 잡히지 않는다. 사용자가 그 열을 직접 고르면 잡힌다.
 
-| 열 값(행 1~6) | 불일치 행 | FOCUS | 걸린 열 | 본 열 |
+몰림(열 여럿). 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `p=aaabbb`는 열 `p`의 행 1~6 값이다(글자 하나가 한 행, `_`는 빈 칸). 머리 행은 `id,<열들>,v`, 키 `id`, `compare`는 `v`다. 불일치 행은 1부터 센다. "걸린 값"은 `found` 문장의 `{group} = {value}`다. `대조 오류`·`파서 오류`는 판정하지 않는다(5절).
+
+| 열 값(행 1~6) | inputs.group | 불일치 행 | FOCUS | 걸린 값 |
 | --- | --- | --- | --- | --- |
-| `p=aaabbb` | `1,2` | `found` | `p = a` | — |
-| `p=aaabbb` | `1,4` | `spread` | — | `p` |
-| `p=aaaaaa` | `1,2` | `one_value` | — | `p` |
-| `q=aaabbb`, `p=ababab` | `1,2` | `found` | `q = a` | — |
-| `p=aabbcc`, `q=xxyyzz` | `1,2` | `found` | `p = a` | — |
-| `p=aaaaaa`, `q=ababab` | `1,2` | `spread` | — | `q` |
-| `p=aaaaaa`, `q=bbbbbb` | `1,2` | `one_value` | — | `p, q` |
-| `p=aaabbb`, `q=ababab` | `1,4` | `spread` | — | `p, q` |
-| `b=aabbcc`, `B=xxyyzz` | `1,2` | `found` | `B = x` | — |
-| `p=__abab` | `1,2` | `found` | `p = (빈 칸)` | — |
-| `p=aaabbb`, `p=aaabbb` | `1,2` | `off` | — | — |
+| `p=aaabbb` | `p` | `1,2` | `found` | `p = a` |
+| `p=aaabbb` | `p` | `1,4` | `spread` | — |
+| `p=aaaaaa` | `p` | `1,2` | `one_value` | — |
+| `q=aaabbb`, `p=ababab` | `p` | `1,2` | `spread` | — |
+| `q=aaabbb`, `p=ababab` | `q` | `1,2` | `found` | `q = a` |
+| `q=aaabbb`, `p=ababab` | 없음 | `1,2` | `off` | — |
+| `p=aaaaaa`, `q=bbbbbb` | `q` | `1,2` | `one_value` | — |
+| `b=aabbcc`, `B=xxyyzz` | `b` | `1,2` | `found` | `b = a` |
+| `b=aabbcc`, `B=xxyyzz` | `B` | `1,2` | `found` | `B = x` |
+| `p=__abab` | `p` | `1,2` | `found` | `p = (빈 칸)` |
+| `p=aaabbb` | `q` | `1,2` | 대조 오류 `column` | — |
+| `p=aaabbb`, `p=aaabbb` | `p` | `1,2` | 대조 오류 `duplicate-column` | — |
+| `p=aaabbb` | `id` | `1,2` | 파서 오류 `conflict` | — |
+| `p=aaabbb` | `v` | `1,2` | 파서 오류 `conflict` | — |
 
-- 넷째 행: `p`를 먼저 보지만 흩어져 있고 `q`에서 걸린다. 다섯째 행: 둘 다 걸리면 이름 서수로 앞인 `p`. 아홉째 행: 서수로 `B`(U+0042)가 `b`(U+0061)보다 앞이다(문화권 비교가 아니다).
-- 셋째 행: 키 열 `id`(값이 행마다 다름)와 `compare` 열 `v`는 유형 열이 아니다. 그래서 `one_value`이고 본 열이 `p`뿐이다.
-- 마지막 행: 같은 이름 둘은 유형 열이 아니다.
+- 넷째 행: `q`는 걸릴 모양이지만 적은 열 `p`만 본다. T-011(M-B)과 다른 곳이다.
+- 여덟째·아홉째 행: 대소문자가 다른 열 이름은 다른 열이다(서수).
 
-### 6.4 설명 안 되는 불일치
+### 6.4 설명 안 되는 검토 항목
 
-- T-012 개정(제안): 이 표는 11.9 표(추가 행·중복 행 칸)로 바뀐다.
+설명 안 됨. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "사람 입력"의 `없음`은 null, `[]`는 빈 목록이다. `불일치 1개`는 불일치 항목의 키 1개, `일치 1개`는 차이 없는 일치 키 1개다. `두 번`은 같은 키를 두 번 적은 것이다. `거절`은 `ArgumentException`이다.
 
-테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "사람 입력"의 `없음`은 null, `[]`는 빈 목록, `N건`은 불일치 키 N개다.
+| 불일치 | 추가 행 | 중복 행 | 사람 입력 | UNEXPLAINED |
+| --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 없음 | `none` |
+| 0 | 0 | 0 | `[]` | `none` |
+| 3 | 0 | 0 | 없음 | `not_reviewed` |
+| 3 | 0 | 0 | `[]` | `explained` |
+| 3 | 0 | 0 | 불일치 1개 | `found` |
+| 3 | 0 | 0 | 불일치 3개 | `found` |
+| 0 | 2 | 0 | 없음 | `not_reviewed` |
+| 0 | 2 | 0 | `[]` | `explained` |
+| 0 | 2 | 0 | 추가 행 1개 | `found` |
+| 1 | 0 | 1 | 없음 | `not_reviewed` |
+| 1 | 0 | 1 | 중복 행 1개 | `found` |
+| 2 | 1 | 1 | 없음 | `not_reviewed` |
+| 2 | 1 | 1 | 불일치 1개, 추가 행 1개, 중복 행 1개 | `found` |
+| 0 | 0 | 0 | 일치 1개 | 거절 |
+| 3 | 0 | 0 | 불일치 1개 두 번 | 거절 |
 
-| 불일치 | 사람 입력 | UNEXPLAINED |
-| --- | --- | --- |
-| 0 | 없음 | `none` |
-| 0 | `[]` | `none` |
-| 3 | 없음 | `not_reviewed` |
-| 3 | `[]` | `explained` |
-| 3 | 1건 | `found` |
-| 3 | 3건 | `found` |
+- 중복 행은 차이 없는 기준 키를 결과 쪽에 한 번 더 둔 것이다. 그 키는 결과 쪽에 두 번 나와 값 불일치다(T-013, `metrics.md` 4.3). 그래서 "불일치" 칸은 그 키도 센다. 장면은 불일치 칸에서 중복 행 칸을 뺀 수만큼 보통 불일치(누락·값 불일치를 번갈아)를 두고, 나머지는 중복 행으로 만든다. T-012 표는 이 행들을 `0 | 0 | 1`처럼 적었다.
+- 그 키는 불일치이면서 중복 행이라 사람이 적을 수 있다. "중복 행 1개"는 `duplicate` 항목의 키다.
+
+`compare-duplicate`(`metrics.md` 12.5) 판정. T-013 규칙에서도 같은 바이트다(`r2`는 T-012에서도 값 불일치였다). `r2` 두 행의 줄 순서를 바꿔도 같다(`metrics.md` 13.3). 결과 쪽 중복 둘(기준에 있는 키 하나, 추가 키 하나), 추가 행 하나, 불일치 둘. 사람 입력 없음.
+
+`compare-duplicate` judgment.json (schema_version 2, SHA-256 `c7a3d29b9827af25ab1369cf886e06fe9099898aa67d69b5d74c6f507e84be3b`):
+
+```json
+{
+  "schema_version": 2,
+  "case": "compare-duplicate",
+  "verdict": "conditional",
+  "rule": "UNEXPLAINED",
+  "reason": "정확도·누락률은 문턱을 충족하나 검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)을 사람이 아직 보지 않았으므로 조건부.",
+  "thresholds": {
+    "accuracy_min": 50,
+    "missing_max": 50,
+    "time_must_drop": false
+  },
+  "defaults": [],
+  "checks": [
+    {
+      "rule": "ACCURACY",
+      "result": "met",
+      "reason": "정확도 50.0%(2/4)가 문턱 50% 이상이다."
+    },
+    {
+      "rule": "MISSING",
+      "result": "met",
+      "reason": "누락률 25.0%(1/4)가 문턱 50% 이하다."
+    },
+    {
+      "rule": "UNEXPLAINED",
+      "result": "not_reviewed",
+      "reason": "검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)이 설명되는지 사람이 아직 보지 않았다."
+    },
+    {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    {
+      "rule": "FOCUS",
+      "result": "spread",
+      "reason": "불일치 2건이 kind 열의 한 값에 몰리지 않았다."
+    }
+  ],
+  "todo": [
+    {
+      "key": "review_items",
+      "text": "검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)을 보고 설명이 되는지 적는다."
+    }
+  ]
+}
+```
 
 ### 6.5 우선순위
 
-- T-012 개정(제안): 이 표는 11.10 표(다음 할 일 칸)로 바뀐다.
+확인 다섯의 결과 조합과 판정. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "다음 할 일"은 문턱을 모두 적은 장면의 `todo` 키다.
 
-확인 다섯의 결과 조합과 판정. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다.
+| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 | 다음 할 일 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `met` | `met` | `none` | `off` | `few` | `pass` | `PASS` | — |
+| `met` | `met` | `none` | `met` | `few` | `pass` | `PASS` | — |
+| `met` | `met` | `none` | `not_measured` | `few` | `conditional` | `TIME` | `measure_time` |
+| `met` | `met` | `none` | `not_met` | `few` | `conditional` | `TIME` | — |
+| `met` | `met` | `not_reviewed` | `off` | `few` | `conditional` | `UNEXPLAINED` | `review_items` |
+| `met` | `met` | `not_reviewed` | `off` | `spread` | `conditional` | `UNEXPLAINED` | `review_items` |
+| `met` | `met` | `not_reviewed` | `off` | `off` | `conditional` | `UNEXPLAINED` | `review_items`, `add_group` |
+| `met` | `met` | `not_reviewed` | `off` | `one_value` | `conditional` | `UNEXPLAINED` | `review_items` |
+| `met` | `met` | `not_reviewed` | `off` | `found` | `conditional` | `FOCUS` | `review_items` |
+| `met` | `met` | `not_reviewed` | `not_measured` | `found` | `conditional` | `TIME` | `measure_time`, `review_items` |
+| `met` | `met` | `explained` | `met` | `found` | `conditional` | `FOCUS` | — |
+| `met` | `met` | `explained` | `met` | `spread` | `pass` | `PASS` | — |
+| `met` | `met` | `explained` | `off` | `off` | `pass` | `PASS` | `add_group` |
+| `met` | `met` | `found` | `off` | `few` | `hold` | `UNEXPLAINED` | — |
+| `met` | `met` | `found` | `not_met` | `found` | `hold` | `UNEXPLAINED` | — |
+| `met` | `not_met` | `not_reviewed` | `off` | `spread` | `hold` | `MISSING` | `review_items` |
+| `met` | `not_met` | `found` | `not_measured` | `found` | `hold` | `MISSING` | `measure_time` |
+| `not_met` | `met` | `not_reviewed` | `off` | `found` | `hold` | `ACCURACY` | `review_items` |
+| `not_met` | `not_met` | `found` | `not_met` | `found` | `hold` | `ACCURACY` | — |
 
-| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `met` | `met` | `none` | `off` | `few` | `pass` | `PASS` |
-| `met` | `met` | `none` | `met` | `few` | `pass` | `PASS` |
-| `met` | `met` | `none` | `not_measured` | `few` | `conditional` | `TIME` |
-| `met` | `met` | `none` | `not_met` | `few` | `conditional` | `TIME` |
-| `met` | `met` | `not_reviewed` | `off` | `few` | `pass` | `PASS` |
-| `met` | `met` | `not_reviewed` | `off` | `spread` | `pass` | `PASS` |
-| `met` | `met` | `not_reviewed` | `off` | `off` | `pass` | `PASS` |
-| `met` | `met` | `not_reviewed` | `off` | `one_value` | `pass` | `PASS` |
-| `met` | `met` | `not_reviewed` | `off` | `found` | `conditional` | `FOCUS` |
-| `met` | `met` | `not_reviewed` | `not_measured` | `found` | `conditional` | `TIME` |
-| `met` | `met` | `explained` | `met` | `found` | `conditional` | `FOCUS` |
-| `met` | `met` | `explained` | `met` | `spread` | `pass` | `PASS` |
-| `met` | `met` | `found` | `off` | `few` | `hold` | `UNEXPLAINED` |
-| `met` | `met` | `found` | `not_met` | `found` | `hold` | `UNEXPLAINED` |
-| `met` | `not_met` | `not_reviewed` | `off` | `spread` | `hold` | `MISSING` |
-| `met` | `not_met` | `found` | `not_measured` | `found` | `hold` | `MISSING` |
-| `not_met` | `met` | `not_reviewed` | `off` | `found` | `hold` | `ACCURACY` |
-| `not_met` | `not_met` | `found` | `not_met` | `found` | `hold` | `ACCURACY` |
+- `UNEXPLAINED` = `none`(검토 항목 0건)이면 정확도·누락률은 늘 `met`이고 몰림은 `few`다. 그래서 그런 조합은 표에 없다.
+- T-011과 다른 곳(T-012): `not_reviewed`이고 몰림·시간이 걸리지 않으면 통과가 아니라 조건부 `UNEXPLAINED`다(다섯째~여덟째 행).
+- 몰림 `off`이고 사람이 모두 설명하면 통과다. 대신 `add_group`이 남는다(열세째 행).
 
-- `UNEXPLAINED` = `none`(불일치 0건)이면 정확도·누락률은 늘 `met`이고 몰림은 `few`다. 그래서 그런 조합은 표에 없다.
-- 사람이 보지 않은 불일치(`not_reviewed`)는 판정을 막지 않는다(4.9). 몰림·시간이 없으면 통과다.
+### 6.6 탐침 재현
 
-## 7. 예제 4종 `expected/judgment.json` 초안
+T-012 카드 수용 기준 6. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 장면은 6.3 모양(머리 행 `id,…,v`, 키 `id`, `compare`는 `v` `tolerance: 0`)이고 문턱은 `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false`다. 기준 키는 `r0000`부터, 추가 키는 `x000`부터다. "T-011"은 T-011 규칙의 결과다. 기록이다. T-013에서 `judge_v1`을 지워 테스트·oracle은 T-012 칸만 본다.
+
+| 탐침 | 장면 | 사람 입력 | T-011 | T-012 |
+| --- | --- | --- | --- | --- |
+| `P1` | 기준 20행, 결과 = 기준 20행 그대로 + 지어낸 키 30행 | 없음 | `pass` `PASS` | `conditional` `UNEXPLAINED` |
+| `P1` | 같음 | `[]` | `pass` `PASS` | `pass` `PASS` |
+| `P1` | 같음 | 추가 행 키 전부 | 거절 | `hold` `UNEXPLAINED` |
+| `P2` | 기준 40행(열 `memo`: 39행 빈 칸, 1행 `확인`), 빈 칸 행 2개 불일치, `inputs.group` 없음 | 없음 | `conditional` `FOCUS` | `conditional` `UNEXPLAINED` |
+| `P2` | 같음 | `[]` | `conditional` `FOCUS` | `pass` `PASS` |
+| `P2g` | `P2`에 `inputs.group: memo` | 없음 | 거절 | `conditional` `FOCUS` |
+| `P3` | 기준 20행, 결과 = 기준 20행 + 추가 1행(`x000`) | `x000` | 거절 | `hold` `UNEXPLAINED` |
+| `P4` | 기준 20행, 결과 = 기준 20행 + `r0003` 한 행 더 | 없음 | 거절 | `conditional` `UNEXPLAINED` |
+| `P4` | 같음 | `r0003` | 거절 | `hold` `UNEXPLAINED` |
+
+- `거절`: T-011에서 판정까지 가지 않는다. `P1`·`P3` 사람 입력은 `ArgumentException`(불일치 키가 아님). `P2g`는 T-011 스키마에 `inputs.group`이 없다(`unknown-field`). `P4`는 대조 오류 `duplicate-key`(종료 2).
+- `P1` 첫 행이 지적 1의 탐침, `P2` 첫 행이 지적 2의 탐침이다. 둘 다 통과·`FOCUS`가 아니다.
+- `P2`에서 사람이 모두 설명하면 통과다. T-011은 우연한 메모 열 때문에 조건부였다.
+
+## 7. 예제 4종 `expected/judgment.json`
 
 ### 7.1 만드는 방법과 확정 절차
 
-- T-012 개정(제안): 7.2~7.5 블록과 SHA-256 줄은 PR (b)의 expected migration 커밋에서 11.13 블록(schema_version 2)으로 바뀐다. 그때까지는 이 블록이 expected다.
-
-1. 아래 블록은 두 구현이 공개 예제 파일(`examples/*/case.yaml`·`reference/`·`candidate/`, 바꾸지 않음)에서 따로 낸 바이트가 같은 것이다.
+1. T-011 블록(`schema_version` 1)은 두 구현이 공개 예제 파일(`examples/*/case.yaml`·`reference/`·`candidate/`, 바꾸지 않음)에서 따로 낸 바이트가 같은 것이다.
    - (a) 스파이크 후보(C#, `spikes/T-011/core/Judgment/`) [T11:S3 judge]. 블록은 이것으로 채웠다(`spikes/T-011/blocks.py fill`).
    - (b) Python 독립 구현(`spikes/T-011/xcheck/judge.py`) [T11:S3 xcheck]. 이 문서 4절의 표와 글만 보고 짰다. C# 코드를 쓰지 않는다. 대조 부분은 T-006 Python 독립 구현에서 가져왔다(`metrics.md` 7.1).
    - (a)와 (b)가 4종 모두 바이트까지 같다(`cmp`) [T11:S3 xcheck-cmp].
@@ -603,19 +690,46 @@ public sealed record JudgmentResult(
 4. 커밋 모양: 새 파일 4개만 담은 커밋. 기존 expected를 바꾸지 않으므로 regression-guard의 "기존 파일 수정·삭제"에 걸리지 않는다. ADR 0004 규칙을 따라 메시지는 `expected migration:`으로 시작한다(새 파일이지만 같은 모양으로 남긴다). oracle 잡이 같은 바이트를 재현해야 한다(4.11).
 5. `examples/.gitattributes`(`* -text`)가 새 파일에도 걸린다(T-004). 기존 테스트 `Example_text_files_have_no_carriage_return`·`ExamplePatternTests`가 새 파일도 본다 [T11:S7b].
 6. 기존 expected 8개(`classification.json`·`metrics.json` × 4)와 예제의 다른 파일은 바이트 그대로다 [T11:S7].
+7. T-012: oracle이 아래 표대로 `case.yaml`에 한 줄을 더한 사본에서 낸 바이트가 7.2~7.5 블록이다 [T12:O]. T-012b(#15)의 expected migration 커밋이 블록·SHA-256 줄과 `expected/judgment.json` 4개를 이 바이트로 바꿨다. C# 골든 테스트가 같은 바이트를 낸다.
+8. T-013: 7.2~7.5 블록과 expected는 그대로다. oracle `check.py`가 12개 MATCH다 [T13:O].
 
-예제 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "확인 다섯"은 4.4 순서의 결과, "다음 할 일"은 `todo` 키 순서다.
+예제 `case.yaml`. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "더하는 줄"은 `  key: …` 줄 바로 뒤에 넣는다. 다른 줄은 그대로다.
 
-| 예제 | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 12절 |
-| --- | --- | --- | --- | --- | --- |
-| `table-compare` | `conditional` | `FOCUS` | `met`, `met`, `not_reviewed`, `off`, `found` | `review_mismatches` | 조건부 |
-| `form-fill` | `pass` | `PASS` | `met`, `met`, `none`, `off`, `few` | — | 통과 |
-| `mixed-exceptions` | `not_verified` | `NOT_VERIFIED` | — | `add_data`, `add_compare`, `measure_time`, `confirm_thresholds` | 미검증 |
-| `signoff-final` | `hold` | `ACCURACY` | `not_met`, `not_met`, `not_reviewed`, `off`, `spread` | `review_mismatches` | 판정 카드가 정함(정확도 80%·누락률 5%, 문턱 95%·2% 미달) |
+| 예제 | 더하는 줄 | 지금 SHA-256 | 더한 뒤 SHA-256 | 바이트 |
+| --- | --- | --- | --- | --- |
+| `table-compare` | `  group: signal_type` | `451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2` | `e99d669ab16b6eada60e31c794efaa8cd5baa23db34b2500a68b731914f8e5b1` | 1,640 → 1,661 |
+| `signoff-final` | `  group: record_kind` | `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263` | `e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348` | 2,595 → 2,616 |
 
+- T-011 스파이크 S7c의 SHA-256과 같다 [T11:S7c][T12:O].
+- form-fill은 유형 열이 없다(`item`은 대조 열). mixed-exceptions는 `inputs`가 없다. 둘 다 그대로다.
+- 한 줄을 더해도 `expected/metrics.json`·`expected/classification.json`은 바이트 그대로다. oracle이 더한 사본에서 같은 바이트를 냈다 [T12:O].
+
+예제 표. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "검토 항목"은 `{breakdown}`이다.
+
+| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `table-compare` | `signal_type` | `conditional` | `FOCUS` | `met`, `met`, `not_reviewed`, `off`, `found` | `review_items` | 불일치 3건, 추가 행 1건 |
+| `form-fill` | 없음 | `pass` | `PASS` | `met`, `met`, `none`, `off`, `few` | — | — |
+| `mixed-exceptions` | 없음 | `not_verified` | `NOT_VERIFIED` | — | `add_data`, `add_compare`, `measure_time`, `confirm_thresholds` | — |
+| `signoff-final` | `record_kind` | `hold` | `ACCURACY` | `not_met`, `not_met`, `not_reviewed`, `off`, `spread` | `review_items` | 불일치 4건, 추가 행 1건 |
+
+- 판정·근거 키·확인 결과는 T-011과 같다(T-012 카드 수용 기준 5). T-012에서 바뀐 것은 `schema_version`, 문장, 다음 할 일 키다.
 - 12절 대조: table-compare 조건부, form-fill 통과, mixed-exceptions 미검증. 셋 다 같다. signoff-final은 12절이 "판정은 판정 카드에서"라 했고 이 스펙이 보류로 정한다(정확도 미달 → 보류, 지시문 3.4).
-- table-compare가 조건부인 근거: 불일치 3건(`log07`, `log08`, `log27`)이 모두 `signal_type = irregular`이고 `normal` 18행에는 없다. `synthetic-examples.md` 4.7이 심은 구조와 같다 [읽음]. 해석이 달랐다면(유형 열을 보지 않음) 통과가 되어 12절과 맞지 않았다(4.8 M-A에서 키를 적지 않은 경우).
+- table-compare가 조건부인 근거: 불일치 3건(`log07`, `log08`, `log27`)이 모두 `signal_type = irregular`이고 `normal` 18행에는 없다. `synthetic-examples.md` 4.7이 심은 구조와 같다 [읽음]. `group`을 빼면 `UNEXPLAINED`(사람이 안 봄)가 된다(4.8).
 - signoff-final은 몰림이 `spread`다(`unsteady` 3건, `steady` 1건 `rec14`). 정확도 미달이 먼저라 판정에 영향이 없다.
+- table-compare 추가 행은 `log31`, signoff-final은 `rec21`이다(`metrics.md` 7.2·7.5).
+
+expected 영향(T-012b에서 바꿨다. 기록):
+
+| 파일 | 지금 SHA-256 | 새 SHA-256 | 바뀐 줄 |
+| --- | --- | --- | --- |
+| `examples/table-compare/expected/judgment.json` | `1c32a9c92311e43d19a01633a171240b3b4fa215adcafe7f4d470dc45b4f5c57` | `b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865` | `schema_version`, `UNEXPLAINED` 문장, `todo` 키·문구 |
+| `examples/form-fill/expected/judgment.json` | `08cb0cac5df480e2611d2d92dbfca31cc2ebd6f3fcb9430d98d35343b74a0186` | `06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3` | `schema_version`, `UNEXPLAINED` 문장 |
+| `examples/mixed-exceptions/expected/judgment.json` | `85e5da47de436644228ca4f1d75ac086891d1739a34c93f441bee71afdc9df11` | `12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f` | `schema_version`만 |
+| `examples/signoff-final/expected/judgment.json` | `84da5aa2d9aaa6ead84c767235495d96189636987bb78ac24b62ddeda607871b` | `4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252` | `schema_version`, `UNEXPLAINED`·`FOCUS` 문장, `todo` 키·문구 |
+
+- 그 밖의 expected 8개(`classification.json`·`metrics.json` × 4)는 바뀌지 않는다.
+- mixed-exceptions는 `schema_version`만 바뀐다. 한 파일 안의 판이 예제마다 다르면 안 되기 때문이다(T-012 기록 11.15).
 
 ### 7.2 table-compare
 
@@ -825,22 +939,24 @@ public sealed record JudgmentResult(
 | 테스트 | 확인 | 카드 수용 기준 |
 | --- | --- | --- |
 | 기본값(4.2) | 머리 행 `\| 키 \| 기본값 \| 근거 \|`. 키가 없으면 그 값, `defaults` 순서. 셋 다 적으면 `defaults` = `[]` | 2 |
-| 판정 표(4.3) | 머리 행 `\| 순서 \| 근거 키 \| 걸리는 결과 \| 판정 \| 판정 문장 틀 \|`. 행마다 그 행에 걸리는 장면의 판정·근거 키·문장 | 2 |
-| 확인 표(4.4) | 머리 행 `\| 확인 \| 결과 \| 조건 \| 확인 문장 틀 \|`. 행마다 결과·문장. 확인 순서 | 2 |
+| 판정 표(4.3) | 머리 행 `\| 순서 \| 근거 키 \| 확인 결과 \| 판정 \| 판정 문장 틀 \|`. 행마다 그 행에 걸리는 장면의 판정·근거 키·문장 | 2 |
+| 확인 표(4.4) | 머리 행 `\| 확인 \| 결과 \| 걸리는 조건 \| 확인 문장 틀 \|`. 행마다 결과·문장. 확인 순서 | 2 |
 | 숫자(4.5) | 머리 행 `\| 이름 \| 값 \| 뜻 \|`. `focus_min`−1은 `few`, `focus_min`은 `found` | 2 |
-| 읽은 문턱(4.6) | 머리 행 `\| 근거 키 \| 읽은 문턱 \|`. 문턱 하나씩 기본값으로 바꿔 판정 문장·확인 문장 표시. 표시 글자는 정확히 ` (기본값 사용, 확인 필요)` | 2 |
-| 다음 할 일(4.7) | 머리 행 `\| 다음 할 일 \| 언제 \| 문구 \|`. 키마다 나오는 장면과 문구, `todo` 순서 | 3 |
+| 읽은 문턱(4.6) | 머리 행 `\| 순서 \| 근거 키 \| 읽은 문턱 \|`. 문턱 하나씩 기본값으로 바꿔 판정 문장·확인 문장 표시. 표시 글자는 정확히 ` (기본값 사용, 확인 필요)` | 2 |
+| 다음 할 일(4.7) | 머리 행 `\| 다음 할 일 \| 나오는 때 \| 문구 \|`. 키마다 나오는 장면과 문구, `todo` 순서 | 3 |
 | 문턱 경계(6.1) | 머리 행 `\| 기준 행 \| 일치 \| 누락 \| 표시 정확도(%) \| …`. 표시 퍼센트와 확인 결과 | 2 |
 | 시간(6.2) | 머리 행 `\| time_must_drop \| 적용 전 \| 처리 \| 검토 \| TIME \|`. 넘침 1건 더 | 3 |
-| 몰림(6.3) | 머리 행 `\| 기준 행 유형 \| 불일치 행 유형 \| 추가 행 유형 \| 유형 열 \| FOCUS \|`, `\| 열 값(행 1~6) \| 불일치 행 \| FOCUS \| 걸린 열 \| 본 열 \|`. 여러 기준 파일(한 파일에만 있는 열), 빈 이름 열 | 2 |
-| 설명 안 됨(6.4) | 머리 행 `\| 불일치 \| 사람 입력 \| UNEXPLAINED \|`. 잘못된 키·중복은 예외 | 2 |
-| 우선순위(6.5) | 머리 행 `\| ACCURACY \| MISSING \| UNEXPLAINED \| TIME \| FOCUS \| 판정 \| 근거 키 \|`. 장면의 확인 다섯이 표와 같고 판정이 같다 | 2 |
-| JSON(3.2·3.3) | 머리 행 `\| 속성 \| 형식 \| 뜻 \|`. 경로 순서 = 표. 첫 키 `schema_version` = 정수 1. BOM·CR 없음, 끝 `\n`, 이스케이프, decimal 자릿수 | 4 |
+| 몰림(6.3) | 머리 행 `\| 기준 행 유형 \| 불일치 행 유형 \| 추가 행 유형 \| inputs.group \| FOCUS \|`, `\| 열 값(행 1~6) \| inputs.group \| 불일치 행 \| FOCUS \| 걸린 값 \|`. 결과 쪽 중복 행(4.8 끝 글머리, T-013) | 2 |
+| 검토 항목(4.9) | 머리 행 `\| 검토 항목 \| 항목 상태 \| {breakdown} 이름 \|` | 2 |
+| 설명 안 됨(6.4) | 머리 행 `\| 불일치 \| 추가 행 \| 중복 행 \| 사람 입력 \| UNEXPLAINED \|`. 잘못된 키·중복은 예외. 중복 행 장면은 6.4 글머리(T-013) | 2 |
+| 우선순위(6.5) | 머리 행 `\| ACCURACY \| MISSING \| UNEXPLAINED \| TIME \| FOCUS \| 판정 \| 근거 키 \| 다음 할 일 \|`. 장면의 확인 다섯이 표와 같고 판정이 같다 | 2 |
+| 탐침(6.6) | 머리 행 `\| 탐침 \| 장면 \| 사람 입력 \| T-011 \| T-012 \|`. T-012 칸만 | T-012 6 |
+| JSON(3.2·3.3) | 머리 행 `\| 속성 \| 형식 \| 뜻 \|`. 경로 순서 = 표. 첫 키 `schema_version` = 정수 2. BOM·CR 없음, 끝 `\n`, 이스케이프, decimal 자릿수 | 4 |
 | 골든 | `examples/<예제>/` → `CaseParser.ParseDirectory` → `CompareDirectory` → `Judge`(시간·사람 입력 null) → `Render`가 `expected/judgment.json`과 바이트까지 같다. 예제 4종 | 1 |
-| 예제 표(7.1) | 머리 행 `\| 예제 \| 판정 \| 근거 키 \| 확인 다섯 \| 다음 할 일 \| 12절 \|`. `expected/judgment.json`의 값이 표와 같다 | 1 |
+| 예제 표(7.1) | 머리 행 `\| 예제 \| inputs.group \| 판정 \| 근거 키 \| 확인 다섯 \| 다음 할 일 \| 검토 항목 \|`, `\| 예제 \| 더하는 줄 \| …`, `\| 파일 \| 지금 SHA-256 \| …`. `expected/judgment.json`의 값이 표와 같다 | 1 |
 | 스펙 블록 = 예제 파일 | 7.2~7.5 블록, SHA-256 줄, 파일이 같다 | 1, 4 |
 | 결정론 | de-DE·tr-TR로 바꿔도 같은 바이트(`try/finally`). 같은 입력 두 번. 입력 metrics.json 바이트 그대로 | — |
-| 예외(5절) | 인자 예외 4종 | — |
+| 예외(5절) | 인자 예외 4종. 머리 행 `\| 정의 \| 대조 결과 \| Judge \|`(T-013) 행마다 | T-013 2 |
 | G2·G3 | `GuardTargets`에 `judge-case-valid`(4.12). `Real_targets_use_case_samples_not_basic`의 정확한 쌍 목록에 `judge-case-valid=case-valid` 한 쌍을 더한다(축소 아님). 샘플 목록은 그대로 | — |
 | 예제 폴더 파일 | `Example_folder_has_exactly_the_planned_files`의 목록에 `expected/judgment.json` 추가 | 1 |
 
@@ -852,7 +968,7 @@ public sealed record JudgmentResult(
 ## 9. 미확인 목록
 
 1. GitHub ubuntu·windows 러너에서 판정·골든·G2·G3 테스트가 녹색인지.
-2. 실제 업무 자료에서 유형 열(M-B)이 우연히 몰림을 내는 빈도(4.8).
+2. 실제 업무 자료에서 사람이 고른 `inputs.group` 열이 우연히 몰림을 내는 빈도(4.8).
 3. `times.yaml` 모양과 적용 전 시간의 출처(`minutes_per_item` 합인지, 따로 재는지). M2-5(4.10).
 4. `review.yaml` 모양과 확인 한 화면에서 "설명 안 됨"을 적는 법. M2-4(4.9).
 5. 스코어카드 4구역·6구역이 판정 문장·다음 할 일을 어떤 문구로 보일지. M2-3.
@@ -909,12 +1025,13 @@ ADR 0005 결정 3: T-010 뒤 카드의 승인 질문은 juhan에게 묻지 않�
 ## 채택
 
 - ADR 0005 결정 3에 따라 리드가 1~12의 추천안을 채택하고 카드 "잠정 결정"과 `docs/STATUS.md`에 적는다. 이 문서는 추천안만 적는다.
+- 위 1~12는 T-011 기록이다. T-012가 1(순서 7 `UNEXPLAINED`), 5(M-B → M-A), 6(`not_reviewed`는 조건부), 12(문구 일부)를 바꿨다(11절). T-013이 5절 예외를 더했다(12절).
 
 ---
 
 ## 11. T-012 개정 (판정 보강)
 
-- 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. ADR 0005 결정 3에 따라 리드가 추천안을 채택한다. 질문은 11.19, 채택 기록은 11.20.
+- 상태: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012). 2026-11-07, prototyper 초안. 질문은 11.19, 채택 기록은 11.20. T-013에서 이 절의 표·글을 1~7절로 옮겼다(11.3). 이 절은 T-012가 왜·무엇을 바꿨는지의 기록이다.
 - 작업 카드: `docs/tasks/T-012-judgment-hardening.md`. 출발점: M1 [재검토] 막는 지적 1·2(`docs/STATUS.md` 재검토 기록) [읽음]. `metrics.md` 4.4 "추가 행을 판정에 쓸지는 판정 카드가 정한다" [읽음]. 이 문서 4.8 M-A 행과 M-B 위험 글머리 [읽음].
 - 확인 대상 커밋: `5f0df03`(main `0f9e810` + 재검토 기록·카드). `src/`·`tests/`·`examples/`는 `0f9e810`과 같다.
 - 근거: oracle(`tools/oracle/`, 이 절과 `metrics.md` 12절·`case-schema.md` 10절의 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). 이 절의 블록·SHA-256·문장은 oracle이 실제로 낸 것이다. C# 엔진의 출력은 아직 없다(**미확인**, PR (b)). 스파이크 폴더는 두지 않았다.
@@ -951,620 +1068,27 @@ ADR 0005 결정 3: T-010 뒤 카드의 승인 질문은 juhan에게 묻지 않�
 - 오류 코드 수: 대조 13개, 파서 17개.
 - 3.3 바이트 규칙, 4.11(결과 파일 judgment.json), 4.12 G2·G3 등록 이름(`judge-case-valid`).
 
-### 11.3 검토 항목
-
-검토 항목은 사람이 보고 설명이 되는지 적어야 하는 대조 항목이다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 표 순서가 `{breakdown}`의 순서다.
-
-| 검토 항목 | 항목 상태 | {breakdown} 이름 |
-| --- | --- | --- |
-| 불일치 | `mismatch`, `missing` | 불일치 |
-| 추가 행 | `extra` | 추가 행 |
-| 중복 행 | `duplicate` | 중복 행 |
-
-- 항목 상태는 `metrics.md` 4.4·12.2의 `items[].status`다. 허용오차 안 차이가 있는 일치(`match`)는 검토 항목이 아니다.
-- `{items}`: 검토 항목 수. `{breakdown}`: 위 표의 이름마다 수를 세어 0이 아닌 것만 `이름 N건`으로 쓰고 `, `로 잇는다. 예: `불일치 3건, 추가 행 1건`.
-- 정확도·누락률은 그대로다. 분모는 기준 행, 일치·누락만 센다(`metrics.md` 4.4). 추가 행·중복 행은 문턱 셈에 들지 않는다. 지어낸 행은 사람 검토로 판정에 닿는다(11.4 순서 4·7). → 질문 1.
-- 사람 입력의 키는 검토 항목의 키다(11.9). 한 키에 항목이 둘 이상일 수 있다(결과 쪽에 세 번 나온 키, 추가 키의 중복). 그래서 `{unexplained}`는 키 수다.
-
-### 11.4 판정 표 (T-012)
-
-4.3을 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 위에서부터 보고 처음 걸리는 행이 판정이다. "확인 결과"는 그 근거 키의 확인 결과(11.5)다. 문장 틀의 `{…}`는 4.5와 11.6의 값이다.
-
-| 순서 | 근거 키 | 확인 결과 | 판정 | 판정 문장 틀 |
-| --- | --- | --- | --- | --- |
-| 1 | `NOT_VERIFIED` | `no_inputs` | `not_verified` | `검증 자료(case.yaml inputs)가 없어 미검증.` |
-| 1 | `NOT_VERIFIED` | `no_compare_fields` | `not_verified` | `대조할 열(case.yaml compare)이 없어 미검증.` |
-| 2 | `ACCURACY` | `not_met` | `hold` | `정확도 {accuracy_pct}%가 문턱 {accuracy_min}%에 못 미치므로 보류.` |
-| 3 | `MISSING` | `not_met` | `hold` | `누락률 {missing_rate_pct}%가 문턱 {missing_max}%를 넘으므로 보류.` |
-| 4 | `UNEXPLAINED` | `found` | `hold` | `사람이 설명할 수 없다고 적은 검토 항목 키가 {unexplained}개 있으므로 보류.` |
-| 5 | `TIME` | `not_measured` | `conditional` | `정확도·누락률은 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.` |
-| 5 | `TIME` | `not_met` | `conditional` | `정확도·누락률은 문턱을 충족하나 처리·검토 시간 {total}분이 적용 전 {before}분보다 짧지 않으므로 조건부.` |
-| 6 | `FOCUS` | `found` | `conditional` | `정확도·누락률은 문턱을 충족하나 불일치 {bad}건이 모두 {group} = {value}인 행이므로 조건부.` |
-| 7 | `UNEXPLAINED` | `not_reviewed` | `conditional` | `정확도·누락률은 문턱을 충족하나 검토할 항목 {items}건({breakdown})을 사람이 아직 보지 않았으므로 조건부.` |
-| 8 | `PASS` | — | `pass` | `정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.` |
-
-- 4.3과 다른 곳: 4행 문장(불일치 → 검토 항목 키), 새 7행, `PASS`가 순서 8. 나머지 행은 바이트 그대로다.
-- `PASS`는 확인 결과로 보면: 정확도·누락률 `met`, 검토 항목 `none`·`explained`, 시간 `off`·`met`, 몰림 `found` 아님.
-- 순서 7을 `FOCUS` 뒤에 둔 이유: 재검토 권고다. 몰림·시간이 걸리면 그 문장이 더 구체적이다. table-compare는 `FOCUS`로 남는다(카드 수용 기준 5). 사람이 안 본 항목은 `checks`와 `review_items`에 늘 남는다.
-- 보지 않은 항목을 보류로 두지 않는다(4.9 U-A를 고르지 않은 이유와 같다). 자료만 넣은 첫 판정이 늘 보류가 되면 "설명 안 됨"과 "아직 안 봄"이 구별되지 않는다. → 질문 4.
-
-### 11.5 확인 표 (T-012)
-
-4.4를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 확인 순서는 4.4와 같다.
-
-| 확인 | 결과 | 걸리는 조건 | 확인 문장 틀 |
-| --- | --- | --- | --- |
-| `ACCURACY` | `met` | `match × 100 ≥ accuracy_min × reference` | `정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}% 이상이다.` |
-| `ACCURACY` | `not_met` | 그 밖 | `정확도 {accuracy_pct}%({match}/{reference})가 문턱 {accuracy_min}%에 못 미친다.` |
-| `MISSING` | `met` | `missing × 100 ≤ missing_max × reference` | `누락률 {missing_rate_pct}%({missing}/{reference})가 문턱 {missing_max}% 이하다.` |
-| `MISSING` | `not_met` | 그 밖 | `누락률 {missing_rate_pct}%({missing}/{reference})가 문턱 {missing_max}%를 넘는다.` |
-| `UNEXPLAINED` | `none` | 검토 항목 0건 | `검토할 항목(불일치·추가 행·중복 행)이 없다.` |
-| `UNEXPLAINED` | `not_reviewed` | 검토 항목 1건 이상, 사람 입력 없음(null) | `검토할 항목 {items}건({breakdown})이 설명되는지 사람이 아직 보지 않았다.` |
-| `UNEXPLAINED` | `explained` | 사람 입력이 빈 목록 | `검토할 항목 {items}건({breakdown})을 사람이 보고 모두 설명했다.` |
-| `UNEXPLAINED` | `found` | 사람 입력에 키가 1개 이상 | `검토할 항목 {items}건({breakdown}) 중 키 {unexplained}개를 사람이 설명할 수 없다고 적었다.` |
-| `TIME` | `off` | `time_must_drop`이 `false` | `시간 조건을 쓰지 않는다(time_must_drop: false).` |
-| `TIME` | `not_measured` | `time_must_drop`이 `true`, 시간 없음(null) | `시간을 재지 않았다.` |
-| `TIME` | `met` | `process + review < before` | `처리 {process}분 + 검토 {review}분 = {total}분이 적용 전 {before}분보다 짧다.` |
-| `TIME` | `not_met` | 그 밖(같으면 줄지 않았다) | `처리 {process}분 + 검토 {review}분 = {total}분이 적용 전 {before}분보다 짧지 않다.` |
-| `FOCUS` | `few` | 불일치가 `focus_min`(4.5)보다 적음 | `불일치가 {bad}건이라 몰림을 보지 않는다.` |
-| `FOCUS` | `off` | `inputs.group`을 적지 않음 | `case.yaml inputs.group에 유형 열을 적지 않아 불일치 {bad}건이 한 유형에 몰렸는지 보지 않는다.` |
-| `FOCUS` | `one_value` | 그 열이 기준 자료에서 값 하나뿐 | `{group} 열이 기준 자료에서 값이 하나뿐이라 몰림을 볼 수 없다.` |
-| `FOCUS` | `found` | 불일치가 모두 그 열의 한 값(11.8) | `불일치 {bad}건이 모두 {group} = {value}인 행이다({value} {rows_in}행 중 {bad}행, 다른 값 {rows_out}행 중 0행).` |
-| `FOCUS` | `spread` | 그 밖 | `불일치 {bad}건이 {group} 열의 한 값에 몰리지 않았다.` |
-
-- 4.4와 다른 곳: `UNEXPLAINED` 네 행, `FOCUS` `off`·`one_value`·`spread` 세 행. 나머지는 바이트 그대로다. `{review}`는 4.5처럼 검토 시간(분)이다. 검토 항목 수는 `{items}`로 따로 둔다.
-- `FOCUS`의 `{bad}`는 불일치 수다. 추가 행·중복 행은 몰림에 들지 않는다(11.8 규칙 3).
-
-### 11.6 문장 값과 읽은 문턱
-
-- 4.5 문장 값에 둘을 더한다: `{items}`, `{breakdown}`(11.3). `{group}`은 `inputs.group`의 열 이름이다. `{columns}`는 없앤다.
-- `{unexplained}`: 사람이 적은 키 수(11.9).
-- 이름·값 표시는 4.5 그대로다.
-
-읽은 문턱. 4.6 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 판정 표(11.4)의 순서마다 그 행에 오기까지 읽은 문턱이다. 판정 문장은 이 가운데 하나라도 기본값이면 표시를 붙인다(4.6 규칙 그대로).
-
-| 순서 | 근거 키 | 읽은 문턱 |
-| --- | --- | --- |
-| 1 | `NOT_VERIFIED` | — |
-| 2 | `ACCURACY` | `accuracy_min` |
-| 3 | `MISSING` | `accuracy_min`, `missing_max` |
-| 4 | `UNEXPLAINED` | `accuracy_min`, `missing_max` |
-| 5 | `TIME` | `accuracy_min`, `missing_max`, `time_must_drop` |
-| 6 | `FOCUS` | `accuracy_min`, `missing_max`, `time_must_drop` |
-| 7 | `UNEXPLAINED` | `accuracy_min`, `missing_max`, `time_must_drop` |
-| 8 | `PASS` | `accuracy_min`, `missing_max`, `time_must_drop` |
-
-- 순서 7 문장은 "정확도·누락률은 문턱을 충족하나"로 시작하고 시간(순서 5)을 지나 왔다. 그래서 셋 다 읽었다.
-- 확인 문장의 표시(그 확인이 쓰는 문턱)는 4.6 그대로다.
-
-### 11.7 다음 할 일 (T-012)
-
-4.7 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. `todo` 순서는 이 표 순서다.
-
-| 다음 할 일 | 나오는 때 | 문구 |
-| --- | --- | --- |
-| `add_data` | 미검증 `no_inputs` | `기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.` |
-| `add_compare` | 미검증(둘 다) | `case.yaml compare에 대조할 열과 허용 오차를 적는다.` |
-| `measure_time` | `TIME` = `not_measured`, 또는 미검증이고 `time_must_drop`이 `true` | `건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다.` |
-| `review_items` | `UNEXPLAINED` = `not_reviewed` | `검토할 항목 {items}건({breakdown})을 보고 설명이 되는지 적는다.` |
-| `add_group` | `FOCUS` = `off` | `불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.` |
-| `confirm_thresholds` | 기본값을 쓴 문턱이 있음 | `문턱에 기본값을 썼다({defaults}). 맞는지 확인하고 case.yaml thresholds에 적는다.` |
-
-- 키 이름을 바꾼 이유: `review_mismatches`는 추가 행·중복 행을 담지 못한다. `add_type_column`은 "자료에 열을 더하라"였다. M-A에서는 있는 열 이름을 `case.yaml`에 적는 일이다. 뜻이 바뀐 키를 옛 이름으로 두면 스킬·스코어카드가 옛 뜻으로 읽는다. → 질문 9.
-- `add_group`은 불일치가 `focus_min` 이상일 때만 나온다(`few`가 먼저다). 예제 form-fill은 나오지 않는다.
-
-### 11.8 몰림 (M-A)
-
-4.8의 M-B와 유형 열 규칙 1~6을 대신한다. M-A 영향(4.8 끝 글머리)은 이 절에서 그대로 쓴다.
-
-규칙:
-
-1. 불일치가 `focus_min`보다 적으면 `few`. 열을 보지 않는다.
-2. `inputs.group`을 적지 않았으면(키 없음·null) `off`.
-3. 열은 `inputs.group` 하나다. 값은 기준 행의 그 칸(정규화 뒤, `metrics.md` 4.6)이다. 결과 자료의 값, 추가 행, 중복 행은 보지 않는다.
-4. 기준 행에서 그 열의 값이 하나뿐이면 `one_value`.
-5. 불일치 행의 값이 모두 같으면 `found`. 아니면 `spread`.
-
-- 열이 있는지는 대조가 본다. 모든 기준 파일의 머리 행에 꼭 한 번 있어야 한다. 없으면 `column`, 둘 이상이면 `duplicate-column` 대조 오류다(`metrics.md` 12.3). 그래서 판정은 늘 열을 찾는다. 결과 자료에는 이 열이 없어도 된다.
-- `inputs.group`이 키 열이나 `compare` 필드와 같으면 파서 오류(`conflict`)다(`case-schema.md` 10.2). 키는 행마다 다르고, 대조 열은 결과 값과 섞여 몰림 근거가 흐려진다. 4.8의 "유형 열 = 키·대조 열 밖의 열"을 그대로 둔다.
-- M-B의 "엔진 해석"(카드 잠정 결정 14, 머리 행 교집합)과 oracle과의 차이는 없어진다. 열 하나를 대조가 파일마다 확인하기 때문이다.
-- 우연 몰림: 사람이 고른 열에서도 불일치 2건이 우연히 한 값일 수 있다(예: 40행 중 39행이 같은 값). M-A는 그 열을 사용자가 골랐다는 점만 다르다. 비율 조건(4.8 F3)을 더하지 않는다. 지시문에 없는 숫자가 생긴다(**미확인**: 실제 자료에서의 빈도). → 질문 6.
-- 적지 않으면 몰림을 보지 않는다. 그래서 table-compare에서 `group`을 빼면 판정이 `FOCUS`에서 `UNEXPLAINED`(사람이 안 봄)로 바뀐다. 사람이 모두 설명하면 통과가 된다(12절 "조건부"와 다르다). 그래서 예제에 한 줄을 더한다(11.12). → 질문 8.
-
-몰림(열 하나). 6.3 첫 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 글자는 6.3과 같다. 기준 자료에는 늘 `grp` 열이 있다. "inputs.group"이 `없음`이면 `case.yaml`에 키를 적지 않았다.
-
-| 기준 행 유형 | 불일치 행 유형 | 추가 행 유형 | inputs.group | FOCUS |
-| --- | --- | --- | --- | --- |
-| `a×5`, `b×5` | (없음) | (없음) | `grp` | `few` |
-| `a×5`, `b×5` | `a` | (없음) | `grp` | `few` |
-| `a×5`, `b×5` | `a`, `a` | (없음) | 없음 | `off` |
-| `a×5`, `b×5` | `a`, `a` | (없음) | `grp` | `found` |
-| `a×10` | `a`, `a` | (없음) | `grp` | `one_value` |
-| `a×10` | `a`, `a` | (없음) | 없음 | `off` |
-| `a×5`, `b×5` | `a`, `b` | (없음) | `grp` | `spread` |
-| `a×5`, `b×5` | `a×5` | (없음) | `grp` | `found` |
-| `a×9`, `b×1` | `a×9` | (없음) | `grp` | `found` |
-| `(빈 칸)×5`, `b×5` | `(빈 칸)`, `(빈 칸)` | (없음) | `grp` | `found` |
-| `a×5`, `A×5` | `a`, `A` | (없음) | `grp` | `spread` |
-| `a×5`, `b×5` | `a`, `a` | `b`, `b`, `b` | `grp` | `found` |
-| `a×5`, `b×5` | `a`, `b` | `a`, `a`, `a` | `grp` | `spread` |
-| `(빈 칸)×39`, `x×1` | `(빈 칸)`, `(빈 칸)` | (없음) | 없음 | `off` |
-| `(빈 칸)×39`, `x×1` | `(빈 칸)`, `(빈 칸)` | (없음) | `grp` | `found` |
-
-- 끝 두 행이 탐침 P2(11.11)의 모양이다. 적지 않으면 잡히지 않는다. 사용자가 그 열을 직접 고르면 잡힌다.
-
-몰림(열 여럿). 6.3 둘째 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 글자는 6.3과 같다. "걸린 값"은 `found` 문장의 `{group} = {value}`다. `대조 오류`·`파서 오류`는 판정하지 않는다(5절).
-
-| 열 값(행 1~6) | inputs.group | 불일치 행 | FOCUS | 걸린 값 |
-| --- | --- | --- | --- | --- |
-| `p=aaabbb` | `p` | `1,2` | `found` | `p = a` |
-| `p=aaabbb` | `p` | `1,4` | `spread` | — |
-| `p=aaaaaa` | `p` | `1,2` | `one_value` | — |
-| `q=aaabbb`, `p=ababab` | `p` | `1,2` | `spread` | — |
-| `q=aaabbb`, `p=ababab` | `q` | `1,2` | `found` | `q = a` |
-| `q=aaabbb`, `p=ababab` | 없음 | `1,2` | `off` | — |
-| `p=aaaaaa`, `q=bbbbbb` | `q` | `1,2` | `one_value` | — |
-| `b=aabbcc`, `B=xxyyzz` | `b` | `1,2` | `found` | `b = a` |
-| `b=aabbcc`, `B=xxyyzz` | `B` | `1,2` | `found` | `B = x` |
-| `p=__abab` | `p` | `1,2` | `found` | `p = (빈 칸)` |
-| `p=aaabbb` | `q` | `1,2` | 대조 오류 `column` | — |
-| `p=aaabbb`, `p=aaabbb` | `p` | `1,2` | 대조 오류 `duplicate-column` | — |
-| `p=aaabbb` | `id` | `1,2` | 파서 오류 `conflict` | — |
-| `p=aaabbb` | `v` | `1,2` | 파서 오류 `conflict` | — |
-
-- 넷째 행: `q`는 걸릴 모양이지만 적은 열 `p`만 본다. M-B와 다른 곳이다.
-- 여덟째·아홉째 행: 대소문자가 다른 열 이름은 다른 열이다(서수).
-
-### 11.9 설명 안 되는 검토 항목
-
-4.9를 넓힌다. U-B(사람 입력)는 그대로다.
-
-- 사람 입력: 검토 항목(11.3)의 키 목록. null = 아직 보지 않음, 빈 목록 = 보고 모두 설명함, 키가 있음 = 그 키는 설명할 수 없음.
-- 키는 검토 항목의 키여야 한다(불일치·추가 행·중복 행). 차이 없는 일치·허용오차 안 차이만 있는 키, 없는 키, 같은 키 두 번은 `ArgumentException`(부르는 쪽 잘못). 4.9와 같은 방식이다.
-- 추가 행 키를 적을 수 있다. 카드 수용 기준 1. T-011은 `ArgumentException`이었다.
-- 키 하나가 항목 여럿을 덮는다(11.3 끝 글머리). 판정은 키 수를 센다.
-- `review`(M2-4) 화면은 검토 항목 셋을 모두 보여야 한다(**미확인**, M2-4). → 질문 5.
-
-설명 안 됨. 6.4 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "사람 입력"의 `없음`은 null, `[]`는 빈 목록이다. `불일치 1개`는 불일치 항목의 키 1개, `일치 1개`는 차이 없는 일치 키 1개다. `두 번`은 같은 키를 두 번 적은 것이다. `거절`은 `ArgumentException`이다.
-
-| 불일치 | 추가 행 | 중복 행 | 사람 입력 | UNEXPLAINED |
-| --- | --- | --- | --- | --- |
-| 0 | 0 | 0 | 없음 | `none` |
-| 0 | 0 | 0 | `[]` | `none` |
-| 3 | 0 | 0 | 없음 | `not_reviewed` |
-| 3 | 0 | 0 | `[]` | `explained` |
-| 3 | 0 | 0 | 불일치 1개 | `found` |
-| 3 | 0 | 0 | 불일치 3개 | `found` |
-| 0 | 2 | 0 | 없음 | `not_reviewed` |
-| 0 | 2 | 0 | `[]` | `explained` |
-| 0 | 2 | 0 | 추가 행 1개 | `found` |
-| 0 | 0 | 1 | 없음 | `not_reviewed` |
-| 0 | 0 | 1 | 중복 행 1개 | `found` |
-| 2 | 1 | 1 | 없음 | `not_reviewed` |
-| 2 | 1 | 1 | 불일치 1개, 추가 행 1개, 중복 행 1개 | `found` |
-| 0 | 0 | 0 | 일치 1개 | 거절 |
-| 3 | 0 | 0 | 불일치 1개 두 번 | 거절 |
-
-- 중복 행은 일치하는 기준 키를 결과 쪽에 한 번 더 둔 것이다. 그 키는 검토 항목(중복 행)이라 적을 수 있다.
-
-`compare-duplicate`(`metrics.md` 12.5) 판정. 결과 쪽 중복 둘(기준에 있는 키 하나, 추가 키 하나), 추가 행 하나, 불일치 둘. 사람 입력 없음.
-
-`compare-duplicate` judgment.json (schema_version 2, SHA-256 `c7a3d29b9827af25ab1369cf886e06fe9099898aa67d69b5d74c6f507e84be3b`):
-
-```json
-{
-  "schema_version": 2,
-  "case": "compare-duplicate",
-  "verdict": "conditional",
-  "rule": "UNEXPLAINED",
-  "reason": "정확도·누락률은 문턱을 충족하나 검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)을 사람이 아직 보지 않았으므로 조건부.",
-  "thresholds": {
-    "accuracy_min": 50,
-    "missing_max": 50,
-    "time_must_drop": false
-  },
-  "defaults": [],
-  "checks": [
-    {
-      "rule": "ACCURACY",
-      "result": "met",
-      "reason": "정확도 50.0%(2/4)가 문턱 50% 이상이다."
-    },
-    {
-      "rule": "MISSING",
-      "result": "met",
-      "reason": "누락률 25.0%(1/4)가 문턱 50% 이하다."
-    },
-    {
-      "rule": "UNEXPLAINED",
-      "result": "not_reviewed",
-      "reason": "검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)이 설명되는지 사람이 아직 보지 않았다."
-    },
-    {
-      "rule": "TIME",
-      "result": "off",
-      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
-    },
-    {
-      "rule": "FOCUS",
-      "result": "spread",
-      "reason": "불일치 2건이 kind 열의 한 값에 몰리지 않았다."
-    }
-  ],
-  "todo": [
-    {
-      "key": "review_items",
-      "text": "검토할 항목 5건(불일치 2건, 추가 행 1건, 중복 행 2건)을 보고 설명이 되는지 적는다."
-    }
-  ]
-}
-```
-
-### 11.10 우선순위 (T-012)
-
-6.5 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "다음 할 일"은 문턱을 모두 적은 장면의 `todo` 키다.
-
-| ACCURACY | MISSING | UNEXPLAINED | TIME | FOCUS | 판정 | 근거 키 | 다음 할 일 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `met` | `met` | `none` | `off` | `few` | `pass` | `PASS` | — |
-| `met` | `met` | `none` | `met` | `few` | `pass` | `PASS` | — |
-| `met` | `met` | `none` | `not_measured` | `few` | `conditional` | `TIME` | `measure_time` |
-| `met` | `met` | `none` | `not_met` | `few` | `conditional` | `TIME` | — |
-| `met` | `met` | `not_reviewed` | `off` | `few` | `conditional` | `UNEXPLAINED` | `review_items` |
-| `met` | `met` | `not_reviewed` | `off` | `spread` | `conditional` | `UNEXPLAINED` | `review_items` |
-| `met` | `met` | `not_reviewed` | `off` | `off` | `conditional` | `UNEXPLAINED` | `review_items`, `add_group` |
-| `met` | `met` | `not_reviewed` | `off` | `one_value` | `conditional` | `UNEXPLAINED` | `review_items` |
-| `met` | `met` | `not_reviewed` | `off` | `found` | `conditional` | `FOCUS` | `review_items` |
-| `met` | `met` | `not_reviewed` | `not_measured` | `found` | `conditional` | `TIME` | `measure_time`, `review_items` |
-| `met` | `met` | `explained` | `met` | `found` | `conditional` | `FOCUS` | — |
-| `met` | `met` | `explained` | `met` | `spread` | `pass` | `PASS` | — |
-| `met` | `met` | `explained` | `off` | `off` | `pass` | `PASS` | `add_group` |
-| `met` | `met` | `found` | `off` | `few` | `hold` | `UNEXPLAINED` | — |
-| `met` | `met` | `found` | `not_met` | `found` | `hold` | `UNEXPLAINED` | — |
-| `met` | `not_met` | `not_reviewed` | `off` | `spread` | `hold` | `MISSING` | `review_items` |
-| `met` | `not_met` | `found` | `not_measured` | `found` | `hold` | `MISSING` | `measure_time` |
-| `not_met` | `met` | `not_reviewed` | `off` | `found` | `hold` | `ACCURACY` | `review_items` |
-| `not_met` | `not_met` | `found` | `not_met` | `found` | `hold` | `ACCURACY` | — |
-
-- 6.5와 다른 곳: `not_reviewed`이고 몰림·시간이 걸리지 않으면 통과가 아니라 조건부 `UNEXPLAINED`다(6.5의 다섯째~여덟째 행).
-- 몰림 `off`이고 사람이 모두 설명하면 통과다. 대신 `add_group`이 남는다(열세째 행).
-
-### 11.11 탐침 재현
-
-카드 수용 기준 6. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. 장면은 6.3 모양(머리 행 `id,…,v`, 키 `id`, `compare`는 `v` `tolerance: 0`)이고 문턱은 `accuracy_min: 95`, `missing_max: 2`, `time_must_drop: false`다. 기준 키는 `r0000`부터, 추가 키는 `x000`부터다. "T-011"은 `judge_v1`(4절 규칙)의 결과다.
-
-| 탐침 | 장면 | 사람 입력 | T-011 | T-012 |
-| --- | --- | --- | --- | --- |
-| `P1` | 기준 20행, 결과 = 기준 20행 그대로 + 지어낸 키 30행 | 없음 | `pass` `PASS` | `conditional` `UNEXPLAINED` |
-| `P1` | 같음 | `[]` | `pass` `PASS` | `pass` `PASS` |
-| `P1` | 같음 | 추가 행 키 전부 | 거절 | `hold` `UNEXPLAINED` |
-| `P2` | 기준 40행(열 `memo`: 39행 빈 칸, 1행 `확인`), 빈 칸 행 2개 불일치, `inputs.group` 없음 | 없음 | `conditional` `FOCUS` | `conditional` `UNEXPLAINED` |
-| `P2` | 같음 | `[]` | `conditional` `FOCUS` | `pass` `PASS` |
-| `P2g` | `P2`에 `inputs.group: memo` | 없음 | 거절 | `conditional` `FOCUS` |
-| `P3` | 기준 20행, 결과 = 기준 20행 + 추가 1행(`x000`) | `x000` | 거절 | `hold` `UNEXPLAINED` |
-| `P4` | 기준 20행, 결과 = 기준 20행 + `r0003` 한 행 더 | 없음 | 거절 | `conditional` `UNEXPLAINED` |
-| `P4` | 같음 | `r0003` | 거절 | `hold` `UNEXPLAINED` |
-
-- `거절`: T-011에서 판정까지 가지 않는다. `P1`·`P3` 사람 입력은 `ArgumentException`(불일치 키가 아님). `P2g`는 T-011 스키마에 `inputs.group`이 없다(`unknown-field`). `P4`는 대조 오류 `duplicate-key`(종료 2).
-- `P1` 첫 행이 지적 1의 탐침, `P2` 첫 행이 지적 2의 탐침이다. 둘 다 통과·`FOCUS`가 아니다.
-- `P2`에서 사람이 모두 설명하면 통과다. T-011은 우연한 메모 열 때문에 조건부였다.
-
-### 11.12 예제 4종 (T-012)
-
-예제 `case.yaml`. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "더하는 줄"은 `  key: …` 줄 바로 뒤에 넣는다. 다른 줄은 그대로다.
-
-| 예제 | 더하는 줄 | 지금 SHA-256 | 더한 뒤 SHA-256 | 바이트 |
-| --- | --- | --- | --- | --- |
-| `table-compare` | `  group: signal_type` | `451a22acd60c6b650aaf86a424acc72fe1884838592b9ca6819dd2491e764ce2` | `e99d669ab16b6eada60e31c794efaa8cd5baa23db34b2500a68b731914f8e5b1` | 1,640 → 1,661 |
-| `signoff-final` | `  group: record_kind` | `a12835eae7b913d9b0ea855fa01fb47086fd97411ae50bed48f5d01beadf0263` | `e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348` | 2,595 → 2,616 |
-
-- 4.8 "M-A 영향"의 SHA-256과 같다 [T11:S7c][T12:O].
-- form-fill은 유형 열이 없다(`item`은 대조 열). mixed-exceptions는 `inputs`가 없다. 둘 다 그대로다.
-- 한 줄을 더해도 `expected/metrics.json`·`expected/classification.json`은 바이트 그대로다. oracle이 더한 사본에서 같은 바이트를 냈다 [T12:O].
-
-예제 표. 7.1 예제 표를 대신한다. 테스트가 이 표를 읽는다. 표 모양을 바꾸지 않는다. "검토 항목"은 `{breakdown}`이다.
-
-| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `table-compare` | `signal_type` | `conditional` | `FOCUS` | `met`, `met`, `not_reviewed`, `off`, `found` | `review_items` | 불일치 3건, 추가 행 1건 |
-| `form-fill` | 없음 | `pass` | `PASS` | `met`, `met`, `none`, `off`, `few` | — | — |
-| `mixed-exceptions` | 없음 | `not_verified` | `NOT_VERIFIED` | — | `add_data`, `add_compare`, `measure_time`, `confirm_thresholds` | — |
-| `signoff-final` | `record_kind` | `hold` | `ACCURACY` | `not_met`, `not_met`, `not_reviewed`, `off`, `spread` | `review_items` | 불일치 4건, 추가 행 1건 |
-
-- 판정·근거 키·확인 결과는 7.1과 같다(카드 수용 기준 5). 바뀌는 것은 `schema_version`, 문장, 다음 할 일 키다.
-- table-compare 추가 행은 `log31`, signoff-final은 `rec21`이다(`metrics.md` 7.2·7.5).
-
-expected 영향(PR (b)):
-
-| 파일 | 지금 SHA-256 | 새 SHA-256 | 바뀐 줄 |
-| --- | --- | --- | --- |
-| `examples/table-compare/expected/judgment.json` | `1c32a9c92311e43d19a01633a171240b3b4fa215adcafe7f4d470dc45b4f5c57` | `b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865` | `schema_version`, `UNEXPLAINED` 문장, `todo` 키·문구 |
-| `examples/form-fill/expected/judgment.json` | `08cb0cac5df480e2611d2d92dbfca31cc2ebd6f3fcb9430d98d35343b74a0186` | `06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3` | `schema_version`, `UNEXPLAINED` 문장 |
-| `examples/mixed-exceptions/expected/judgment.json` | `85e5da47de436644228ca4f1d75ac086891d1739a34c93f441bee71afdc9df11` | `12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f` | `schema_version`만 |
-| `examples/signoff-final/expected/judgment.json` | `84da5aa2d9aaa6ead84c767235495d96189636987bb78ac24b62ddeda607871b` | `4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252` | `schema_version`, `UNEXPLAINED`·`FOCUS` 문장, `todo` 키·문구 |
-
-- 그 밖의 expected 8개(`classification.json`·`metrics.json` × 4)는 바뀌지 않는다.
-- mixed-exceptions는 `schema_version`만 바뀐다. 한 파일 안의 판이 예제마다 다르면 안 되기 때문이다(11.15).
-
-### 11.13 예제 블록 (schema_version 2)
-
-oracle이 11.12 표대로 한 줄을 더한 사본에서 낸 바이트다 [T12:O]. PR (b)에서 7.2~7.5 블록·SHA-256 줄을 이 블록으로 바꾼다(11.17).
-
-`examples/table-compare/expected/judgment.json` (schema_version 2, SHA-256 `b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865`):
-
-```json
-{
-  "schema_version": 2,
-  "case": "table-compare",
-  "verdict": "conditional",
-  "rule": "FOCUS",
-  "reason": "정확도·누락률은 문턱을 충족하나 불일치 3건이 모두 signal_type = irregular인 행이므로 조건부.",
-  "thresholds": {
-    "accuracy_min": 85,
-    "missing_max": 5,
-    "time_must_drop": false
-  },
-  "defaults": [],
-  "checks": [
-    {
-      "rule": "ACCURACY",
-      "result": "met",
-      "reason": "정확도 90.0%(27/30)가 문턱 85% 이상이다."
-    },
-    {
-      "rule": "MISSING",
-      "result": "met",
-      "reason": "누락률 3.3%(1/30)가 문턱 5% 이하다."
-    },
-    {
-      "rule": "UNEXPLAINED",
-      "result": "not_reviewed",
-      "reason": "검토할 항목 4건(불일치 3건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
-    },
-    {
-      "rule": "TIME",
-      "result": "off",
-      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
-    },
-    {
-      "rule": "FOCUS",
-      "result": "found",
-      "reason": "불일치 3건이 모두 signal_type = irregular인 행이다(irregular 12행 중 3행, 다른 값 18행 중 0행)."
-    }
-  ],
-  "todo": [
-    {
-      "key": "review_items",
-      "text": "검토할 항목 4건(불일치 3건, 추가 행 1건)을 보고 설명이 되는지 적는다."
-    }
-  ]
-}
-```
-
-`examples/form-fill/expected/judgment.json` (schema_version 2, SHA-256 `06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3`):
-
-```json
-{
-  "schema_version": 2,
-  "case": "form-fill",
-  "verdict": "pass",
-  "rule": "PASS",
-  "reason": "정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.",
-  "thresholds": {
-    "accuracy_min": 85,
-    "missing_max": 5,
-    "time_must_drop": false
-  },
-  "defaults": [],
-  "checks": [
-    {
-      "rule": "ACCURACY",
-      "result": "met",
-      "reason": "정확도 100.0%(20/20)가 문턱 85% 이상이다."
-    },
-    {
-      "rule": "MISSING",
-      "result": "met",
-      "reason": "누락률 0.0%(0/20)가 문턱 5% 이하다."
-    },
-    {
-      "rule": "UNEXPLAINED",
-      "result": "none",
-      "reason": "검토할 항목(불일치·추가 행·중복 행)이 없다."
-    },
-    {
-      "rule": "TIME",
-      "result": "off",
-      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
-    },
-    {
-      "rule": "FOCUS",
-      "result": "few",
-      "reason": "불일치가 0건이라 몰림을 보지 않는다."
-    }
-  ],
-  "todo": []
-}
-```
-
-`examples/mixed-exceptions/expected/judgment.json` (schema_version 2, SHA-256 `12aeacf95061c20c952d62ab9f2e688e52e029bf734ce3bee962406dd752371f`):
-
-```json
-{
-  "schema_version": 2,
-  "case": "mixed-exceptions",
-  "verdict": "not_verified",
-  "rule": "NOT_VERIFIED",
-  "reason": "검증 자료(case.yaml inputs)가 없어 미검증.",
-  "thresholds": {
-    "accuracy_min": 95,
-    "missing_max": 2,
-    "time_must_drop": true
-  },
-  "defaults": [
-    "accuracy_min",
-    "missing_max",
-    "time_must_drop"
-  ],
-  "checks": [],
-  "todo": [
-    {
-      "key": "add_data",
-      "text": "기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다."
-    },
-    {
-      "key": "add_compare",
-      "text": "case.yaml compare에 대조할 열과 허용 오차를 적는다."
-    },
-    {
-      "key": "measure_time",
-      "text": "건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다."
-    },
-    {
-      "key": "confirm_thresholds",
-      "text": "문턱에 기본값을 썼다(accuracy_min 95, missing_max 2, time_must_drop true). 맞는지 확인하고 case.yaml thresholds에 적는다."
-    }
-  ]
-}
-```
-
-`examples/signoff-final/expected/judgment.json` (schema_version 2, SHA-256 `4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252`):
-
-```json
-{
-  "schema_version": 2,
-  "case": "signoff-final",
-  "verdict": "hold",
-  "rule": "ACCURACY",
-  "reason": "정확도 80.0%가 문턱 95%에 못 미치므로 보류.",
-  "thresholds": {
-    "accuracy_min": 95,
-    "missing_max": 2,
-    "time_must_drop": false
-  },
-  "defaults": [],
-  "checks": [
-    {
-      "rule": "ACCURACY",
-      "result": "not_met",
-      "reason": "정확도 80.0%(16/20)가 문턱 95%에 못 미친다."
-    },
-    {
-      "rule": "MISSING",
-      "result": "not_met",
-      "reason": "누락률 5.0%(1/20)가 문턱 2%를 넘는다."
-    },
-    {
-      "rule": "UNEXPLAINED",
-      "result": "not_reviewed",
-      "reason": "검토할 항목 5건(불일치 4건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
-    },
-    {
-      "rule": "TIME",
-      "result": "off",
-      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
-    },
-    {
-      "rule": "FOCUS",
-      "result": "spread",
-      "reason": "불일치 4건이 record_kind 열의 한 값에 몰리지 않았다."
-    }
-  ],
-  "todo": [
-    {
-      "key": "review_items",
-      "text": "검토할 항목 5건(불일치 4건, 추가 행 1건)을 보고 설명이 되는지 적는다."
-    }
-  ]
-}
-```
-
-### 11.14 G2 표본
-
-- `judge-case-valid`(4.12)는 그대로 등록한다. 표본 `case-valid`에는 `inputs.group`이 없다. 표본 파일은 바꾸지 않는다.
-- 표본 판정(T-012): 보류 `ACCURACY`(66.7% < 90). 확인 다섯 `not_met`, `not_met`, `not_reviewed`(검토 항목 5건: 불일치 4건, 추가 행 1건), `not_measured`, `off`. 다음 할 일 `measure_time`, `review_items`, `add_group` [T12:O].
-- 출력 바이트가 바뀐다(SHA-256 `c955e9e236ba726db289aafe0729d880fbc98c988a30c2daf62ea91086412fb1`). G2·G3는 같은 실행 안의 비교라 그대로 통과한다(**미확인**, PR (b)). 4.12 글머리 "다음 할 일 셋"은 키만 바뀐다.
-
-### 11.15 oracle과 CI (PR 둘)
-
-`oracle-and-expected` 규칙(`tools/ci/README.md`)은 같은 PR에서 oracle과 기존 expected를 함께 바꾸지 못하게 한다. 그래서 둘로 나눈다(카드 수용 기준 8).
-
-- PR (a) = 이 스펙 + `tools/oracle/`. expected·`case.yaml`·`src/`·`tests/`는 그대로다.
-- PR (b) = 엔진 + 테스트 + 예제 `case.yaml` + expected migration. oracle은 바꾸지 않는다. base oracle(= PR (a)의 head)이 새 expected를 재현한다.
-
-문제: PR (a)의 head oracle이 새 규칙만 알면, 지금 expected judgment.json(schema_version 1) 4개를 재현하지 못한다. `oracle-head` 잡이 빨갛다(README "(1) oracle만 고침, 기존 expected는 head oracle로도 match"). main에 머지한 뒤 PR (b) 전까지 `oracle` 잡도 빨갛다.
-
-해결(제안): oracle이 판을 둘 갖고, expected의 `schema_version`으로 고른다.
-
-- `tools/oracle/judge_v1.py`: T-011 규칙 동결본. PR (a) 직전의 `judge.py`를 그대로 옮겼다. 다른 곳은 머리 주석, 사용 줄, 첫머리 가드 하나다. 가드는 `inputs.group`이 있거나 결과 쪽 중복이 있는 케이스를 거절한다(T-011에는 없던 입력이다).
-- `tools/oracle/judge.py`: T-012 규칙(이 절).
-- `check.py`: 모든 예제의 expected judgment.json이 `"schema_version": 1`이면 `judge_v1`, 그 밖(2, 없음, 읽을 수 없음)이면 `judge`. 예제마다 판이 다르면 judgment.json을 모두 DIFF로 낸다(옮기다 만 것). CI 계약(인자, 출력 줄, 보고서)은 그대로다.
-- 그래서 PR (a): base·head oracle 모두 12개 MATCH [T12:selftest]. PR (b): base oracle(= PR (a))이 새 expected(2)를 `judge`로 재현한다. `case.yaml`에 `group`만 넣고 expected를 그대로 두면 `judge_v1`이 거절해 DIFF다 [T12:selftest].
-- 위험: 누가 expected를 1 블록으로 되돌리면 `judge_v1`이 재현한다. 막는 것: (1) 예제 `case.yaml`의 `group` 줄(`judge_v1`이 거절), (2) C# 골든·블록 = 파일 테스트, (3) 되돌림도 expected 수정이라 migration 규칙. PR (b)가 머지된 뒤 첫 oracle 변경에서 `judge_v1.py`와 판 고르기를 지운다.
-- 점검 기록(2026-11-07, 이 환경, Python 3.13.18) [T12:selftest]:
-  - 이 PR(a) 트리: `python3 -I -B tools/oracle/selftest.py --repo .` 통과 1402, 실패 0. `python3 -I -B tools/oracle/check.py --repo .` 12개 MATCH(판 `judge_v1`), 종료 0.
-  - main `0f9e810`의 oracle로 이 트리를 보면 12개 MATCH다(예제·expected가 그대로다). 그래서 `oracle`·`oracle-head` 잡 모두 녹색이어야 한다.
-  - PR (b) 모양 사본(예제 `case.yaml` 2개에 `group` 줄, expected judgment.json 4개를 11.13 블록으로, 7.2~7.5 블록 바꿈): 이 트리의 `check.py` 12개 MATCH(판 `judge`), `selftest.py` 통과 896, 실패 0(T-011 판 점검은 건너뛴다). 11.13 블록을 지운 사본도 같다. 7.3 블록만 한 글자 바꾼 사본은 실패한다.
-  - main oracle은 PR (b) 모양 사본에서 DIFF 8이다(`group` 키를 모른다). 그래서 PR (a)가 먼저 머지되어야 한다.
-  - 음성 대조: expected 한 바이트 → DIFF, 파일 삭제 → MISSING, `group` 줄만 빼기 → DIFF, 판 섞기 → judgment.json 4개 DIFF, `group` 줄 + expected 1 → DIFF 2.
-  - 판정 규칙을 일부러 틀리게 바꾸면 실패한다: 중복 행을 검토 항목에서 뺌 → 멈춤(rc 1), `one_value` 건너뜀 → 실패 5, `group` 없으면 `spread` → 실패 16, 안 본 검토 항목을 `none`으로 → 실패 59. 되돌리면 통과.
-- `tools/oracle` 변경이라 PR (a)에 새 ADR과 `docs/STATUS.md` "원칙 변경" 행이 있어야 한다(`ci-changed`). 리드가 쓴다. 요지(제안): "oracle이 expected judgment.json의 schema_version으로 판을 고른다. T-011 판은 동결본, 거절 가드 하나. PR (b) 뒤 지운다. 가드를 약하게 하지 않는다."
-- → 질문 11.
-
-### 11.16 Core 바뀌는 곳 (제안)
-
-core-dev가 PR (b)에서 고친다. 이름은 제안이다.
-
-```csharp
-// Scorecard.Core (case-schema.md 10.3)
-public sealed record CaseInputs(string Reference, string Candidate, string Key, string? Group = null);
-
-// Scorecard.Core.Comparison (metrics.md 12.2)
-public static class CompareEngine
-{
-    public const string ItemDuplicate = "duplicate";
-    // 그 밖은 metrics.md 4.11 그대로.
-}
-
-// Scorecard.Core.Judgment
-public static class JudgmentJson
-{
-    public const string FileName = "judgment.json";
-    public const int SchemaVersion = 2;
-    public static byte[] Render(JudgmentResult result);
-}
-// JudgmentEngine.Judge의 모양은 4.13 그대로다. unexplainedKeys는 검토 항목(11.3)의 키다.
-```
-
-- 규칙 문자열은 `JudgmentRules.cs` 한 파일에 둔다(4.13 그대로). 11.3~11.7 표가 그 값이다.
-- 판정은 `CompareMetrics.Items`의 상태로 검토 항목을 센다. 몰림은 `definition.Inputs.Group`과 기준 행 `CsvRow`의 그 칸만 본다.
-- 4.13 블록의 `SchemaVersion = 1`은 PR (b)에서 2로 고친다(문서 블록).
-
-### 11.17 PR (b) 할 일
-
-순서는 test-engineer → core-dev → 리드 머지다(CLAUDE.md 작업 흐름). 시작 전 main 통과 수를 PR 본문에 적는다(카드: 1558).
-
-문서(prototyper 또는 리드, 블록 이동만):
-
-1. 이 절의 표를 4·6·7절 자리로 옮긴다. 머리 행은 이 절의 것을 그대로 쓴다. 옛 표(4.3, 4.4, 4.6 읽은 문턱, 4.7, 4.8 예제 열·M-B 규칙, 6.3 두 표, 6.4, 6.5, 7.1 예제 표)는 지운다.
-2. 3.2 모양 블록·속성 표의 `schema_version` 글을 2로, 4.13 블록의 `SchemaVersion`을 2로 고친다.
-3. 7.2~7.5 블록과 SHA-256 줄을 11.13 블록으로 바꾼다. 11.13 블록은 지워도 되고 남겨도 된다(같은 바이트·SHA-256이면 selftest가 하나로 본다. 다르면 실패한다). 이 바꿈은 expected migration 커밋에 넣는다(`migration-commit-scope`: expected 파일과 `docs/spec`의 블록·SHA-256만).
-4. `metrics.md` 12.7, `case-schema.md` 10.5의 옮길 곳.
-5. `synthetic-examples.md` 4.8 표 `inputs` 칸, 7.2·7.5 `case.yaml` 블록·SHA-256 줄. `signoff-final.md` 파일 표 `case.yaml` 행.
-
-test-engineer(`tests/`, `examples/*/case.yaml`, `examples/*/expected/`):
-
-1. `JudgmentSpec`의 머리 행 상수를 이 절의 머리 행으로 바꾼다. 읽는 칸이 늘거나 바뀐 표: 판정 표(칸 이름), 확인 표(칸 이름), 읽은 문턱(순서 칸), 다음 할 일(칸 이름), 몰림 두 표(`inputs.group` 칸), 설명 안 됨(추가 행·중복 행 칸), 우선순위(다음 할 일 칸), 예제 표. 새 표: 검토 항목(11.3), 탐침(11.11), 예제 `case.yaml`(11.12).
-2. 합성 장면 도우미에 `group`(case.yaml 한 줄)과 결과 쪽 중복 행을 더한다.
-3. 탐침 테스트(카드 수용 기준 6): 11.11 표 행마다. T-012 칸만 엔진으로 본다.
-4. 고치는 기존 테스트(PR 본문에 이유): 결과 쪽 `duplicate-key` 오류 테스트(`metrics.md` 4.3 "결과 쪽")는 `duplicate` 항목을 보게 바꾼다(뜻이 바뀐 것이지 약화가 아니다). `JudgmentJson.SchemaVersion == 1` 단언은 2로. `CaseYamlTests.Case_data_keys_match_spec_table` 2건은 4.8 표 `inputs` 칸의 유형 열을 읽게 한다. API 모양 테스트(`CaseInputs` 매개변수 넷).
-5. 예제 `case.yaml` 2개에 11.12 표의 줄을 더한다. 일반 커밋이다(expected 아님).
-6. expected migration 커밋 하나: `examples/*/expected/judgment.json` 4개(11.13 블록 바이트 그대로) + 이 문서 7.2~7.5 블록·SHA-256 줄. 메시지는 `expected migration:`으로 시작한다. reviewer가 `git diff --stat`과 expected diff 전문을 붙인다(ADR 0004).
-7. `compare-duplicate`(`metrics.md` 12.5)와 `inputs.group` 오류(`case-schema.md` 10.4)를 메모리 테스트로 옮긴다. TestData 표본으로 둘지는 test-engineer가 정한다(G2·G3 대상은 늘리지 않는다, 제안).
-
-core-dev(`src/Scorecard.Core/`): 11.16. `CaseReader`(group 키와 검사), `CompareEngine`(기준 쪽 group 열 확인, 결과 쪽 중복 → 항목), `JudgmentRules`·`JudgmentEngine`(11.3~11.8), `JudgmentJson.SchemaVersion`.
-
-CI: PR (b)는 `tools/oracle`을 바꾸지 않는다. `oracle` 잡(base = PR (a) oracle)이 새 expected 4개를 MATCH로 내야 `expected-changed`가 통과한다. 11.13 블록이 그 바이트다.
+### 11.3 옮긴 곳 (T-013)
+
+T-012 PR (a)는 새 표를 이 절에만 두었다(11.19 질문 12). T-013이 제자리로 옮기고 T-011 표를 지웠다. 표 머리 행은 그대로다.
+
+| T-012 절 | 지금 자리 |
+| --- | --- |
+| 11.3 검토 항목 | 4.9 |
+| 11.4 판정 표 | 4.3 |
+| 11.5 확인 표 | 4.4 |
+| 11.6 문장 값과 읽은 문턱 | 4.5, 4.6 |
+| 11.7 다음 할 일 | 4.7 |
+| 11.8 몰림 규칙 / 표 둘 | 4.8 / 6.3 |
+| 11.9 설명 안 되는 검토 항목 / 표·`compare-duplicate` 블록 | 4.9 / 6.4 |
+| 11.10 우선순위 | 6.5 |
+| 11.11 탐침 재현 | 6.6 |
+| 11.12 예제 표 셋 | 7.1 |
+| 11.13 예제 블록(schema_version 2) | 7.2~7.5(같은 바이트라 지웠다) |
+| 11.14 G2 표본 | 4.12 |
+| 11.15 oracle 판 둘 | 지웠다. T-013에서 `judge_v1`과 판 고르기를 없앴다(12.4, ADR 0007 결정 4, ADR 0008) |
+| 11.16 Core 바뀌는 곳 | 4.13 |
+| 11.17 PR (b) 할 일 | 끝났다(T-012b #15). 남은 옮김은 T-013이 했다 |
 
 ### 11.18 미확인
 
@@ -1605,5 +1129,102 @@ CI: PR (b)는 `tools/oracle`을 바꾸지 않는다. `oracle` 잡(base = PR (a) 
     - 추천: PR (a)는 옛 표·블록을 두고 이 절에 새 머리 행의 표를 둔다(PR (a)의 C# 테스트가 옛 표를 읽는다). PR (b)가 옮기고 테스트를 새 머리 행으로 바꾼다. 블록·SHA-256 바꿈은 migration 커밋에 넣는다.
 
 ### 11.20 채택
+
+- ADR 0005 결정 3에 따라 리드가 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다. 이 절은 추천안만 적는다.
+
+## 12. T-013 개정 (정리와 남은 지적)
+
+- 상태: 초안(2026-11-07, prototyper). ADR 0005 결정 3에 따라 리드가 12.6 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다.
+- 작업 카드: `docs/tasks/T-013-cleanup.md` 수용 기준 1~5·7. 출발점: T-012 카드 "PR (a) 리뷰 지적"·"PR (b) 리뷰 지적", T-011 카드 "T-011a 리뷰의 막지 않는 지적", ADR 0007 결정 4 [읽음].
+- 확인 대상 커밋: `be5171b`(main `b8f8326` + STATUS·카드). `src/`·`tests/`·`examples/`는 `b8f8326`과 같다.
+- 근거: oracle(`tools/oracle/`, 이 절·5절·`metrics.md` 4.3·13절 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). `[T13:O]`는 oracle 출력, `[T13:selftest]`는 `python3 -I -B tools/oracle/selftest.py --repo .` 점검 줄이다. `[T13:dotnet]`은 이 작업 트리 사본(`src/`는 main 그대로)에서 돌린 `dotnet test -c Release`다.
+- 고르는 기준(카드 메모): 사용자에게 맞나 → 그다음 바이트 보존.
+
+### 12.1 바뀌는 것과 그대로인 것
+
+바뀌는 것(동작은 둘뿐):
+
+- 결과 쪽 키 중복의 셈(`metrics.md` 4.3·13절). 결과 쪽에 두 번 나온 기준 키는 값 불일치다. 중복 항목에 기준과의 차이를 적는다. 셈이 줄 순서와 상관없다. 카드 수용 기준 1.
+- 정의와 대조 결과가 어긋나면 `ArgumentException`(5절 표, 12.2). 카드 수용 기준 2.
+- 문서: 11절 표·글을 4·6·7절로 옮기고 T-011 표·블록을 지웠다(11.3). `metrics.md` 12.7·`case-schema.md` 10.5의 옮김도 했다. 카드 수용 기준 4.
+- 6.4 표의 중복 행 세 행: "불일치" 칸이 그 키를 센다(`0 | 0 | 1` → `1 | 0 | 1`). 결과 쪽 중복 규칙이 바뀌어서다.
+- oracle: `judge_v1.py`와 `check.py`의 판 고르기를 지웠다(12.4). 카드 수용 기준 3.
+- 지시문 5절 expected 목록에 `judgment.json`, 3.4 조건부에 "아직 안 본 검토 항목"(ADR 0008 결정 2·3). 카드 수용 기준 5.
+
+그대로인 것:
+
+- 예제 4종 expected 12개 바이트(`classification.json`·`metrics.json`·`judgment.json`). oracle `check.py` 12개 MATCH [T13:O]. PR을 나누지 않아도 된다(카드 메모, `oracle-and-expected`).
+- judgment.json·metrics.json `schema_version`(2·1), 판정 표·확인 표·다음 할 일·문장, `compare-duplicate` 판정 블록(6.4, `c7a3d29b…`), G2 표본 바이트(4.12, `c955e9e2…`).
+- 테스트가 읽는 표 머리 행·블록 머리 줄·SHA-256 줄 머리. 자리만 옮겼고 문서마다 한 번씩이다(12.5).
+
+### 12.2 정의와 대조 결과 (5절)
+
+- T-012b 리뷰 지적 3: 정의에 `Inputs`가 없는데 measured 결과를 넘기면 몰림이 `off`로 판정됐다. 케이스 이름이 다르면 이미 `ArgumentException`이었다.
+- 추천: 5절 표대로 거절한다. 대조 결과가 그 정의에서 나온 것이 아니면 판정 문장이 다른 케이스를 말하게 된다. 부르는 쪽 잘못이라 종료 1이다(3.4).
+- 보는 것: 미검증 이유가 정의와 맞는지, measured면 키 열·`compare` 필드 이름(순서)이 같은지, `inputs.group`이 있으면 기준 행 머리 행에 그 열이 꼭 한 번 있는지. 문턱(`thresholds`)은 대조가 쓰지 않으므로 보지 않는다. 같은 대조 결과로 문턱만 바꿔 판정하는 것은 된다.
+- 예제·G2 표본·`compare-duplicate`는 `CompareDirectory`와 같은 정의라 걸리지 않는다. 바이트가 그대로다.
+- oracle은 같은 검사를 한다(`judge.check_consistent`). 이름 행은 oracle 대조 결과에 이름이 없어 C#만 본다.
+
+### 12.3 문서 이동 (11.3)
+
+- 머리 행·블록 머리 줄은 바꾸지 않았다. 그래서 C# 테스트·selftest가 읽는 곳은 자리만 바뀐다.
+- 지운 것: T-011 표(4.3·4.4 옛 판정·확인 표, 4.6 근거 키 읽은 문턱, 4.7 옛 다음 할 일, 4.8 예제 열·M-B·F1~F3·M-A 영향, 6.3 옛 두 표, 6.4·6.5 옛 표, 7.1 옛 예제 표), 11.13 블록 넷(7.2~7.5와 같은 바이트), 각 절의 "T-012 개정(제안)" 글머리.
+- 남긴 것: 4.9 U-A~U-C 표(고른 근거), 11.1·11.2·11.18~11.20(T-012 기록), "사람 승인 필요"(T-011 기록, 끝에 T-012가 바꾼 것 한 줄).
+
+### 12.4 oracle
+
+- `tools/oracle/judge_v1.py`를 지웠다. `check.py`는 judgment.json을 `judge.py` 하나로 만든다. 옛 판(`schema_version` 1) expected는 그 파일만 DIFF다 [T13:selftest].
+- `compare.py`: `metrics.md` 13.2. `judge.py`: `check_consistent`(5절 표).
+- `selftest.py`(통과 953, 실패 0 [T13:selftest]): T-011 판 점검을 지웠다. 판과 상관없던 점검(3.2 표 밖의 속성·형식, 3.3 문턱 자릿수, `TIME` `not_met` 문장, 시간 음수·합 넘침 거절, 문턱 85 → 95 DIFF, judgment.json을 모두 지우면 대상 아님)은 남겼다. 예제 이름은 `examples/` 폴더에서 읽는다. 7.1 예제 표 이름 = 폴더 이름이고 폴더마다 7절 블록이 하나 있어야 한다. 새 점검: `metrics.md` 13.3 표, 5절 표, 4.8 끝 글머리(중복 행과 몰림).
+- base oracle(main `b8f8326`)도 이 트리에서 12개 MATCH다. 예제·expected가 그대로라서다 [T13:O]. 그래서 `oracle`·`oracle-head` 잡 모두 녹색이어야 한다.
+- 6.6 탐침 표의 T-011 칸은 기록이다. selftest·C# 테스트는 T-012 칸만 본다(T-012 PR (b) 테스트와 같다).
+
+### 12.5 C# 영향
+
+core-dev(`src/Scorecard.Core/`):
+
+1. `CompareEngine`: `metrics.md` 13.2(결과 쪽 같은 키가 있는 기준 항목은 `mismatch`, `duplicate` 항목의 `Differences`, `FieldSummary.Compared`와 칸 셈).
+2. `JudgmentEngine.Judge`: 5절 표의 검사(`ArgumentException`).
+
+test-engineer(`tests/`, 바꾸는 기존 테스트는 PR 본문에 이유):
+
+1. `metrics.md` 13.5의 `DuplicateTests` 넷(옛 규칙 고정)과 새 13.3 표 테스트, 줄 순서 뒤집기 테스트.
+2. 6.4 표를 읽는 테스트(`UnexplainedTests`): 중복 행 장면은 "불일치 칸 − 중복 행 칸"만큼 보통 불일치를 두고 나머지를 중복 행으로 만든다(6.4 글머리). 머리 행은 그대로다. `Unexplained_table_covers_all_results`의 "불일치 0·추가 행 0·중복 행 ≠ 0·`found`" 행 단언은 이제 맞는 행이 없다(기준 키의 중복 행은 그 키를 불일치로 센다). "중복 행 ≠ 0이고 사람 입력이 중복 행 키뿐인 `found` 행"으로 바꾼다(6.4 `1 | 0 | 1 | 중복 행 1개`). 뜻(중복 행만 적어도 `found`)은 같다. PR 본문에 적는다.
+3. 5절 정의·대조 결과 표(머리 행 `| 정의 | 대조 결과 | Judge |`) 행마다. 이름 행 포함.
+4. 4.8 끝 글머리 장면 둘(이미 불일치인 키의 중복 행은 `{bad}`가 그대로, 일치 키의 중복 행은 불일치로 든다). T-013 카드 수용 기준 6의 앞 장면이다.
+5. 표 이동만으로 깨지는 테스트는 없다(머리 행·머리 줄 그대로). 이 트리 사본 + main Core로 `dotnet test -c Release`: 1637개 중 통과 1635, 실패 2 [T13:dotnet]. `DuplicateTests.Compare_duplicate_sample_matches_spec_block`(블록 `compared` 4, Core 3: core-dev 1이 고친다), `UnexplainedTests.Unexplained_table_covers_all_results`(위 2). 그 밖은 통과한다.
+6. `JudgmentSpec.ReviewHeading`(`### 11.9 설명 안 되는 검토 항목`)은 이제 문서에 없다. 쓰는 테스트가 없어 깨지지 않는다. 지우거나 `### 6.4 설명 안 되는 검토 항목`으로 바꾼다. 주석의 11.x 절 번호는 11.3 표의 자리로 읽는다.
+
+### 12.6 승인 질문 (ADR 0005: 추천안 채택)
+
+추천안은 "사용자에게 맞나 → 그다음 바이트 보존" 순서로 골랐다(카드 메모). "ADR 0004 기준"은 ADR 0005 전이었다면 누가 정했을지다(11.19와 같다). 질문은 11개다.
+
+1. **결과 쪽 키 중복의 셈(`metrics.md` 13.2).** ADR 0004 기준: 리드.
+   - 추천: 결과 쪽에 두 번 나온 기준 키는 값과 상관없이 값 불일치. 기준 항목에 대표 행의 차이, 중복 항목에 그 행의 차이. 셈은 줄 순서와 상관없다.
+   - 대안(추천하지 않음): 모든 행이 기준과 맞으면 일치. 같은 행을 두 번 낸 결함이 정확도에 닿지 않는다. 대표 행에 따라 어느 항목에 차이가 적히는지가 더 복잡하다.
+2. **`fields[].compared`(`metrics.md` 13.2).** ADR 0004 기준: 리드.
+   - 추천: 기준에 키가 있는 결과 행 수(중복 행 포함). 필드마다 `outside` + `within` + `not_number` ≤ `compared`가 늘 맞는다. `compare-duplicate` 블록의 `compared`만 3 → 4.
+   - 대안: 일치 + 값 불일치 그대로. 블록 바이트는 남지만 중복 행의 칸 수가 `compared`보다 커질 수 있다.
+3. **metrics.json `schema_version`(`metrics.md` 13.4).** ADR 0004 기준: juhan 직접(expected 모양).
+   - 추천: 1 그대로. 바뀐 출력은 T-012b에서 처음 받은, 릴리스되지 않은 입력(결과 쪽 중복)에서만 나온다. 기준을 ADR 0008 결정 1에 적는다.
+4. **정의·대조 결과 검사(5절, 12.2).** ADR 0004 기준: 리드.
+   - 추천: 5절 표대로 `ArgumentException`. 문턱은 보지 않는다.
+   - 대안: 검사 없이 판정(지금). 다른 케이스의 결과로 문장을 낼 수 있다.
+5. **6.4 표 중복 행 세 행.** ADR 0004 기준: 리드(테스트가 읽는 표의 값).
+   - 추천: "불일치" 칸이 그 키를 센다(`1 | 0 | 1`, `2 | 1 | 1`). 머리 행 그대로. 판정 결과 칸은 그대로다.
+6. **탐침 표의 T-011 칸(6.6).** ADR 0004 기준: 리드.
+   - 추천: 기록으로 남기고 대조하지 않는다. 머리 행을 바꾸면 C# `ProbeTests` 상수가 바뀐다.
+7. **문서 구조(11.3, 12.3).** ADR 0004 기준: 리드.
+   - 추천: 11절 표를 4·6·7절로 옮기고 11절은 기록과 옮긴 곳 표만 둔다. 머리 행·블록 머리 줄 그대로.
+8. **oracle 판 하나(12.4, ADR 0008 결정 4).** ADR 0004 기준: 리드(CI 도구).
+   - 추천: `judge_v1.py`와 판 고르기 삭제. 옛 판 expected는 그 파일만 DIFF. ADR 0007 결정 4 그대로다.
+9. **지시문 문구(ADR 0008 결정 2·3).** ADR 0004 기준: juhan 직접(지시문). 2절은 건드리지 않는다.
+   - 추천: 5절 expected 목록에 `judgment.json`(판정·근거 문장·다음 할 일), "세 파일" → "이 파일들". 3.4 조건부에 "또는 사람이 아직 안 본 검토 항목(불일치·추가 행·중복 행)이 있음"을 더한다. 보류의 "설명 안 되는 불일치"는 "사람이 설명할 수 없다고 적은 검토 항목"으로 읽는다(괄호 한 줄).
+10. **selftest 예제 이름(12.4).** ADR 0004 기준: 리드.
+    - 추천: `examples/` 폴더 이름(서수)에서 읽는다. 7.1 예제 표 이름 = 폴더 이름, 폴더마다 7절 블록 하나. 예제를 더하면 표·블록이 없을 때 selftest가 실패한다.
+11. **CI 설명 문구(ci-dev, ADR 0008 결정 5).** ADR 0004 기준: 리드(`ci-changed`).
+    - 추천: `.github/workflows/ci.yml` 313줄과 `tools/ci/README.md` 160줄의 "단위 테스트가 대조한다"를 테스트 이름으로 바꾼다: `tools/ci/test_regression_guard.py`의 `TestGuardJobsWiring.test_workflow_passes_every_needed_job`. `tools/ci/lead_check.py` 58줄 주석도 같다(ci-dev 범위).
+
+### 12.7 채택
 
 - ADR 0005 결정 3에 따라 리드가 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다. 이 절은 추천안만 적는다.

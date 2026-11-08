@@ -10,8 +10,8 @@
 #   MISSING <상대 경로> oracle=<sha256 또는 error>
 # 모두 MATCH면 종료 코드 0, 아니면 1. 이유·요약은 표준 오류에 쓴다.
 # --json이면 {"files": [{"expected_sha256", "oracle_sha256", "path", "status"}]}를 쓴다(키 정렬, LF).
-# judgment.json의 규칙판(judgment.md 11.15, T-012): expected judgment.json이 모두 "schema_version": 1이면 T-011 동결본
-# judge_v1.py로, 그 밖(2, 파일 없음, 읽을 수 없음)이면 judge.py(T-012 규칙)로 만든다. 예제마다 판이 다르면 모두 DIFF다.
+# judgment.json은 judge.py(judgment.md 4절 규칙, schema_version 2) 하나로 만든다. T-013에서 T-011 판(judge_v1.py)과
+# expected의 schema_version으로 판을 고르던 것을 지웠다(ADR 0007 결정 4, ADR 0008). 옛 판 expected는 DIFF다.
 # 표준 라이브러리만 쓴다. 네트워크·외부 프로세스 없음. 저장소 파일은 읽기만 한다.
 from __future__ import annotations
 
@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from classify import classification_bytes  # noqa: E402
 from compare import metrics_bytes  # noqa: E402
 import judge  # noqa: E402
-import judge_v1  # noqa: E402
 from oracle_common import OracleError, ordinal_key, sha256_hex, utf8_stdio  # noqa: E402
 
 # 늘 보는 종류. 예제마다 expected 파일이 있어야 한다(없으면 MISSING).
@@ -76,38 +75,9 @@ def build_metrics(example: Path) -> bytes:
     return metrics_bytes(example)
 
 
-def build_judgment(example: Path, rules=judge) -> bytes:
-    """judgment.md 8절 골든과 같다: 시간·사람 입력 없음(null). rules는 judgment_rules()가 고른 판."""
-    return rules.judgment_bytes(example)
-
-
-def _schema_version(data: bytes):
-    """expected judgment.json 바이트의 schema_version(정수). 읽을 수 없으면 None."""
-    try:
-        value = json.loads(data.decode('utf-8'))
-    except (UnicodeDecodeError, ValueError):
-        return None
-    v = value.get('schema_version') if isinstance(value, dict) else None
-    return v if type(v) is int else None
-
-
-def judgment_rules(examples: Path, folders: list):
-    """(판 모듈, 오류 글 또는 None). judgment.md 11.15.
-
-    T-012 PR (a)는 oracle만 고치고 기존 expected(schema_version 1)는 그대로다. 그래서 1이면 동결본으로 재현한다.
-    PR (b)가 expected를 2로 옮기면 T-012 규칙으로 재현한다. 예제마다 판이 섞이면 옮기다 만 것이라 받지 않는다.
-    """
-    versions = set()
-    for name in folders:
-        folder = examples / name / 'expected'
-        if _is_file(folder, 'judgment.json'):
-            versions.add(_schema_version((folder / 'judgment.json').read_bytes()))
-    if len(versions) > 1:
-        shown = ', '.join(sorted('null' if v is None else str(v) for v in versions))
-        return judge, f'expected/judgment.json의 schema_version이 예제마다 다르다({shown}). 한 판으로 옮긴다'
-    if versions == {judge_v1.SCHEMA_VERSION}:
-        return judge_v1, None
-    return judge, None
+def build_judgment(example: Path) -> bytes:
+    """judgment.md 8절 골든과 같다: 시간·사람 입력 없음(null)."""
+    return judge.judgment_bytes(example)
 
 
 BUILDERS = {'classification.json': build_classification, 'metrics.json': build_metrics,
@@ -127,7 +97,6 @@ def check(repo: Path):
     with os.scandir(examples) as it:
         folders = sorted((e.name for e in it if e.is_dir(follow_symlinks=False)), key=ordinal_key)
     kinds = targets(examples, folders)
-    rules, rules_error = judgment_rules(examples, folders)
     results = []
     for name in folders:
         example = examples / name
@@ -139,12 +108,7 @@ def check(repo: Path):
             oracle = None
             note = None
             try:
-                if target == 'judgment.json':
-                    if rules_error is not None:
-                        raise OracleError(rules_error)
-                    oracle = build_judgment(example, rules)
-                else:
-                    oracle = BUILDERS[target](example)
+                oracle = BUILDERS[target](example)
             except _Disagree as d:
                 note = str(d)
                 oracle = d.second if expected is not None and d.first == expected else d.first

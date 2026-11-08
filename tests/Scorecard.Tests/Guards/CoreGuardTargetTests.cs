@@ -73,6 +73,7 @@ public class GuardTargetAdapterTests
     // basic이 없다 + case-valid가 있다 + 샘플 폴더가 있다(T-006 승인 질문 18)도 그대로 본다.
     // T-011(judgment.md 4.12, 잠정 결정 11): judge-case-valid=case-valid 한 쌍을 더한다. 새 샘플이 없어 샘플 목록은 그대로다.
     // T-014(text-check.md 4.6): text-check-case-valid=text-check-valid 한 쌍과 새 샘플 text-check-valid를 더한다(대상을 더함, 축소 아님).
+    // T-018(json-output.md 7절): 명령 대상 세 쌍을 더한다. 기존 샘플만 써서 샘플 목록은 그대로다(대상을 더함, 축소 아님).
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
@@ -88,6 +89,9 @@ public class GuardTargetAdapterTests
                 "compare-invalid=compare-invalid",
                 "judge-case-valid=case-valid",
                 "text-check-case-valid=text-check-valid",
+                "cli-start-text-check-valid=text-check-valid",
+                "cli-check-case-valid=case-valid",
+                "cli-check-case-invalid=case-invalid",
             ],
             pairs);
 

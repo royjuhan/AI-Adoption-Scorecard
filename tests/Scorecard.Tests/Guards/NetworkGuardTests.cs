@@ -17,9 +17,12 @@ public class NetworkGuardTests
     // dll마다 따로 둔다(T-003 reviewer 지적 B1). 한 목록을 같이 쓰면 Cli가 YamlDotNet을 참조해도 N6가 모른다.
     // Core: YamlDotNet. T-003 승인 결정 2. 패키지 18.1.0(정확히 고정), MIT, 의존 패키지 0개.
     //   YamlDotNet.dll 안의 N5·D1·R1 항목은 G1 밖이다. Core가 쓰는 범위는 Y1이 묶는다.
-    // Cli: 없음. 승인된 제3자 패키지가 없다. YAML은 Core를 거쳐 읽는다.
+    // Cli: 제3자 패키지는 없다. YAML은 Core를 거쳐 읽는다.
     private static readonly string[] CoreAllowedThirdPartyAssemblies = ["YamlDotNet"];
-    private static readonly string[] CliAllowedThirdPartyAssemblies = [];
+
+    // Cli: Scorecard.Core. T-018(json-output.md 7절, STATUS 잠정 결정 T-018). Cli가 처음 Core를 참조한다.
+    //   같은 저장소의 어셈블리이고 Core 자신이 위 N1~N6·D1·R1 검사를 받는다. 제3자 패키지는 더하지 않는다.
+    private static readonly string[] CliAllowedThirdPartyAssemblies = ["Scorecard.Core"];
 
     // 검사할 dll 이름(서수) → N6 허용 목록. Scan은 dll 이름으로 목록을 고른다. 표에 없는 dll이면 실패한다.
     // 자기 검사용 Scorecard.Tests.dll은 Core 목록을 쓴다. 카나리아가 Core 규칙(Y1)을 흉내 내려고 YamlDotNet을 참조한다.
@@ -158,13 +161,15 @@ public class NetworkGuardTests
         Assert.DoesNotContain("N6 non-framework asmref YamlDotNet", ScanWithListOf(TestsDll, CoreDll));
     }
 
-    // B1: 허용 목록은 dll마다 다르다. Core만 YamlDotNet이고 Cli는 비어 있다. dll 이름은 서수로 찾는다.
+    // B1: 허용 목록은 dll마다 다르다. Core만 YamlDotNet이다. dll 이름은 서수로 찾는다.
+    // T-018: Cli 목록은 Scorecard.Core 하나다(제3자 패키지 없음). YamlDotNet은 여전히 Cli 목록에 없다.
     // 목록이 정해지지 않은 dll은 검사하지 않고 실패한다(새 dll이 남의 목록으로 조용히 통과하지 않게).
     [Fact]
     public void Allow_list_is_chosen_per_dll()
     {
         Assert.Equal(["YamlDotNet"], AllowListFor(CoreDll));
-        Assert.Empty(AllowListFor(CliDll));
+        Assert.Equal(["Scorecard.Core"], AllowListFor(CliDll));
+        Assert.DoesNotContain("YamlDotNet", AllowListFor(CliDll));
         Assert.Equal(AllowListFor(CoreDll), AllowListFor(TestsDll));
         Assert.Throws<ArgumentOutOfRangeException>(() => AllowListFor("Scorecard.Other.dll"));
         Assert.Throws<ArgumentOutOfRangeException>(() => AllowListFor("Scorecard.dll"));

@@ -27,6 +27,9 @@ namespace Scorecard.Tests.Guards;
 // T-014 문장 결과 검증(text-check.md 4.6): 정상 표본 text-check-valid(= 예제 reply-drafts 파일, 새 샘플)를 등록한다.
 // 어댑터는 CaseParser.ParseDirectory → CompareEngine.CompareDirectory → JudgmentEngine.Judge(시간·사람 입력 null) 결과를
 // 출력 폴더의 metrics.json, judgment.json 두 파일로 쓴다. 한글 문장·평균 글이 들어가므로 R4(문화권)가 본다.
+// T-018 명령(json-output.md 7절, 데이터 7절 표): 어댑터가 CliApp.Run을 프로세스 안에서 부른다(--out <출력>, --json).
+// 명령이 쓴 출력 폴더 파일과 표준 출력(stdout.json)을 본다. 오류 표본은 오류 JSON만 stdout.json으로 쓴다.
+// 표준 오류에 무언가 쓰면 예외를 던진다(--json이면 표준 출력에 JSON 하나만, 5.1).
 // 새 Core 처리 기능을 만들면 이 목록에 더한다.
 internal static class GuardTargets
 {
@@ -42,7 +45,13 @@ internal static class GuardTargets
         new("compare-invalid", "compare-invalid", CompareToFile),
         new("judge-case-valid", "case-valid", JudgeToFile),
         new("text-check-case-valid", "text-check-valid", TextCheckToFiles),
+        new("cli-start-text-check-valid", "text-check-valid", (input, output) => RunCli(output, "start", input, "--answers", Path.Combine(input, "answers.yaml"), "--out", output, "--json")),
+        new("cli-check-case-valid", "case-valid", (input, output) => RunCli(output, "check", input, "--out", output, "--json")),
+        new("cli-check-case-invalid", "case-invalid", (input, output) => RunCli(output, "check", input, "--out", output, "--json")),
     ];
+
+    // T-018 명령 어댑터의 표준 출력 파일.
+    public const string CliStdoutFile = "stdout.json";
 
     // T-006 대조 어댑터의 오류 출력 파일(metrics.md 4.10).
     public const string CompareErrorsFile = "compare-errors.txt";
@@ -132,6 +141,21 @@ internal static class GuardTargets
         Directory.CreateDirectory(output);
         File.WriteAllBytes(Path.Combine(output, MetricsJson.FileName), MetricsJson.Render(metrics));
         File.WriteAllBytes(Path.Combine(output, JudgmentJson.FileName), JudgmentJson.Render(JudgmentEngine.Judge(definition, metrics)));
+    }
+
+    // T-018. 명령을 돌리고 표준 출력을 출력 폴더의 stdout.json으로 쓴다. 출력 폴더는 명령이 만들거나(성공) 여기서 만든다(오류).
+    private static void RunCli(string output, params string[] args)
+    {
+        using var stdout = new MemoryStream();
+        using var stderr = new MemoryStream();
+        Scorecard.Cli.CliApp.Run(args, stdout, stderr);
+        if (stderr.Length > 0)
+        {
+            throw new InvalidOperationException("--json인데 표준 오류에 썼다.");
+        }
+
+        Directory.CreateDirectory(output);
+        File.WriteAllBytes(Path.Combine(output, CliStdoutFile), stdout.ToArray());
     }
 
     // 오류 줄(CaseError.ToString) + LF. UTF-8(BOM 없음).

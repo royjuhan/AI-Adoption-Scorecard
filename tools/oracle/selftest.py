@@ -25,6 +25,12 @@
 #    파일 수는 고정하지 않는다. 사본 examples의 expected 파일 목록(check.py 대상 종류)에서 센다.
 #    judgment.json: 사본에 7.2~7.5 블록을 넣으면 모두 MATCH. 한 바이트, 한 파일 삭제, group 줄 삭제, case.yaml 문턱,
 #    옛 판(schema_version 1) 파일 하나는 그 파일만 DIFF·MISSING. 모두 지우면 대상에서 빠진다.
+#    분류 schema 2(classification.md 9절, case-schema.md 4.14, ADR 0013): 9.2 모양 블록 속성 순서, 9.3 비교 값 표·장면 표,
+#    9.4 확인 항목 표, 9.5 AI 판단 표본(블록 = oracle 출력, ai를 빼면 모두 rule, PR (b) 뒤 파일 = 블록), case-schema 4.14 장면 표,
+#    9.6 예제 다섯 블록(answers.yaml·case.yaml = 블록), 9.7 migration 줄 수(expected가 schema 1일 때). 6.1·6.2·6.5 점검은
+#    3.2 모양 블록의 schema_version 판으로 돈다. 표·블록은 머리 행·표시 줄로 찾아 PR (b)가 제자리로 옮겨도 돈다.
+#    PR (b) 모의: 예제 사본에 schema 2 블록 → check.py 모두 MATCH, 1·2 섞임은 분류 모두 DIFF, 한 바이트·ai 추가는 그 파일만 DIFF.
+#    schema 1 사본에 ai를 넣으면 그 파일만 DIFF(schema 1 판 거절).
 # 3. 결정론: 문화권·해시 시드 환경 변수를 바꿔 check.py를 돌려도 표준 출력·보고서 바이트가 같다(judgment.json 사본 포함).
 # 실패가 하나라도 있으면 종료 코드 1. 저장소 파일은 읽기만 한다(사본은 임시 폴더).
 from __future__ import annotations
@@ -50,7 +56,8 @@ import json  # noqa: E402
 
 import judge as J2  # noqa: E402  판정(judgment.md 4절). T-013에서 T-011 판(judge_v1)을 지웠다.
 from check import OPTIONAL_TARGETS, TARGETS  # noqa: E402
-from classify import DEFAULT_MARK, INFERRED_MARK, classification_bytes, classify, to_json_value  # noqa: E402
+from classify import (CHECKS_V2, COMPARE_AS, DEFAULT_MARK, INFERRED_MARK, RULE_AI, classification_bytes,  # noqa: E402
+                      classify, schema_of, to_json_value)
 from compare import DEC_MAX, compare_run, is_supported_pattern, judge, matches, metrics_bytes, parse_number, percent  # noqa: E402
 from oracle_case import ANSWER_KEYS, CompareField, parse_case  # noqa: E402
 from oracle_common import OracleError, ordinal_key, sha256_hex, utf8_stdio  # noqa: E402
@@ -59,6 +66,9 @@ from oracle_json import render  # noqa: E402
 
 FAILS: list = []
 COUNT = {'ok': 0}
+# 분류 스펙의 3.2 모양 블록이 적은 schema_version(main에서 정한다). M2-2 PR (a) 동안 1, PR (b) 뒤 2(ADR 0013).
+# 1~8절 표 점검(6.1·6.2·6.5)은 이 판으로 돈다. 9절(schema 2) 점검은 check_schema2가 따로 본다.
+SPEC = {'cls_schema': 1}
 
 
 def expect(cond: bool, label: str) -> None:
@@ -106,14 +116,16 @@ def block_after(lines: list, marker: str) -> list:
 
 
 def answers_yaml(name: str, steps: list) -> bytes:
-    """[(단계 이름, {키: 글}, [추정 키])] → answers.yaml 바이트(흐름 매핑)."""
+    """[(단계 이름, {키: 글}, [추정 키][, ai 글])] → answers.yaml 바이트(흐름 매핑). ai 글은 `ai: ` 뒤에 그대로 쓴다."""
     out = [f'name: {name}', 'task: selftest 합성 단계', 'steps:']
-    for step_name, answers, inferred in steps:
+    for step_name, answers, inferred, *ai in steps:
         out.append(f'  - name: {step_name}')
         if answers:
             out.append('    answers: {' + ', '.join(f'{k}: {v}' for k, v in answers.items()) + '}')
         if inferred:
             out.append('    inferred: [' + ', '.join(inferred) + ']')
+        if ai and ai[0] is not None:
+            out.append(f'    ai: {ai[0]}')
     return ('\n'.join(out) + '\n').encode('utf-8')
 
 
@@ -125,9 +137,9 @@ def pairs(text: str) -> dict:
     return out
 
 
-def classify_one(answers: dict, inferred=()) -> dict:
-    case = parse_case(answers_yaml('selftest', [('단계', answers, list(inferred))]), 'answers.yaml')
-    return classify(case)[0]
+def classify_one(answers: dict, inferred=(), ai=None, schema=None) -> dict:
+    case = parse_case(answers_yaml('selftest', [('단계', answers, list(inferred), ai)]), 'answers.yaml')
+    return classify(case, SPEC['cls_schema'] if schema is None else schema)[0]
 
 
 def check_classification(spec: list) -> None:
@@ -188,7 +200,8 @@ def check_signoff_inferred(repo: Path, spec: list) -> None:
     want_yaml = block_after(spec, 'TestData 표본(제안) `tests/Scorecard.Tests/TestData/classification/signoff-inferred/answers.yaml`')
     expect(data.decode('utf-8') == '\n'.join(want_yaml) + '\n', '6.5 TestData 표본 = 스펙 블록')
     case = parse_case(data, 'answers.yaml')
-    steps = classify(case)
+    schema = SPEC['cls_schema']
+    steps = classify(case, schema)
     lines = [f"{s['number']} {r['assignee']} {r['rule']}: {r['reason']}" for s in steps for r in s['rows']]
     lines += [f"inferred {s['number']}: {', '.join(s['inferred'])}" for s in steps]
     want = block_after(spec, '분류 결과. 줄 모양은')
@@ -198,13 +211,14 @@ def check_signoff_inferred(repo: Path, spec: list) -> None:
             if a != b:
                 print(f'  oracle: {a}\n  spec  : {b}')
     expect(steps[3]['ai_overuse_candidate'] is True, '6.5 4단계 AI 과잉 후보')
-    expect('confirm_existing_feature' in steps[1]['checks'], '6.5 2단계 confirm_existing_feature')
-    with_inf = render(to_json_value(case, steps))
+    # schema 2(9.4)는 confirm_existing_feature를 뺀다.
+    expect(('confirm_existing_feature' in steps[1]['checks']) == (schema == 1), '6.5 2단계 confirm_existing_feature')
+    with_inf = render(to_json_value(case, steps, schema))
     expect(b'"inferred"' not in with_inf, '6.5 JSON에 inferred 속성 없음')
     # 같은 답에서 inferred 줄만 뺀 파일과 reason 네 줄(1단계 1행, 2단계 3행)만 다르다.
     plain = b''.join(line for line in data.splitlines(keepends=True) if not line.lstrip().startswith(b'inferred:'))
     plain_case = parse_case(plain, 'answers.yaml')
-    no_inf = render(to_json_value(plain_case, classify(plain_case)))
+    no_inf = render(to_json_value(plain_case, classify(plain_case, schema), schema))
     a, b = with_inf.decode('utf-8').split('\n'), no_inf.decode('utf-8').split('\n')
     diff = [k for k in range(max(len(a), len(b))) if k >= len(a) or k >= len(b) or a[k] != b[k]]
     expect(len(a) == len(b) and len(diff) == 4 and all('"reason":' in a[k] for k in diff),
@@ -491,8 +505,8 @@ def check_v2_examples(repo: Path, spec: list, met_spec: list, examples: Path, tc
         expect(metrics_bytes(examples / name) == (repo / 'examples' / name / 'expected/metrics.json').read_bytes(),
                f'7.1 {name}: group 줄을 넣은 사본의 metrics.json = expected')
         want_cls = (repo / 'examples' / name / 'expected/classification.json').read_bytes()
-        expect(classification_bytes((examples / name / 'case.yaml').read_bytes(), 'case.yaml') == want_cls,
-               f'7.1 {name}: group 줄을 넣은 사본의 case.yaml 분류 = expected')
+        got_cls = classification_bytes((examples / name / 'case.yaml').read_bytes(), 'case.yaml', schema_of(want_cls))
+        expect(got_cls == want_cls, f'7.1 {name}: group 줄을 넣은 사본의 case.yaml 분류 = expected')
 
     head = '| 예제 | inputs.group | 판정 | 근거 키 | 확인 다섯 | 다음 할 일 | 검토 항목 |'
     for name, group, verdict, rule, checks, todo, review in table(spec, head):
@@ -1036,7 +1050,8 @@ def check_variants(examples: Path) -> None:
             want_cls = (src / 'expected/classification.json').read_bytes()
             for label, data in (('crlf', ans.replace(b'\n', b'\r\n')), ('cr', ans.replace(b'\n', b'\r')),
                                 ('bom', b'\xef\xbb\xbf' + ans), ('bom-crlf', b'\xef\xbb\xbf' + ans.replace(b'\n', b'\r\n'))):
-                expect(classification_bytes(data, 'answers.yaml') == want_cls, f'answers.yaml 변형 {name} {label}')
+                expect(classification_bytes(data, 'answers.yaml', schema_of(want_cls)) == want_cls,
+                       f'answers.yaml 변형 {name} {label}')
 
 
 # ---- T-014 (text-check.md: 체크리스트·가림 점수표) ----
@@ -1354,8 +1369,10 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
             expect(files.get(rel) == data, f'T-014 7.2 생성기 = 7.3 {rel} 블록')
 
         # expected = oracle 출력(7.4). answers.yaml·case.yaml 분류가 같다.
-        cls = classification_bytes(files['answers.yaml'], 'answers.yaml')
-        expect(classification_bytes(files['case.yaml'], 'case.yaml') == cls, 'T-014 7.4 answers.yaml·case.yaml 분류 같음')
+        cls_schema = schema_of(files.get('expected/classification.json', b''))  # 7.4 블록의 판(ADR 0013)
+        cls = classification_bytes(files['answers.yaml'], 'answers.yaml', cls_schema)
+        expect(classification_bytes(files['case.yaml'], 'case.yaml', cls_schema) == cls,
+               'T-014 7.4 answers.yaml·case.yaml 분류 같음')
         outputs = {'expected/classification.json': cls, 'expected/metrics.json': metrics_bytes(base),
                    'expected/judgment.json': J2.judgment_bytes(base)}
         for rel, data in outputs.items():
@@ -1534,6 +1551,315 @@ def check_t014(repo: Path, tc_spec: list, jud_spec: list, met_spec: list) -> Non
     print(f"  T-014 점검 통과 {COUNT['ok'] - start}건")
 
 
+# ---- 분류 schema 2 (classification.md 9절, case-schema.md 4.14, ADR 0013) ----
+# 블록·표는 머리 행과 표시 줄로 찾는다. PR (b)가 9절을 1~8절 제자리로 옮겨도(classification.md 9.9) 같은 점검이 돈다.
+
+CLS_SHAPE_HEADING = '### 3.2 classification.json'
+CLS_COMPARE_HEAD = '| AI 담당 | 비교 값 | 뜻 |'
+CLS_SCENE_HEAD = '| 바꾼 답 | AI 담당 | 규칙 의견 | differs | AI 과잉 후보 | 행 |'
+CLS_CHECK_V2_HEAD = '| 확인 항목 키 | 조건 | 뜻 |'  # PR (b) 뒤에는 4.7의 '| 키 | 조건 | 뜻 |'
+CLS_CHECK_V1_HEAD = '| 키 | 조건 | 뜻 |'
+CLS_MIGRATION_HEAD = '| 예제 | 단계 | 더한 줄 | 바뀐 줄 | 지운 줄 |'
+AI_SAMPLE = 'tests/Scorecard.Tests/TestData/classification/ai-judgment/answers.yaml'
+AI_SAMPLE_YAML = f'AI 판단 표본 `{AI_SAMPLE}`'
+AI_SAMPLE_JSON = 'AI 판단 표본 classification.json (SHA-256 `'
+CS_AI_HEAD = '| `ai` 장면 | 코드 | 경로 | 메시지 |'
+CLS_ROW_RE = re.compile(r'([①②③④]M?) `([A-Z0-9]+)`')
+
+
+def heading_blocks(lines: list, heading: str) -> list:
+    """제목 줄(정확히 같은 줄)부터 다음 제목 전까지의 코드 블록(줄을 LF로 잇고 끝에 LF). SpecDocument.CodeBlocks와 같다."""
+    k = lines.index(heading)
+    blocks, cur = [], None
+    for line in lines[k + 1:]:
+        if cur is None and line.startswith('#'):
+            break
+        if line.startswith('```'):
+            if cur is None:
+                cur = []
+            else:
+                blocks.append('\n'.join(cur) + '\n')
+                cur = None
+            continue
+        if cur is not None:
+            cur.append(line)
+    return blocks
+
+
+def all_blocks(lines: list) -> list:
+    out, cur = [], None
+    for line in lines:
+        if line.startswith('```'):
+            if cur is None:
+                cur = []
+            else:
+                out.append('\n'.join(cur) + '\n')
+                cur = None
+            continue
+        if cur is not None:
+            cur.append(line)
+    return out
+
+
+def spec_cls_schema(cls_spec: list) -> int:
+    """3.2 모양 블록의 schema_version. M2-2 PR (a) 동안 1, PR (b) 뒤 2."""
+    m = re.search(r'"schema_version": (\d+),', heading_blocks(cls_spec, CLS_SHAPE_HEADING)[0])
+    return int(m.group(1))
+
+
+def block_bytes(lines: list, marker: str) -> bytes:
+    return ('\n'.join(block_after(lines, marker)) + '\n').encode('utf-8')
+
+
+def cls_v2_block(cls_spec: list, tc_spec: list, name: str):
+    """예제의 schema 2 classification.json 블록과 SHA-256 줄 값. 9.6(`schema 2 ` 머리) 또는 PR (b) 뒤 제자리(7절, text-check 7.4)."""
+    hits = []
+    for lines in (cls_spec, tc_spec):
+        for prefix in (f'schema 2 `examples/{name}/expected/classification.json` (SHA-256 `',
+                       f'`examples/{name}/expected/classification.json` (SHA-256 `'):
+            for k, line in enumerate(lines):
+                if line.startswith(prefix):
+                    data = block_bytes(lines[k:], prefix)
+                    if schema_of(data) == 2:
+                        hits.append((data, spans(line)[1], line))
+    # 옮기는 중(9절과 제자리에 둘 다)이면 둘이 같아야 한다.
+    expect(len(hits) >= 1 and len({(h[0], h[1]) for h in hits}) == 1, f'9.6 {name}: schema 2 블록이 하나(같은 블록) ({len(hits)})')
+    return hits[0] if hits else (b'', '', '')
+
+
+def migration_counts(old: bytes, new: bytes) -> tuple:
+    """줄 차이: (더한 줄, 바뀐 줄, 지운 줄). 바꾼 묶음은 짧은 쪽 줄 수만큼 '바뀐 줄', 남는 줄은 더함·지움."""
+    import difflib
+    a, b = old.decode('utf-8').split('\n'), new.decode('utf-8').split('\n')
+    added = changed = removed = 0
+    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(a=a, b=b, autojunk=False).get_opcodes():
+        if op == 'insert':
+            added += j2 - j1
+        elif op == 'delete':
+            removed += i2 - i1
+        elif op == 'replace':
+            changed += min(i2 - i1, j2 - j1)
+            added += max(0, (j2 - j1) - (i2 - i1))
+            removed += max(0, (i2 - i1) - (j2 - j1))
+    return added, changed, removed
+
+
+def check_schema2(repo: Path, cls_spec: list, tc_spec: list, cs_spec: list) -> dict:
+    """분류 schema 2 점검. 예제별 schema 2 블록(이름 → 바이트)을 돌려준다(PR (b) 모의에 쓴다)."""
+    spec_schema = SPEC['cls_schema']
+    base = pairs(spans(next(line for line in cls_spec if line.startswith('기준 답: `')))[0])
+
+    # 9.2 모양 블록: 첫 키 schema_version 2, 단계·행 속성 순서 = oracle 출력.
+    shapes = [b for b in all_blocks(cls_spec) if '"<케이스 이름>"' in b and '"schema_version": 2,' in b]
+    expect(len(shapes) == 1, f'9.2 schema 2 모양 블록이 하나 ({len(shapes)})')
+    if shapes:
+        shape = json.loads(shapes[0])
+        got = json.loads(classification_bytes(answers_yaml('selftest', [('단계', base, [])]), 'answers.yaml', 2))
+        expect(list(shape) == list(got) == ['schema_version', 'case', 'steps'], '9.2 최상위 속성 순서')
+        expect(list(shape['steps'][0]) == list(got['steps'][0]), f"9.2 단계 속성 순서 {list(got['steps'][0])}")
+        expect(list(shape['steps'][0]['rule_opinion']) == list(got['steps'][0]['rule_opinion']) == ['assignee', 'rule'],
+               '9.2 rule_opinion 속성 순서')
+        expect(list(shape['steps'][0]['rows'][0]) == list(got['steps'][0]['rows'][0]), '9.2 행 속성 순서')
+        expect('②M' in shape['steps'][0]['rows'][0]['assignee'] and 'AI' in shape['steps'][0]['rows'][0]['rule'].split(' | '),
+               '9.2 행 담당에 ②M, 근거 키에 AI')
+        expect('②M' not in shape['steps'][0]['rule_opinion']['assignee'], '9.2 규칙 의견 담당에 ②M 없음(트리는 내지 않는다)')
+
+    # 9.3 첫 표: AI 담당 → 비교 값.
+    rows = table(cls_spec, CLS_COMPARE_HEAD)
+    expect({tick(a): tick(b) for a, b, _ in rows} == COMPARE_AS and len(rows) == len(COMPARE_AS), '9.3 비교 값 표 = oracle')
+
+    # 9.3 둘째 표: 장면.
+    seen = set()
+    for changed, ai_cell, opinion, differs, overuse, rows_text in table(cls_spec, CLS_SCENE_HEAD):
+        change = {} if changed == '(없음)' else pairs(spans(changed)[0])
+        ai = None if ai_cell == '(없음)' else tick(ai_cell)
+        label = f'9.3 장면 {changed} / {ai_cell}'
+        got = classify_one({**base, **change}, ai=None if ai is None else f'{{assignee: {ai}, reason: selftest 근거}}', schema=2)
+        expect([(r['assignee'], r['rule']) for r in got['rows']] == CLS_ROW_RE.findall(rows_text), f'{label}: 행')
+        expect([(got['rule_opinion']['assignee'], got['rule_opinion']['rule'])] == CLS_ROW_RE.findall(opinion), f'{label}: 규칙 의견')
+        expect(got['differs'] == (differs == 'true') and differs in ('true', 'false'), f'{label}: differs')
+        expect(got['ai_overuse_candidate'] == (overuse == 'true') and overuse in ('true', 'false'), f'{label}: AI 과잉 후보')
+        expect(got['source'] == ('rule' if ai is None else 'ai'), f'{label}: source')
+        plain = classify_one({**base, **change}, schema=2)
+        expect(got['rows'][1:] == plain['rows'][1:] and got['rule_opinion'] == plain['rule_opinion'], f'{label}: 부가 행·규칙 의견은 트리 것')
+        if ai is not None:
+            expect(got['rows'][0]['reason'] == 'selftest 근거' and got['rows'][0]['rule'] == RULE_AI and not got['rows'][0]['used'],
+                   f'{label}: AI 행 근거 그대로, 표시 없음')
+            seen.add(ai)
+        else:
+            expect(got['rows'] == plain['rows'] and (got['rows'][0]['assignee'], got['rows'][0]['rule']) ==
+                   (got['rule_opinion']['assignee'], got['rule_opinion']['rule']), f'{label}: rule이면 규칙 의견 = rows[0]')
+        seen.update({'differs ' + differs})
+    expect(set(COMPARE_AS) | {'differs true', 'differs false'} <= seen, f'9.3 장면이 담당 다섯과 differs 둘을 모두 쓴다 {sorted(seen)}')
+    # 기본값·추정 답이 있어도 AI 행에는 표시가 없다. 부가 행 표시는 그대로다.
+    marked = {k: v for k, v in {**base, 'rule_expressible': 'partial'}.items() if k != 'human_signoff'}
+    got = classify_one(marked, inferred=['rule_expressible'], ai='{assignee: ③, reason: 근거}', schema=2)
+    expect(got['rows'][0]['reason'] == '근거' and got['rows'][1]['reason'].endswith(INFERRED_MARK)
+           and 'human_signoff' in got['defaults'], '9.3 규칙 3: AI 행 표시 없음, 부가 행 추정 표시 남음')
+    # schema 1 판은 ai를 거절한다(ADR 0013 결정 5).
+    expect_refused('9.9 schema 1 판 ai 거절', lambda: classify_one(base, ai='{assignee: ②, reason: x}', schema=1))
+    expect(classify_one(base, ai='~', schema=1)['rows'] == classify_one(base, schema=1)['rows'], '9.9 schema 1 판 ai: ~는 받는다')
+
+    # 9.4 확인 항목 표(schema 2): confirm_existing_feature 없음, measure 남음.
+    head = CLS_CHECK_V2_HEAD if any(line.strip() == CLS_CHECK_V2_HEAD for line in cls_spec) else CLS_CHECK_V1_HEAD
+    rows = table(cls_spec, head)
+    expect([tick(r[0]) for r in rows] == [c[0] for c in CHECKS_V2] and spans(rows[0][1])[0] == CHECKS_V2[0][1],
+           f'9.4 확인 항목 표 = oracle ({head})')
+    unknown = classify_one({k: v for k, v in base.items() if k not in ('existing_feature', 'minutes_per_item')}, schema=2)
+    expect(unknown['checks'] == ['measure_minutes_per_item'] and 'existing_feature' in unknown['defaults']
+           and unknown['rows'][0]['reason'].endswith(DEFAULT_MARK), '9.4 existing_feature 기본값: confirm 없음, 표시·defaults 남음')
+    expect(classify_one({**base, 'existing_feature': 'unknown'}, schema=2)['checks'] == [], '9.4 existing_feature: unknown 직접 써도 확인 항목 없음')
+
+    # 9.5 AI 판단 표본: 블록 = oracle 출력, SHA-256·크기 줄, 파일이 있으면 파일 = 블록.
+    sample = block_bytes(cls_spec, AI_SAMPLE_YAML)
+    want = block_bytes(cls_spec, AI_SAMPLE_JSON)
+    line = next(x for x in cls_spec if x.startswith(AI_SAMPLE_JSON))
+    got = classification_bytes(sample, 'answers.yaml', 2)
+    expect(got == want, '9.5 AI 판단 표본: oracle 출력 = 블록')
+    size = re.search(r', ([0-9,]+)바이트', line)
+    expect(sha256_hex(want) == spans(line)[0] and size and int(size.group(1).replace(',', '')) == len(want),
+           f'9.5 AI 판단 표본 SHA-256·크기 줄 {sha256_hex(got)} {len(got)}')
+    print(f'  분류 schema 2 표본: oracle {sha256_hex(got)} {"same" if got == want else "DIFF"}')
+    body = json.loads(want)
+    expect([s['source'] for s in body['steps']] == ['ai', 'ai', 'ai', 'rule', 'ai'], '9.5 source')
+    expect([s['differs'] for s in body['steps']] == [False, False, True, False, False], '9.5 differs')
+    expect('②M' in [s['rows'][0]['assignee'] for s in body['steps']], '9.5 ②M 단계가 있다')
+    expect_refused('9.5 표본은 schema 1 판 범위 밖', lambda: classification_bytes(sample, 'answers.yaml', 1))
+    # ai 줄을 모두 빼면 모든 단계가 rule이고, 규칙 의견·부가 행은 그대로다.
+    lines, kept, skip = sample.decode('utf-8').split('\n'), [], False
+    for x in lines:
+        if x == '    ai:':
+            skip = True
+            continue
+        if skip and x.startswith('      '):
+            continue
+        skip = False
+        kept.append(x)
+    plain = json.loads(classification_bytes('\n'.join(kept).encode('utf-8'), 'answers.yaml', 2))
+    expect(all(s['source'] == 'rule' and not s['differs'] for s in plain['steps']), '9.5 ai를 빼면 모두 rule')
+    expect([s['rule_opinion'] for s in plain['steps']] == [s['rule_opinion'] for s in body['steps']]
+           and [s['rows'][1:] for s in plain['steps']] == [s['rows'][1:] for s in body['steps']],
+           '9.5 ai를 빼도 규칙 의견·부가 행 그대로')
+    file = repo / AI_SAMPLE
+    if file.exists():  # PR (b) 뒤
+        expect(file.read_bytes() == sample, '9.5 TestData 표본 파일 = 블록')
+    else:
+        expect(spec_schema == 1, '9.5 TestData 표본 파일: PR (b) 뒤(schema 2 스펙)에는 있어야 한다')
+
+    # case-schema 4.14 장면 표: 오류 장면은 멈추고(경로가 메시지에), 정상 장면은 그 담당으로 분류한다.
+    for cell, code, path, message in table(cs_spec, CS_AI_HEAD):
+        text = tick(cell)
+        expect(text.startswith('ai: '), f'case-schema 4.14 장면 모양 {cell}')
+        data = answers_yaml('selftest', [('단계', base, [], text[len('ai: '):])])
+        label = f'case-schema 4.14 {cell}'
+        if code == '—':
+            got = classify(parse_case(data, 'answers.yaml'), 2)[0]
+            want_ai = spans(message)
+            expect((got['source'], [got['rows'][0]['assignee']] if want_ai else []) == (('ai', want_ai) if want_ai else ('rule', [])),
+                   f'{label}: {got["source"]} {got["rows"][0]["assignee"]}')
+            continue
+        try:
+            parse_case(data, 'answers.yaml')
+            expect(False, f'{label}: 멈추지 않았다')
+        except OracleError as e:
+            expect(f': {tick(path)}: ' in str(e), f'{label}: 경로 {tick(path)} ({e})')
+
+    # 9.6 예제 다섯: 블록 = oracle 출력(answers.yaml·case.yaml), SHA-256 줄, 모두 rule, confirm 없음.
+    names = example_names(repo / 'examples')
+    blocks = {}
+    migration = {tick(r[0]): r[1:] for r in table(cls_spec, CLS_MIGRATION_HEAD)} if spec_schema == 1 else {}
+    if spec_schema == 1:
+        expect(sorted(migration, key=ordinal_key) == names, f'9.7 표 예제 = examples/ 폴더 {sorted(migration)}')
+    for name in names:
+        block, sha, line = cls_v2_block(cls_spec, tc_spec, name)
+        blocks[name] = block
+        ex = repo / 'examples' / name
+        got = classification_bytes((ex / 'answers.yaml').read_bytes(), 'answers.yaml', 2)
+        expect(got == block, f'9.6 {name}: oracle 출력 = 블록')
+        expect(classification_bytes((ex / 'case.yaml').read_bytes(), 'case.yaml', 2) == got, f'9.6 {name}: case.yaml도 같다')
+        size = re.search(r', ([0-9,]+)바이트', line)
+        expect(sha256_hex(block) == sha and (size is None or int(size.group(1).replace(',', '')) == len(block)),
+               f'9.6 {name}: SHA-256 줄 {sha256_hex(got)}')
+        print(f'  분류 schema 2 {name}: oracle {sha256_hex(got)} spec {sha} {"same" if got == block else "DIFF"}')
+        if not block:
+            continue
+        b = json.loads(block)
+        expect(all(s['source'] == 'rule' and s['differs'] is False
+                   and s['rule_opinion'] == {'assignee': s['rows'][0]['assignee'], 'rule': s['rows'][0]['rule']}
+                   and 'confirm_existing_feature' not in s['checks'] for s in b['steps']),
+               f'9.6 {name}: 모두 rule, 규칙 의견 = rows[0], confirm 없음')
+        expected = (ex / 'expected/classification.json').read_bytes()
+        if schema_of(expected) == 1:  # PR (b) 전: 9.7 표 = expected에서 블록까지의 줄 차이.
+            counts = migration_counts(expected, block)
+            steps = sum(1 for x in block.decode('utf-8').split('\n') if x.startswith('      "number": '))
+            expect(migration.get(name) == [str(steps)] + [str(c) for c in counts],
+                   f'9.7 {name}: 단계·더한·바뀐·지운 줄 {steps} {counts} != {migration.get(name)}')
+            expect(counts[0] == 6 * steps, f'9.7 {name}: 단계마다 6줄')
+        else:
+            expect(expected == block, f'9.6 {name}: expected(schema 2) = 블록')
+    return blocks
+
+
+def check_negative_classification(repo: Path, blocks: dict) -> None:
+    """PR (b) 모의(ADR 0013): 예제 사본에 schema 2 블록을 넣으면 check.py가 schema 2 판으로 모두 MATCH.
+    1과 2가 섞이면 classification.json 모두 DIFF, 한 바이트·ai 추가는 그 파일만 DIFF. schema 1 사본에 ai를 넣으면 그 파일만 DIFF."""
+    names = sorted(blocks, key=ordinal_key)
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        report = tmp / 'report.json'
+
+        def add_ai(folder: Path) -> dict:
+            """첫 단계 answers 줄 뒤에 ai를 넣는다(answers.yaml·case.yaml 둘 다, 같은 분류가 나오게)."""
+            saved = {}
+            for fname in ('answers.yaml', 'case.yaml'):
+                p = folder / fname
+                data = saved[p] = p.read_bytes()
+                k = data.index(b'    answers: {')
+                end = data.index(b'\n', k)
+                p.write_bytes(data[:end] + '\n    ai: {assignee: ②M, reason: selftest}'.encode('utf-8') + data[end:])
+            return saved
+
+        def restore(saved: dict):
+            for p, data in saved.items():
+                p.write_bytes(data)
+
+        # schema 1 사본(지금 예제 그대로). PR (b) 전에만.
+        target = 'mixed-exceptions' if 'mixed-exceptions' in names else names[0]
+        if all(schema_of((repo / 'examples' / n / 'expected/classification.json').read_bytes()) == 1 for n in names):
+            copy1 = tmp / 'v1'
+            shutil.copytree(repo / 'examples', copy1 / 'examples')
+            base1 = check_baseline(copy1, report, 'schema 1 사본')
+            holder = {}
+            scenario(copy1, report, base1, 'schema 1 판: ai 거절', lambda: holder.update(add_ai(copy1 / 'examples' / target)),
+                     lambda: restore(holder), {f'examples/{target}/expected/classification.json': 'DIFF'})
+
+        copy = tmp / 'v2'
+        shutil.copytree(repo / 'examples', copy / 'examples')
+        originals = {n: (repo / 'examples' / n / 'expected/classification.json').read_bytes() for n in names}
+        for n in names:
+            (copy / 'examples' / n / 'expected/classification.json').write_bytes(blocks[n])
+        base = check_baseline(copy, report, 'schema 2 모의(PR (b))')
+
+        first = copy / 'examples' / names[0] / 'expected/classification.json'
+        if schema_of(originals[names[0]]) == 1:
+            scenario(copy, report, base, 'schema 1·2 섞임', lambda: first.write_bytes(originals[names[0]]),
+                     lambda: first.write_bytes(blocks[names[0]]),
+                     {f'examples/{n}/expected/classification.json': 'DIFF' for n in names})
+
+        flipped = bytearray(blocks[names[-1]])
+        flipped[len(flipped) // 2] ^= 0x01
+        last = copy / 'examples' / names[-1] / 'expected/classification.json'
+        scenario(copy, report, base, 'schema 2 expected 한 바이트', lambda: last.write_bytes(bytes(flipped)),
+                 lambda: last.write_bytes(blocks[names[-1]]), {f'examples/{names[-1]}/expected/classification.json': 'DIFF'})
+
+        holder = {}
+        scenario(copy, report, base, 'schema 2 판: 예제에 ai 추가', lambda: holder.update(add_ai(copy / 'examples' / target)),
+                 lambda: restore(holder), {f'examples/{target}/expected/classification.json': 'DIFF'})
+
+        rc, out, _ = run_check(copy, report)
+        expect(rc == 0 and statuses(out) == base, 'schema 2 모의: 되돌리면 다시 모두 MATCH')
+
+
 # ---- check.py 음성 대조·결정론 ----
 
 def run_check(repo: Path, report: Path, env=None):
@@ -1653,8 +1979,10 @@ def main(argv: list) -> int:
     cs_spec = (repo / 'docs/spec/data/case-schema.md').read_text(encoding='utf-8').split('\n')
     tc_spec = (repo / 'docs/spec/data/text-check.md').read_text(encoding='utf-8').split('\n')
 
+    SPEC['cls_schema'] = spec_cls_schema(cls_spec)
     check_classification(cls_spec)
     check_signoff_inferred(repo, cls_spec)
+    cls_v2_blocks = check_schema2(repo, cls_spec, tc_spec, cs_spec)
     check_metrics_tables(met_spec)
     check_testdata(repo, cls_spec, met_spec)
 
@@ -1671,6 +1999,7 @@ def main(argv: list) -> int:
         check_negative_v2(repo, jud_spec, examples_v2, tc_spec)
     check_t014(repo, tc_spec, jud_spec, met_spec)
     check_negative(repo)
+    check_negative_classification(repo, cls_v2_blocks)
     check_determinism(repo)
 
     print(f"selftest: 통과 {COUNT['ok']}, 실패 {len(FAILS)}")

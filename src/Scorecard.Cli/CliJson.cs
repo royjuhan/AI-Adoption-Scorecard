@@ -12,7 +12,6 @@ internal static class CliErrors
     public const string Argument = "argument";
     public const string File = "file";
     public const string Output = "output";
-    public const string Unavailable = "unavailable";
     public const string Internal = "internal";
 }
 

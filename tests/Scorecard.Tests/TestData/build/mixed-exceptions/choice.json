@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [],
+  "case": "mixed-exceptions",
+  "step": null,
+  "proposal": {
+    "step": 1,
+    "name": "메일 접수 기록",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "candidates": [
+    1,
+    4
+  ]
+}

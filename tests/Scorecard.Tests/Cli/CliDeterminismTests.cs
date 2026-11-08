@@ -40,7 +40,8 @@ public class CliDeterminismTests
         Assert.Equal(0, CliInput.Run("classify", work.Case, "--json").Exit);
         Assert.Equal(0, CliInput.Run("compare", work.Case, "--json").Exit);
         Assert.Equal(0, CliInput.Run("judge", work.Case, "--json").Exit);
-        Assert.Equal(2, CliInput.Run("build", work.Case, "--json").Exit);
+        // T-021: build(--step 없음)는 추천만 하고 아무것도 쓰지 않는다(종료 0). 전에는 unavailable(2)이었다.
+        Assert.Equal(0, CliInput.Run(["build", work.Case, .. outArgs, "--json"]).Exit);
 
         Assert.Empty(FolderSnapshot.Compare(before, FolderSnapshot.Take(work.Case, exclude: "out"), compareTime: true));
         var added = FolderSnapshot.Take(work.Case).Select(e => e.Path).Except(before.Select(e => e.Path)).ToArray();

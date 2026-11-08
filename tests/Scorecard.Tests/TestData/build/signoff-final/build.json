@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [
+    "build-request/spec.md",
+    "build-request/io-schema.json",
+    "build-request/acceptance.md",
+    "build-request/samples/README.md",
+    "build-request/samples/output.csv",
+    "build-request/context.json",
+    "build-request/export-check.md"
+  ],
+  "case": "signoff-final",
+  "step": 3,
+  "proposal": {
+    "step": 3,
+    "name": "기준 구간 고르기(흔들린 기록)",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다."
+  },
+  "candidates": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ]
+}

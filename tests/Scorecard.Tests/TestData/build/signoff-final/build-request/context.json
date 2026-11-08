@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case": "signoff-final",
+  "task": "기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다",
+  "step": {
+    "number": 3,
+    "name": "기준 구간 고르기(흔들린 기록)",
+    "assignee": "②",
+    "rule": "ELSE",
+    "source": "rule",
+    "current_actor": "human",
+    "input_kind": "table",
+    "frequency": "weekly",
+    "batch_size": 6,
+    "exception_rate": 50,
+    "minutes_per_item": null,
+    "failure_impact": "internal_rework"
+  },
+  "summary": {
+    "steps": 7,
+    "software": 5,
+    "differs": 0,
+    "ai_assist": 1,
+    "ai_overuse": 0
+  },
+  "verification": {
+    "status": "measured",
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 16,
+      "mismatch": 3,
+      "missing": 1,
+      "extra": 1,
+      "within": 2
+    },
+    "accuracy_pct": 80.0,
+    "missing_rate_pct": 5.0,
+    "verdict": "hold",
+    "verdict_rule": "ACCURACY",
+    "thresholds": {
+      "accuracy_min": 95,
+      "missing_max": 2,
+      "time_must_drop": false
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "case": "table-compare",
+  "step": 1,
+  "input": {
+    "kind": "table"
+  },
+  "output": {
+    "key": "log_id",
+    "columns": [
+      {
+        "name": "log_id",
+        "role": "key",
+        "type": "text",
+        "tolerance": null,
+        "tolerance_pct": null
+      },
+      {
+        "name": "start_index",
+        "role": "compare",
+        "type": "number",
+        "tolerance": 0,
+        "tolerance_pct": null
+      },
+      {
+        "name": "length",
+        "role": "compare",
+        "type": "number",
+        "tolerance": 0,
+        "tolerance_pct": null
+      },
+      {
+        "name": "mean_value",
+        "role": "compare",
+        "type": "number",
+        "tolerance": null,
+        "tolerance_pct": 1.0
+      },
+      {
+        "name": "signal_type",
+        "role": "group",
+        "type": "text",
+        "tolerance": null,
+        "tolerance_pct": null
+      }
+    ]
+  }
+}

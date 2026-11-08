@@ -53,6 +53,16 @@ internal static class GuardTargets
             RunCli(output, "check", input, "--out", output, "--json");
             RunCli(output, "open", input, "--out", output, "--json");
         }),
+        // T-021(build-request.md 6절): start → check → build --step 1(확인 전, 초안) → 사람 확인 줄 → build --step 1 --json.
+        new("cli-build-case-valid", "case-valid", (input, output) =>
+        {
+            RunCli(output, "start", input, "--answers", Path.Combine(input, "case.yaml"), "--out", output, "--json");
+            RunCli(output, "check", input, "--out", output, "--json");
+            RunCli(output, "build", input, "--step", "1", "--out", output, "--json");
+            var check = Path.Combine(output, "export-check.md");
+            File.WriteAllText(check, File.ReadAllText(check).Replace("\n확인한 사람:\n", "\n확인한 사람: 검토자\n", StringComparison.Ordinal));
+            RunCli(output, "build", input, "--step", "1", "--out", output, "--json");
+        }),
         new("cli-check-case-invalid", "case-invalid", (input, output) => RunCli(output, "check", input, "--out", output, "--json")),
     ];
 

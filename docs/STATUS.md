@@ -24,7 +24,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 ## 지금
 
 - 진행 중: M2-3 HTML 스코어카드(T-020). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23), M2-2(#24, #27)는 끝났다.
-- 다음: M2-4 build 번들, v0.1.0-alpha 태그(ADR 0010 B-12).
+- 다음: M2-4 build 번들(T-021, 브랜치 `t021`, M2-3 위), v0.1.0-alpha 태그(ADR 0010 B-12).
 - 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
@@ -67,6 +67,18 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-08 | T-021 M2-4 | 1 예/아니오/나중에 | exe는 묻지 않는다. 예 = `build <case> --step <번호>`, 아니오·나중에 = `--step` 없이 끝(추천만, 아무것도 안 씀, 종료 0). `--json`은 `proposal`·`candidates` | T-021 |
+| 2026-11-08 | T-021 M2-4 | 2 번들 자리 | `<출력 폴더>/build-request/`(기본 `<케이스>/out/build-request/`). 지시문 3.6의 `cases/<case>/build-request/`를 M2-1 출력 폴더 규칙에 맞춤. 케이스 폴더 입력은 건드리지 않는다 | T-021 |
+| 2026-11-08 | T-021 M2-4 | 3 사람 확인 방법 | build가 출력 폴더에 `export-check.md` 초안을 쓰고, 사람이 마지막 줄 `확인한 사람:` 뒤에 적고 다시 돌린다. 확인 줄 값을 비운 글이 지금 초안(번들 SHA-256 포함)과 같아야 한다. 스킬·AI는 적지 않는다(ADR 0004 질문 15). `--confirm` 파일 옵션은 두지 않는다(가장 단순) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 4 확인 전 실행 | 초안만 쓰고 `export-check` 오류(2). `build-request/`는 만들지 않는다. json-output 4절 "오류면 아무것도 쓰지 않는다"의 예외(초안이 결과물) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 5 문자열 검사 | 번들 파일 줄마다 `synthetic-examples.md` 4.10 패턴 아홉. 걸리면 확인 줄과 상관없이 내보내지 않는다(2절 8). 오탐은 값을 바꿔 피한다(4.10과 같은 방침) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 6 고를 수 있는 단계 | 단계 행 담당 ②·②M. 추천은 스코어카드 제안 그대로. 다른 담당은 `step` 오류(2) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 7 합성 샘플 | 출력 열 10행, 정해진 식(난수 없음), 값은 ASCII. `SyntheticCsv`는 머리 행도 ASCII만 받아 쓰지 않는다. 입력 쪽 샘플은 LATER | T-021 |
+| 2026-11-08 | T-021 M2-4 | 8 번들 내용 출처 | 결과 객체(스코어카드)와 `case.yaml`·답 파일만. 자료 파일 값은 읽지 않는다. 숫자는 셈·퍼센트·문턱 | T-021 |
+| 2026-11-08 | T-021 M2-4 | 9 번들 밖 파일 | `build-request/`에 번들에 없는 파일이 있으면 `output` 오류(2). 지우지 않는다 | T-021 |
+| 2026-11-08 | T-021 M2-4 | 10 골든·G2·G3 | end-to-end 골든은 tests TestData/build(expected migration 아님). G2·G3 대상 `cli-build-case-valid`(샘플 `case-valid`) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 11 Cli 오류 코드 | `unavailable`을 뺐다(쓰는 곳이 없다). 기존 테스트 `Cli_error_codes_match_spec_table`의 기대 표를 같이 고쳤다(표 대조 단언은 그대로) | T-021 |
+| 2026-11-08 | T-021 M2-4 | 12 가드 옮기기 | CLAUDE.md "옮기는 카드(M2-2 또는 M2-4)": 납품물 템플릿(`scorecard-factory-template`)이 M3라 이 카드에서 옮기지 않는다. `src/` 가드(G1 N1~N6)는 그대로 걸린다. 번들 `spec.md`·`acceptance.md`에 "실행 시 AI·네트워크·외부 프로세스 없음"을 수용 조건으로 적는다. 옮기는 일은 M3 템플릿 카드 | T-021 |
 | 2026-11-08 | T-020 M2-3 | 1 렌더러 자리 | 결과 객체는 Core(`Scorecard.Core.Report`, `ScorecardBuilder`·`ScorecardJson`), HTML 렌더러는 Cli(`ScorecardHtml`, 결과 객체만 받아 표시). ADR 0004 결정 6 규칙 8 | T-020 |
 | 2026-11-08 | T-020 M2-3 | 2 `open` 입력 | 출력 폴더의 저장된 결과 JSON을 읽는다. 다시 분류·대조·판정하지 않는다. `schema_version`이 다르면 `result` 오류(2) | T-020 |
 | 2026-11-08 | T-020 M2-3 | 3 추정·지금 하는 쪽 | 케이스 폴더 `answers.yaml`에서 읽는다. 단계가 classification.json과 다르면 쓰지 않고 `answers` 상태(`missing`·`invalid`·`mismatch`)만 적는다 | T-020 |

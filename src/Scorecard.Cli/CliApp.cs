@@ -1,4 +1,5 @@
 using System.Globalization;
+using Scorecard.Core.Build;
 using Scorecard.Core.Cases;
 using Scorecard.Core.Classification;
 using Scorecard.Core.Comparison;
@@ -23,11 +24,12 @@ public static class CliApp
         + "  start <케이스> --answers <파일>  답 파일로 단계를 분류한다\n"
         + "  open <케이스>                    저장된 결과로 스코어카드 HTML을 쓴다\n"
         + "  check <케이스>                   기준·결과 자료를 대조하고 판정한다\n"
-        + "  build <케이스>                   제작 의뢰서 번들을 만든다(M2-4)\n"
+        + "  build <케이스>                   만들 ② 단계를 추천한다. --step이면 제작 의뢰서 번들을 쓴다\n"
         + "\n"
         + "옵션:\n"
         + "  --answers <파일>  답 파일(answers.yaml). start에 필요하다\n"
         + "  --review <파일>   확인 파일(review.yaml). open에서 받는다\n"
+        + "  --step <번호>     만들 단계(\"이 단계 만들까요?\"에 예). build에서 받는다\n"
         + "  --out <폴더>      결과를 쓸 폴더. 기본값은 <케이스>/out\n"
         + "  --json            결과와 오류를 JSON 문서 하나로 낸다\n"
         + "  --help            이 도움말\n"
@@ -95,7 +97,7 @@ public static class CliApp
             CommandLine.Start => RunStart(parsed, caseDirectory),
             CommandLine.Open => RunOpen(parsed, caseDirectory),
             CommandLine.Check => RunCheck(parsed, caseDirectory),
-            CommandLine.Build => Outcome.Fail(ExitInputError, [new CaseError(string.Empty, 0, 0, CliErrors.Unavailable, string.Empty, "build는 M2-4에서 생긴다")]),
+            CommandLine.Build => RunBuild(parsed, caseDirectory),
             CommandLine.Classify => RunClassify(parsed, caseDirectory),
             CommandLine.Compare => RunCompare(caseDirectory),
             CommandLine.Judge => RunJudge(caseDirectory),
@@ -177,6 +179,125 @@ public static class CliApp
 
         // --json 표준 출력 = scorecard.json 바이트(봉투 없음, ADR 0004 결정 6 규칙 5).
         return written.ExitCode == ExitSuccess ? written with { Json = json } : written;
+    }
+
+    // build: 만들 ② 단계를 추천한다. --step이면 제작 의뢰서 번들을 쓴다(build-request.md 2·5절).
+    // 묻지 않는다. "이 단계 만들까요?"의 예 = --step, 아니오·나중에 = --step 없이 끝(아무것도 쓰지 않음, 종료 0).
+    // 번들은 Core(BuildRequestBuilder)가 만든다. Cli는 쓰기만 한다. 사람 확인이 없으면 export-check.md 초안만 쓰고 종료 2.
+    private static Outcome RunBuild(ParsedArguments parsed, string caseDirectory)
+    {
+        int? step = null;
+        if (parsed.Option(CommandLine.Step) is { } stepText)
+        {
+            if (!int.TryParse(stepText, NumberStyles.None, CultureInfo.InvariantCulture, out var number) || number < 1)
+            {
+                return Outcome.Fail(ExitInputError, [new CaseError(string.Empty, 0, 0, CliErrors.Argument, CommandLine.Step, "단계 번호는 1 이상의 정수다")]);
+            }
+
+            step = number;
+        }
+
+        if (!Directory.Exists(caseDirectory))
+        {
+            return Outcome.Fail(ExitInputError, [MissingCaseFolder()]);
+        }
+
+        var outputError = ResolveOutput(caseDirectory, parsed.Option(CommandLine.Out), out var output);
+        if (outputError is not null)
+        {
+            return Outcome.Fail(ExitInputError, [outputError]);
+        }
+
+        var (sources, readErrors) = ScorecardBuilder.ReadDirectory(caseDirectory, output, null);
+        if (sources is null)
+        {
+            return Outcome.Fail(ExitInputError, readErrors);
+        }
+
+        var built = ScorecardBuilder.Build(sources);
+        if (built.Scorecard is not { } scorecard)
+        {
+            return Outcome.Fail(ExitInputError, built.Errors);
+        }
+
+        if (step is null)
+        {
+            return Outcome.Ok(BuildRequestJson.Result(scorecard, null, []), CliJson.Utf8.GetBytes(ChoiceText(scorecard, caseDirectory)));
+        }
+
+        var created = BuildRequestBuilder.Create(scorecard, sources, step.Value);
+        if (created.Bundle is not { } bundle)
+        {
+            return Outcome.Fail(ExitInputError, created.Errors);
+        }
+
+        var exportCheckPath = Path.Combine(output, BuildRequestBuilder.ExportCheckFile);
+        byte[]? signed;
+        try
+        {
+            signed = File.Exists(exportCheckPath) ? File.ReadAllBytes(exportCheckPath) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Outcome.Fail(ExitInputError, [new CaseError(BuildRequestBuilder.ExportCheckFile, 0, 0, CliErrors.File, string.Empty, "파일을 읽을 수 없다: " + ex.GetType().Name)]);
+        }
+
+        var check = BuildRequestBuilder.CheckExport(bundle, signed);
+        var folder = Path.Combine(output, BuildRequestBuilder.FolderName);
+        try
+        {
+            if (!check.IsConfirmed)
+            {
+                // 확인 전: 초안만 출력 폴더에 쓴다. 번들 폴더는 만들지 않는다(내보내지 않는다).
+                Directory.CreateDirectory(output);
+                File.WriteAllBytes(exportCheckPath, bundle.ExportCheckDraft);
+                return Outcome.Fail(ExitInputError, [check.Error!]);
+            }
+
+            var names = bundle.Files.Select(f => f.Path).Append(BuildRequestBuilder.ExportCheckFile).ToArray();
+            if (Directory.Exists(folder)
+                && Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                    .Select(f => Path.GetRelativePath(folder, f).Replace(Path.DirectorySeparatorChar, '/'))
+                    .Order(StringComparer.Ordinal)
+                    .FirstOrDefault(f => !names.Contains(f, StringComparer.Ordinal)) is { } stray)
+            {
+                return Outcome.Fail(ExitInputError, [OutputError("build-request 폴더에 번들 밖 파일이 있다: " + stray + ". 폴더를 비우고 다시 돌린다")]);
+            }
+
+            foreach (var file in bundle.Files)
+            {
+                var path = Path.Combine(folder, file.Path.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllBytes(path, file.Content);
+            }
+
+            File.WriteAllBytes(Path.Combine(folder, BuildRequestBuilder.ExportCheckFile), signed!);
+            var files = names.Select(n => BuildRequestBuilder.FolderName + "/" + n).ToArray();
+            var display = DisplayOutput(caseDirectory, parsed.Option(CommandLine.Out));
+            var text = string.Create(CultureInfo.InvariantCulture, $"제작 의뢰서 번들을 썼다: {bundle.Case} {bundle.Step}단계 {bundle.Name} (확인: {check.Signer})\n")
+                + string.Concat(files.Select(f => display + "/" + f + "\n"));
+            return Outcome.Ok(BuildRequestJson.Result(scorecard, bundle.Step, files), CliJson.Utf8.GetBytes(text));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Outcome.Fail(ExitInputError, [OutputError("출력 파일을 쓸 수 없다: " + ex.GetType().Name)]);
+        }
+    }
+
+    // build 추천 안내(사람용). 사람용 글은 G2 대상이 아니다(5.1).
+    private static string ChoiceText(ScorecardResult scorecard, string caseDirectory)
+    {
+        if (scorecard.Proposal is not { } p)
+        {
+            return "만들 ② 단계가 없다. 아무것도 쓰지 않았다.\n";
+        }
+
+        var candidates = string.Join(", ", BuildRequestBuilder.Candidates(scorecard).Select(n => n.ToString(CultureInfo.InvariantCulture)));
+        return string.Create(CultureInfo.InvariantCulture, $"먼저 만들 단계: {p.Step}단계 {p.Name}\n")
+            + "이유: " + p.Reason + "\n"
+            + "② 단계: " + candidates + "단계\n"
+            + string.Create(CultureInfo.InvariantCulture, $"이 단계 만들까요? 예: scorecard build {caseDirectory} --step {p.Step}\n")
+            + "아니오·나중에: 아무것도 하지 않는다. 이 명령은 아무것도 쓰지 않았다.\n";
     }
 
     // 내부 명령 classify: --answers가 있으면 그 파일, 없으면 case.yaml의 steps.

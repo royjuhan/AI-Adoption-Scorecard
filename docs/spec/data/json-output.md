@@ -11,7 +11,7 @@
 | `start` | 예 | `--answers`, `--out`, `--json` | 결과 객체 | `classification.json` |
 | `open` | 예 | `--review`, `--out`, `--json` | 스코어카드 결과 객체(`scorecard.json` 바이트) | `scorecard.json`, `scorecard.html` |
 | `check` | 예 | `--out`, `--json` | 결과 객체 | `metrics.json`, `judgment.json` |
-| `build` | 예 | `--json` | 오류 JSON(`unavailable`) | — |
+| `build` | 예 | `--step`, `--out`, `--json` | build 결과 객체(`build-request.md` 3.1) | `--step`이고 확인됐으면 `build-request/` 번들, 확인 전이면 `export-check.md` 초안 |
 | `classify` | 아니오 | `--answers`, `--json` | `classification.json` 바이트 | — |
 | `compare` | 아니오 | `--json` | `metrics.json` 바이트 | — |
 | `judge` | 아니오 | `--json` | `judgment.json` 바이트 | — |
@@ -29,11 +29,12 @@ scorecard <명령> <케이스 폴더> [옵션]
   start <케이스> --answers <파일>  답 파일로 단계를 분류한다
   open <케이스>                    저장된 결과로 스코어카드 HTML을 쓴다
   check <케이스>                   기준·결과 자료를 대조하고 판정한다
-  build <케이스>                   제작 의뢰서 번들을 만든다(M2-4)
+  build <케이스>                   만들 ② 단계를 추천한다. --step이면 제작 의뢰서 번들을 쓴다
 
 옵션:
   --answers <파일>  답 파일(answers.yaml). start에 필요하다
   --review <파일>   확인 파일(review.yaml). open에서 받는다
+  --step <번호>     만들 단계("이 단계 만들까요?"에 예). build에서 받는다
   --out <폴더>      결과를 쓸 폴더. 기본값은 <케이스>/out
   --json            결과와 오류를 JSON 문서 하나로 낸다
   --help            이 도움말
@@ -78,7 +79,7 @@ scorecard <명령> <케이스 폴더> [옵션]
 
 ### 6.1 오류 JSON
 
-`build <케이스> --json` 표준 출력(종료 코드 2):
+`build <케이스> --json` 표준 출력(종료 코드 2, `start`를 돌리기 전):
 
 ```json
 {
@@ -86,12 +87,12 @@ scorecard <명령> <케이스 폴더> [옵션]
   "exit_code": 2,
   "errors": [
     {
-      "code": "unavailable",
-      "source": "",
+      "code": "file",
+      "source": "classification.json",
       "line": 0,
       "column": 0,
       "path": "",
-      "message": "build는 M2-4에서 생긴다"
+      "message": "파일이 없다. start를 먼저 돌린다"
     }
   ]
 }
@@ -101,10 +102,9 @@ scorecard <명령> <케이스 폴더> [옵션]
 
 | 코드 | 언제 | 종료 코드 |
 | --- | --- | --- |
-| `argument` | 명령 없음·모름, 케이스 폴더 인자 없음, 남는 인자, 이 명령에 없는 옵션, 옵션 값 없음, 같은 옵션 두 번, 필수 옵션 없음 | 2 |
-| `file` | 케이스 폴더 없음(`start`·`open`·`classify --answers`), 답 파일 없음·읽기 실패, `open`의 classification.json 없음·확인 파일 없음 | 2 |
-| `output` | 출력 폴더가 케이스 폴더 안(기본값 밖), 출력 폴더 자리에 파일, 쓰기 실패 | 2 |
-| `unavailable` | 아직 없는 기능(`build`, M2-4) | 2 |
+| `argument` | 명령 없음·모름, 케이스 폴더 인자 없음, 남는 인자, 이 명령에 없는 옵션, 옵션 값 없음, 같은 옵션 두 번, 필수 옵션 없음, `--step` 값이 1 이상의 정수가 아님 | 2 |
+| `file` | 케이스 폴더 없음(`start`·`open`·`build`·`classify --answers`), 답 파일 없음·읽기 실패, `open`·`build`의 classification.json 없음, 확인 파일 없음, `export-check.md` 읽기 실패 | 2 |
+| `output` | 출력 폴더가 케이스 폴더 안(기본값 밖), 출력 폴더 자리에 파일, 쓰기 실패, `build-request/`에 번들 밖 파일 | 2 |
 | `internal` | 예상하지 못한 예외. 메시지는 예외 타입 이름 | 1 |
 
 ### 6.3 인자·입력 오류 표
@@ -135,7 +135,12 @@ scorecard <명령> <케이스 폴더> [옵션]
 | `check <case> --out <case>` | 2 | `output` | — | `--out` | `출력 폴더는 케이스 폴더 밖이나 기본 out 폴더여야 한다` |
 | `check <case> --out <case>/expected` | 2 | `output` | — | `--out` | `출력 폴더는 케이스 폴더 밖이나 기본 out 폴더여야 한다` |
 | `start <case> --answers <case>/answers.yaml --out <file>` | 2 | `output` | — | `--out` | `출력 폴더 자리에 파일이 있다` |
-| `build <case>` | 2 | `unavailable` | — | — | `build는 M2-4에서 생긴다` |
+| `build <case>` | 2 | `file` | `classification.json` | — | `파일이 없다. start를 먼저 돌린다` |
+| `build <missing>` | 2 | `file` | — | `case` | `케이스 폴더가 없다` |
+| `build <case> --step x` | 2 | `argument` | — | `--step` | `단계 번호는 1 이상의 정수다` |
+| `build <case> --step 0` | 2 | `argument` | — | `--step` | `단계 번호는 1 이상의 정수다` |
+| `build <case> --step` | 2 | `argument` | — | `--step` | `옵션 값이 없다` |
+| `open <case> --step 1` | 2 | `argument` | — | `--step` | `이 명령에 없는 옵션이다` |
 
 ## 7. G2·G3 대상
 
@@ -144,4 +149,5 @@ scorecard <명령> <케이스 폴더> [옵션]
 | `cli-start-text-check-valid` | `text-check-valid` | `start <입력> --answers <입력>/answers.yaml --out <출력> --json` → 출력 폴더 파일 + `stdout.json` |
 | `cli-check-case-valid` | `case-valid` | `check <입력> --out <출력> --json` → 출력 폴더 파일 + `stdout.json` |
 | `cli-open-case-valid` | `case-valid` | `start <입력> --answers <입력>/case.yaml --out <출력>`, `check <입력> --out <출력>`, `open <입력> --out <출력> --json` → 출력 폴더 파일 + `stdout.json` |
+| `cli-build-case-valid` | `case-valid` | `start <입력> --answers <입력>/case.yaml --out <출력> --json`, `check <입력> --out <출력> --json`, `build <입력> --step 1 --out <출력> --json`(확인 전, 초안), 출력 폴더 `export-check.md`의 `확인한 사람:` 줄에 `검토자`, `build <입력> --step 1 --out <출력> --json` → 출력 폴더 파일 + `stdout.json` |
 | `cli-check-case-invalid` | `case-invalid` | `check <입력> --out <출력> --json` → 오류 JSON을 `stdout.json` 한 파일로 |

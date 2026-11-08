@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "command": "build",
+  "files": [],
+  "case": "reply-drafts",
+  "step": null,
+  "proposal": {
+    "step": 1,
+    "name": "문의 접수 기록",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "candidates": [
+    1
+  ]
+}

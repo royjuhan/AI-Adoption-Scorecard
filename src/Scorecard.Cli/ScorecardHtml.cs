@@ -89,7 +89,7 @@ internal static class ScorecardHtml
         h.Append("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n");
         h.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         h.Append("<title>AI 도입 스코어카드 · ").Append(E(r.Case)).Append("</title>\n");
-        h.Append("<style>\n").Append(Css).Append("</style>\n</head>\n<body>\n<div class=\"wrap\">\n");
+        h.Append("<style>\n").Append(CssLf).Append("</style>\n</head>\n<body>\n<div class=\"wrap\">\n");
 
         Header(h, r);
         Tiles(h, r);
@@ -472,6 +472,9 @@ internal static class ScorecardHtml
     private static string D(decimal value) => value.ToString(CultureInfo.InvariantCulture);
 
     // 시안(M2-스코어카드-시안.html)의 스타일. 390·900·1236px에서 가로 스크롤이 없게 한다.
+    // 원본 줄바꿈(Windows 체크아웃의 CRLF)과 상관없이 LF로 쓴다(결정론).
+    private static readonly string CssLf = Css.ReplaceLineEndings("\n");
+
     private const string Css = """
 :root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;
 --c1:#0f766e;--c1bg:#e6f6f4;--c2:#1d5bd8;--c2bg:#eaf1ff;--c2m:#0e7490;--c2mbg:#e4f5fa;--c3:#7c3aed;--c3bg:#f3edff;--c4:#b45309;--c4bg:#fff4e5;

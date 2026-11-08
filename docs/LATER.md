@@ -61,6 +61,12 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #21 | `pull/<N>/merge`로 받으면 main이 움직였을 때 다른 병합 커밋이라 로컬 실행으로 간다(안전, 시간만 못 아낌). 문서에 한 줄 | ADR 0011 |
 | 2026-11-08 | #21 | reviewer.md 막는 지적 기준에 ADR·STATUS 기록이 없다. ADR 0010 해석으로 한 줄 | reviewer.md |
 | 2026-11-08 | #21 | `lead-check.json` `mutation_reuse.from`에 절대 경로(CI 도구용, 참고) | tools/ci/lead_check.py |
+| 2026-11-08 | #22 | sweeper가 `tests/`·`tools/oracle/`의 경로만 바꿨다(폴더 제한·ADR 0005 결정 9의 예외). ADR 0012에 한 줄 | ADR 0012 |
+| 2026-11-08 | #22 | classification.md 4.1 "`GATE`는 `SIGNOFF`가 아닌 모든 잎 뒤"에 `failure_impact` 조건이 빠졌다 | docs/spec/classification.md |
+| 2026-11-08 | #22 | cases-public README 3절 표: 24를 해소됨에 넣고 이유 칸에 "xlsx 읽기는 남는다" | docs/cases-public/README.md |
+| 2026-11-08 | #22 | 지시문 6절 cli-dev 템플릿 2항이 실제 파일과 다르다("exe 문답 없음" 빠짐) | 지시문 6절 |
+| 2026-11-08 | #22 | 테스트 주석이 지운 문서·옛 경로를 가리킨다(SignoffFinalExampleTests:9, CaseYamlTests:81, ClassificationInput:19, SpecDocument:5) | tests |
+| 2026-11-08 | #22 | guard-tests.md 0절의 `[S…]`·`[V…]` 태그, data 파일 글머리의 리뷰 이력 문구(테스트가 읽을 수 있어 그대로) | docs/spec |
 
 ## sweeper가 지운 스펙 절 (제목만)
 

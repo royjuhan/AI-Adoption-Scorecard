@@ -1,26 +1,28 @@
 namespace Scorecard.Tests.Classification;
 
 // 스펙 4.7 확인 항목(승인 결정 7)과 4.8 AI 과잉 후보(승인 결정 8, 카드 수용 기준 5).
-// 4.2 CHECK_EXISTING·OVERUSE 행은 ConditionTableTests가 표에서 읽어 본다. 여기서는 나머지 규칙을 본다.
+// 4.2 OVERUSE 행은 ConditionTableTests가 표에서 읽어 본다. 여기서는 나머지 규칙을 본다.
+// schema 2(ADR 0013): confirm_existing_feature를 뺐다. 확인 항목은 measure_minutes_per_item 하나다.
 [Trait("Spec", "classification")]
 public class CheckAndOveruseTests
 {
-    // 4.7 표의 키 두 개, 표 순서(관련 키의 4.4 표 순서).
+    // 4.7 표의 키 하나(schema 2). confirm_existing_feature는 없다(ADR 0013 결정 3).
     [Fact]
-    public void Check_table_lists_two_keys_in_order()
+    public void Check_table_lists_only_measure_key()
     {
-        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature], ClassificationSpec.CheckKeys());
+        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem], ClassificationSpec.CheckKeys());
+        Assert.DoesNotContain(ClassificationSpec.RemovedConfirmExistingFeature, ClassificationSpec.CheckKeys());
     }
 
-    // 4.7: 값만 본다. 직접 쓴 unknown·null도, 기본값도 같다. 순서는 표 순서.
+    // 4.7: 값만 본다. 직접 쓴 null도, 기본값도 같다. existing_feature: unknown은 확인 항목을 달지 않는다(schema 2).
     [Theory]
     [InlineData("1", "no", false, new string[0])]
     [InlineData("null", "no", false, new[] { ClassificationSpec.MeasureMinutesPerItem })]
     [InlineData("null", "no", true, new[] { ClassificationSpec.MeasureMinutesPerItem })]
-    [InlineData("1", "unknown", false, new[] { ClassificationSpec.ConfirmExistingFeature })]
-    [InlineData("1", "unknown", true, new[] { ClassificationSpec.ConfirmExistingFeature })]
-    [InlineData("null", "unknown", false, new[] { ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature })]
-    [InlineData("null", "unknown", true, new[] { ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature })]
+    [InlineData("1", "unknown", false, new string[0])]
+    [InlineData("1", "unknown", true, new string[0])]
+    [InlineData("null", "unknown", false, new[] { ClassificationSpec.MeasureMinutesPerItem })]
+    [InlineData("null", "unknown", true, new[] { ClassificationSpec.MeasureMinutesPerItem })]
     [InlineData("0", "yes", false, new string[0])]
     public void Checks_follow_values_not_default_flags(string minutes, string existing, bool isDefault, string[] expected)
     {
@@ -30,14 +32,14 @@ public class CheckAndOveruseTests
         Assert.Equal(expected, ClassificationInput.One(a).Checks);
     }
 
-    // 4.7: existing_feature: unknown은 Q1에 걸리지 않고 아래로 내려가 분류한다(지시문 3.2 "확인 항목으로 남김").
+    // 4.1: existing_feature: unknown은 Q1에 걸리지 않고 아래로 내려가 분류한다. schema 2에서는 확인 항목을 달지 않는다.
     [Fact]
     public void Unknown_existing_feature_is_classified_below_Q1()
     {
         var step = ClassificationInput.One(ClassificationInput.Answers("existing_feature: unknown"));
 
         Assert.Equal(["② ELSE"], ClassificationInput.RowLabels(step));
-        Assert.Contains(ClassificationSpec.ConfirmExistingFeature, step.Checks);
+        Assert.DoesNotContain(ClassificationSpec.RemovedConfirmExistingFeature, step.Checks);
     }
 
     // 4.8: current_actor 값이 ai_each_time이고 step 행의 담당이 ②. 부가 행(④)은 보지 않는다.

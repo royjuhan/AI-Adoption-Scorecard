@@ -1,0 +1,26 @@
+# 합성 예시. 실제 업무·값 없음. AI 판단(ai)과 규칙 의견(M2-2)을 섞었다.
+name: ai-judgment
+task: 합성 문의를 접수해 유형을 고르고 답변을 써서 사람이 확인해 보낸다
+steps:
+  - name: 접수 기록
+    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 30, exception_rate: 0, current_actor: human, minutes_per_item: 1, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+    ai:
+      assignee: ②
+      reason: 표의 칸을 정해진 자리로 옮기는 일이라 규칙으로 된다.
+  - name: 유형 고르기
+    answers: {input_kind: table, rule_expressible: partial, frequency: daily, batch_size: 30, exception_rate: 15, current_actor: ai_each_time, minutes_per_item: 2, failure_impact: external, existing_feature: no, human_signoff: no}
+    ai:
+      assignee: ②M
+      reason: 지난 기록으로 학습한 분류 모델을 고정해 쓴다. 실행할 때 AI를 부르지 않는다.
+  - name: 답변 초안 쓰기
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 30, exception_rate: 30, current_actor: human, minutes_per_item: 6, failure_impact: external, existing_feature: no, human_signoff: no}
+    ai:
+      assignee: ④
+      reason: 문의마다 사정이 달라 담당자가 직접 쓴다.
+  - name: 월말 집계
+    answers: {input_kind: table, rule_expressible: yes, frequency: monthly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: internal_rework, human_signoff: no}
+  - name: 최종 확인·발송
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: daily, batch_size: 30, exception_rate: 10, current_actor: human, minutes_per_item: 2, failure_impact: external, existing_feature: no, human_signoff: yes}
+    ai:
+      assignee: ④
+      reason: 사람이 읽고 서명해 보낸다.

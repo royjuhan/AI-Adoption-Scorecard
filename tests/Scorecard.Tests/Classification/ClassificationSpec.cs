@@ -32,21 +32,28 @@ internal static partial class ClassificationSpec
     // 3.2 모양 블록의 제목. 속성 이름·순서·첫 키는 이 블록에서 읽는다.
     public const string ShapeHeading = "### 3.2 classification.json";
 
-    // ADR 0004 결정 2(T-007): classification.json의 첫 키는 "schema_version", 값은 정수 1.
+    // ADR 0004 결정 2(T-007): classification.json의 첫 키는 "schema_version". 값은 정수 2(ADR 0013, M2-2).
     // 스펙 3.2 블록이 같은 값을 적었는지는 테스트가 본다.
     public const string SchemaVersionKey = "schema_version";
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     // 스펙 4.6. 공백 하나 + "(기본값 사용, 확인 필요)". 지시문 3.3·스펙 4.6 문구와 같은지는 테스트가 본다.
     public const string DefaultMark = " (기본값 사용, 확인 필요)";
 
-    // 스펙 4.7 확인 항목 키.
+    // 스펙 4.7 확인 항목 키. confirm_existing_feature는 schema 2에서 뺐다(ADR 0013 결정 3). 나오지 않는지 볼 때만 쓴다.
     public const string MeasureMinutesPerItem = "measure_minutes_per_item";
-    public const string ConfirmExistingFeature = "confirm_existing_feature";
+    public const string RemovedConfirmExistingFeature = "confirm_existing_feature";
 
-    // 스펙 4.2의 행을 만들지 않는 조건 두 개.
+    // 스펙 4.2의 행을 만들지 않는 조건.
     public const string OveruseRule = "OVERUSE";
-    public const string CheckExistingRule = "CHECK_EXISTING";
+
+    // 스펙 6.6 AI 판단 장면(M2-2). 비교 값 표와 장면 표.
+    public const string AiCompareHeader = "| AI 담당 | 비교 값 | 뜻 |";
+    public const string AiSceneHeader = "| 바꾼 답 | AI 담당 | 규칙 의견 | differs | AI 과잉 후보 | 행 |";
+
+    // 스펙 6.7 AI 판단 표본. 블록 앞의 표시 줄 머리.
+    public const string AiSampleYamlMarker = "AI 판단 표본 `tests/Scorecard.Tests/TestData/classification/ai-judgment/answers.yaml`";
+    public const string AiSampleJsonMarker = "AI 판단 표본 classification.json (SHA-256 `";
 
     // 스펙 4.4 행 종류.
     public const string KindStep = "step";

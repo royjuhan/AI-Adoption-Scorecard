@@ -18,6 +18,7 @@ public class ClassificationApiShapeTests
         "ClassificationJson",
         "ClassificationResult",
         "ClassificationRow",
+        "RuleOpinion",
         "StepClassification",
         "StepClassifier",
     ];
@@ -29,11 +30,15 @@ public class ClassificationApiShapeTests
         const string exceptionReview = StepClassifier.KindExceptionReview;
         const string humanGate = StepClassifier.KindHumanGate;
         const string fileName = ClassificationJson.FileName;
+        const string sourceAi = StepClassifier.SourceAi;
+        const string sourceRule = StepClassifier.SourceRule;
 
         Assert.Equal(ClassificationSpec.KindStep, step);
         Assert.Equal(ClassificationSpec.KindExceptionReview, exceptionReview);
         Assert.Equal(ClassificationSpec.KindHumanGate, humanGate);
         Assert.Equal("classification.json", fileName);
+        Assert.Equal("ai", sourceAi);
+        Assert.Equal("rule", sourceRule);
     }
 
     // 4.4 값 표의 행 종류 행과 같다.
@@ -56,7 +61,7 @@ public class ClassificationApiShapeTests
         Assert.NotNull(render);
     }
 
-    // 결과 레코드 세 개의 위치 매개변수 순서와 형식.
+    // 결과 레코드 넷의 위치 매개변수 순서와 형식. schema 2(ADR 0013)에서 Source·RuleOpinion·Differs가 Name 뒤에 들어왔다.
     [Fact]
     public void Result_records_have_spec_shape()
     {
@@ -64,6 +69,9 @@ public class ClassificationApiShapeTests
         var step = new StepClassification(
             Number: 1,
             Name: "s",
+            Source: StepClassifier.SourceRule,
+            RuleOpinion: new RuleOpinion(Assignee: "②", Rule: "ELSE"),
+            Differs: false,
             Defaults: ["minutes_per_item"],
             Inferred: [],
             Checks: ["measure_minutes_per_item"],
@@ -75,6 +83,7 @@ public class ClassificationApiShapeTests
         Assert.Same(row, Assert.Single(result.Steps[0].Rows));
         Assert.Equal(new ClassificationRow("step", "②", "ELSE", row.Used, "r"), row);
         Assert.Equal("p", result.Case);
+        Assert.Equal(new RuleOpinion("②", "ELSE"), step.RuleOpinion);
     }
 
     [Fact]

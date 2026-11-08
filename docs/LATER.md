@@ -168,3 +168,8 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | M2-3 | 자료 패턴 읽기가 실패하면(overlap·파일 없음) 자료 파일 해시를 말없이 뺀다. 입력 기록이 빈 것을 표시 | ScorecardBuilder.cs |
 | 2026-11-08 | M2-3 | html-check를 인자 없이 부르면 끝난다. 골든 6개 경로로 돌리는 명령을 카드나 스펙 6절에 적는다 | tools/html-check/check.mjs, report.md 6절 |
 | 2026-11-08 | M2-3 | `change`가 지금 담당과 같은 담당을 적어도 받는다("④를 ④로 바꿨다" 위험). 막을지 스펙 5절에서 | src/Scorecard.Core/Report/ReviewParser.cs |
+| 2026-11-08 | #27 | 스킬의 케이스 이름 규칙 "소문자·숫자·`-`"가 정규식 `^[a-z0-9]+(-[a-z0-9]+)*`보다 넓다(앞뒤 `-`, `--`). 틀리면 엔진이 막는다 | .claude/skills/scorecard/SKILL.md |
+| 2026-11-08 | #27 | 스킬 6.1의 "AI 판단(`rows[0]`)"은 `source: rule` 단계에서는 트리 행이다. source를 보고 표시하라는 한 줄 | .claude/skills/scorecard/SKILL.md |
+| 2026-11-08 | #27 | #24 행 "9.6 → 9.8로 9.7 빔"은 데이터 9절을 지워 해당이 없어졌다. 지운다 | docs/LATER.md |
+| 2026-11-08 | #27 | 사용자 확인 여부가 파일에 남지 않는다. 확인 없이 쓴 `ai`도 엔진은 받는다(ADR 0013 남은 위험). 스킬 골든 테스트는 제목·명령 줄만 본다 | SKILL.md, ScorecardSkillTests.cs |
+| 2026-11-08 | #27 | SIGNOFF + AI ③ + `failure_impact: external`(규칙 5)이 데이터 6.6 장면 표에는 있고 6.7 표본 파일에는 없다 | TestData/classification/ai-judgment/answers.yaml |

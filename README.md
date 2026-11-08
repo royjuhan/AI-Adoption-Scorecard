@@ -13,6 +13,8 @@ A tool that checks whether a company's AI adoption actually worked, and finds th
 3. If AI is already in use, it measures three things: is it accurate, did time drop, was AI needed.
 4. It writes a scorecard (one HTML page) and, if you say yes, a build-request bundle.
 
+AI에 보내면 안 되는 자료는 넣지 마세요. 구조만 설명해도 분류는 됩니다.
+
 ## Install
 
 TBD (M4: single `scorecard.exe`, win-x64).

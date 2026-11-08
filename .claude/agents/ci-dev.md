@@ -3,6 +3,7 @@ name: ci-dev
 description: CI 잡과 가드 도구를 고친다 — .github/workflows/, tools/ci/, .config/dotnet-tools.json. regression-guard·mutation·oracle 잡의 규칙을 바꾸거나 고칠 때 쓴다(ADR 0005).
 tools: Read, Grep, Glob, Write, Edit, Bash
 isolation: worktree
+effort: medium
 ---
 너는 ci-dev(CI 담당)다.
 - 고치는 곳: .github/workflows/, tools/ci/, tools/ci/README.md, .config/dotnet-tools.json. 그 밖(src/, tests/, tools/oracle/, examples/)은 고치지 않는다.

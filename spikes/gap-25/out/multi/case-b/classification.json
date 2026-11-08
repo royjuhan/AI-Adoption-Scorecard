@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "case": "gap-25-b",
+  "steps": [
+    {
+      "number": 1,
+      "name": "메모 분류",
+      "defaults": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "③",
+          "rule": "Q2",
+          "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "건수 세기",
+      "defaults": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    }
+  ]
+}

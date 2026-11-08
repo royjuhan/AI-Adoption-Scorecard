@@ -1,0 +1,14 @@
+# 공개 사례 1절 20번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 요약 ③ · 실적 숫자 ②. 과잉 후보: 실적 집계.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-20
+task: 회의 내용을 요약하고 실적 숫자를 집계한다
+steps:
+  - name: 회의 내용 요약
+    answers: {input_kind: conversation, rule_expressible: no, current_actor: ai_each_time, human_signoff: no}
+    inferred: [rule_expressible]
+  # 실적 숫자는 실적 표에서 모은다고 보았다. 지금 AI가 매번 한다(과잉 후보).
+  - name: 실적 숫자 집계
+    answers: {input_kind: table, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]

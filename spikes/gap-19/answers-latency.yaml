@@ -1,0 +1,7 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 19 확인용(docs/cases-public/README.md 3절).
+# 처리량·응답 시간 질문을 답에 더해 본다(지금 질문 표에 없는 키).
+name: gap-19-latency
+task: 합성 거래 기록을 규칙으로 점검한다
+steps:
+  - name: 실시간 거래 점검(분당 1만 건)
+    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 14400000, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: external, existing_feature: no, human_signoff: no, max_latency_ms: 50}

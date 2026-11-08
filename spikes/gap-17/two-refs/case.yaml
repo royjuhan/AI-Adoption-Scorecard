@@ -1,0 +1,17 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 17 확인용(docs/cases-public/README.md 3절).
+# 기준 자료 두 벌(평가자 A·B)을 reference/에 같이 둔다.
+name: gap-17-two-refs
+task: 합성 부품 사진을 보고 불량 여부를 적는다
+steps:
+  - name: 불량 여부 판정
+    answers: {input_kind: image, rule_expressible: partial, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: item_id
+compare:
+  - {field: label}
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "case": "gap-20-reversible",
+  "compare": {
+    "status": "not_verified",
+    "reason": "no_inputs",
+    "key": null,
+    "reference_files": [],
+    "candidate_files": [],
+    "counts": null,
+    "accuracy_pct": null,
+    "missing_rate_pct": null,
+    "fields": [],
+    "items": []
+  }
+}

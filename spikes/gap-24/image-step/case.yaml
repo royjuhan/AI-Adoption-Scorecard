@@ -1,0 +1,7 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 24 확인용(docs/cases-public/README.md 3절).
+# 사용자가 변환(읽기) 단계를 따로 적지 않고 한 단계로 적었다. 판단 기준은 글로 쓸 수 있다.
+name: gap-24-image-step
+task: 합성 손글씨 근무표를 읽어 시간을 집계한다
+steps:
+  - name: 근무표 시간 집계
+    answers: {input_kind: image, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}

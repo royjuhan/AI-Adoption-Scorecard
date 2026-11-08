@@ -1,0 +1,14 @@
+# 공개 사례 1절 37번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 읽기 ③ · 가격·프로모션 대조 ② · 예외 ④. 과잉 후보: 가격 대조.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-37
+task: 주문서를 읽어 가격·판촉 조건과 대조하고, 맞지 않는 주문은 사람이 처리한다
+steps:
+  - name: 주문서 읽기
+    answers: {input_kind: free_doc, rule_expressible: partial, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind, rule_expressible]
+  # 맞지 않는 주문(예외 ④)은 사람이 본다. 그래서 기준을 일부만 글로 쓸 수 있다고 적었다. 지금 AI가 매번 한다(과잉 후보).
+  - name: 가격·판촉 조건 대조
+    answers: {input_kind: table, rule_expressible: partial, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind, rule_expressible]

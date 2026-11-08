@@ -1,0 +1,18 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 14 확인용(docs/cases-public/README.md 3절).
+# 품목 줄만. 한 송장 번호 아래 줄이 여럿이다(키 하나에 여러 행).
+name: gap-14-lines-only
+task: 합성 송장의 머리(거래처·합계)와 품목 줄을 읽어 옮긴다
+steps:
+  - name: 송장 읽기
+    answers: {input_kind: image, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: invoice_id
+compare:
+  - {field: item_code}
+  - {field: amount, tolerance: 0}
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false

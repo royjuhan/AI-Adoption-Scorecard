@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "case": "gap-15-set-only",
+  "verdict": "not_verified",
+  "rule": "NOT_VERIFIED",
+  "reason": "대조할 열(case.yaml compare)이 없어 미검증.",
+  "thresholds": {
+    "accuracy_min": 95,
+    "missing_max": 2,
+    "time_must_drop": false
+  },
+  "defaults": [],
+  "checks": [],
+  "todo": [
+    {
+      "key": "add_compare",
+      "text": "case.yaml compare에 대조할 열과 허용 오차를 적는다."
+    }
+  ]
+}

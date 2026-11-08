@@ -4,6 +4,10 @@
 # 대조는 oracle compare.py의 결과(metrics.md 3.1 메모리 결과: 항목과 기준 행 전부, metrics.md 4.3 duplicate 항목)를 쓴다.
 # 규칙 값(4.2 기본값, 4.9 검토 항목, 4.3 판정 표, 4.4 확인 표, 4.5 focus_min, 4.6 읽은 문턱, 4.7 다음 할 일)은
 # 스펙 표를 손으로 옮겨 이 파일에 적었다. 실행 중에 스펙 문서를 읽지 않는다. selftest.py가 상수와 표를 대조한다.
+# T-014(docs/spec/text-check.md 5절): 점수표(scores)가 있으면 확인 SCORE를 더하고, 대조가 미검증이어도 점수표로 판정한다
+#   (길 "점수표만"). 점수표가 없으면 judgment.md 4절 그대로다(바이트가 T-013과 같다). 체크리스트는 대조 셈으로 들어온다.
+#   PR (a) 리뷰 뒤: 점수표만인데 inputs가 있고 대조할 열이 없으면(no_compare_fields) 통과가 아니라 조건부(5.3),
+#   점수표만은 읽지 않는 문턱을 defaults에 적지 않는다(5.1), score_gap_max가 0이면 "넘게" 없는 문장(5.2 문턱 0 문장 표).
 #
 # 사용: python3 tools/oracle/judge.py <케이스 폴더>
 #   표준 출력에 judgment.json 바이트(시간·사람 입력 없음. judgment.md 8절 골든과 같다).
@@ -122,6 +126,64 @@ BREAKDOWN_PARTS = (
     ((ITEM_DUPLICATE,), '중복 행'),
 )
 
+# ---- T-014 점수표 (text-check.md 5절). judgment.md 표에 더하는 행이다. 기존 상수는 그대로다. ----
+
+# 5.1 점수 문턱 기본값. scores가 있을 때만 thresholds·defaults에 든다(4.2 표 뒤).
+SCORE_THRESHOLD_DEFAULTS = (('score_gap_max', '0'),)
+
+# 5.2 점수 확인 표. (확인, 결과, 확인 문장 틀). 확인 순서는 judgment.md 4.4 다섯 뒤.
+SCORE_CHECK_TABLE = (
+    ('SCORE', 'revealed', '점수표에서 출처가 드러난 곳이 {findings}군데 있어 점수를 비교하지 않는다.'),
+    ('SCORE', 'met', 'AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 '
+                     '{score_gap_max}점 넘게 낮지 않다.'),
+    ('SCORE', 'not_met', 'AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 '
+                         '{score_gap_max}점 넘게 낮다.'),
+)
+# 5.2: 확인 문장이 문턱을 읽는 결과. revealed는 점수를 비교하지 않아 문턱을 읽지 않는다.
+SCORE_CHECK_READS = {'revealed': (), 'met': ('score_gap_max',), 'not_met': ('score_gap_max',)}
+
+# 5.2 문턱 0 문장 표. (문장, 근거 키, 결과, 틀). score_gap_max 값이 0이면(0, 0.0 모두) 5.2 확인 문장·5.3 판정 문장 대신 쓴다.
+SCORE_ZERO_TABLE = (
+    ('확인', 'SCORE', 'met', 'AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 낮지 않다.'),
+    ('확인', 'SCORE', 'not_met', 'AI 결과 평균 {ai_mean}점({ai_ratings}개)이 사람 결과 평균 {human_mean}점({human_ratings}개)보다 낮다.'),
+    ('판정', 'SCORE', 'not_met', 'AI 결과 평균 {ai_mean}점이 사람 결과 평균 {human_mean}점보다 낮으므로 보류.'),
+)
+
+# 5.3 판정 행. (자리, 근거 키, 확인 결과, 길, 판정, 판정 문장 틀). 자리 '4 뒤'는 judgment.md 4.3 순서 4 뒤·5 앞.
+# 길: '모두' = 대조가 대조함이든 미검증이든, '점수표만' = 대조가 미검증이고 점수표가 있을 때(그 순서의 행 대신).
+PATH_ALL, PATH_SCORES_ONLY, PATH_TABLE = '모두', '점수표만', '표 대조'
+SCORE_VERDICT_ROWS = (
+    ('4 뒤', 'SCORE', 'revealed', PATH_ALL, 'hold', '점수표에서 출처가 드러난 곳이 {findings}군데 있어 점수를 쓸 수 없으므로 보류.'),
+    ('4 뒤', 'SCORE', 'not_met', PATH_ALL, 'hold',
+     'AI 결과 평균 {ai_mean}점이 사람 결과 평균 {human_mean}점보다 {score_gap_max}점 넘게 낮으므로 보류.'),
+    ('4 뒤', 'NOT_VERIFIED', REASON_NO_COMPARE_FIELDS, PATH_SCORES_ONLY, 'conditional',
+     '점수는 문턱을 충족하나 대조할 열(case.yaml compare·checklist)이 없어 기준·결과 자료(case.yaml inputs)를 쓰지 않았으므로 조건부.'),
+    ('5', 'TIME', 'not_measured', PATH_SCORES_ONLY, 'conditional', '점수는 문턱을 충족하나 시간을 재지 않아 줄었는지 알 수 없으므로 조건부.'),
+    ('5', 'TIME', 'not_met', PATH_SCORES_ONLY, 'conditional',
+     '점수는 문턱을 충족하나 처리·검토 시간 {total}분이 적용 전 {before}분보다 짧지 않으므로 조건부.'),
+    ('8', 'PASS', None, PATH_SCORES_ONLY, 'pass', '점수가 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.'),
+)
+
+# 5.4 읽은 문턱. (자리, 근거 키, 확인 결과(None = 결과와 상관없음), 길, 문턱). 길 '표 대조' = 대조함 + 점수표.
+SCORE_READ_THRESHOLDS = (
+    ('4 뒤', 'SCORE', 'revealed', PATH_TABLE, ('accuracy_min', 'missing_max')),
+    ('4 뒤', 'SCORE', 'not_met', PATH_TABLE, ('accuracy_min', 'missing_max', 'score_gap_max')),
+    ('5~8', None, None, PATH_TABLE, ('accuracy_min', 'missing_max', 'time_must_drop', 'score_gap_max')),
+    ('4 뒤', 'SCORE', 'revealed', PATH_SCORES_ONLY, ()),
+    ('4 뒤', 'SCORE', 'not_met', PATH_SCORES_ONLY, ('score_gap_max',)),
+    ('4 뒤', 'NOT_VERIFIED', REASON_NO_COMPARE_FIELDS, PATH_SCORES_ONLY, ('score_gap_max',)),
+    ('5', 'TIME', None, PATH_SCORES_ONLY, ('time_must_drop', 'score_gap_max')),
+    ('8', 'PASS', None, PATH_SCORES_ONLY, ('time_must_drop', 'score_gap_max')),
+)
+
+# 5.1: 점수표만이면 defaults에는 이 길이 읽는 문턱(5.4 점수표만 행의 문턱)만 적는다. accuracy_min·missing_max는 읽지 않는다.
+SCORES_ONLY_READ = tuple(dict.fromkeys(k for _z, _k, _r, path, th in SCORE_READ_THRESHOLDS if path == PATH_SCORES_ONLY for k in th))
+
+# 5.5 다음 할 일(더하는 것). judgment.md 4.7 표의 add_group 뒤, confirm_thresholds 앞.
+SCORE_TODO_TABLE = (
+    ('rescore_blind', '출처가 드러나지 않게 가림 키를 새로 붙이고 점수를 다시 매긴다.'),
+)
+
 EMPTY_VALUE = '(빈 칸)'  # 4.5: 빈 값은 (빈 칸)
 SHOW_MAX = 64  # 4.5·metrics 4.7: 64자를 넘으면 자른다(자르는 모양은 범위 밖, show() 참고)
 
@@ -185,8 +247,12 @@ def effective_thresholds(case: Case):
         'missing_max': t.missing_max_text if t else None,
         'time_must_drop': (None if t is None or t.time_must_drop is None else ('true' if t.time_must_drop else 'false')),
     }
+    table = THRESHOLD_DEFAULTS
+    if case.scores is not None:  # T-014 text-check.md 5.1: scores가 있을 때만.
+        given['score_gap_max'] = t.score_gap_max_text if t else None
+        table = THRESHOLD_DEFAULTS + SCORE_THRESHOLD_DEFAULTS
     values, defaults = {}, []
-    for key, default in THRESHOLD_DEFAULTS:
+    for key, default in table:
         if given[key] is None:
             values[key] = default
             defaults.append(key)
@@ -265,7 +331,7 @@ def check_consistent(case: Case, run: CompareRun) -> None:
     body = run.body
     if case.inputs is None:
         ok = body['status'] == STATUS_NOT_VERIFIED and body['reason'] == REASON_NO_INPUTS
-    elif not case.compare:
+    elif not case.compare and case.checklist is None:  # T-014: 체크리스트만 있어도 대조함이다.
         ok = body['status'] == STATUS_NOT_VERIFIED and body['reason'] == REASON_NO_COMPARE_FIELDS
     else:
         ok = (body['status'] == STATUS_MEASURED and body['key'] == case.inputs.key
@@ -273,6 +339,16 @@ def check_consistent(case: Case, run: CompareRun) -> None:
         group = case.inputs.group
         if ok and group is not None:
             ok = all(r.header.count(group) == 1 for r in run.reference_rows)
+        # T-014 text-check.md 5.6: 체크리스트 문장 열·항목 이름(순서)이 정의와 같다.
+        cl = case.checklist
+        got = body.get('checklist')
+        if cl is None:
+            ok = ok and got is None
+        else:
+            ok = ok and got is not None and got['text'] == cl.text \
+                and [e['item'] for e in got['entries']] == [i.item for i in cl.items]
+    # T-014 5.6: 점수표 집계는 정의에 scores가 있을 때만 있다.
+    ok = ok and ((run.scores is None) == (case.scores is None))
     if not ok:
         raise OracleError('대조 결과가 정의와 맞지 않는다 (ArgumentException 입력, 범위 밖)')
 
@@ -282,19 +358,74 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
     check_consistent(case, run)
     values, defaults = effective_thresholds(case)
     body = run.body
+    scores_only = body['status'] == STATUS_NOT_VERIFIED and run.scores is not None  # T-014 5.3 길 "점수표만"
+    if scores_only:  # T-014 5.1: 이 길이 읽지 않는 문턱은 기본값 표시·confirm_thresholds에 넣지 않는다.
+        defaults = [k for k in defaults if k in SCORES_ONLY_READ]
     thresholds_json = {
         'accuracy_min': JsonNumber(values['accuracy_min']),
         'missing_max': JsonNumber(values['missing_max']),
         'time_must_drop': values['time_must_drop'] == 'true',
     }
+    scores = run.scores
+    if scores is not None:  # T-014 text-check.md 5.1·3.3: thresholds 끝에.
+        thresholds_json['score_gap_max'] = JsonNumber(values['score_gap_max'])
 
     def mark(text: str, keys) -> str:
         return text + DEFAULT_MARK if any(k in defaults for k in keys) else text
 
-    todo_when = {k: False for k, _ in TODO_TABLE}
+    todo_table = _todo_table(scores is not None)
+    todo_when = {k: False for k, _ in todo_table}
     slot = {'defaults': ', '.join(f'{k} {values[k]}' for k in defaults)}
+    score_result = None
+    if scores is not None:
+        score_result, score_slot = _score(values, scores)
+        slot.update(score_slot)
+        todo_when['rescore_blind'] = score_result == 'revealed'
+    score_sentences = {(c, r): t for c, r, t in SCORE_CHECK_TABLE}
+    # T-014 5.2 문턱 0 문장: score_gap_max 값이 0이면 "{score_gap_max}점 넘게"가 없는 틀.
+    zero = {(w, k, r): t for w, k, r, t in SCORE_ZERO_TABLE} \
+        if scores is not None and Decimal(values['score_gap_max']) == 0 else {}
 
-    if body['status'] == STATUS_NOT_VERIFIED:
+    def score_check() -> dict:
+        template = zero.get(('확인', 'SCORE', score_result), score_sentences[('SCORE', score_result)])
+        return {'rule': 'SCORE', 'result': score_result,
+                'reason': mark(fill(template, slot), SCORE_CHECK_READS[score_result])}
+
+    def score_row(rule: str, result: str) -> tuple:
+        """5.3 판정 행. SCORE 행은 문턱이 0이면 문턱 0 문장 틀(판정 문장 틀만 바꾼다)."""
+        row = next(r for r in SCORE_VERDICT_ROWS if r[1] == rule and r[2] == result)
+        return row[:5] + (zero.get(('판정', rule, result), row[5]),)
+
+    if scores_only:
+        # T-014 5.3 길 "점수표만": 대조 확인 넷(ACCURACY·MISSING·UNEXPLAINED·FOCUS)이 없다. TIME과 SCORE만.
+        if unexplained_keys is not None:
+            raise OracleError('점수표만인데 사람 입력(검토 항목 키)을 받았다. 검토 항목이 없다 (oracle 범위 밖)')
+        time_result, time_slot = _time(values, times)
+        slot.update(time_slot)
+        sentences = {(c, r): t for c, r, t in CHECK_TABLE}
+        time_text = fill(sentences[('TIME', time_result)], slot)
+        checks = [{'rule': 'TIME', 'result': time_result, 'reason': mark(time_text, (CHECK_THRESHOLD['TIME'],))},
+                  score_check()]
+        reads = {(z, k, res): th for z, k, res, path, th in SCORE_READ_THRESHOLDS if path == PATH_SCORES_ONLY}
+        # 5.3 점수표만 순서: SCORE 보류 둘 → 대조할 열 없음(no_compare_fields) 조건부 → TIME 조건부 → PASS.
+        unused_inputs = body['reason'] == REASON_NO_COMPARE_FIELDS
+        if score_result in ('revealed', 'not_met'):
+            row = score_row('SCORE', score_result)
+            read = reads[('4 뒤', 'SCORE', score_result)]
+        elif unused_inputs:
+            row = score_row('NOT_VERIFIED', REASON_NO_COMPARE_FIELDS)
+            read = reads[('4 뒤', 'NOT_VERIFIED', REASON_NO_COMPARE_FIELDS)]
+        elif time_result in ('not_measured', 'not_met'):
+            row = score_row('TIME', time_result)
+            read = reads[('5', 'TIME', None)]
+        else:
+            row = score_row('PASS', None)
+            read = reads[('8', 'PASS', None)]
+        _zone, rule, _result, _path, verdict, template = row
+        reason = mark(fill(template, slot), read)
+        todo_when['measure_time'] = time_result == 'not_measured'
+        todo_when['add_compare'] = unused_inputs  # 5.5: inputs 자료를 쓰려면 대조할 열을 적는다.
+    elif body['status'] == STATUS_NOT_VERIFIED:
         if times is not None or unexplained_keys is not None:
             # 4.7 "미검증이고 time_must_drop이 true"가 시간을 받았을 때도 measure_time인지 스펙이 정하지 않았다.
             raise OracleError('미검증인데 시간·사람 입력을 받았다. 결과를 스펙이 정하지 않았다 (oracle 범위 밖)')
@@ -362,21 +493,66 @@ def judge(case: Case, run: CompareRun, times: Times | None = None, unexplained_k
             text = fill(sentences[(name, results[name])], slot)
             keys = (CHECK_THRESHOLD[name],) if name in CHECK_THRESHOLD else ()
             checks.append({'rule': name, 'result': results[name], 'reason': mark(text, keys)})
+        if scores is not None:
+            checks.append(score_check())  # T-014 5.2: 다섯 뒤.
 
         # 4.3: 순서대로 보고 처음 걸리는 행. PASS는 어느 행에도 걸리지 않을 때다.
-        row = next(r for r in VERDICT_TABLE if r[1] != 'NOT_VERIFIED' and (r[1] == 'PASS' or results[r[1]] == r[2]))
-        order, rule, _result, verdict, template = row
-        reason = mark(fill(template, slot), READ_THRESHOLDS[order])
+        # T-014 5.3: 점수표가 있으면 순서 4 뒤에 SCORE 두 행. 5~8행의 읽은 문턱에 score_gap_max(5.4).
+        hit = None
+        for r in VERDICT_TABLE:
+            if r[1] == 'NOT_VERIFIED':
+                continue
+            if r[0] == 5 and scores is not None and score_result in ('revealed', 'not_met'):
+                row = score_row('SCORE', score_result)
+                read = next(th for z, k, res, path, th in SCORE_READ_THRESHOLDS
+                            if path == PATH_TABLE and k == 'SCORE' and res == score_result)
+                hit = (row[1], row[4], row[5], read)
+                break
+            if r[1] == 'PASS' or results[r[1]] == r[2]:
+                read = READ_THRESHOLDS[r[0]]
+                if scores is not None and r[0] >= 5:
+                    read = next(th for z, k, res, path, th in SCORE_READ_THRESHOLDS if path == PATH_TABLE and z == '5~8')
+                hit = (r[1], r[3], r[4], read)
+                break
+        rule, verdict, template, read = hit
+        reason = mark(fill(template, slot), read)
         todo_when['measure_time'] = results['TIME'] == 'not_measured'
         todo_when['review_items'] = results['UNEXPLAINED'] == 'not_reviewed'
         todo_when['add_group'] = results['FOCUS'] == 'off'
 
     todo_when['confirm_thresholds'] = bool(defaults)
-    todo = [{'key': k, 'text': fill(t, slot)} for k, t in TODO_TABLE if todo_when[k]]
+    todo = [{'key': k, 'text': fill(t, slot)} for k, t in todo_table if todo_when[k]]
     return {
         'verdict': verdict, 'rule': rule, 'reason': reason, 'thresholds': thresholds_json,
         'defaults': defaults, 'checks': checks, 'todo': todo,
     }
+
+
+def _todo_table(with_scores: bool) -> tuple:
+    """4.7 표. 점수표가 있으면 add_group 뒤에 T-014 5.5 행을 넣는다."""
+    if not with_scores:
+        return TODO_TABLE
+    at = [k for k, _ in TODO_TABLE].index('add_group') + 1
+    return TODO_TABLE[:at] + SCORE_TODO_TABLE + TODO_TABLE[at:]
+
+
+def _score(values: dict, scores: dict):
+    """T-014 text-check.md 5.2 SCORE. (결과, 문장 값). 셈으로 비교한다(나눗셈 없음)."""
+    by = {s['source']: s for s in scores['sources']}
+    ai, human = by['ai'], by['human']
+    slot = {'findings': str(len(scores['blind']['findings'])),
+            'ai_mean': ai['mean'].text, 'human_mean': human['mean'].text,
+            'ai_ratings': str(ai['ratings']), 'human_ratings': str(human['ratings']),
+            'score_gap_max': values['score_gap_max']}
+    if scores['blind']['status'] == 'revealed':
+        return 'revealed', slot
+    try:
+        with localcontext(EXACT):
+            left = Decimal(ai['sum'] * human['ratings']) + Decimal(values['score_gap_max']) * ai['ratings'] * human['ratings']
+            right = Decimal(human['sum'] * ai['ratings'])
+    except DecimalException:
+        raise OracleError('점수 셈에서 반올림이 생겼다 (oracle 범위 밖)') from None
+    return ('met' if left >= right else 'not_met'), slot
 
 
 def judgment_value(case: Case, run: CompareRun, times: Times | None = None, unexplained_keys=None) -> dict:

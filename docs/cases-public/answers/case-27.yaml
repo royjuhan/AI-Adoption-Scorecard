@@ -1,0 +1,15 @@
+# 공개 사례 1절 27번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 읽기 ③ · 급여 규칙 ② · 불확실 ④. 과잉 후보: 급여 계산.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-27
+task: 손글씨 근무 시간표를 읽어 급여 규칙으로 계산하고, 읽기가 불확실한 칸은 사람이 본다
+steps:
+  # 불확실한 칸만 사람이 본다(불확실 ④). 그래서 기준을 일부만 글로 쓸 수 있다고 적었다.
+  - name: 손글씨 시간표 읽기
+    answers: {input_kind: image, rule_expressible: partial, current_actor: ai_each_time, human_signoff: no}
+    inferred: [rule_expressible]
+  # 지금 AI가 매번 계산한다(과잉 후보).
+  - name: 급여 규칙으로 계산
+    answers: {input_kind: table, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]

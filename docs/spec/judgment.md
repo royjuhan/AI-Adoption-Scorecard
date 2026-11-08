@@ -2,7 +2,7 @@
 
 - 상태: 채택됨(2026-11-07, 리드가 추천안 1~12 채택. ADR 0005 결정 3. 기록은 카드 "잠정 결정"과 `docs/STATUS.md`). 이전 상태: 초안. ADR 0005 결정 3에 따라 승인 질문은 juhan에게 묻지 않고 추천안을 채택한다. 추천안은 회귀를 막는 쪽(기존 expected 바이트 유지, 기존 테스트 축소 없음)으로 골랐다. 질문과 채택 기록은 문서 끝.
 - T-012 개정: 채택(ADR 0005 결정 3, STATUS 잠정 결정 T-012), 2026-11-07. 검토 항목(불일치 + 추가 행 + 결과 쪽 중복 행), 사람이 아직 보지 않은 검토 항목은 조건부 `UNEXPLAINED`, 몰림 M-A(`inputs.group`), judgment.json `schema_version` 2. 왜 바꿨는지는 11절(기록).
-- T-013 개정(초안, 12절): T-012 표·글을 4·6·7절 제자리로 옮기고 T-011 표·블록을 지웠다(T-012 잠정 결정 12). 5절에 정의·대조 결과가 어긋나면 `ArgumentException`(12.2). 지금 규칙은 1~10절이다.
+- T-013 개정(채택, 12절): T-012 표·글을 4·6·7절 제자리로 옮기고 T-011 표·블록을 지웠다(T-012 잠정 결정 12). 5절에 정의·대조 결과가 어긋나면 `ArgumentException`(12.2). 지금 규칙은 1~10절이다.
 - 작업 카드: `docs/tasks/T-011-judgment.md`. 판정 카드는 T-010에서 T-011로 번호가 바뀌었다(ADR 0005 결정 1).
 - 출발점: 지시문 3.4 판정 문장·3.5 4구역·6구역·12절 표 [읽음], `metrics.md` 3.1(`CsvRow`)·4.8 권고·11절·승인 질문 16 [읽음], `case-schema.md` 4.5(`thresholds`)·승인 질문 11 [읽음], `synthetic-examples.md` 4.7 [읽음], `signoff-final.md` [읽음], ADR 0004 결정 2·6과 expected 변경 규칙 [읽음], `src/Scorecard.Core/Comparison/` [읽음].
 - 작성: prototyper, 2026-11-07
@@ -1134,7 +1134,7 @@ T-012 PR (a)는 새 표를 이 절에만 두었다(11.19 질문 12). T-013이 �
 
 ## 12. T-013 개정 (정리와 남은 지적)
 
-- 상태: 초안(2026-11-07, prototyper). ADR 0005 결정 3에 따라 리드가 12.6 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다.
+- 상태: 채택(ADR 0005 결정 3). 2026-11-07, prototyper 초안. 리드가 12.6 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다.
 - 작업 카드: `docs/tasks/T-013-cleanup.md` 수용 기준 1~5·7. 출발점: T-012 카드 "PR (a) 리뷰 지적"·"PR (b) 리뷰 지적", T-011 카드 "T-011a 리뷰의 막지 않는 지적", ADR 0007 결정 4 [읽음].
 - 확인 대상 커밋: `be5171b`(main `b8f8326` + STATUS·카드). `src/`·`tests/`·`examples/`는 `b8f8326`과 같다.
 - 근거: oracle(`tools/oracle/`, 이 절·5절·`metrics.md` 4.3·13절 글만 보고 고쳤다. `src/`는 읽지 않았다, ADR 0005 결정 9). `[T13:O]`는 oracle 출력, `[T13:selftest]`는 `python3 -I -B tools/oracle/selftest.py --repo .` 점검 줄이다. `[T13:dotnet]`은 이 작업 트리 사본(`src/`는 main 그대로)에서 돌린 `dotnet test -c Release`다.
@@ -1228,3 +1228,11 @@ test-engineer(`tests/`, 바꾸는 기존 테스트는 PR 본문에 이유):
 ### 12.7 채택
 
 - ADR 0005 결정 3에 따라 리드가 추천안을 채택하고 카드와 `docs/STATUS.md`에 적는다. 이 절은 추천안만 적는다.
+
+## 13. T-014 개정 (점수 확인 `SCORE`, 채택(ADR 0005 결정 3, ADR 0009))
+
+- 작업 카드 `docs/tasks/T-014-text-result-check.md`. 규칙의 자리는 `docs/spec/text-check.md` 5절이다. 이 절은 가리키기만 한다.
+- 점수표(`scores`)가 있을 때만: 문턱 `score_gap_max`(기본값 0, 값이 0이면 "넘게" 없는 문장), 확인 여섯째 `SCORE`, 판정 행 여섯(순서 4 뒤 보류 둘, 점수표만일 때 대조할 열 없음 조건부·`TIME`·`PASS`), 다음 할 일 `rescore_blind`.
+- 점수표만 있는 케이스는 미검증이 아니다. `checks`는 `TIME`·`SCORE` 둘이다(text-check.md 5.3). `defaults`에는 이 길이 읽는 문턱(`time_must_drop`, `score_gap_max`)만 적는다(text-check.md 5.1).
+- 점수표만인데 `inputs`가 있고 대조할 열(`compare`·`checklist`)이 없으면 순서 1의 `NOT_VERIFIED` `no_compare_fields`가 미검증이 아니라 조건부로 점수 보류 뒤에 걸린다. 다음 할 일 `add_compare`(text-check.md 5.3·5.5). 이 문서 4.3 순서 1 행과 문장은 점수표가 없을 때 그대로다.
+- 4.3·4.4·4.6·4.7 표, 7.1 예제 표, 7.2~7.5 블록은 바꾸지 않는다. 새 예제 `reply-drafts`는 text-check.md 7.1 새 예제 표에 있다. `schema_version`은 2 그대로다.

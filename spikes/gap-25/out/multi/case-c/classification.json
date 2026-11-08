@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "case": "gap-25-c",
+  "steps": [
+    {
+      "number": 1,
+      "name": "주문서 읽기",
+      "defaults": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "②",
+          "rule": "ELSE",
+          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
+        }
+      ]
+    }
+  ]
+}

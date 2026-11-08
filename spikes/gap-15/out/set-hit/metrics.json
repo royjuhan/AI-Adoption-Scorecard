@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "case": "gap-15-set-hit",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "doc_id",
+    "reference_files": [
+      "reference/top5.csv"
+    ],
+    "candidate_files": [
+      "candidate/top5.csv"
+    ],
+    "counts": {
+      "reference": 5,
+      "candidate": 5,
+      "match": 3,
+      "mismatch": 0,
+      "missing": 2,
+      "extra": 2,
+      "within": 0
+    },
+    "accuracy_pct": 60.0,
+    "missing_rate_pct": 40.0,
+    "fields": [
+      {
+        "field": "listed",
+        "kind": "text",
+        "tolerance": null,
+        "tolerance_pct": null,
+        "compared": 3,
+        "outside": 0,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "d04",
+        "status": "missing",
+        "reference": {
+          "file": "reference/top5.csv",
+          "line": 5
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "d05",
+        "status": "missing",
+        "reference": {
+          "file": "reference/top5.csv",
+          "line": 6
+        },
+        "candidate": null,
+        "differences": []
+      },
+      {
+        "key": "d06",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/top5.csv",
+          "line": 5
+        },
+        "differences": []
+      },
+      {
+        "key": "d07",
+        "status": "extra",
+        "reference": null,
+        "candidate": {
+          "file": "candidate/top5.csv",
+          "line": 6
+        },
+        "differences": []
+      }
+    ]
+  }
+}

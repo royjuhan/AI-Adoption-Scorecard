@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "case": "gap-17-a-vs-ai",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "item_id",
+    "reference_files": [
+      "reference/rater_a.csv"
+    ],
+    "candidate_files": [
+      "candidate/ai.csv"
+    ],
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 18,
+      "mismatch": 2,
+      "missing": 0,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 90.0,
+    "missing_rate_pct": 0.0,
+    "fields": [
+      {
+        "field": "label",
+        "kind": "text",
+        "tolerance": null,
+        "tolerance_pct": null,
+        "compared": 20,
+        "outside": 2,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": [
+      {
+        "key": "i03",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/rater_a.csv",
+          "line": 4
+        },
+        "candidate": {
+          "file": "candidate/ai.csv",
+          "line": 4
+        },
+        "differences": [
+          {
+            "field": "label",
+            "result": "outside",
+            "reference": "ok",
+            "candidate": "defect"
+          }
+        ]
+      },
+      {
+        "key": "i11",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/rater_a.csv",
+          "line": 12
+        },
+        "candidate": {
+          "file": "candidate/ai.csv",
+          "line": 12
+        },
+        "differences": [
+          {
+            "field": "label",
+            "result": "outside",
+            "reference": "ok",
+            "candidate": "defect"
+          }
+        ]
+      }
+    ]
+  }
+}

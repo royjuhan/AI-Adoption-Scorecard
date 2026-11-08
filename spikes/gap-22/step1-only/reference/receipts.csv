@@ -1,0 +1,11 @@
+receipt_id,vendor_code,amount
+rc01,v-b,10
+rc02,v-a,20
+rc03,v-b,30
+rc04,v-a,40
+rc05,v-b,50
+rc06,v-a,60
+rc07,v-b,70
+rc08,v-a,80
+rc09,v-b,90
+rc10,v-a,100

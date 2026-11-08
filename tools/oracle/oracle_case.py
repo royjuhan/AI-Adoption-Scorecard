@@ -1,4 +1,5 @@
-# case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13, T-012 개정(inputs.group)을 보고 짰다(src/는 읽지 않았다).
+# case.yaml·answers.yaml 모델. case-schema 4.3~4.6, 4.13, T-012 개정(inputs.group), T-014(text-check.md 4.1: checklist·scores·
+# thresholds.score_gap_max)을 보고 짰다(src/는 읽지 않았다).
 # 오류가 있는 입력은 모델을 만들지 않고 OracleError로 멈춘다. 엔진의 오류 줄은 흉내 내지 않는다.
 from __future__ import annotations
 
@@ -26,11 +27,14 @@ ANSWERS = (
 ANSWER_KEYS = tuple(a[0] for a in ANSWERS)
 
 # case-schema 4.3 최상위 키, 4.4 단계 항목 키, 4.5 inputs·compare·thresholds 키.
-TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'thresholds')
+TOP_KEYS = ('name', 'task', 'before', 'after', 'ai_usage', 'steps', 'inputs', 'compare', 'checklist', 'scores', 'thresholds')
 STEP_KEYS = ('name', 'answers', 'inferred')
 INPUT_KEYS = ('reference', 'candidate', 'key', 'group')  # group: T-012 개정(case-schema 10.2), 선택
 COMPARE_KEYS = ('field', 'tolerance', 'tolerance_pct')
-THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop')
+THRESHOLD_KEYS = ('accuracy_min', 'missing_max', 'time_must_drop', 'score_gap_max')  # score_gap_max: T-014
+CHECKLIST_KEYS = ('text', 'items')  # T-014 text-check.md 4.1
+CHECKLIST_ITEM_KEYS = ('item', 'column', 'any')
+SCORES_KEYS = ('sheet', 'sources', 'min', 'max')
 AI_USAGE = ('build-time', 'runtime', 'hybrid')
 
 # case-schema 4.6 값 형식.
@@ -77,6 +81,29 @@ class Thresholds:
     accuracy_min_text: str | None  # case.yaml에 쓴 숫자 글 그대로(judgment.md 3.2 "값 그대로(자릿수 유지)")
     missing_max_text: str | None
     time_must_drop: bool | None
+    score_gap_max_text: str | None = None  # T-014. scores가 있을 때만 쓴다(text-check.md 4.1)
+
+
+@dataclass(frozen=True)
+class ChecklistItem:
+    """text-check.md 4.1 checklist.items 하나. column(기준 자료 그 행의 칸) 또는 any(문구 목록) 하나만."""
+    item: str
+    column: str | None
+    phrases: tuple  # any의 문구(쓴 글 그대로). column이면 ()
+
+
+@dataclass(frozen=True)
+class Checklist:
+    text: str  # 결과 자료의 문장 열 이름
+    items: tuple  # ChecklistItem, 쓴 순서
+
+
+@dataclass(frozen=True)
+class Scores:
+    sheet: str  # 점수표 파일 패턴
+    sources: str  # 출처 표 파일 패턴
+    min: int
+    max: int
 
 
 @dataclass(frozen=True)
@@ -87,6 +114,8 @@ class Case:
     inputs: Inputs | None
     compare: list = field(default_factory=list)
     thresholds: Thresholds | None = None  # thresholds 키가 없거나 null이면 None
+    checklist: Checklist | None = None  # T-014. 키가 없거나 null이면 None
+    scores: Scores | None = None  # T-014. 키가 없거나 null이면 None
 
 
 class _Reader:
@@ -241,6 +270,9 @@ def parse_case(data: bytes, source: str) -> Case:
         if inputs.group == inputs.key or any(f.field == inputs.group for f in compare):
             r.fail(root.get('inputs').get('group'), 'inputs.group', 'group은 key·compare 필드와 다른 열을 쓴다')
 
+    checklist = _checklist(r, root, inputs, compare)
+    scores = _scores(r, root)
+
     thresholds = None
     thresholds_node = root.get('thresholds')
     if thresholds_node is not None and not (isinstance(thresholds_node, Scalar) and thresholds_node.is_null):
@@ -248,9 +280,83 @@ def parse_case(data: bytes, source: str) -> Case:
         acc, _ = r.number(m.get('accuracy_min'), 'thresholds.accuracy_min', Decimal(0), Decimal(100))
         miss, _ = r.number(m.get('missing_max'), 'thresholds.missing_max', Decimal(0), Decimal(100))
         drop = r.boolean(m.get('time_must_drop'), 'thresholds.time_must_drop')
-        thresholds = Thresholds(acc, miss, drop)
+        gap, _ = r.number(m.get('score_gap_max'), 'thresholds.score_gap_max', Decimal(0), Decimal(100))
+        if gap is not None and scores is None:
+            r.fail(m.get('score_gap_max'), 'scores', 'score_gap_max가 있으면 scores가 있어야 한다')  # required
+        thresholds = Thresholds(acc, miss, drop, gap)
 
-    return Case(name, task, steps, inputs, compare, thresholds)
+    return Case(name, task, steps, inputs, compare, thresholds, checklist, scores)
+
+
+def _is_null(node) -> bool:
+    return node is None or (isinstance(node, Scalar) and node.is_null)
+
+
+def _checklist(r: _Reader, root: Mapping, inputs, compare: list):
+    """text-check.md 4.1 checklist. 오류 입력은 OracleError로 멈춘다(코드·메시지는 흉내 내지 않는다)."""
+    node = root.get('checklist')
+    if _is_null(node):
+        return None
+    m = r.mapping(node, 'checklist', CHECKLIST_KEYS)
+    text = r.string(m.get('text'), 'checklist.text', required=True)
+    items_node = m.get('items')
+    if _is_null(items_node):
+        r.fail(items_node if items_node is not None else m, 'checklist.items', '필수 필드가 없다')
+    if not isinstance(items_node, Sequence):
+        r.fail(items_node, 'checklist.items', '목록이어야 한다')
+    if len(items_node) == 0:
+        r.fail(items_node, 'checklist.items', '항목이 1개 이상 있어야 한다')
+    items, seen = [], {}
+    for n, item_node in enumerate(items_node, start=1):
+        p = f'checklist.items[{n}]'
+        im = r.mapping(item_node, p, CHECKLIST_ITEM_KEYS)
+        name = r.string(im.get('item'), f'{p}.item', required=True)
+        if name in seen:
+            r.fail(im.get('item'), f'{p}.item', f'체크리스트 항목이 중복된다 (처음: checklist.items[{seen[name]}])')  # duplicate
+        seen[name] = n
+        has_column, has_any = not _is_null(im.get('column')), not _is_null(im.get('any'))
+        if has_column and has_any:
+            r.fail(im, p, 'column과 any 중 하나만 쓴다')  # conflict
+        if not has_column and not has_any:
+            r.fail(im, p, 'column 또는 any가 있어야 한다')  # required
+        if has_column:
+            items.append(ChecklistItem(name, r.string(im.get('column'), f'{p}.column', required=True), ()))
+            continue
+        any_node = im.get('any')
+        if not isinstance(any_node, Sequence):
+            r.fail(any_node, f'{p}.any', '목록이어야 한다')
+        if len(any_node) == 0:
+            r.fail(any_node, f'{p}.any', '문구가 1개 이상 있어야 한다')
+        phrases = tuple(r.string(x, f'{p}.any[{k}]', required=True) for k, x in enumerate(any_node, start=1))
+        items.append(ChecklistItem(name, None, phrases))
+    if inputs is None:
+        r.fail(node, 'inputs', 'checklist가 있으면 inputs가 있어야 한다')  # required
+    if text == inputs.key or text == inputs.group or any(f.field == text for f in compare):
+        r.fail(m.get('text'), 'checklist.text', 'checklist.text는 key·compare 필드·group과 다른 열을 쓴다')  # conflict
+    return Checklist(text, tuple(items))
+
+
+def _scores(r: _Reader, root: Mapping):
+    """text-check.md 4.1 scores."""
+    node = root.get('scores')
+    if _is_null(node):
+        return None
+    m = r.mapping(node, 'scores', SCORES_KEYS)
+    sheet = r.path_text(m.get('sheet'), 'scores.sheet')
+    sources = r.path_text(m.get('sources'), 'scores.sources')
+    bounds = {}
+    for key in ('min', 'max'):
+        node_k = m.get(key)
+        value = r.integer(node_k, f'scores.{key}', -(10 ** 18), 10 ** 18)
+        if value is None:
+            r.fail(node_k if node_k is not None else m, f'scores.{key}', '필수 필드가 없다')  # required
+        if not 0 <= value <= 100:
+            r.fail(node_k, f'scores.{key}', f'범위 밖이다 (0 이상 100 이하): {node_k.text}')  # range
+        bounds[key] = value
+    low, high = bounds['min'], bounds['max']
+    if low >= high:
+        r.fail(m.get('max'), 'scores.max', f'범위 밖이다 (min보다 커야 한다): {high}')  # range, 위치는 max 값
+    return Scores(sheet, sources, low, high)
 
 
 def _answers(r: _Reader, step_map: Mapping, p: str) -> dict:

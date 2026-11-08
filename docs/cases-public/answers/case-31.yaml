@@ -1,0 +1,18 @@
+# 공개 사례 1절 31번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 추출 ③ · 설문 채우기·누락 확인 ② · 보고 G. 과잉 후보: 설문 채우기.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-31
+task: 공급처 자료에서 탄소 수치를 뽑아 설문 양식을 채우고, 누락을 확인해 보고한다
+steps:
+  - name: 자료에서 탄소 수치 뽑기
+    answers: {input_kind: free_doc, rule_expressible: partial, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind, rule_expressible]
+  # 지금 AI가 매번 채운다(과잉 후보).
+  - name: 설문 양식 채우기
+    answers: {input_kind: table, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]
+  # 보고 전 게이트(보고 G)를 마지막 단계의 failure_impact: external로 적었다. 지금 누가 하는지 요약에 없음.
+  - name: 누락 항목 확인
+    answers: {input_kind: fixed_form, rule_expressible: yes, failure_impact: external, human_signoff: no}
+    inferred: [input_kind]

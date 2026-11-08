@@ -1,0 +1,11 @@
+# 공개 사례 1절 28번의 업무 구조만 합성했다. 실제 회사·제품·수치 없음.
+# 1절 예상: 수량 불일치 ②. 과잉 후보: 전체.
+# 요약에 없음(기본값, 확인 필요): frequency, batch_size, exception_rate, minutes_per_item, existing_feature.
+# inferred: 1절 요약이 직접 말하지 않아 업무 구조에서 추정한 답.
+name: case-28
+task: 재고 기록에서 수량 불일치를 찾는다
+steps:
+  # 지금 AI가 매번 한다(과잉 후보).
+  - name: 재고 수량 불일치 찾기
+    answers: {input_kind: table, rule_expressible: yes, current_actor: ai_each_time, human_signoff: no}
+    inferred: [input_kind]

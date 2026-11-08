@@ -484,7 +484,7 @@
 - 순서: 대조 쪽(기준 → 결과, `metrics.md` 4.7) → 출처 표 → 점수표 → 점수가 없는 키(출처 표 순서). 쪽 안에서는 파일 경로 서수 → (줄, 열) → 찾은 순서.
 - 대조 `measured`(`blind`의 "기준 자료에 없는 건", `overlap`의 "`inputs` 파일과 같음"): 대조가 오류 없이 끝나 지표가 있을 때다. 대조 쪽 오류가 하나라도 있으면(기준·결과 어느 쪽이든, metrics.json 없음) 이 두 검사를 하지 않는다. 출처 표·점수표의 다른 검사는 그대로 하고 모은다. 그래서 그 오류 목록에 "기준 자료에 없는 건"은 없다. 대조 쪽 오류를 고쳐 다시 돌리면 나온다. 대조가 오류 없이 끝났으면 이 오류는 출처 표 묶음에서 그 행 건 칸의 (줄, 열) 자리에 놓인다.
 - oracle: `compare.py` `compare_run`은 대조가 오류 없이 끝나고 `measured`일 때만 기준 키를 `scores.py` `score_body`에 넘긴다(아니면 None, 검사 안 함). `inputs` 파일 목록도 그때만 넘긴다(미검증이면 빈 목록). 대조 오류에서는 점수 파일을 읽기 전에 그 오류로 멈춘다. 오류 입력은 oracle 범위 밖이고 첫 오류에서 멈춘다. 예: 기준 키 중복과 건 `z`를 같이 넣으면 `reference/replies.csv:3` `duplicate-key`에서 멈춘다. 건 `z`만이면 `blind`다 [T14:O]. 그래서 여러 오류가 같이 있을 때의 목록·순서는 oracle이 아니라 PR (b) 테스트가 본다.
-- 출처 표 자체에 오류(`empty-key`, `source`, `duplicate-key`, `pair`, `no-rows`)가 있으면 점수표와 출처 표를 맞춰 보는 `blind` 검사(출처 표에 없는 가림 키, 건 다름, 점수 없는 키)와 `source_pattern` 가림 확인을 하지 않는다. oracle `scores.py` `score_body`는 출처 표를 먼저 읽다 첫 오류에서 멈춰 점수표를 읽지 않는다(오류 입력은 범위 밖) [읽음]. 여러 오류가 같이 있을 때의 목록은 PR (b) 테스트가 본다.
+- 출처 표를 끝까지 읽지 못했으면(`file`, `overlap`, `encoding`, `empty`, `csv-syntax`, `column`, `duplicate-column`, `field-count`, `empty-key`, `no-rows`) 점수표와 출처 표를 맞춰 보는 `blind` 검사(출처 표에 없는 가림 키, 건 다름, 점수 없는 키)를 하지 않는다. `source`·`duplicate-key`·`pair` 오류는 출처 표를 끝까지 읽은 뒤의 오류라, 남은 행으로 `blind` 검사를 계속한다. `source_pattern` 가림 확인은 오류가 하나라도 있으면 하지 않는다. oracle `scores.py` `score_body`는 출처 표를 먼저 읽다 첫 오류에서 멈춰 점수표를 읽지 않는다(오류 입력은 oracle 범위 밖) [읽음]. C# `ScoreSheet.Read`가 위 동작이다(`sourcesComplete`) [읽음]. 여러 오류가 같이 있을 때의 목록은 `TextCheck` 테스트가 본다.
 - 체크리스트 열이 없으면 `column`이다(4.2 규칙 1). 체크리스트의 새 코드는 아래 `no-check` 하나다.
 - 사용자에게 맞나: 사람 자료(출처 표·점수표, 기준 자료와 체크리스트 정의)의 결함은 오류로 멈춰 고치게 한다. AI 결과(결과 문장)의 결함은 오류가 아니라 셈과 판정이다. 가림이 깨진 것은 고쳐도 되돌아오지 않아 판정이다(4.4).
 
@@ -1381,7 +1381,7 @@ core-dev(`src/Scorecard.Core/`):
 2. `metrics.md`: 3.2 표는 그대로다(table-compare 경로 순서를 보는 테스트가 있다). 새 경로는 이 문서 3.1 표다. 4.7 오류 표도 그대로, 점수·체크리스트 코드는 4.5.
 3. `judgment.md`: 4.3·4.4·4.6·4.7 표는 그대로다. 이 문서 5절 표를 더해서 읽는다. 7.1 예제 표에 reply-drafts를 넣지 않는다(확인이 여섯이라 "확인 다섯" 칸과 맞지 않는다). 이 문서 7.1 새 예제 표가 그 자리다.
 4. `synthetic-examples.md`: 문장 생성기는 이 문서 7.2다. 4.3 계획 표에 넣지 않는다(열 모양이 다르다).
-5. 지시문(`docs/README-instructions.md`, 리드·ADR 0009): 3.4에 문장 결과의 두 길, 점수 미달·가림 깨짐 보류, 점수표만 판정과 대조할 열 없음 조건부를 PR (a)에서 더했다. 12절 예제 표의 다섯째 `reply-drafts`(정답 표 없는 문장 결과, 조건부)와 제목 "4종"은 지시문 변경이라 ADR이 필요해 다음 정리 카드로 미룬다. 테스트(`Instructions_section_12_verdicts_hold` 등)가 그 표의 행마다 `examples/`를 읽어 PR (a)에서 넣으면 실패한다. 2절 원칙은 바꾸지 않는다.
+5. 지시문(`docs/README-instructions.md`, 리드·ADR 0009): 3.4에 문장 결과의 두 길, 점수 미달·가림 깨짐 보류, 점수표만 판정과 대조할 열 없음 조건부를 PR (a)에서 더했다. 12절 예제 표의 다섯째 `reply-drafts`(정답 표 없는 문장 결과, 조건부)와 제목 "4종"은 지시문을 바꾸면 CI(`ci-changed`)가 같은 PR에 새 ADR과 STATUS 원칙 변경 행을 요구해, 정리 카드에서 한다. 테스트(`Instructions_section_12_verdicts_hold` 등)가 그 표의 행마다 `examples/`를 읽어 PR (a)에서 넣으면 실패한다. 2절 원칙은 바꾸지 않는다.
 
 ## 12. ADR 0009 초안 요지 (리드가 쓴다)
 

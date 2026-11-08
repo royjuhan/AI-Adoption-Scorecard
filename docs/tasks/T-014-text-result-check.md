@@ -49,6 +49,7 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 21. 가림 확인 `source_pattern`(표시 몰림): 낱말이 아니라 구조로 본다. 가림 키·점수표의 다른 열 칸(`rater`·`item`·`blind`·`score` 밖)·점수 파일의 표시(글 그대로·숫자 묶음을 지운 틀·첫 글자·끝 글자, 키는 꼴·글자 수·글자 종류·작은 쪽도)가 한 출처 결과에 몰리면 가림 깨짐. 키는 채점자와 상관없이, 열·파일은 두 출처를 모두 매긴 채점자의 행만 견준다. 센 건은 출처 표의 건 수. 문턱은 갈린 건 8 이상, 반대쪽 12건에 1건 이하, 몰린 쪽이 센 건의 1/4 이상(가림이 맞으면 0.78% 이하). 6의 "키 순서"는 키 번호 크기만 본다로 고친다(행 순서는 그대로 안 봄).
 22. 대조가 `measured`이면 출처 표의 건은 기준 자료의 키여야 한다. 아니면 `blind` 오류(경로 `item`). 점수표만은 보지 않는다.
 23. (질문 아님, 동작 변경 없음) PR (a) 최종 리뷰의 막지 않는 지적을 지금 oracle 동작대로 글로 정리: text-check.md 4.3(채점자가 채우는 열은 점수표 밖, 오탐), 4.4(첫 글자·끝 글자는 코드 포인트, 둘 다 ASCII 숫자면 없음, 글자 표시 표, 건 7개 이하는 몰림 없음), 4.3 규칙 2·4.5(대조 오류가 있으면 기준 키·`inputs` 파일 겹침 검사 안 함), 9절 12(한 출처만 빈 작성자 열, 숫자 자리 고정 숫자). oracle·7.3·7.4 블록·expected 12개 그대로.
+24. PR #18 리뷰 막지 않는 지적 정리(질문 아님): 표 옮기기·지시문 12절은 다음 정리 카드, 출처 표를 끝까지 못 읽으면 `blind` 검사 안 함.
 
 ## PR (a) 리뷰 지적 (#17)
 
@@ -88,11 +89,10 @@ PR (a): `docs/spec/`, `tools/oracle/`, `spikes/`, `docs/STATUS.md`, `docs/decisi
 ## 남은 일 (PR #18 리뷰 막지 않는 지적)
 
 1. `case-schema.md` 4.3·4.5·4.9·4.12 표 옮기기: 다음 정리 카드로 미룬다. 표를 옮기면 기존 테스트가 읽는 표 머리가 바뀔 수 있어 따로 한다.
-2. 지시문 12절 `reply-drafts` 행과 제목 "4종": 지시문 변경이라 ADR이 필요해 다음 정리 카드로 미룬다.
-3. 출처 표 오류면 점수표와 맞춰 보는 `blind` 검사를 하지 않는다(text-check.md 4.5, oracle 첫 오류에서 멈춤).
+2. 지시문 12절 `reply-drafts` 행과 제목 "4종": 지시문을 바꾸면 CI(`ci-changed`)가 같은 PR에 새 ADR과 STATUS 원칙 변경 행을 요구해, 정리 카드에서 한다. ADR 0009 "영향 받는 곳"은 이 변경을 PR (b)에 두었다. 그 문장과 다르다(ADR 파일은 고치지 않는다).
+3. 출처 표를 끝까지 못 읽었을 때(`file`·`overlap`·`encoding`·`empty`·`csv-syntax`·`column`·`duplicate-column`·`field-count`·`empty-key`·`no-rows`)만 점수표와 맞춰 보는 `blind` 검사를 하지 않는다. `source`·`duplicate-key`·`pair` 오류에서는 남은 행으로 계속하고, `source_pattern`은 오류가 있으면 하지 않는다(text-check.md 4.5, C# `ScoreSheet.Read`. oracle은 첫 오류에서 멈춤, 오류 입력은 범위 밖).
 4. `scores`·`thresholds`의 -0 처리: `scores.min`·`max`의 -0은 `range` 오류로 고침(PR #18). `thresholds.score_gap_max`의 -0은 기존 thresholds처럼 받음(기록).
 
-24. PR #18 리뷰 막지 않는 지적 정리(질문 아님): 표 옮기기·지시문 12절은 다음 정리 카드, 출처 표 오류면 `blind` 검사 안 함.
 
 ## 메모
 

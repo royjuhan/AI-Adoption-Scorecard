@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case": "gap-21-personal",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "member_id",
+    "reference_files": [
+      "reference/visits.csv"
+    ],
+    "candidate_files": [
+      "candidate/visits.csv"
+    ],
+    "counts": {
+      "reference": 10,
+      "candidate": 10,
+      "match": 10,
+      "mismatch": 0,
+      "missing": 0,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 100.0,
+    "missing_rate_pct": 0.0,
+    "fields": [
+      {
+        "field": "visit_code",
+        "kind": "text",
+        "tolerance": null,
+        "tolerance_pct": null,
+        "compared": 10,
+        "outside": 0,
+        "within": 0,
+        "not_number": 0
+      }
+    ],
+    "items": []
+  }
+}

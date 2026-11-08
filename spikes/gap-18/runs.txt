@@ -1,0 +1,5 @@
+# <상대 경로> [gap-runner 옵션]
+run1 --reviewed
+run2 --reviewed
+run3 --reviewed
+merged

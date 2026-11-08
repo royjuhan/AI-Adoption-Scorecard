@@ -1,0 +1,17 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 21 확인용(docs/cases-public/README.md 3절).
+# 개인 이름 열(합성)이 있는 자료. 자료 등급을 적을 곳이 없다.
+name: gap-21-personal
+task: 합성 회원 방문 기록의 방문 코드를 옮긴다
+steps:
+  - name: 방문 코드 옮기기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: safety_legal, existing_feature: no, human_signoff: no}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: member_id
+compare:
+  - {field: visit_code}
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false

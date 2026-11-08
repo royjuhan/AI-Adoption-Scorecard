@@ -1,0 +1,8 @@
+invoice_id,line_no,item_code,amount
+inv01,1,p-01,100
+inv01,2,p-02,200
+inv02,1,p-01,100
+inv02,2,p-03,200
+inv02,3,p-04,300
+inv03,1,p-02,50
+inv03,2,p-05,100

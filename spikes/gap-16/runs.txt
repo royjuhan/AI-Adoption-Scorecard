@@ -1,0 +1,4 @@
+# <상대 경로> [gap-runner 옵션]
+n20 --reviewed
+n200 --reviewed
+n20-80 --reviewed

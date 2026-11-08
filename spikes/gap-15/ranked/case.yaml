@@ -1,0 +1,17 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 15 확인용(docs/cases-public/README.md 3절).
+# 순위 열을 정확 일치로 대조한다.
+name: gap-15-ranked
+task: 합성 질의 하나에 관련 문서 다섯 개를 순위대로 고른다
+steps:
+  - name: 관련 문서 다섯 개 고르기
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+inputs:
+  reference: reference/*.csv
+  candidate: candidate/*.csv
+  key: doc_id
+compare:
+  - {field: rank, tolerance: 0}
+thresholds:
+  accuracy_min: 95
+  missing_max: 2
+  time_must_drop: false

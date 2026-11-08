@@ -1,0 +1,9 @@
+query_id,doc_id,rank
+q1,d01,1
+q1,d03,2
+q1,d02,3
+q1,d06,4
+q1,d07,5
+q2,d08,1
+q2,d01,2
+q2,d10,3

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "case": "gap-17-two-refs",
+  "steps": [
+    {
+      "number": 1,
+      "name": "불량 여부 판정",
+      "defaults": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "rows": [
+        {
+          "kind": "step",
+          "assignee": "③",
+          "rule": "Q3",
+          "reason": "입력이 이미지이므로(image) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+# gap-16. 엔진: HEAD 79d0de3 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
+== n20 --reviewed
+PARSE ok case=gap-16-n20 steps=1 inputs=set compare=1
+STEP 1 합성 금액 옮기기 | defaults=[] checks=[] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+CLASSIFY rows=1
+COMPARE status=measured reason=null accuracy_pct=95.0 missing_rate_pct=0.0
+  COUNTS reference=20 candidate=20 match=19 mismatch=1 missing=0 extra=0 within=0
+  FILES reference=[reference/rows.csv] candidate=[candidate/rows.csv]
+  ITEM r020 mismatch amount outside 120->127
+JUDGE verdict=pass rule=PASS: 정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.
+  CHECK ACCURACY met: 정확도 95.0%(19/20)가 문턱 95% 이상이다.
+  CHECK MISSING met: 누락률 0.0%(0/20)가 문턱 2% 이하다.
+  CHECK UNEXPLAINED explained: 검토할 항목 1건(불일치 1건)을 사람이 보고 모두 설명했다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS few: 불일치가 1건이라 몰림을 보지 않는다.
+  DEFAULTS []
+== n200 --reviewed
+PARSE ok case=gap-16-n200 steps=1 inputs=set compare=1
+STEP 1 합성 금액 옮기기 | defaults=[] checks=[] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+CLASSIFY rows=1
+COMPARE status=measured reason=null accuracy_pct=95.0 missing_rate_pct=0.0
+  COUNTS reference=200 candidate=200 match=190 mismatch=10 missing=0 extra=0 within=0
+  FILES reference=[reference/rows.csv] candidate=[candidate/rows.csv]
+  ITEM r020 mismatch amount outside 120->127
+  ITEM r040 mismatch amount outside 140->147
+  ITEM r060 mismatch amount outside 160->167
+  ITEM r080 mismatch amount outside 180->187
+  ITEM r100 mismatch amount outside 200->207
+  ITEM r120 mismatch amount outside 220->227
+  ITEM r140 mismatch amount outside 240->247
+  ITEM r160 mismatch amount outside 260->267
+  ITEM r180 mismatch amount outside 280->287
+  ITEM r200 mismatch amount outside 300->307
+JUDGE verdict=pass rule=PASS: 정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.
+  CHECK ACCURACY met: 정확도 95.0%(190/200)가 문턱 95% 이상이다.
+  CHECK MISSING met: 누락률 0.0%(0/200)가 문턱 2% 이하다.
+  CHECK UNEXPLAINED explained: 검토할 항목 10건(불일치 10건)을 사람이 보고 모두 설명했다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS off: case.yaml inputs.group에 유형 열을 적지 않아 불일치 10건이 한 유형에 몰렸는지 보지 않는다.
+  TODO add_group: 불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.
+  DEFAULTS []
+== n20-80 --reviewed
+PARSE ok case=gap-16-n20-80 steps=1 inputs=set compare=1
+STEP 1 합성 금액 옮기기 | defaults=[] checks=[] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.
+CLASSIFY rows=1
+COMPARE status=measured reason=null accuracy_pct=80.0 missing_rate_pct=0.0
+  COUNTS reference=20 candidate=20 match=16 mismatch=4 missing=0 extra=0 within=0
+  FILES reference=[reference/rows.csv] candidate=[candidate/rows.csv]
+  ITEM r005 mismatch amount outside 105->112
+  ITEM r010 mismatch amount outside 110->117
+  ITEM r015 mismatch amount outside 115->122
+  ITEM r020 mismatch amount outside 120->127
+JUDGE verdict=hold rule=ACCURACY: 정확도 80.0%가 문턱 95%에 못 미치므로 보류.
+  CHECK ACCURACY not_met: 정확도 80.0%(16/20)가 문턱 95%에 못 미친다.
+  CHECK MISSING met: 누락률 0.0%(0/20)가 문턱 2% 이하다.
+  CHECK UNEXPLAINED explained: 검토할 항목 4건(불일치 4건)을 사람이 보고 모두 설명했다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS off: case.yaml inputs.group에 유형 열을 적지 않아 불일치 4건이 한 유형에 몰렸는지 보지 않는다.
+  TODO add_group: 불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.
+  DEFAULTS []

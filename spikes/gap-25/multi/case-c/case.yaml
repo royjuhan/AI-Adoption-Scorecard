@@ -1,0 +1,6 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 25 확인용(docs/cases-public/README.md 3절).
+name: gap-25-c
+task: 합성 주문서를 읽어 수량을 옮긴다
+steps:
+  - name: 주문서 읽기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no}

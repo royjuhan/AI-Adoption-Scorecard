@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "case": "gap-14-headers-only",
+  "verdict": "pass",
+  "rule": "PASS",
+  "reason": "정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.",
+  "thresholds": {
+    "accuracy_min": 95,
+    "missing_max": 2,
+    "time_must_drop": false
+  },
+  "defaults": [],
+  "checks": [
+    {
+      "rule": "ACCURACY",
+      "result": "met",
+      "reason": "정확도 100.0%(3/3)가 문턱 95% 이상이다."
+    },
+    {
+      "rule": "MISSING",
+      "result": "met",
+      "reason": "누락률 0.0%(0/3)가 문턱 2% 이하다."
+    },
+    {
+      "rule": "UNEXPLAINED",
+      "result": "none",
+      "reason": "검토할 항목(불일치·추가 행·중복 행)이 없다."
+    },
+    {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    {
+      "rule": "FOCUS",
+      "result": "few",
+      "reason": "불일치가 0건이라 몰림을 보지 않는다."
+    }
+  ],
+  "todo": []
+}

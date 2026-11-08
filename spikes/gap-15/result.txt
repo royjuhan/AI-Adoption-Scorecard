@@ -1,0 +1,63 @@
+# gap-15. 엔진: HEAD 79d0de3 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
+== set-only 
+PARSE ok case=gap-15-set-only steps=1 inputs=set compare=0
+STEP 1 관련 문서 다섯 개 고르기 | defaults=[] checks=[] overuse=false
+  ROW 1 ③ Q3 step: 입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.
+CLASSIFY rows=1
+COMPARE status=not_verified reason="no_compare_fields" accuracy_pct=null missing_rate_pct=null
+  COUNTS null
+  FILES reference=[] candidate=[]
+JUDGE verdict=not_verified rule=NOT_VERIFIED: 대조할 열(case.yaml compare)이 없어 미검증.
+  TODO add_compare: case.yaml compare에 대조할 열과 허용 오차를 적는다.
+  DEFAULTS []
+== set-hit 
+PARSE ok case=gap-15-set-hit steps=1 inputs=set compare=1
+STEP 1 관련 문서 다섯 개 고르기 | defaults=[] checks=[] overuse=false
+  ROW 1 ③ Q3 step: 입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.
+CLASSIFY rows=1
+COMPARE status=measured reason=null accuracy_pct=60.0 missing_rate_pct=40.0
+  COUNTS reference=5 candidate=5 match=3 mismatch=0 missing=2 extra=2 within=0
+  FILES reference=[reference/top5.csv] candidate=[candidate/top5.csv]
+  ITEM d04 missing 
+  ITEM d05 missing 
+  ITEM d06 extra 
+  ITEM d07 extra 
+JUDGE verdict=hold rule=ACCURACY: 정확도 60.0%가 문턱 95%에 못 미치므로 보류.
+  CHECK ACCURACY not_met: 정확도 60.0%(3/5)가 문턱 95%에 못 미친다.
+  CHECK MISSING not_met: 누락률 40.0%(2/5)가 문턱 2%를 넘는다.
+  CHECK UNEXPLAINED not_reviewed: 검토할 항목 4건(불일치 2건, 추가 행 2건)이 설명되는지 사람이 아직 보지 않았다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS off: case.yaml inputs.group에 유형 열을 적지 않아 불일치 2건이 한 유형에 몰렸는지 보지 않는다.
+  TODO review_items: 검토할 항목 4건(불일치 2건, 추가 행 2건)을 보고 설명이 되는지 적는다.
+  TODO add_group: 불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.
+  DEFAULTS []
+== ranked 
+PARSE ok case=gap-15-ranked steps=1 inputs=set compare=1
+STEP 1 관련 문서 다섯 개 고르기 | defaults=[] checks=[] overuse=false
+  ROW 1 ③ Q3 step: 입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.
+CLASSIFY rows=1
+COMPARE status=measured reason=null accuracy_pct=20.0 missing_rate_pct=40.0
+  COUNTS reference=5 candidate=5 match=1 mismatch=2 missing=2 extra=2 within=0
+  FILES reference=[reference/top5.csv] candidate=[candidate/top5.csv]
+  ITEM d02 mismatch rank outside 2->3
+  ITEM d03 mismatch rank outside 3->2
+  ITEM d04 missing 
+  ITEM d05 missing 
+  ITEM d06 extra 
+  ITEM d07 extra 
+JUDGE verdict=hold rule=ACCURACY: 정확도 20.0%가 문턱 95%에 못 미치므로 보류.
+  CHECK ACCURACY not_met: 정확도 20.0%(1/5)가 문턱 95%에 못 미친다.
+  CHECK MISSING not_met: 누락률 40.0%(2/5)가 문턱 2%를 넘는다.
+  CHECK UNEXPLAINED not_reviewed: 검토할 항목 6건(불일치 4건, 추가 행 2건)이 설명되는지 사람이 아직 보지 않았다.
+  CHECK TIME off: 시간 조건을 쓰지 않는다(time_must_drop: false).
+  CHECK FOCUS off: case.yaml inputs.group에 유형 열을 적지 않아 불일치 4건이 한 유형에 몰렸는지 보지 않는다.
+  TODO review_items: 검토할 항목 6건(불일치 4건, 추가 행 2건)을 보고 설명이 되는지 적는다.
+  TODO add_group: 불일치가 한 유형에 몰렸는지 보려면 case.yaml inputs.group에 기준 자료의 유형 열 이름을 적는다.
+  DEFAULTS []
+== multi-query 
+PARSE ok case=gap-15-multi-query steps=1 inputs=set compare=1
+STEP 1 관련 문서 다섯 개 고르기 | defaults=[] checks=[] overuse=false
+  ROW 1 ③ Q3 step: 입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다.
+CLASSIFY rows=1
+COMPARE errors 1
+  ERROR reference/topk.csv:7:4: duplicate-key doc_id: 키가 중복된다: d01 (처음: reference/topk.csv:2)

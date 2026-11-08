@@ -1,0 +1,22 @@
+# gap-19. 엔진: HEAD 79d0de3 (src/Scorecard.Core 사본). 도구: spikes/gap-runner
+== volume 
+PARSE ok case=gap-19-volume steps=2 inputs=null compare=0
+STEP 1 실시간 거래 점검(분당 8천 건) | defaults=[] checks=[] overuse=false
+  ROW 1 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매일 반복되므로 규칙 기반 소프트웨어로 분류.
+  ROW 1 ④ GATE human_gate: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+STEP 2 소량 거래 점검(하루 20건) | defaults=[] checks=[] overuse=false
+  ROW 2 ② ELSE step: 판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매일 반복되므로 규칙 기반 소프트웨어로 분류.
+  ROW 2 ④ GATE human_gate: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.
+CLASSIFY rows=4
+COMPARE status=not_verified reason="no_inputs" accuracy_pct=null missing_rate_pct=null
+  COUNTS null
+  FILES reference=[] candidate=[]
+JUDGE verdict=not_verified rule=NOT_VERIFIED: 검증 자료(case.yaml inputs)가 없어 미검증.
+  TODO add_data: 기준 자료(사람이 만든 결과)를 reference/에, 결과 자료(AI 적용 후 결과)를 candidate/에 넣고 case.yaml inputs에 파일 패턴과 키 열을 적는다.
+  TODO add_compare: case.yaml compare에 대조할 열과 허용 오차를 적는다.
+  TODO measure_time: 건당 처리 시간·검토 시간과 적용 전 시간(분)을 잰다.
+  TODO confirm_thresholds: 문턱에 기본값을 썼다(accuracy_min 95, missing_max 2, time_must_drop true). 맞는지 확인하고 case.yaml thresholds에 적는다.
+  DEFAULTS [accuracy_min,missing_max,time_must_drop]
+== answers-latency.yaml 
+PARSE errors 1
+  ERROR answers-latency.yaml:7:226: unknown-field steps[1].answers.max_latency_ms: 알 수 없는 필드다

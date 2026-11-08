@@ -1,0 +1,7 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 23 확인용(docs/cases-public/README.md 3절).
+# 건당 AI 요금 질문을 답에 더해 본다(지금 질문 표에 없는 키). 요금 값은 지어낸 것.
+name: gap-23-cost
+task: 합성 문의를 분류하고 주문을 확인한다
+steps:
+  - name: 주문 번호 확인
+    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 50000, exception_rate: 5, current_actor: ai_each_time, minutes_per_item: 2, failure_impact: internal_rework, existing_feature: no, human_signoff: no, ai_cost_per_item: 0.02}

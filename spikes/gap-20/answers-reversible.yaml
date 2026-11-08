@@ -1,0 +1,7 @@
+# 합성 예시. 실제 업무·값 없음. 잠재 빈 곳 20 확인용(docs/cases-public/README.md 3절).
+# 되돌림 질문을 답에 더해 본다(지금 질문 표에 없는 키).
+name: gap-20-answers
+task: 합성 고객 건을 처리하고 결과를 내보낸다
+steps:
+  - name: 환급 송금 실행
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: human, minutes_per_item: 2, failure_impact: external, existing_feature: no, human_signoff: no, reversible: no}

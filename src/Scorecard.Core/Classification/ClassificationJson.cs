@@ -7,12 +7,12 @@ namespace Scorecard.Core.Classification;
 // classification.json 바이트. docs/spec/classification.md 3.2·3.3.
 // Utf8JsonWriter로 속성 순서를 직접 정한다. 리플렉션 직렬화는 쓰지 않는다.
 // 들여쓰기 2칸, 줄바꿈 "\n", UnsafeRelaxedJsonEscaping, UTF-8(BOM 없음), 마지막 } 뒤에 "\n" 하나.
-// 첫 키는 schema_version(정수, ADR 0004 결정 2).
+// 첫 키는 schema_version(정수, ADR 0004 결정 2). schema 2(ADR 0013): 단계마다 source·rule_opinion·differs.
 // 경로·입력 해시·Used·Inferred는 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장뿐이다.
 public static class ClassificationJson
 {
     public const string FileName = "classification.json";
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private static readonly JsonWriterOptions Options = new()
     {
@@ -53,6 +53,12 @@ public static class ClassificationJson
         w.WriteStartObject();
         w.WriteNumber("number", step.Number);
         w.WriteString("name", step.Name);
+        w.WriteString("source", step.Source);
+        w.WriteStartObject("rule_opinion");
+        w.WriteString("assignee", step.RuleOpinion.Assignee);
+        w.WriteString("rule", step.RuleOpinion.Rule);
+        w.WriteEndObject();
+        w.WriteBoolean("differs", step.Differs);
         WriteStrings(w, "defaults", step.Defaults);
         WriteStrings(w, "checks", step.Checks);
         w.WriteBoolean("ai_overuse_candidate", step.AiOveruseCandidate);

@@ -26,6 +26,7 @@ public class CaseApiShapeTests
         "CaseThresholds",
         "ChecklistItem",
         "CompareField",
+        "StepAi",
         "StepAnswers",
     ];
 
@@ -86,6 +87,18 @@ public class CaseApiShapeTests
         Assert.Equal("k", definition.Inputs?.Key);
         Assert.Null(definition.Inputs?.Group);
         Assert.True(definition.Thresholds.TimeMustDrop);
+        Assert.Null(definition.Steps[0].Ai);
+    }
+
+    // M2-2(4.14): CaseStep의 넷째 위치 매개변수 Ai(선택, 기본 null). StepAi는 담당·근거 둘이다.
+    [Fact]
+    public void Step_ai_record_has_spec_shape()
+    {
+        var ai = new StepAi(Assignee: "②M", Reason: "고정한 모델");
+        var step = new CaseStep(Number: 1, Name: "s", Answers: null!, Ai: ai);
+
+        Assert.Same(ai, step.Ai);
+        Assert.Equal(new StepAi("②M", "고정한 모델"), step.Ai);
     }
 
     // T-012(10.3): CaseInputs 넷째 위치 매개변수 Group(string?, 기본값 null). 세 인자 생성은 그대로 컴파일되고 Group = null이다.

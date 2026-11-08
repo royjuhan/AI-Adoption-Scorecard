@@ -242,7 +242,7 @@ public class InferredMarkTests
         Assert.Equal(block, lines);
     }
 
-    // 6.5 글머리: 1단계 Inferred는 쓴 순서가 아니라 4.4 순서. 2단계 existing_feature 기본값 → 확인 항목.
+    // 6.5 글머리: 1단계 Inferred는 쓴 순서가 아니라 4.4 순서. 2단계 existing_feature 기본값 → defaults(schema 2는 확인 항목 없음).
     // 3단계 SIGNOFF 한 행(게이트 없음, 표시 없음). 4단계 human_signoff 기본값 표시, AI 과잉 후보.
     [Fact]
     public void Signoff_inferred_sample_step_fields_follow_spec_bullets()
@@ -251,7 +251,7 @@ public class InferredMarkTests
 
         Assert.Equal(["frequency", "batch_size"], steps[0].Inferred);
         Assert.Equal(["existing_feature"], steps[1].Defaults);
-        Assert.Contains(ClassificationSpec.ConfirmExistingFeature, steps[1].Checks);
+        Assert.Empty(steps[1].Checks);
         Assert.Equal(["SIGNOFF"], steps[2].Rows.Select(r => r.Rule));
         Assert.Equal(string.Empty, InferredInput.MarkCode(steps[2].Rows[0].Reason));
         Assert.Equal(["human_signoff"], steps[3].Defaults);

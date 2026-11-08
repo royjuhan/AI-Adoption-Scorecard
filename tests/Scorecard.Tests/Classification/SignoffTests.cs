@@ -100,16 +100,16 @@ public class SignoffTests
         Assert.Equal(Signoff, row.Rule);
         Assert.Equal(ClassificationSpec.Templates()[Signoff].Text, row.Reason);
         Assert.Equal(ClassificationInput.Keys.Where(k => k != "human_signoff"), step.Defaults);
-        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature], step.Checks);
+        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem], step.Checks);
         Assert.False(step.AiOveruseCandidate);
     }
 
-    // 4.7: 확인 항목은 값만 본다. SIGNOFF 단계도 같다.
+    // 4.7: 확인 항목은 값만 본다. SIGNOFF 단계도 같다. schema 2에서 existing_feature: unknown은 확인 항목을 달지 않는다.
     [Theory]
     [InlineData("human_signoff: yes", new string[0])]
     [InlineData("human_signoff: yes, minutes_per_item: null", new[] { ClassificationSpec.MeasureMinutesPerItem })]
-    [InlineData("human_signoff: yes, existing_feature: unknown", new[] { ClassificationSpec.ConfirmExistingFeature })]
-    [InlineData("human_signoff: yes, minutes_per_item: null, existing_feature: unknown", new[] { ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature })]
+    [InlineData("human_signoff: yes, existing_feature: unknown", new string[0])]
+    [InlineData("human_signoff: yes, minutes_per_item: null, existing_feature: unknown", new[] { ClassificationSpec.MeasureMinutesPerItem })]
     public void Signoff_step_keeps_checks(string changes, string[] expected)
     {
         Assert.Equal(expected, ClassificationInput.One(ClassificationInput.Answers(changes)).Checks);

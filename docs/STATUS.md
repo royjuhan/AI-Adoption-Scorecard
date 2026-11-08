@@ -6,7 +6,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
-| 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3) | T-019 (a) |
+| 2026-11-08 | 0014 | M2-2 PR (b): 지시문 3.1·3.2·3.3·12절을 schema 2에 맞춤(`schema_version` 값은 문서마다, `existing_feature` unknown은 기본값 표시, ②M·AI 서명 게이트는 classification 4.13), 스킬 `/scorecard` 추가. 새 결정 없음(ADR 0013을 따름). 2절 8·10 그대로 | 리드(ADR 0005 결정 3) | T-019 (b) |
+| 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-08 11:39 "제안대로": 스킬 대화에서 확인, 게이트는 트리가 늘 붙임) | #24 |
 | 2026-11-08 | 0012 | sweeper: 스펙 6개를 본문(200줄 이내, 지금 동작)과 `docs/spec/data/`(테스트·oracle이 읽는 표·블록, 바이트 그대로)로 나눔. `SpecDocument` 상수 6개·`selftest.py` 경로 5개를 data로, 줄 선택 하나. 지시문 정리·`spikes/` 삭제. 가드·개수는 그대로 | juhan 지시 | sweeper PR |
 | 2026-11-08 | 0011 | `lead_check.py --mutation-from`: CI `mutation` 잡의 `mutation.json`을 다시 쓴다. 조건: base 도구, `.github/`·`tools/ci/` 변경 없음, base 같음, CI head 트리 = head 트리, status `measured`·`not_applicable`. 아니면 로컬 Stryker. 독립성이 조금 준다(ADR 남은 위험) | juhan 선택 | ADR 0011 PR |
 | 2026-11-08 | 0010 | 방향 수정. A: 도구는 온라인 AI 도구, 분류는 AI 판단 + 규칙 의견(다르면 표시), 검증 숫자는 Core, 오프라인·실행 시 AI 없음은 납품물만(가드는 납품물 템플릿으로 옮길 카드까지 그대로), exe 문답 없음, AI에 보낼 자료는 사용자가 정함(README 한 줄). B: 빈 곳 카드는 M2 뒤, 스펙 200줄, 리뷰 1회·막는 지적만·나머지 `docs/LATER.md`, [재검토]는 CI 빨간불만, oracle은 Core 대조·판정만, effort, M2 넷 순서와 v0.1.0-alpha. 지시문 1절·2절 머리말·1·6·7·3.1·3.3·3.5·5절·9절·10절·13절, CLAUDE.md, `.claude/agents/`. 2절 8·10은 그대로 | juhan 지시 | ADR 0010 PR |
@@ -75,6 +76,7 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-08 | T-019 M2-2 | 10 oracle 판 | schema 1·2 두 판을 expected `schema_version`으로 고름. 섞이면 분류 모두 DIFF. schema 1 판은 `ai`를 거절. PR (b) 뒤 첫 oracle 변경에서 삭제 | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 11 예제 | 공개 예제 다섯에 `ai`를 넣지 않음(모두 `source: rule`). TestData 표본 `ai-judgment`로 확인 | T-019 (a) |
 | 2026-11-08 | T-019 M2-2 | 12 사용자 확인(LATER #20) | 스킬 대화에서 단계마다 AI 판단·추정 답을 보이고 맞음/바꾸기 뒤에만 `answers.yaml`을 쓴다. 엔진은 묻지 않는다 | T-019 (a) |
+| 2026-11-08 | T-019 M2-2 | 13 테스트 변경(PR (b)) | `confirm_existing_feature` 삭제·schema 2에 맞춰 단언을 고침: CheckAndOveruse·ConditionTable(`CHECK_EXISTING` 행)·Signoff·DefaultMark·InferredMark의 확인 항목은 `measure_minutes_per_item`만, ExampleGolden의 form-fill 기대는 확인 항목 대신 `existing_feature` 기본값 표시, ApiShape 두 개는 `RuleOpinion`·`StepAi`·`Source`·`Differs`를 더함. 지운 테스트 없음. 새 테스트 CaseAi·AiJudgment·ScorecardSkill | T-019 (b) |
 | 2026-11-08 | T-018 M2-1 | 1 출력 폴더 | 기본 `<케이스>/out`, `--out`은 케이스 폴더 밖이나 기본값과 같은 폴더. 같은 이름 파일은 덮어쓰고 다른 파일은 그대로, 오류면 아무것도 쓰지 않는다. `/examples/*/out/`는 gitignore | T-018 |
 | 2026-11-08 | T-018 M2-1 | 2 도움말 | 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령 `classify`·`compare`·`judge`는 숨긴다. `help --json`은 명령 넷 | T-018 |
 | 2026-11-08 | T-018 M2-1 | 3 사용자 명령 `--json` | 결과 객체 `schema_version` 1·`command`·`files`(출력 폴더 기준 상대 경로). 숫자·판정은 파일에만. 넓히는 일은 `report.md`(M2-3) | T-018 |

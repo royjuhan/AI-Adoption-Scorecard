@@ -142,7 +142,7 @@ public class DefaultMarkTests
 
         Assert.Equal(["minutes_per_item"], step.Defaults);
         Assert.All(step.Rows, r => Assert.DoesNotContain(ClassificationSpec.DefaultMark.Trim(), r.Reason, StringComparison.Ordinal));
-        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem, ClassificationSpec.ConfirmExistingFeature], step.Checks);
+        Assert.Equal([ClassificationSpec.MeasureMinutesPerItem], step.Checks);
     }
 
     // 6.2 기본값인 답 칸. 첫 `키`가 기본값인 답이다. 바로 뒤 "(null)" 또는 (`값`)이 그 값이다.

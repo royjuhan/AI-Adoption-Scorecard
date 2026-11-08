@@ -8,21 +8,27 @@
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "<케이스 이름>",
   "steps": [
     {
       "number": 1,
       "name": "<단계 이름, 자유 서술 그대로>",
+      "source": "ai | rule",
+      "rule_opinion": {
+        "assignee": "① | ② | ③ | ④",
+        "rule": "SIGNOFF | Q1 | Q2 | Q3 | Q4 | ELSE"
+      },
+      "differs": false,
       "defaults": ["<IsDefault인 답의 키, case-schema 4.4 표 순서>"],
       "checks": ["<확인 항목 키, 4.7>"],
       "ai_overuse_candidate": false,
       "rows": [
         {
           "kind": "step | exception_review | human_gate",
-          "assignee": "① | ② | ③ | ④",
-          "rule": "SIGNOFF | Q1 | Q2 | Q3 | Q4 | ELSE | PARTIAL | GATE",
-          "reason": "<근거 문장, 4.5. 기본값 표시 포함>"
+          "assignee": "① | ② | ②M | ③ | ④",
+          "rule": "AI | SIGNOFF | Q1 | Q2 | Q3 | Q4 | ELSE | PARTIAL | GATE",
+          "reason": "<AI 근거 그대로, 또는 근거 문장 4.5. 기본값·추정 표시 포함>"
         }
       ]
     }
@@ -91,13 +97,15 @@ Q4 frequency == rare and batch_size < 5
 | `PARTIAL` | `rule_expressible` | `=` | `partial` |
 | `GATE` | `failure_impact` | `in` | `external`, `safety_legal` |
 | `OVERUSE` | `current_actor` | `=` | `ai_each_time` |
-| `CHECK_EXISTING` | `existing_feature` | `=` | `unknown` |
 
 ### 4.4 담당·근거 키·행 종류 값
 
 | 값 | 뜻 |
 | --- | --- |
 | `①` `②` `③` `④` | 담당. JSON 문자열(U+2460~U+2463). 이스케이프하지 않는다 [P:escape assignee-raw] |
+| `②M` | AI 행의 담당(학습 모델, 결정론). 트리는 내지 않는다. 비교 값은 ②(6.6) |
+| `AI` | AI 행(`ai`가 있는 단계의 `step` 행)의 근거 키 |
+| `ai`, `rule` | 단계의 `source` 값 |
 | `SIGNOFF`, `Q1`~`Q4`, `ELSE` | `step` 행의 근거 키 |
 | `PARTIAL` | `exception_review` 행의 근거 키 |
 | `GATE` | `human_gate` 행의 근거 키 |
@@ -155,7 +163,6 @@ Q4 frequency == rare and batch_size < 5
 | 키 | 조건 | 뜻 |
 | --- | --- | --- |
 | `measure_minutes_per_item` | `minutes_per_item` 값이 null | 건당 시간을 잰다(지시문 3.2 "측정 권고로 표시") |
-| `confirm_existing_feature` | `existing_feature` = `unknown` | 기존 프로그램에 같은 기능이 있는지 확인한다. 있으면 ①(지시문 3.2 "확인 항목으로 남김") |
 
 ### 4.10 결정론·원본 불변·G2·G3
 
@@ -171,6 +178,8 @@ public static class StepClassifier
     public const string KindStep = "step";
     public const string KindExceptionReview = "exception_review";
     public const string KindHumanGate = "human_gate";
+    public const string SourceAi = "ai";
+    public const string SourceRule = "rule";
 
     // 순수 함수. 파일을 읽지 않는다.
     public static ClassificationResult Classify(CaseDefinition definition);
@@ -187,12 +196,15 @@ public static class ClassificationJson
 public sealed record ClassificationResult(string Case, IReadOnlyList<StepClassification> Steps);
 
 // T-008: Defaults 뒤에 Inferred(추정 답 키, case-schema 4.4 순서, 4.12). JSON에는 쓰지 않는다.
+// M2-2: Name 뒤에 Source(ai·rule), RuleOpinion(트리 step 행), Differs(4.13).
 public sealed record StepClassification(
-    int Number, string Name,
+    int Number, string Name, string Source, RuleOpinion RuleOpinion, bool Differs,
     IReadOnlyList<string> Defaults, IReadOnlyList<string> Inferred, IReadOnlyList<string> Checks,
     bool AiOveruseCandidate, IReadOnlyList<ClassificationRow> Rows);
 
-// Used: 트리가 읽은 답(4.6 표). JSON에는 쓰지 않는다.
+public sealed record RuleOpinion(string Assignee, string Rule);
+
+// Used: 트리가 읽은 답(4.6 표). AI 행은 빈 목록. JSON에는 쓰지 않는다.
 public sealed record ClassificationRow(
     string Kind, string Assignee, string Rule, IReadOnlyList<string> Used, string Reason);
 ```
@@ -223,13 +235,15 @@ public sealed record ClassificationRow(
 | `definition`이 null | `ArgumentNullException` | 후보 코드 |
 | 파싱 오류(`CaseParseResult.Case`가 null) | 분류하지 않는다. 부르는 쪽이 오류를 보인다. `Classify`는 모델만 받는다 | 4.11 |
 | 열거 값이 선택지 밖 | 생기지 않는다. 파서가 `enum` 오류로 막는다(case-schema 4.6). 후보는 `ArgumentOutOfRangeException` | [읽음], 후보 코드 |
-| 답 없는 단계(10개 모두 기본값, T-008) | `ELSE` ② + `PARTIAL` ④, 두 행 모두 기본값 표시, 확인 항목 2종. `human_signoff` 기본값 `no`라 `SIGNOFF`가 아니다 | [P:mark parser-all-defaults], [T8:P:mark 답 없는 단계] |
+| 답 없는 단계(10개 모두 기본값, T-008) | `ELSE` ② + `PARTIAL` ④, 두 행 모두 기본값 표시, 확인 항목 `measure_minutes_per_item`. `human_signoff` 기본값 `no`라 `SIGNOFF`가 아니다 | [P:mark parser-all-defaults], [T8:P:mark 답 없는 단계] |
 | `human_signoff: yes`(T-008) | 다른 답과 상관없이 ④ `SIGNOFF` 한 행. 게이트·예외 검토 행이 없다. 확인 항목은 그대로 달린다. AI 과잉 후보가 아니다 | [T8:P:signoff] |
 | `human_signoff`를 적지 않은 단계(T-008) | `no`로 분류하고 `Q1`·`Q2`·`Q3`·`Q4`·`ELSE` 행에 기본값 표시. 부가 행에는 붙지 않는다(4.6) | [T8:P:mark human_signoff=-] |
 | `human_signoff` 값이 `Yes`·`true`·빈 문자열·`unknown`(T-008) | 생기지 않는다. 파서가 `enum` 오류로 막는다(case-schema 4.9) | [T8:P:mark] |
 | `inferred`가 있는 단계(T-008) | 분류는 같다. 읽은 답이 추정이면 문장 끝에 추정 표시(4.12). classification.json의 속성은 그대로다 | [T8:P:inferred], [T8:P:json] |
 | Q4인데 `current_actor: program` | ④로 나온다. "그대로 두기"가 실제로는 프로그램이다. 문장은 같다 | [P:order Q4 ca=program] → 승인 질문 3 |
 | `rule_expressible: no`이고 입력이 자유 형식 | Q2. 입력 양식 표준화 제안이 나오지 않는다 | [P:order Q2>Q3] |
+| `ai`가 있는 단계(M2-2) | `step` 행만 AI 행(근거 그대로, 표시 없음). 규칙 의견·부가 행은 트리 것. `differs`는 비교 값으로 | ADR 0013 |
+| `ai` 담당이 ④가 아닌 `SIGNOFF` 단계(M2-2) | `GATE` 조건이면 ④ `GATE`를 붙인다. `PARTIAL`은 붙지 않는다 | ADR 0013 결정 2 |
 | 단계 이름에 제어 문자·이모지 | JSON 이스케이프(3.3). 이름은 바꾸지 않는다 | [P:escape] |
 | Windows 줄바꿈으로 받은 `answers.yaml` | 같은 결과 | [P:eol], [S7] |
 | publish 단일 exe에서 `System.Text.Json` 동작 | **미확인** | — |
@@ -280,7 +294,7 @@ public sealed record ClassificationRow(
 | `rule_expressible`(`partial`) | `step`·`exception_review` 두 행에 표시 |
 | `input_kind`, `existing_feature: yes`(Q1) | 없음(Q1은 `input_kind`를 읽지 않는다) |
 | `input_kind`, ELSE | `step` 행에 표시 |
-| `existing_feature`(`unknown`) | `step` 행에 표시. 확인 항목 `confirm_existing_feature` |
+| `existing_feature`(`unknown`) | `step` 행에 표시 |
 | `human_signoff`(`no`) | `step` 행에 표시 |
 | `human_signoff`, `failure_impact: external` | `step` 행에 표시. 게이트 행에는 없다(게이트 행은 `failure_impact`만 읽는다) |
 | `human_signoff`, `rule_expressible: partial` | `step` 행에 표시. 예외 검토 행에는 없다 |
@@ -292,7 +306,7 @@ public sealed record ClassificationRow(
 ```
 ② ELSE: 판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)
 ④ PARTIAL: 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다. (기본값 사용, 확인 필요)
-defaults: 10개 모두. checks: measure_minutes_per_item, confirm_existing_feature
+defaults: 10개 모두. checks: measure_minutes_per_item
 ```
 
 ### 6.5 서명 단계와 추정 표시 (T-008)
@@ -333,581 +347,7 @@ inferred 3: failure_impact
 inferred 4: current_actor
 ```
 
-## 7. 공개 예제
-
-### 7.1 요약
-
-| 예제 | 사용자 단계 | 행(모델 A) | ② | ③ | ④ 예외 검토 | ④ 게이트 | 확인 항목 | AI 과잉 후보 | 기본값 표시 문장 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| table-compare | 4 | 6 | 4 | 0 | 1 | 1 | `measure` 4 | 0 | 0 |
-| form-fill | 4 | 5 | 4 | 0 | 0 | 1 | `measure` 4, `confirm` 1 | 1 (2단계) | 1 (1단계) |
-| mixed-exceptions | 4 | 5 | 2 | 2 | 0 | 1 | `measure` 4 | 0 | 0 |
-| signoff-final | 7 | 9 | 5 | 1 | 1 | 1 | `measure` 7 | 0 | 0 |
-
-### 7.2 table-compare
-
-`examples/table-compare/answers.yaml`:
-
-```yaml
-# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 table-compare.
-name: table-compare
-task: 센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다
-steps:
-  - name: 정상 신호 구간 선택
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 불규칙 신호 구간 선택
-    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 30, exception_rate: 40, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 구간 평균 계산
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 결과표 채우기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
-```
-
-`examples/table-compare/expected/classification.json` (SHA-256 `44e64b8dad5182a193f2fd364fb587a02104c1868cac83c74a737586e17e3ea5`):
-
-```json
-{
-  "schema_version": 1,
-  "case": "table-compare",
-  "steps": [
-    {
-      "number": 1,
-      "name": "정상 신호 구간 선택",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "name": "불규칙 신호 구간 선택",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        },
-        {
-          "kind": "exception_review",
-          "assignee": "④",
-          "rule": "PARTIAL",
-          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "name": "구간 평균 계산",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 4,
-      "name": "결과표 채우기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        },
-        {
-          "kind": "human_gate",
-          "assignee": "④",
-          "rule": "GATE",
-          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 7.3 form-fill
-
-`examples/form-fill/answers.yaml`:
-
-```yaml
-# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 form-fill.
-# 1단계는 existing_feature를 적지 않았다(모름 → 기본값 unknown → 확인 항목).
-name: form-fill
-task: 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다
-steps:
-  - name: 주문서 파일 모으기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, human_signoff: no}
-  - name: 주문서 양식 읽기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: ai_each_time, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 품목·수량 집계
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 주간 보고서 만들기
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
-```
-
-`examples/form-fill/expected/classification.json` (SHA-256 `b1898a856862e821c9df1f2d3570220b3f909246890d2aa6555ff4376b1249bc`):
-
-```json
-{
-  "schema_version": 1,
-  "case": "form-fill",
-  "steps": [
-    {
-      "number": 1,
-      "name": "주문서 파일 모으기",
-      "defaults": [
-        "minutes_per_item",
-        "existing_feature"
-      ],
-      "checks": [
-        "measure_minutes_per_item",
-        "confirm_existing_feature"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)"
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "name": "주문서 양식 읽기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": true,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "name": "품목·수량 집계",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 4,
-      "name": "주간 보고서 만들기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        },
-        {
-          "kind": "human_gate",
-          "assignee": "④",
-          "rule": "GATE",
-          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 7.4 mixed-exceptions
-
-`examples/mixed-exceptions/answers.yaml`:
-
-```yaml
-# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 mixed-exceptions.
-name: mixed-exceptions
-task: 자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다
-steps:
-  - name: 메일 접수 기록
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 문의 유형 분류
-    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 답변 초안 쓰기
-    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
-  - name: 처리 결과 기록
-    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-```
-
-`examples/mixed-exceptions/expected/classification.json` (SHA-256 `46bd9f0ab27cea2952fbfb90d22342824a2dca325886a4a91c56a1f0105749df`):
-
-```json
-{
-  "schema_version": 1,
-  "case": "mixed-exceptions",
-  "steps": [
-    {
-      "number": 1,
-      "name": "메일 접수 기록",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "name": "문의 유형 분류",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "③",
-          "rule": "Q3",
-          "reason": "입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다."
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "name": "답변 초안 쓰기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "③",
-          "rule": "Q3",
-          "reason": "입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다."
-        },
-        {
-          "kind": "human_gate",
-          "assignee": "④",
-          "rule": "GATE",
-          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
-        }
-      ]
-    },
-    {
-      "number": 4,
-      "name": "처리 결과 기록",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매일 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 7.5 signoff-final
-
-`examples/signoff-final/answers.yaml`:
-
-```yaml
-# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
-# 7단계만 사람이 최종 확인·서명하는 단계다(human_signoff: yes). 나머지 단계는 no.
-name: signoff-final
-task: 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다
-steps:
-  - name: 기록 파일 열기·정리
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 기준 구간 고르기(안정 기록)
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 14, exception_rate: 10, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 기준 구간 고르기(흔들린 기록)
-    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 6, exception_rate: 50, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 구간 값 계산·옮기기
-    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 보고서 양식 채우기
-    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
-  - name: 결과 해석 문장 쓰기
-    answers: {input_kind: free_doc, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 40, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
-  - name: 최종 확인·서명·제출
-    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
-```
-
-`examples/signoff-final/expected/classification.json` (SHA-256 `fe040ce6b8eaafbf7218451b668d232f948a6d907c279edb592be19d4155934f`):
-
-```json
-{
-  "schema_version": 1,
-  "case": "signoff-final",
-  "steps": [
-    {
-      "number": 1,
-      "name": "기록 파일 열기·정리",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "name": "기준 구간 고르기(안정 기록)",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "name": "기준 구간 고르기(흔들린 기록)",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        },
-        {
-          "kind": "exception_review",
-          "assignee": "④",
-          "rule": "PARTIAL",
-          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
-        }
-      ]
-    },
-    {
-      "number": 4,
-      "name": "구간 값 계산·옮기기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 5,
-      "name": "보고서 양식 채우기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 6,
-      "name": "결과 해석 문장 쓰기",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "③",
-          "rule": "Q2",
-          "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다."
-        },
-        {
-          "kind": "human_gate",
-          "assignee": "④",
-          "rule": "GATE",
-          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
-        }
-      ]
-    },
-    {
-      "number": 7,
-      "name": "최종 확인·서명·제출",
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "④",
-          "rule": "SIGNOFF",
-          "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
-        }
-      ]
-    }
-  ]
-}
-```
-
-## 9. schema 2: AI 판단과 규칙 의견 (M2-2, ADR 0013)
-
-본문 9절의 표·블록이다. PR (b)가 1~8절 제자리로 옮긴다(본문 9.9). 그때까지 1~8절 표·블록이 Core의 지금 동작이다.
-
-### 9.2 classification.json (schema 2)
-
-```json
-{
-  "schema_version": 2,
-  "case": "<케이스 이름>",
-  "steps": [
-    {
-      "number": 1,
-      "name": "<단계 이름, 자유 서술 그대로>",
-      "source": "ai | rule",
-      "rule_opinion": {
-        "assignee": "① | ② | ③ | ④",
-        "rule": "SIGNOFF | Q1 | Q2 | Q3 | Q4 | ELSE"
-      },
-      "differs": false,
-      "defaults": ["<IsDefault인 답의 키, case-schema 4.4 표 순서>"],
-      "checks": ["<확인 항목 키, 9.4>"],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step | exception_review | human_gate",
-          "assignee": "① | ② | ②M | ③ | ④",
-          "rule": "AI | SIGNOFF | Q1 | Q2 | Q3 | Q4 | ELSE | PARTIAL | GATE",
-          "reason": "<AI 근거 그대로, 또는 근거 문장 4.5. 기본값·추정 표시 포함>"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 9.3 AI 담당과 비교 값
+### 6.6 AI 판단 장면 (M2-2)
 
 | AI 담당 | 비교 값 | 뜻 |
 | --- | --- | --- |
@@ -917,7 +357,7 @@ steps:
 | `③` | `③` | 실행 시 AI 보조 |
 | `④` | `④` | 사람 |
 
-AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `ai`를 쓰지 않은 단계다. "행"은 `rows`의 담당과 근거 키다. `human_signoff: yes` 행은 본문 9.3 규칙 5다: AI 담당의 비교 값이 ④가 아니면 `GATE` 조건일 때 ④ `GATE`가 붙는다. `PARTIAL`은 붙지 않는다.
+AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `ai`를 쓰지 않은 단계다. "행"은 `rows`의 담당과 근거 키다. `human_signoff: yes` 행은 본문 4.13 규칙 5다: AI 담당의 비교 값이 ④가 아니면 `GATE` 조건일 때 ④ `GATE`가 붙는다. `PARTIAL`은 붙지 않는다.
 
 | 바꾼 답 | AI 담당 | 규칙 의견 | differs | AI 과잉 후보 | 행 |
 | --- | --- | --- | --- | --- | --- |
@@ -949,15 +389,10 @@ AI 판단 장면. 기준 답은 6.1 줄이다. "AI 담당"이 `(없음)`이면 `
 | `current_actor: ai_each_time` | `③` | ② `ELSE` | true | false | ③ `AI` |
 | `current_actor: ai_each_time, input_kind: image` | `②` | ③ `Q3` | true | true | ② `AI` |
 
-### 9.4 확인 항목 (schema 2)
+### 6.7 AI 판단 표본 (M2-2)
 
-| 확인 항목 키 | 조건 | 뜻 |
-| --- | --- | --- |
-| `measure_minutes_per_item` | `minutes_per_item` 값이 null | 건당 시간을 잰다(지시문 3.2 "측정 권고로 표시") |
 
-### 9.5 AI 판단 표본
-
-TestData 표본. 실제 값 없음. PR (b)에서 test-engineer가 블록을 바이트 그대로 파일로 옮긴다. AI 담당이 규칙 의견과 같은 단계, `②M`, 다른 단계(부가 행 남음), `ai`가 없는 단계, 서명 단계를 한 파일에 넣었다.
+TestData 표본. 실제 값 없음. 파일은 블록과 바이트까지 같다. AI 담당이 규칙 의견과 같은 단계, `②M`, 다른 단계(부가 행 남음), `ai`가 없는 단계, 서명 단계를 한 파일에 넣었다.
 
 AI 판단 표본 `tests/Scorecard.Tests/TestData/classification/ai-judgment/answers.yaml`:
 
@@ -1136,11 +571,37 @@ AI 판단 표본 classification.json (SHA-256 `a6e77a081ca5e19b061c1e3f99a1cd6db
 - 5단계: AI ④, 규칙 ④ `SIGNOFF`. 같다. 부가 행이 없다.
 - AI 행의 `reason`은 `ai.reason` 그대로다. 표시가 붙지 않는다.
 
-### 9.6 공개 예제 다섯 (schema 2)
+## 7. 공개 예제
 
-예제 `answers.yaml`은 그대로다(1~7절, `text-check.md` 데이터 7.3). `ai`가 없어 모든 단계가 `source: rule`, `differs: false`이고 `rule_opinion`은 `rows[0]`의 담당·근거 키와 같다.
+### 7.1 요약
 
-schema 2 `examples/table-compare/expected/classification.json` (SHA-256 `84f6f31e2529546392f781f1249fdfd4a0039c3ad9ffb22d6debf05d324699c2`, 3,166바이트):
+| 예제 | 사용자 단계 | 행(모델 A) | ② | ③ | ④ 예외 검토 | ④ 게이트 | 확인 항목 | AI 과잉 후보 | 기본값 표시 문장 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| table-compare | 4 | 6 | 4 | 0 | 1 | 1 | `measure` 4 | 0 | 0 |
+| form-fill | 4 | 5 | 4 | 0 | 0 | 1 | `measure` 4 | 1 (2단계) | 1 (1단계) |
+| mixed-exceptions | 4 | 5 | 2 | 2 | 0 | 1 | `measure` 4 | 0 | 0 |
+| signoff-final | 7 | 9 | 5 | 1 | 1 | 1 | `measure` 7 | 0 | 0 |
+
+### 7.2 table-compare
+
+`examples/table-compare/answers.yaml`:
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 table-compare.
+name: table-compare
+task: 센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다
+steps:
+  - name: 정상 신호 구간 선택
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 불규칙 신호 구간 선택
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 30, exception_rate: 40, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 구간 평균 계산
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결과표 채우기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 30, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+```
+
+`examples/table-compare/expected/classification.json` (SHA-256 `84f6f31e2529546392f781f1249fdfd4a0039c3ad9ffb22d6debf05d324699c2`, 3,166바이트):
 
 ```json
 {
@@ -1263,7 +724,27 @@ schema 2 `examples/table-compare/expected/classification.json` (SHA-256 `84f6f31
 }
 ```
 
-schema 2 `examples/form-fill/expected/classification.json` (SHA-256 `e5f1a350b35ba1690024c081476494d3b9c36af6d265f46b754e59e9df262014`, 2,976바이트):
+### 7.3 form-fill
+
+`examples/form-fill/answers.yaml`:
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 form-fill.
+# 1단계는 existing_feature를 적지 않았다(모름 → 기본값 unknown → 확인 항목).
+name: form-fill
+task: 고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다
+steps:
+  - name: 주문서 파일 모으기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, human_signoff: no}
+  - name: 주문서 양식 읽기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: ai_each_time, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 품목·수량 집계
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 주간 보고서 만들기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 1, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+```
+
+`examples/form-fill/expected/classification.json` (SHA-256 `e5f1a350b35ba1690024c081476494d3b9c36af6d265f46b754e59e9df262014`, 2,976바이트):
 
 ```json
 {
@@ -1381,7 +862,26 @@ schema 2 `examples/form-fill/expected/classification.json` (SHA-256 `e5f1a350b35
 }
 ```
 
-schema 2 `examples/mixed-exceptions/expected/classification.json` (SHA-256 `ef0b506ec3f443828e68ff67c8c3bac58491bc64dcca9f2c7c3322d43582e4aa`, 2,984바이트):
+### 7.4 mixed-exceptions
+
+`examples/mixed-exceptions/answers.yaml`:
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 mixed-exceptions.
+name: mixed-exceptions
+task: 자유 형식 메일을 접수해 분류하고 답변 초안을 쓴다
+steps:
+  - name: 메일 접수 기록
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 5, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 문의 유형 분류
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 답변 초안 쓰기
+    answers: {input_kind: free_doc, rule_expressible: partial, frequency: daily, batch_size: 15, exception_rate: 30, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 처리 결과 기록
+    answers: {input_kind: table, rule_expressible: yes, frequency: daily, batch_size: 15, exception_rate: 0, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+```
+
+`examples/mixed-exceptions/expected/classification.json` (SHA-256 `ef0b506ec3f443828e68ff67c8c3bac58491bc64dcca9f2c7c3322d43582e4aa`, 2,984바이트):
 
 ```json
 {
@@ -1498,7 +998,33 @@ schema 2 `examples/mixed-exceptions/expected/classification.json` (SHA-256 `ef0b
 }
 ```
 
-schema 2 `examples/signoff-final/expected/classification.json` (SHA-256 `fcda03d5b931ee3cb0ae256f10f875e1de9dacc260e0ca175dddecc632cdd279`, 5,119바이트):
+### 7.5 signoff-final
+
+`examples/signoff-final/answers.yaml`:
+
+```yaml
+# 공개 합성 예제. 실제 업무·값 없음. 지시문 12절 signoff-final(12.1과 같은 구조).
+# 7단계만 사람이 최종 확인·서명하는 단계다(human_signoff: yes). 나머지 단계는 no.
+name: signoff-final
+task: 기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다
+steps:
+  - name: 기록 파일 열기·정리
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 5, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(안정 기록)
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 14, exception_rate: 10, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 기준 구간 고르기(흔들린 기록)
+    answers: {input_kind: table, rule_expressible: partial, frequency: weekly, batch_size: 6, exception_rate: 50, current_actor: human, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 구간 값 계산·옮기기
+    answers: {input_kind: table, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 보고서 양식 채우기
+    answers: {input_kind: fixed_form, rule_expressible: yes, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: program, failure_impact: internal_rework, existing_feature: no, human_signoff: no}
+  - name: 결과 해석 문장 쓰기
+    answers: {input_kind: free_doc, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 40, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: no}
+  - name: 최종 확인·서명·제출
+    answers: {input_kind: fixed_form, rule_expressible: no, frequency: weekly, batch_size: 20, exception_rate: 0, current_actor: human, failure_impact: external, existing_feature: no, human_signoff: yes}
+```
+
+`examples/signoff-final/expected/classification.json` (SHA-256 `fcda03d5b931ee3cb0ae256f10f875e1de9dacc260e0ca175dddecc632cdd279`, 5,119바이트):
 
 ```json
 {
@@ -1695,107 +1221,3 @@ schema 2 `examples/signoff-final/expected/classification.json` (SHA-256 `fcda03d
   ]
 }
 ```
-
-schema 2 `examples/reply-drafts/expected/classification.json` (SHA-256 `1afc62bde367be829223ca10fc6a0b21a4e196c0caf91962c66f463d5ebec16e`, 2,247바이트):
-
-```json
-{
-  "schema_version": 2,
-  "case": "reply-drafts",
-  "steps": [
-    {
-      "number": 1,
-      "name": "문의 접수 기록",
-      "source": "rule",
-      "rule_opinion": {
-        "assignee": "②",
-        "rule": "ELSE"
-      },
-      "differs": false,
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "②",
-          "rule": "ELSE",
-          "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매일 반복되므로 규칙 기반 소프트웨어로 분류."
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "name": "답변 초안 쓰기",
-      "source": "rule",
-      "rule_opinion": {
-        "assignee": "③",
-        "rule": "Q3"
-      },
-      "differs": false,
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "③",
-          "rule": "Q3",
-          "reason": "입력이 자유 형식 문서이므로(free_doc) 입력 양식 표준화를 먼저 검토하고, 안 되면 실행 시 AI 보조로 분류. 해석만 AI, 계산·저장은 코드로 한다."
-        },
-        {
-          "kind": "human_gate",
-          "assignee": "④",
-          "rule": "GATE",
-          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "name": "답변 확인·발송",
-      "source": "rule",
-      "rule_opinion": {
-        "assignee": "④",
-        "rule": "SIGNOFF"
-      },
-      "differs": false,
-      "defaults": [
-        "minutes_per_item"
-      ],
-      "checks": [
-        "measure_minutes_per_item"
-      ],
-      "ai_overuse_candidate": false,
-      "rows": [
-        {
-          "kind": "step",
-          "assignee": "④",
-          "rule": "SIGNOFF",
-          "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 9.7 expected migration 줄 수
-
-PR (b)의 `expected migration:` 커밋에서 예제 파일마다 바뀌는 줄이다. 단계마다 `source`·`rule_opinion`(4줄)·`differs` 6줄을 더한다. `schema_version` 줄은 1 → 2다. form-fill은 1단계 `checks`에서 `"confirm_existing_feature"` 줄을 지우고 앞 줄의 쉼표를 뗀다.
-
-| 예제 | 단계 | 더한 줄 | 바뀐 줄 | 지운 줄 |
-| --- | --- | --- | --- | --- |
-| `table-compare` | 4 | 24 | 1 | 0 |
-| `form-fill` | 4 | 24 | 2 | 1 |
-| `mixed-exceptions` | 4 | 24 | 1 | 0 |
-| `signoff-final` | 7 | 42 | 1 | 0 |
-| `reply-drafts` | 3 | 18 | 1 | 0 |

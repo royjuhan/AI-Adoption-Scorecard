@@ -1,10 +1,16 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "reply-drafts",
   "steps": [
     {
       "number": 1,
       "name": "문의 접수 기록",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -24,6 +30,12 @@
     {
       "number": 2,
       "name": "답변 초안 쓰기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -49,6 +61,12 @@
     {
       "number": 3,
       "name": "답변 확인·발송",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

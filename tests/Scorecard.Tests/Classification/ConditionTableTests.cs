@@ -21,7 +21,8 @@ public class ConditionTableTests
     {
         var rules = ClassificationSpec.Conditions().Select(c => c.Rule).Distinct().ToArray();
 
-        Assert.Equal(["SIGNOFF", "Q1", "Q2", "Q3", "Q4", "PARTIAL", "GATE", ClassificationSpec.OveruseRule, ClassificationSpec.CheckExistingRule], rules);
+        // schema 2(ADR 0013): CHECK_EXISTING 행을 지웠다.
+        Assert.Equal(["SIGNOFF", "Q1", "Q2", "Q3", "Q4", "PARTIAL", "GATE", ClassificationSpec.OveruseRule], rules);
     }
 
     // 표의 키·값이 case-schema 4.4 표에 있는 키·선택지다. 비교는 =, in, < 세 가지다.
@@ -85,11 +86,10 @@ public class ConditionTableTests
         Assert.Equal(expectedRule, ClassificationInput.One(a).Rows[0].Rule);
     }
 
-    // 걸림 판단. OVERUSE·CHECK_EXISTING은 행을 만들지 않는다(4.2 아래 글머리).
+    // 걸림 판단. OVERUSE는 행을 만들지 않는다(4.2 아래 글머리).
     private static bool Hits(string rule, StepClassification step) => rule switch
     {
         ClassificationSpec.OveruseRule => step.AiOveruseCandidate,
-        ClassificationSpec.CheckExistingRule => step.Checks.Contains(ClassificationSpec.ConfirmExistingFeature),
         _ => step.Rows.Any(r => r.Rule == rule),
     };
 

@@ -122,13 +122,15 @@ public class ExampleGoldenTests
         Assert.Equal(expected, result.Steps.Sum(s => s.Rows.Count));
     }
 
-    // 지시문 12절 기대값 중 분류만으로 정해지는 것(스펙 6.4).
-    // form-fill: existing_feature: unknown 1건 → 확인 항목, AI 과잉 후보 1단계. mixed-exceptions: ③ = 입력 양식 표준화(Q3).
+    // 지시문 12절 기대값 중 분류만으로 정해지는 것.
+    // form-fill: existing_feature 기본값(unknown) 1건 → 기본값 표시·defaults(schema 2는 확인 항목 없음), AI 과잉 후보 1단계.
+    // mixed-exceptions: ③ = 입력 양식 표준화(Q3). 공개 예제는 모두 source rule, differs false(ADR 0013 결정 8).
     [Fact]
     public void Instructions_expectations_hold_for_examples()
     {
         var formFill = Classify("form-fill");
-        Assert.Single(formFill.Steps, s => s.Checks.Contains(ClassificationSpec.ConfirmExistingFeature));
+        Assert.Single(formFill.Steps, s => s.Defaults.Contains("existing_feature") && s.Rows[0].Reason.EndsWith(ClassificationSpec.DefaultMark, StringComparison.Ordinal));
+        Assert.DoesNotContain(formFill.Steps, s => s.Checks.Contains(ClassificationSpec.RemovedConfirmExistingFeature));
         Assert.Single(formFill.Steps, s => s.AiOveruseCandidate);
         Assert.Contains(formFill.Steps.SelectMany(s => s.Rows), r => r.Kind == ClassificationSpec.KindHumanGate);
 
@@ -142,6 +144,19 @@ public class ExampleGoldenTests
         Assert.Contains(table.Steps, s => s.Rows.Select(r => r.Assignee).SequenceEqual(["②", "④"]) && s.Rows[1].Kind == ClassificationSpec.KindExceptionReview);
         Assert.Contains(table.Steps, s => s.Rows.Select(r => r.Assignee).SequenceEqual(["②", "④"]) && s.Rows[1].Kind == ClassificationSpec.KindHumanGate);
         Assert.All(new[] { formFill, mixed, table }, r => Assert.DoesNotContain(r.Steps.SelectMany(s => s.Rows), x => x.Assignee == "①"));
+    }
+
+    // 공개 예제에는 ai가 없다(ADR 0013 결정 8). 모든 단계가 source rule, differs false, rule_opinion = rows[0].
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void Examples_have_rule_source_only(string example)
+    {
+        Assert.All(Classify(example).Steps, s =>
+        {
+            Assert.Equal(StepClassifier.SourceRule, s.Source);
+            Assert.False(s.Differs);
+            Assert.Equal(new RuleOpinion(s.Rows[0].Assignee, s.Rows[0].Rule), s.RuleOpinion);
+        });
     }
 
     // 스펙 7.1 요약 표의 숫자가 분류 결과와 같다.
@@ -231,7 +246,7 @@ public class ExampleGoldenTests
     // "1 (2단계)" → 1.
     private static int Leading(string cell) => int.Parse(cell.Split(' ')[0], CultureInfo.InvariantCulture);
 
-    // "`measure` 4, `confirm` 1" → [(measure_minutes_per_item, 4), (confirm_existing_feature, 1)]. 접두어로 키를 찾는다.
+    // "`measure` 4" → [(measure_minutes_per_item, 4)]. 접두어로 키를 찾는다. 여러 키면 ", "로 잇는다.
     private static (string Key, int Count)[] CheckCounts(string cell) =>
         cell.Split(", ").Select(part =>
         {

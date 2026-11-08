@@ -109,9 +109,21 @@ public static class BuildRequestBuilder
             return Refuse(BuildRequestRules.Changed, BuildRequestRules.ChangedText);
         }
 
-        return signer.Length == 0
-            ? Refuse(BuildRequestRules.Unsigned, BuildRequestRules.UnsignedText)
-            : new ExportCheck(BuildRequestRules.Confirmed, signer, null);
+        // 보이는 글자(문자·숫자)가 없으면 서명이 아니다(공백·U+200B 같은 글자만 적은 줄).
+        if (!signer.Any(char.IsLetterOrDigit))
+        {
+            return Refuse(BuildRequestRules.Unsigned, BuildRequestRules.UnsignedText);
+        }
+
+        // 서명 값도 번들로 나가므로 같은 패턴으로 검사한다(이메일·경로를 적으면 내보내지 않는다).
+        var signerHits = BuildRequestRules.Patterns.Sum(p => p.Regex.Matches(signer).Count);
+        if (signerHits > 0)
+        {
+            var text = BuildRequestRules.HitsText.Replace("{count}", signerHits.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            return Refuse(BuildRequestRules.Hits, text);
+        }
+
+        return new ExportCheck(BuildRequestRules.Confirmed, signer, null);
     }
 
     // 문자열 검사(4.5). 파일 순서 → 줄 → 패턴 순서 → 줄 안 위치.

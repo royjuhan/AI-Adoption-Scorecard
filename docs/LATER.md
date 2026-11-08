@@ -183,3 +183,6 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 | 2026-11-08 | #27 | #24 행 "9.6 → 9.8로 9.7 빔"은 데이터 9절을 지워 해당이 없어졌다. 지운다 | docs/LATER.md |
 | 2026-11-08 | #27 | 사용자 확인 여부가 파일에 남지 않는다. 확인 없이 쓴 `ai`도 엔진은 받는다(ADR 0013 남은 위험). 스킬 골든 테스트는 제목·명령 줄만 본다 | SKILL.md, ScorecardSkillTests.cs |
 | 2026-11-08 | #27 | SIGNOFF + AI ③ + `failure_impact: external`(규칙 5)이 데이터 6.6 장면 표에는 있고 6.7 표본 파일에는 없다 | TestData/classification/ai-judgment/answers.yaml |
+| 2026-11-08 | M2-4 | `changed`·`unsigned`일 때 사람이 서명한 `export-check.md`를 새 초안으로 덮어써 서명이 사라진다. 편집기가 끝 줄바꿈만 지워도 `changed`. 끝 빈 줄 차이 허용이나 원인 안내 | src/Scorecard.Cli/CliApp.cs |
+| 2026-11-08 | M2-4 | answers.yaml 파싱 오류를 build가 알리지 않고 case.yaml 답으로 넘어간다(내보내는 내용과 확인 내용은 같아 거짓 통과는 아님) | src/Scorecard.Core/Build/BuildRequestBuilder.cs |
+| 2026-11-08 | M2-4 | 확인 전·`changed`·`hits` 뒤에도 예전에 확인한 `build-request/`가 새 초안 옆에 남는다. 안내 문구 | docs/spec/build-request.md 4.5 |

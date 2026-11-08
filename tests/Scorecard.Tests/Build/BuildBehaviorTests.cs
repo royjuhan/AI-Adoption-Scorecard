@@ -63,6 +63,20 @@ public class BuildBehaviorTests
         Assert.Equal("confirmed", BuildRequestBuilder.CheckExport(bundle, [0xEF, 0xBB, 0xBF, .. Utf8.GetBytes("# 확인\r\n\r\n확인한 사람: 검토자\r\n")]).Status);
     }
 
+    // 서명 값: 보이는 글자가 없으면 unsigned, 이메일·경로가 있으면 hits(번들로 나가므로).
+    [Theory]
+    [InlineData("\u200B", "unsigned")]
+    [InlineData("\u00A0\u3000", "unsigned")]
+    [InlineData("kim@corp.example.com", "hits")]
+    [InlineData("검토자 C:\\Users\\kim", "hits")]
+    [InlineData("검토자", "confirmed")]
+    public void Signature_value_needs_visible_text_and_passes_scan(string signer, string status)
+    {
+        var bundle = new BuildRequestBundle("c", 1, "s", [], [], Utf8.GetBytes("# 확인\n\n확인한 사람:\n"));
+
+        Assert.Equal(status, BuildRequestBuilder.CheckExport(bundle, Utf8.GetBytes("# 확인\n\n확인한 사람: " + signer + "\n")).Status);
+    }
+
     // 걸린 문자열이 있으면(답 파일 task에 심은 이메일) 확인 줄을 적어도 내보내지 않는다. 초안에 걸린 것을 적는다.
     [Fact]
     public void Planted_value_blocks_export_even_after_signing()

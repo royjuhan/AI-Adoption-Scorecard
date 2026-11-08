@@ -38,6 +38,20 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - `--out` 검사는 `Path.GetFullPath` 뒤 서수 비교다. 대소문자를 무시하는 파일 시스템(Windows·macOS)에서 `Expected`처럼 대소문자만 다른 경로를 케이스 폴더 밖으로 볼 수 있다. Windows 러너에서 확인할 것.
 - 지시문 2절 2 "출력은 항상 새 폴더에": 기본 `out/`을 명령마다 다시 쓴다(같은 이름은 덮어씀). 실행마다 새 폴더가 필요한지는 M2-3에서 스코어카드 결과와 함께 본다.
 
+## M2-3(T-020)에서 미룬 것
+
+- `start`·`check`가 HTML을 같이 쓰는 일. 지금은 `open`만 `scorecard.html`을 쓴다(시안은 명령마다 HTML을 연다).
+- `--times`(시간 입력)와 절약 추정. 결과 객체 `summary.saving`은 늘 `time_needed`다. 사람 입력 판정도 같이.
+- `build --step <번호>`와 제안 카드의 "만들까요?" 받기(M2-4).
+- Excel 내보내기(`open --excel`).
+- 확인(`--review`) 뒤 다시 분류·판정. 지금은 기록만 한다.
+- 스킬 `/scorecard`가 확인 파일을 쓰고 `open --review`를 부르는 길. `SKILL.md`는 이 카드에서 바꾸지 않았다.
+- 지시문 2절 2 "출력은 항상 새 폴더에": 실행마다 새 폴더를 만들지 않는다. 대신 입력·결과 SHA-256을 남긴다(report.md 8절).
+- 검증 항목은 20개까지만 보인다. 전체 목록을 볼 길(접기·별도 파일).
+- `answers` 상태가 `mismatch`·`invalid`일 때 어느 단계·어느 오류인지 보이지 않는다.
+- `tools/html-check/check.mjs`는 CI 잡이 아니다. Playwright·브라우저가 필요하다. ci-dev 카드에서 잡으로.
+- 위 "M2-1(T-018)에서 미룬 것"의 `--review`, 입력 SHA-256, `open`의 HTML은 T-020에서 했다. `--times`, 입력 사본, 새 폴더는 남는다.
+
 ## T-014의 남은 일
 
 - `docs/tasks/T-014-text-result-check.md` "남은 일" 1~4. 요지: `case-schema.md` 표 옮기기, 지시문 12절 `reply-drafts` 행과 제목 "4종", 출처 표를 끝까지 못 읽었을 때 `blind` 검사 안 함(기록), -0 처리(기록).

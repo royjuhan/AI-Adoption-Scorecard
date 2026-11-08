@@ -68,7 +68,7 @@ public static class CaseParser
 
     // UTF-8만 받는다. BOM 하나는 뗀다. UTF-16 BOM과 잘못된 바이트는 encoding 오류다(4.8).
     // 잘못된 바이트의 줄은 앞선 LF 수 + 1이다. 열은 없다. 바이트 위치는 파일 처음부터 0으로 센다(BOM 포함).
-    private static string? Decode(byte[] content, ErrorSink errors)
+    internal static string? Decode(byte[] content, ErrorSink errors)
     {
         if (content is [0xFF, 0xFE, ..] or [0xFE, 0xFF, ..])
         {

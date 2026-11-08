@@ -8,7 +8,7 @@
 
 - 실행 파일 `scorecard`의 명령 일곱(사용자 명령 넷, 내부 명령 셋), 인자 규칙, 출력 폴더, 표준 출력, 결과 객체, 오류 JSON, 종료 코드.
 - Cli는 Core 공개 API를 부르고 바이트를 쓴다. 분류·대조·판정 로직은 Core에만 있다(CLAUDE.md).
-- 범위 밖(8절): 스코어카드 HTML(M2-3), 제작 의뢰서 번들(M2-4), `--review`·`--times` 파일, 입력 사본과 SHA-256, Excel.
+- 범위 밖(8절): 제작 의뢰서 번들(M2-4), `--times` 파일, 입력 사본, Excel. 스코어카드 HTML·`--review`·입력 SHA-256은 M2-3(`report.md`)에서 더했다.
 
 ## 2. 명령
 
@@ -17,7 +17,7 @@
 - 묻지 않는다. 표준 입력을 읽지 않는다(ADR 0010 해석 1).
 - `start`: `--answers <파일>`(필수)을 `CaseParser.Parse(바이트, 파일 이름)`로 읽고 `StepClassifier.Classify`로 분류해 출력 폴더에 `classification.json`을 쓴다. 케이스 폴더는 있어야 한다. `case.yaml`은 읽지 않는다.
 - `check`: `case.yaml`을 읽고 `CompareEngine.CompareDirectory` → `JudgmentEngine.Judge`(시간·사람 입력 null)를 거쳐 `metrics.json`·`judgment.json`을 쓴다. 미검증 케이스도 성공(0)이다.
-- `open`: 출력 폴더에 있는 결과 파일(`classification.json`, `metrics.json`, `judgment.json` 순)을 알린다. 아무것도 쓰지 않는다. HTML은 M2-3이 더한다. 케이스 폴더는 있어야 한다.
+- `open`: 출력 폴더의 결과 파일로 스코어카드 결과 객체(`scorecard.json`)와 HTML(`scorecard.html`)을 쓴다. `--review <파일>`을 받는다. `--json` 표준 출력은 `scorecard.json` 바이트다. 규칙은 `report.md`(M2-3, T-020). 케이스 폴더는 있어야 한다.
 - `build`: 입력 오류 `unavailable`(2)로 끝난다. 번들은 M2-4다.
 - `classify`: `--answers`가 있으면 그 파일, 없으면 `case.yaml`의 `steps`로 분류한다. 두 길은 공개 예제에서 같은 바이트를 낸다.
 - `compare`, `judge`: `check`의 앞 반쪽과 전체다.
@@ -54,7 +54,7 @@
 
 ### 5.2 결과 객체 (사용자 명령)
 
-- 모양은 데이터 5.2 블록이다. 키 셋: `schema_version`(1), `command`(명령 이름), `files`(출력 폴더 기준 상대 경로, 쓴 순서·`open`은 위 순서).
+- 모양은 데이터 5.2 블록이다. 키 셋: `schema_version`(1), `command`(명령 이름), `files`(출력 폴더 기준 상대 경로, 쓴 순서). `open`은 이 세 키 뒤에 스코어카드 내용이 붙는다(`report.md` 3절).
 - 출력 폴더 경로는 넣지 않는다. 부른 쪽(스킬)은 자기가 준 `--out`으로 경로를 만든다(ADR 0004 "경로와 G2 R3").
 - 결과 숫자·판정은 결과 객체에 다시 적지 않는다. 파일에 있다. 스코어카드 결과 객체(요약, 단계 표, 제안 카드)는 `report.md`(M2-3)가 정하고 이 객체를 넓힌다.
 - `help --json`의 객체는 `schema_version`, `command`(`help`), `commands`(보이는 명령 넷)다.
@@ -81,9 +81,9 @@
 
 ## 8. 뒤 카드로 미룬 것
 
-- `open`의 HTML 스코어카드와 스코어카드 결과 객체: M2-3(`report.md`).
+- (해결, T-020) `open`의 HTML 스코어카드와 스코어카드 결과 객체: `report.md`.
 - `build`의 번들·`export-check.md`·예/아니오/나중에: M2-4(`build-request.md`).
-- `--review`·`--times` 파일, `check`의 자료 읽기 전용 사본과 입력 SHA-256: 파일 모양이 정해지는 카드(M2-3 결과 객체와 함께). 지금은 "이 명령에 없는 옵션이다"다.
+- `--times` 파일, `check`의 자료 읽기 전용 사본: 뒤 카드. 지금은 "이 명령에 없는 옵션이다"다. `--review`와 입력 SHA-256은 T-020에서 `open`에 더했다(`report.md` 5절, 4.9).
 - AI 판단과 규칙 의견(`source`, `rule_opinion`): M2-2.
 - 목록은 `docs/LATER.md` "M2-1에서 미룬 것"에도 있다.
 
@@ -93,6 +93,6 @@
 2. 도움말: 사용자 명령 넷과 옵션 넷만 보인다. 내부 명령은 숨긴다.
 3. 사용자 명령 `--json`: 결과 객체 `schema_version`·`command`·`files`. 숫자는 파일에, 넓히는 일은 `report.md`.
 4. 내부 명령: 파일을 쓰지 않고 결과 문서를 표준 출력에 쓴다.
-5. `open`: 결과 파일 목록만 알린다. `build`: `unavailable`(2).
+5. `open`: 결과 파일 목록만 알린다(T-020에서 스코어카드를 쓰게 바뀌었다, `report.md`). `build`: `unavailable`(2).
 6. 인자 해석은 직접 짠다. 지시문 4절의 System.CommandLine은 G1 N6(Cli 허용 목록) 추가가 필요해 쓰지 않는다.
 7. 오류 JSON·결과 객체 쓰기는 Cli에 둔다(판정이 없다). 스코어카드 결과 객체는 M2-3에서 Core에 둔다(ADR 0004 결정 6 규칙 8).

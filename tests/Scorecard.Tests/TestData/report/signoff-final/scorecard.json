@@ -1,0 +1,475 @@
+{
+  "schema_version": 1,
+  "command": "open",
+  "files": [
+    "scorecard.json",
+    "scorecard.html"
+  ],
+  "case": "signoff-final",
+  "task": "기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다",
+  "intake": "매주 기록 파일이 20개쯤 들어온다. 파일을 열어 필요 없는 줄을 지우고 정리한다.\n파일마다 값이 안정된 기준 구간을 하나 고른다. 구간의 시작과 끝을 적고, 그 구간의 평균값을 낸다.\n정리, 안정된 기록의 구간 고르기, 값 계산, 보고서 채우기는 지금 직접 만든 매크로가 한다. 쓰는 프로그램에는 이 기능이 없다.\n\n20개 중 6개쯤은 기록이 흔들린다. 이런 파일은 사람이 직접 구간을 고른다. 그중 절반쯤은 어디를 골라야 할지 애매하다.\n\n보고서에는 결과가 무슨 뜻인지 해석 문장을 쓴다. 해석하는 기준은 글로 정리되어 있지 않다. 보고서는 밖으로 나가므로 틀리면 곤란하다.\n마지막에 담당자가 보고서를 확인하고 서명해서 제출한다. 서명은 사람이 책임진다.\n\n같은 기록 파일을 AI에게 주고 구간과 평균값을 받아 본 결과가 있다. 사람이 고른 값과 맞는지 비교하고 싶다.",
+  "answers": "used",
+  "summary": {
+    "steps": 7,
+    "software": 5,
+    "assignees": [
+      {
+        "assignee": "①",
+        "count": 0
+      },
+      {
+        "assignee": "②",
+        "count": 5
+      },
+      {
+        "assignee": "②M",
+        "count": 0
+      },
+      {
+        "assignee": "③",
+        "count": 1
+      },
+      {
+        "assignee": "④",
+        "count": 1
+      }
+    ],
+    "differs": 0,
+    "ai_assist": 1,
+    "ai_overuse": 0,
+    "kept": 0,
+    "changed": 0,
+    "saving": "time_needed"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "기록 파일 열기·정리",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "program",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 2,
+      "name": "기준 구간 고르기(안정 기록)",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "program",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 3,
+      "name": "기준 구간 고르기(흔들린 기록)",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 4,
+      "name": "구간 값 계산·옮기기",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "program",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 5,
+      "name": "보고서 양식 채우기",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "program",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 6,
+      "name": "결과 해석 문장 쓰기",
+      "source": "rule",
+      "assignee": "③",
+      "rule": "Q2",
+      "reason": "판단 기준을 글로 쓸 수 없으므로(no) 실행 시 AI 보조 + 사람 확인으로 분류. 자동 승인은 하지 않는다.",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q2"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 7,
+      "name": "최종 확인·서명·제출",
+      "source": "rule",
+      "assignee": "④",
+      "rule": "SIGNOFF",
+      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    }
+  ],
+  "proposal": {
+    "step": 3,
+    "name": "기준 구간 고르기(흔들린 기록)",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다."
+  },
+  "verification": {
+    "status": "measured",
+    "reason": null,
+    "counts": {
+      "reference": 20,
+      "candidate": 20,
+      "match": 16,
+      "mismatch": 3,
+      "missing": 1,
+      "extra": 1,
+      "within": 2
+    },
+    "accuracy_pct": 80.0,
+    "missing_rate_pct": 5.0,
+    "verdict": "hold",
+    "verdict_rule": "ACCURACY",
+    "verdict_reason": "정확도 80.0%가 문턱 95%에 못 미치므로 보류.",
+    "thresholds": {
+      "accuracy_min": 95,
+      "missing_max": 2,
+      "time_must_drop": false
+    },
+    "time": {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    "checks": [
+      {
+        "rule": "ACCURACY",
+        "result": "not_met",
+        "reason": "정확도 80.0%(16/20)가 문턱 95%에 못 미친다."
+      },
+      {
+        "rule": "MISSING",
+        "result": "not_met",
+        "reason": "누락률 5.0%(1/20)가 문턱 2%를 넘는다."
+      },
+      {
+        "rule": "UNEXPLAINED",
+        "result": "not_reviewed",
+        "reason": "검토할 항목 5건(불일치 4건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
+      },
+      {
+        "rule": "TIME",
+        "result": "off",
+        "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+      },
+      {
+        "rule": "FOCUS",
+        "result": "spread",
+        "reason": "불일치 4건이 record_kind 열의 한 값에 몰리지 않았다."
+      }
+    ],
+    "items": [
+      {
+        "key": "rec04",
+        "status": "mismatch",
+        "differences": [
+          {
+            "field": "range_start",
+            "result": "outside",
+            "reference": "345",
+            "candidate": "358"
+          }
+        ]
+      },
+      {
+        "key": "rec06",
+        "status": "match",
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "392.2",
+            "candidate": "391.8"
+          }
+        ]
+      },
+      {
+        "key": "rec11",
+        "status": "match",
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "within",
+            "reference": "582.6",
+            "candidate": "583.8"
+          }
+        ]
+      },
+      {
+        "key": "rec14",
+        "status": "missing",
+        "differences": []
+      },
+      {
+        "key": "rec18",
+        "status": "mismatch",
+        "differences": [
+          {
+            "field": "range_end",
+            "result": "outside",
+            "reference": "3416",
+            "candidate": "3400"
+          }
+        ]
+      },
+      {
+        "key": "rec20",
+        "status": "mismatch",
+        "differences": [
+          {
+            "field": "range_avg",
+            "result": "outside",
+            "reference": "785.9",
+            "candidate": "762.3"
+          }
+        ]
+      },
+      {
+        "key": "rec21",
+        "status": "extra",
+        "differences": []
+      }
+    ],
+    "items_hidden": 0
+  },
+  "gates": [
+    {
+      "step": 3,
+      "name": "기준 구간 고르기(흔들린 기록)",
+      "kind": "exception_review",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+    },
+    {
+      "step": 6,
+      "name": "결과 해석 문장 쓰기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    },
+    {
+      "step": 7,
+      "name": "최종 확인·서명·제출",
+      "kind": "signoff",
+      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+    }
+  ],
+  "risks": [
+    {
+      "key": "ai_assist",
+      "step": 6,
+      "text": "6단계 결과 해석 문장 쓰기: 실행 시 AI 보조다. 자동 승인하지 않고 사람이 확인한다."
+    },
+    {
+      "key": "verdict",
+      "step": 0,
+      "text": "검증 판정이 보류다. 정확도 80.0%가 문턱 95%에 못 미치므로 보류."
+    }
+  ],
+  "todo": [
+    {
+      "key": "review_items",
+      "step": 0,
+      "text": "검토할 항목 5건(불일치 4건, 추가 행 1건)을 보고 설명이 되는지 적는다."
+    },
+    {
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4, 5, 6, 7단계."
+    },
+    {
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4, 5, 6, 7단계. 확인 파일을 --review로 넣는다."
+    }
+  ],
+  "inputs": [
+    {
+      "path": "answers.yaml",
+      "sha256": "2ff0c4aa01110f300d2eeb92a1e78b70803b8d5be80e7f12d8aec9843416b7fa"
+    },
+    {
+      "path": "candidate/records.csv",
+      "sha256": "5a0a72b75823bf8ea3897adcfe3132b9efa45012ce8363f3926d3650232737f4"
+    },
+    {
+      "path": "case.yaml",
+      "sha256": "e11e7b68274fa2688027d671ab240be59cbe9ff874be8ffb5214fb8165dfe348"
+    },
+    {
+      "path": "intake.md",
+      "sha256": "2066d6823ed5c93ab6c36af39534d34cdeb42c8469bcb185d6cdc93ce52a654e"
+    },
+    {
+      "path": "reference/records.csv",
+      "sha256": "95db6437676d6cdad6d63ad0e5ddd52249ab0a57b29e8c6852f1edf329ddc771"
+    }
+  ],
+  "results": [
+    {
+      "path": "classification.json",
+      "sha256": "fcda03d5b931ee3cb0ae256f10f875e1de9dacc260e0ca175dddecc632cdd279"
+    },
+    {
+      "path": "metrics.json",
+      "sha256": "95546bad43c246a9b0b397fc28e9eb66cb8b3caaaa097b204ff4d055f644cb2b"
+    },
+    {
+      "path": "judgment.json",
+      "sha256": "4fab1989397ff6b3e22e31501965dc93dbef0934083e7c67d7dc1994fed39252"
+    }
+  ],
+  "review": null
+}

@@ -1,0 +1,392 @@
+{
+  "schema_version": 1,
+  "command": "open",
+  "files": [
+    "scorecard.json",
+    "scorecard.html"
+  ],
+  "case": "table-compare",
+  "task": "센서 로그에서 구간을 골라 평균을 내고 결과표를 채운다",
+  "intake": "매주 센서 로그 파일을 30개쯤 받는다.\n로그마다 그래프를 보고 신호가 안정된 구간을 하나 고른다. 구간의 시작 위치와 길이를 적고, 그 구간의 평균값을 낸다.\n\n신호가 불규칙한 로그는 구간을 고르기 어렵다. 오래 걸리고, 사람마다 고르는 곳이 다르다.\n\n고른 구간과 평균값은 정해진 결과표에 채워서 다른 팀에 보낸다.\n같은 로그를 AI에게 주고 구간과 평균을 받아 본 결과가 있다. 사람이 만든 결과표와 맞는지 비교하고 싶다.",
+  "answers": "used",
+  "summary": {
+    "steps": 4,
+    "software": 4,
+    "assignees": [
+      {
+        "assignee": "①",
+        "count": 0
+      },
+      {
+        "assignee": "②",
+        "count": 4
+      },
+      {
+        "assignee": "②M",
+        "count": 0
+      },
+      {
+        "assignee": "③",
+        "count": 0
+      },
+      {
+        "assignee": "④",
+        "count": 0
+      }
+    ],
+    "differs": 0,
+    "ai_assist": 0,
+    "ai_overuse": 0,
+    "kept": 0,
+    "changed": 0,
+    "saving": "time_needed"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "정상 신호 구간 선택",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 2,
+      "name": "불규칙 신호 구간 선택",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있고(partial), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 3,
+      "name": "구간 평균 계산",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 4,
+      "name": "결과표 채우기",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    }
+  ],
+  "proposal": {
+    "step": 1,
+    "name": "정상 신호 구간 선택",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+  },
+  "verification": {
+    "status": "measured",
+    "reason": null,
+    "counts": {
+      "reference": 30,
+      "candidate": 30,
+      "match": 27,
+      "mismatch": 2,
+      "missing": 1,
+      "extra": 1,
+      "within": 4
+    },
+    "accuracy_pct": 90.0,
+    "missing_rate_pct": 3.3,
+    "verdict": "conditional",
+    "verdict_rule": "FOCUS",
+    "verdict_reason": "정확도·누락률은 문턱을 충족하나 불일치 3건이 모두 signal_type = irregular인 행이므로 조건부.",
+    "thresholds": {
+      "accuracy_min": 85,
+      "missing_max": 5,
+      "time_must_drop": false
+    },
+    "time": {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    "checks": [
+      {
+        "rule": "ACCURACY",
+        "result": "met",
+        "reason": "정확도 90.0%(27/30)가 문턱 85% 이상이다."
+      },
+      {
+        "rule": "MISSING",
+        "result": "met",
+        "reason": "누락률 3.3%(1/30)가 문턱 5% 이하다."
+      },
+      {
+        "rule": "UNEXPLAINED",
+        "result": "not_reviewed",
+        "reason": "검토할 항목 4건(불일치 3건, 추가 행 1건)이 설명되는지 사람이 아직 보지 않았다."
+      },
+      {
+        "rule": "TIME",
+        "result": "off",
+        "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+      },
+      {
+        "rule": "FOCUS",
+        "result": "found",
+        "reason": "불일치 3건이 모두 signal_type = irregular인 행이다(irregular 12행 중 3행, 다른 값 18행 중 0행)."
+      }
+    ],
+    "items": [
+      {
+        "key": "log04",
+        "status": "match",
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "62.69",
+            "candidate": "62.82"
+          }
+        ]
+      },
+      {
+        "key": "log07",
+        "status": "mismatch",
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "outside",
+            "reference": "30.77",
+            "candidate": "31.69"
+          }
+        ]
+      },
+      {
+        "key": "log08",
+        "status": "mismatch",
+        "differences": [
+          {
+            "field": "length",
+            "result": "outside",
+            "reference": "274",
+            "candidate": "268"
+          }
+        ]
+      },
+      {
+        "key": "log20",
+        "status": "match",
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "84.15",
+            "candidate": "84.07"
+          }
+        ]
+      },
+      {
+        "key": "log23",
+        "status": "match",
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "63.13",
+            "candidate": "62.94"
+          }
+        ]
+      },
+      {
+        "key": "log26",
+        "status": "match",
+        "differences": [
+          {
+            "field": "mean_value",
+            "result": "within",
+            "reference": "55.76",
+            "candidate": "55.54"
+          }
+        ]
+      },
+      {
+        "key": "log27",
+        "status": "missing",
+        "differences": []
+      },
+      {
+        "key": "log31",
+        "status": "extra",
+        "differences": []
+      }
+    ],
+    "items_hidden": 0
+  },
+  "gates": [
+    {
+      "step": 2,
+      "name": "불규칙 신호 구간 선택",
+      "kind": "exception_review",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+    },
+    {
+      "step": 4,
+      "name": "결과표 채우기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    }
+  ],
+  "risks": [
+    {
+      "key": "verdict",
+      "step": 0,
+      "text": "검증 판정이 조건부다. 정확도·누락률은 문턱을 충족하나 불일치 3건이 모두 signal_type = irregular인 행이므로 조건부."
+    }
+  ],
+  "todo": [
+    {
+      "key": "review_items",
+      "step": 0,
+      "text": "검토할 항목 4건(불일치 3건, 추가 행 1건)을 보고 설명이 되는지 적는다."
+    },
+    {
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4단계."
+    },
+    {
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4단계. 확인 파일을 --review로 넣는다."
+    }
+  ],
+  "inputs": [
+    {
+      "path": "answers.yaml",
+      "sha256": "d79245e6f54ee87f58fa8b19614d68bc554c75da5db36b4518e0f1767b25377c"
+    },
+    {
+      "path": "candidate/logs.csv",
+      "sha256": "c3a923f7bde1409cc39cad9339ec5e55a2438587ca06e7a9355bbe13e6f10736"
+    },
+    {
+      "path": "case.yaml",
+      "sha256": "e99d669ab16b6eada60e31c794efaa8cd5baa23db34b2500a68b731914f8e5b1"
+    },
+    {
+      "path": "intake.md",
+      "sha256": "6e4bbac3fa1272264d976a671fb67fb07a88ce672d506a67668b8aabfe88e041"
+    },
+    {
+      "path": "reference/logs.csv",
+      "sha256": "dd050a079d26bb800dc822579c335bc743f6935ea03bae8bc30640e3ba75bc9c"
+    }
+  ],
+  "results": [
+    {
+      "path": "classification.json",
+      "sha256": "84f6f31e2529546392f781f1249fdfd4a0039c3ad9ffb22d6debf05d324699c2"
+    },
+    {
+      "path": "metrics.json",
+      "sha256": "d250fbeeb8bbed24d22f2d8c9d4dadab99ddbd6c794bb1039b1502edc450aa84"
+    },
+    {
+      "path": "judgment.json",
+      "sha256": "b4032a207bb7459e537cb2d77b975d535190719d7adcc3fe415cbfdce7f54865"
+    }
+  ],
+  "review": null
+}

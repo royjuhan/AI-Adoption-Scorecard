@@ -47,6 +47,12 @@ internal static class GuardTargets
         new("text-check-case-valid", "text-check-valid", TextCheckToFiles),
         new("cli-start-text-check-valid", "text-check-valid", (input, output) => RunCli(output, "start", input, "--answers", Path.Combine(input, "answers.yaml"), "--out", output, "--json")),
         new("cli-check-case-valid", "case-valid", (input, output) => RunCli(output, "check", input, "--out", output, "--json")),
+        new("cli-open-case-valid", "case-valid", (input, output) =>
+        {
+            RunCli(output, "start", input, "--answers", Path.Combine(input, "case.yaml"), "--out", output, "--json");
+            RunCli(output, "check", input, "--out", output, "--json");
+            RunCli(output, "open", input, "--out", output, "--json");
+        }),
         new("cli-check-case-invalid", "case-invalid", (input, output) => RunCli(output, "check", input, "--out", output, "--json")),
     ];
 

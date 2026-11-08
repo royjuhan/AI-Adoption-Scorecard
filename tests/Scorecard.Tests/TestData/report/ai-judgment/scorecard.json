@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "command": "open",
+  "files": [
+    "scorecard.json",
+    "scorecard.html"
+  ],
+  "case": "ai-judgment",
+  "task": "합성 문의를 접수해 유형을 고르고 답변을 써서 사람이 확인해 보낸다",
+  "intake": null,
+  "answers": "used",
+  "summary": {
+    "steps": 5,
+    "software": 3,
+    "assignees": [
+      {
+        "assignee": "①",
+        "count": 0
+      },
+      {
+        "assignee": "②",
+        "count": 2
+      },
+      {
+        "assignee": "②M",
+        "count": 1
+      },
+      {
+        "assignee": "③",
+        "count": 0
+      },
+      {
+        "assignee": "④",
+        "count": 2
+      }
+    ],
+    "differs": 1,
+    "ai_assist": 0,
+    "ai_overuse": 1,
+    "kept": 2,
+    "changed": 1,
+    "saving": "time_needed"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "접수 기록",
+      "source": "ai",
+      "assignee": "②",
+      "rule": "AI",
+      "reason": "표의 칸을 정해진 자리로 옮기는 일이라 규칙으로 된다.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [],
+      "inferred": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "kept",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 2,
+      "name": "유형 고르기",
+      "source": "ai",
+      "assignee": "②M",
+      "rule": "AI",
+      "reason": "지난 기록으로 학습한 분류 모델을 고정해 쓴다. 실행할 때 AI를 부르지 않는다.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "ai_each_time",
+      "defaults": [],
+      "inferred": [],
+      "checks": [],
+      "ai_overuse_candidate": true,
+      "extra": [
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        },
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 3,
+      "name": "답변 초안 쓰기",
+      "source": "ai",
+      "assignee": "④",
+      "rule": "AI",
+      "reason": "문의마다 사정이 달라 담당자가 직접 쓴다.",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": true,
+      "current_actor": "human",
+      "defaults": [],
+      "inferred": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "changed",
+        "assignee": "③",
+        "reason": "초안은 AI가 쓰고 담당자가 고쳐 보낸다"
+      }
+    },
+    {
+      "number": 4,
+      "name": "월말 집계",
+      "source": "rule",
+      "assignee": "②",
+      "rule": "ELSE",
+      "reason": "판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매월 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요)",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item",
+        "existing_feature"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      }
+    },
+    {
+      "number": 5,
+      "name": "최종 확인·발송",
+      "source": "ai",
+      "assignee": "④",
+      "rule": "AI",
+      "reason": "사람이 읽고 서명해 보낸다.",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [],
+      "inferred": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "kept",
+        "assignee": null,
+        "reason": null
+      }
+    }
+  ],
+  "proposal": {
+    "step": 2,
+    "name": "유형 고르기",
+    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다. 애매한 건은 사람 검토로 남긴다."
+  },
+  "verification": {
+    "status": "not_checked",
+    "reason": null,
+    "counts": null,
+    "accuracy_pct": null,
+    "missing_rate_pct": null,
+    "verdict": null,
+    "verdict_rule": null,
+    "verdict_reason": null,
+    "thresholds": null,
+    "time": null,
+    "checks": [],
+    "items": [],
+    "items_hidden": 0
+  },
+  "gates": [
+    {
+      "step": 2,
+      "name": "유형 고르기",
+      "kind": "exception_review",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+    },
+    {
+      "step": 2,
+      "name": "유형 고르기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    },
+    {
+      "step": 3,
+      "name": "답변 초안 쓰기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+    }
+  ],
+  "risks": [
+    {
+      "key": "ai_overuse",
+      "step": 2,
+      "text": "2단계 유형 고르기: 지금 매번 AI에 맡기지만 규칙 SW로 된다(AI 과잉 후보)."
+    },
+    {
+      "key": "differs",
+      "step": 3,
+      "text": "3단계 답변 초안 쓰기: AI 판단 ④와 규칙 의견 ③이 다르다."
+    },
+    {
+      "key": "review_changed",
+      "step": 3,
+      "text": "3단계 답변 초안 쓰기: 사람이 ④를 ③로 바꿨다. 분류·판정은 다시 계산하지 않았다."
+    }
+  ],
+  "todo": [
+    {
+      "key": "run_check",
+      "step": 0,
+      "text": "기준·결과 자료를 넣고 scorecard check를 돌려 검증 결과를 채운다."
+    },
+    {
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "건당 시간(minutes_per_item)을 잰다: 4단계."
+    },
+    {
+      "key": "confirm_defaults",
+      "step": 0,
+      "text": "기본값을 쓴 답을 확인한다: 4단계 existing_feature."
+    },
+    {
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 2, 4단계. 확인 파일을 --review로 넣는다."
+    }
+  ],
+  "inputs": [
+    {
+      "path": "answers.yaml",
+      "sha256": "aad507703e530708b0893baa54b0e7d3d5b24c30f2cd0b23c08fc9e08354988d"
+    }
+  ],
+  "results": [
+    {
+      "path": "classification.json",
+      "sha256": "a6e77a081ca5e19b061c1e3f99a1cd6db686a7dc398a875a11bf09787ff4e46e"
+    }
+  ],
+  "review": {
+    "path": "review.yaml",
+    "sha256": "c3984aa716d803a3c0932dbcfcd0452650c875d6edb76c8619c3335331f20e41"
+  }
+}

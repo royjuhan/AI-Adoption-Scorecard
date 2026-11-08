@@ -106,24 +106,24 @@ public class CliGoldenTests
         Assert.Equal(CliInput.Blocks(CliInput.ResultHeading)[0], run.Out);
     }
 
-    // 기본 출력 폴더는 <케이스>/out(4절). start와 check가 같은 폴더에 쓴다. open은 세 파일을 고정 순서로 알린다.
+    // 기본 출력 폴더는 <케이스>/out(4절). start와 check가 같은 폴더에 쓰고 open이 그 결과로 스코어카드를 쓴다(report.md 2절).
+    // 결과가 없으면 open은 file 오류(2)이고 출력 폴더를 만들지 않는다.
     [Fact]
-    public void Default_output_folder_collects_results_and_open_lists_them()
+    public void Default_output_folder_collects_results_and_open_writes_scorecard()
     {
         using var work = CliWorkspace.Create("table-compare");
         var output = Path.Combine(work.Case, "out");
 
-        Assert.Equal(0, CliInput.Run("open", work.Case, "--json").Exit);
-        Assert.Equal(ResultObject("open"), CliInput.Run("open", work.Case, "--json").Out);
-        Assert.False(Directory.Exists(output), "open은 출력 폴더를 만들지 않는다.");
+        Assert.Equal(2, CliInput.Run("open", work.Case, "--json").Exit);
+        Assert.False(Directory.Exists(output), "open은 결과가 없으면 출력 폴더를 만들지 않는다.");
 
         Assert.Equal(0, CliInput.Run("check", work.Case).Exit);
         Assert.Equal(0, CliInput.Run("start", work.Case, "--answers", Path.Combine(work.Case, "answers.yaml")).Exit);
-
-        Assert.Equal([ClassificationJson.FileName, JudgmentJson.FileName, MetricsJson.FileName], OutputFiles(output));
         var open = CliInput.Run("open", work.Case, "--json");
         Assert.Equal(0, open.Exit);
-        Assert.Equal(ResultObject("open", ClassificationJson.FileName, MetricsJson.FileName, JudgmentJson.FileName), open.Out);
+
+        Assert.Equal([ClassificationJson.FileName, JudgmentJson.FileName, MetricsJson.FileName, "scorecard.html", "scorecard.json"], OutputFiles(output));
+        Assert.Equal(File.ReadAllBytes(Path.Combine(output, "scorecard.json")), open.Stdout);
 
         // --out이 기본값과 같은 폴더면 받는다.
         Assert.Equal(open.Out, CliInput.Run("open", work.Case, "--out", output, "--json").Out);

@@ -1,0 +1,10 @@
+# 합성 확인 파일. 실제 업무·값 없음. 맞음(keep) 둘, 바꾸기(change) 하나.
+steps:
+  - number: 1
+    answer: keep
+  - number: 3
+    answer: change
+    assignee: ③
+    reason: 초안은 AI가 쓰고 담당자가 고쳐 보낸다
+  - number: 5
+    answer: keep

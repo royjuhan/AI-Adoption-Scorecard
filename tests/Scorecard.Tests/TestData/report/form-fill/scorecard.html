@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 도입 스코어카드 · form-fill</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;
+--c1:#0f766e;--c1bg:#e6f6f4;--c2:#1d5bd8;--c2bg:#eaf1ff;--c2m:#0e7490;--c2mbg:#e4f5fa;--c3:#7c3aed;--c3bg:#f3edff;--c4:#b45309;--c4bg:#fff4e5;
+--good:#15803d;--goodbg:#e8f7ee;--warn:#b45309;--warnbg:#fff4e5;--bad:#c2410c;--badbg:#fff0ea;--na:#6b7280;--nabg:#f1f2f4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans CJK KR","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:14px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 28px 32px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.2px}
+.case{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin-left:8px;vertical-align:3px;color:var(--ink2)}
+.task{color:var(--ink2)}
+.meta{text-align:right;color:var(--ink3);font-size:12px;line-height:1.7}
+.notice{background:var(--warnbg);color:#7a3e05;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 14px}
+.tiles{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.tile .q{font-size:12.5px;color:var(--ink2);font-weight:600;margin-bottom:6px}
+.tile .big{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.tile .big small{font-size:14px;font-weight:600;color:var(--ink2);margin-left:4px}
+.tile .sub{font-size:12.5px;color:var(--ink2);margin-top:8px}
+.na{color:var(--na)}
+.big.na{font-size:22px}
+.verdict{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:5px;white-space:nowrap;letter-spacing:0}
+.v-bad{color:var(--bad);background:var(--badbg)}.v-good{color:var(--good);background:var(--goodbg)}.v-warn{color:var(--warn);background:var(--warnbg)}.v-na{color:var(--na);background:var(--nabg)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line2)}
+.stack span{display:block;height:100%}
+.legend{display:flex;gap:4px 10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.b1-fill{background:var(--c1)}.b2-fill{background:var(--c2)}.b2m-fill{background:var(--c2m)}.b3-fill{background:var(--c3)}.b4-fill{background:var(--c4)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel h2{font-size:15px;margin:0;padding:14px 16px 10px}
+.panel h2 span{font-weight:400;color:var(--ink3);font-size:12.5px;margin-left:6px}
+.steps .row{display:grid;grid-template-columns:24px 190px 136px minmax(0,1fr) 116px;column-gap:12px;padding:11px 14px;border-bottom:1px solid var(--line2);align-items:start}
+.steps .head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-top:8px;padding-bottom:8px;font-size:12px;color:var(--ink3);font-weight:600}
+.steps .num{color:var(--ink3);font-variant-numeric:tabular-nums}
+.steps .name{font-weight:600;min-width:0}
+.steps .src{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;font-weight:400}
+.steps .move{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.steps .move .arrow{display:none}
+.steps .reason{color:var(--ink2);font-size:13px;min-width:0}
+.steps .ok{text-align:right;grid-column:5;grid-row:1}
+.steps .ok .why{font-size:12px;color:var(--ink2);margin-top:4px;text-align:left}
+.steps .extra{grid-column:3 / -1;display:grid;grid-template-columns:136px minmax(0,1fr);column-gap:12px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.steps .extra .reason{font-size:12.5px}
+.steps .row.differs{background:#fffaf5}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.b1{color:var(--c1);background:var(--c1bg)}.b2{color:var(--c2);background:var(--c2bg)}.b2m{color:var(--c2m);background:var(--c2mbg)}.b3{color:var(--c3);background:var(--c3bg)}.b4{color:var(--c4);background:var(--c4bg)}
+.chip{display:inline-block;font-size:11.5px;color:var(--ink2);background:var(--nabg);border-radius:5px;padding:1px 6px;font-weight:400}
+.chip.human{color:var(--c4);background:var(--c4bg)}
+.chip.ai{color:var(--c3);background:var(--c3bg)}
+.chip.diff{color:var(--bad);background:var(--badbg);font-weight:700}
+.chip.mark{margin-top:2px}
+.btn{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--ink3);background:#fff;white-space:nowrap}
+.btn.on{border-color:#cfd8e6;background:#f4f7fb;color:var(--ink)}
+.btn.chg{border-color:var(--c4);color:var(--c4);background:var(--c4bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card.prop{border:2px solid var(--c2)}
+.card .k{font-size:11.5px;font-weight:700;color:var(--c2);letter-spacing:.2px;margin-bottom:4px}
+.card.info .k{color:var(--c4)}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{margin:0 0 8px;color:var(--ink2);font-size:13px}
+.card .cmd{font-size:12px;margin:8px 0 0}
+.card ul{margin:4px 0 0;padding-left:16px;color:var(--ink2);font-size:12.5px}
+.card li{margin-bottom:3px}
+.card ul.risks{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);list-style:square}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:#f3f4f6;border-radius:4px;padding:1px 5px;color:#333;overflow-wrap:anywhere}
+.verify,.todo,.overview{margin-top:16px}
+.vbody{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:0 16px 16px}
+.vbody>div{min-width:0}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:2px}
+.cnt{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.cnt b{display:block;font-size:20px;line-height:1.2}
+.cnt span{font-size:11.5px;color:var(--ink2)}
+.cnt.bad b{color:var(--bad)}.cnt.warn b{color:var(--warn)}.cnt.na b{color:var(--na)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;background:var(--line2)}
+.bar span{display:block;height:100%}
+.fill-good{background:#7fb07f}.fill-bad{background:#e07a52}.fill-warn{background:#e0a93f}.fill-na{background:#b8bcc4}
+.note{font-size:11.5px;color:var(--ink2);margin-top:6px}
+.pattern{margin-top:12px;border-radius:8px;background:var(--warnbg);color:#7a3e05;font-size:12.5px;padding:9px 11px}
+.pattern .verdict{vertical-align:0}
+.checks{margin:10px 0 0;padding-left:0;list-style:none;font-size:12.5px;color:var(--ink2)}
+.checks li{margin-bottom:5px}
+.diffs .d{display:grid;grid-template-columns:64px 120px minmax(0,1fr) 84px;column-gap:10px;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:12.5px;align-items:center}
+.diffs .d>div{min-width:0}
+.diffs .d.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3);font-weight:600}
+.diffs .res{text-align:right}
+.diffs .res .verdict{margin:0;vertical-align:0}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.arrow{color:var(--ink3);margin:0 4px}
+.todo ol{margin:0;padding:0 16px 14px 36px;color:var(--ink2);font-size:13px}
+.todo li{margin-bottom:4px}
+.pad{padding:0 16px 16px}
+.label{font-size:12px;font-weight:700;color:var(--ink3);margin:10px 0 4px}
+.intake{white-space:pre-wrap;color:var(--ink2);font-size:13px;background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:10px 12px}
+.flow{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.flow li{margin-bottom:3px}
+.hashes{margin:0;padding-left:0;list-style:none;font-size:12px;color:var(--ink2)}
+.hashes li{margin-bottom:4px}
+.hash{word-break:break-all;font-size:11.5px;color:var(--ink3)}
+.foot{font-size:11.5px;color:var(--ink3);margin:12px 0 0}
+@media (max-width:1040px){
+.grid{grid-template-columns:minmax(0,1fr)}
+.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
+.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vbody{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+.wrap{padding:16px 16px 24px}
+h1{font-size:19px}
+.case{margin-left:0}
+.meta{text-align:left}
+.tile{padding:12px 14px}
+.tile .big{font-size:24px}
+.steps .head{display:none}
+.steps .row{grid-template-columns:20px minmax(0,1fr);grid-template-areas:"num name" ". move" ". reason";row-gap:6px;padding:12px 14px}
+.steps .num{grid-area:num;padding-top:1px}
+.steps .name{grid-area:name;font-size:14.5px}
+.steps .move{grid-area:move;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px}
+.steps .move .arrow{display:inline;margin:0}
+.steps .reason{grid-area:reason}
+.steps .extra{grid-column:2;display:block;margin-top:2px;padding:8px 10px;border:0;border-radius:8px;background:#f6f7f9}
+.steps .extra .reason{display:inline;margin-left:6px}
+.steps .ok{grid-column:2;grid-row:auto;text-align:left}
+.diffs .d.head{display:none}
+.diffs .d{grid-template-columns:64px minmax(0,1fr) auto;grid-template-areas:"key field res" "key vals res";row-gap:2px}
+.diffs .d .key{grid-area:key}
+.diffs .d .field{grid-area:field}
+.diffs .d .vals{grid-area:vals}
+.diffs .d .res{grid-area:res}
+}
+@media (max-width:420px){
+.tiles{grid-template-columns:minmax(0,1fr);gap:8px}
+.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{body{background:#fff}.wrap{max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div>
+<h1>AI 도입 스코어카드 <span class="case">form-fill</span></h1>
+<div class="task">고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다</div>
+</div>
+<div class="meta">scorecard.json schema 1<br>같은 입력이면 같은 결과 · 숫자는 Scorecard.Core</div>
+</header>
+<section class="tiles" id="zone-1">
+<div class="tile">
+<div class="q">소프트웨어로 대체할 수 있는 단계</div>
+<div class="big">4<small>/ 4단계</small></div>
+<div class="stack" aria-label="담당 구성"><span class="b2-fill" style="flex:4"></span></div>
+<div class="legend"><span><i class="b2-fill"></i>② 규칙 SW 4</span></div>
+</div>
+<div class="tile">
+<div class="q">정확한가</div>
+<div class="big">100.0%<span class="verdict v-good">통과</span></div>
+<div class="sub">정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.</div>
+</div>
+<div class="tile">
+<div class="q">시간이 줄었나</div>
+<div class="big na">시간 측정 필요</div>
+<div class="sub">시간 조건을 쓰지 않는다(time_must_drop: false). 절약 추정은 시간을 잰 뒤에 낸다.</div>
+</div>
+<div class="tile">
+<div class="q">AI가 꼭 필요했나</div>
+<div class="big">0<small>단계</small></div>
+<div class="sub">실행 시 AI 보조(③) 0단계. AI 과잉 후보 1단계. AI 판단과 규칙 의견이 다른 단계 0개.</div>
+</div>
+</section>
+<div class="grid">
+<section class="panel" id="zone-2">
+<h2>단계별 담당<span>맞음 0 · 바뀜 0 · 확인은 --review 파일로</span></h2>
+<div class="steps">
+<div class="row head"><div>#</div><div>단계</div><div>지금 → 제안</div><div>근거</div><div class="ok">확인</div></div>
+<div class="row">
+<div class="num">1</div>
+<div class="name">주문서 파일 모으기<div class="src"><span class="chip">규칙 트리</span></div></div>
+<div class="move"><span class="chip human">사람</span><span class="arrow">→</span><span class="badge b2">② 규칙 SW</span></div>
+<div class="reason">판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. (기본값 사용, 확인 필요) <span class="chip mark">기본값 minutes_per_item, existing_feature</span></div>
+<div class="ok"><span class="btn">확인 전</span></div>
+</div>
+<div class="row">
+<div class="num">2</div>
+<div class="name">주문서 양식 읽기<div class="src"><span class="chip">규칙 트리</span></div></div>
+<div class="move"><span class="chip">매번 AI</span><span class="arrow">→</span><span class="badge b2">② 규칙 SW</span></div>
+<div class="reason">판단 기준을 글로 쓸 수 있고(yes), 입력이 고정 양식이며(fixed_form), 매주 반복되므로 규칙 기반 소프트웨어로 분류. <span class="chip mark">기본값 minutes_per_item</span></div>
+<div class="ok"><span class="btn">확인 전</span></div>
+</div>
+<div class="row">
+<div class="num">3</div>
+<div class="name">품목·수량 집계<div class="src"><span class="chip">규칙 트리</span></div></div>
+<div class="move"><span class="chip human">사람</span><span class="arrow">→</span><span class="badge b2">② 규칙 SW</span></div>
+<div class="reason">판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. <span class="chip mark">기본값 minutes_per_item</span></div>
+<div class="ok"><span class="btn">확인 전</span></div>
+</div>
+<div class="row">
+<div class="num">4</div>
+<div class="name">주간 보고서 만들기<div class="src"><span class="chip">규칙 트리</span></div></div>
+<div class="move"><span class="chip human">사람</span><span class="arrow">→</span><span class="badge b2">② 규칙 SW</span></div>
+<div class="reason">판단 기준을 글로 쓸 수 있고(yes), 입력이 표 형식이며(table), 매주 반복되므로 규칙 기반 소프트웨어로 분류. <span class="chip mark">기본값 minutes_per_item</span></div>
+<div class="extra"><span><span class="badge b4">④ 게이트</span></span><span class="reason">틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</span></div>
+<div class="ok"><span class="btn">확인 전</span></div>
+</div>
+</div>
+</section>
+<aside class="side">
+<div class="card prop" id="zone-3">
+<div class="k">제안 · 먼저 만들 단계</div>
+<h3>2단계를 만들까요?</h3>
+<p>주문서 양식 읽기. AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다.</p>
+<p class="cmd">= <code>scorecard build form-fill</code> (의뢰서 번들, M2-4)</p>
+</div>
+<div class="card info" id="zone-5">
+<div class="k">사람 게이트와 남는 위험</div>
+<ul><li><b>4단계</b> ④ 게이트: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</li></ul>
+<ul class="risks"><li>2단계 주문서 양식 읽기: 지금 매번 AI에 맡기지만 규칙 SW로 된다(AI 과잉 후보).</li></ul>
+</div>
+</aside>
+</div>
+<section class="panel verify" id="zone-4">
+<h2>검증<span>기준 20건 ↔ 결과 20건</span></h2>
+<div class="vbody">
+<div>
+<div class="counts"><div class="cnt"><b>20</b><span>일치</span></div><div class="cnt bad"><b>0</b><span>불일치</span></div><div class="cnt warn"><b>0</b><span>누락</span></div><div class="cnt na"><b>0</b><span>추가</span></div></div>
+<div class="bar" aria-label="대조 결과 비율"><span class="fill-good" style="flex:20"></span></div>
+<div class="note">일치 20건 중 0건은 허용오차 안의 차이. 누락률 0.0%.</div>
+<div class="pattern"><b>판정<span class="verdict v-good">통과</span></b> 정확도·누락률이 문턱을 충족하고 조건부·보류 조건에 걸리지 않으므로 통과.<br>문턱: 정확도 85% 이상, 누락률 5% 이하</div>
+<ul class="checks"><li><span class="chip">ACCURACY 충족</span> 정확도 100.0%(20/20)가 문턱 85% 이상이다.</li><li><span class="chip">MISSING 충족</span> 누락률 0.0%(0/20)가 문턱 5% 이하다.</li><li><span class="chip">UNEXPLAINED 없음</span> 검토할 항목(불일치·추가 행·중복 행)이 없다.</li><li><span class="chip">TIME 쓰지 않음</span> 시간 조건을 쓰지 않는다(time_must_drop: false).</li><li><span class="chip">FOCUS 적음</span> 불일치가 0건이라 몰림을 보지 않는다.</li></ul>
+</div>
+<div class="diffs">
+<p class="note">차이가 있는 항목이 없다.</p>
+</div>
+</div>
+</section>
+<section class="panel todo" id="zone-6">
+<h2>다음 할 일</h2>
+<ol><li>건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4단계.</li><li>기본값을 쓴 답을 확인한다: 1단계 existing_feature.</li><li>단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4단계. 확인 파일을 --review로 넣는다.</li></ol>
+</section>
+<section class="panel overview" id="zone-7">
+<h2>업무 개요와 입력 기록</h2>
+<div class="pad">
+<div class="label">사용자가 말한 그대로(intake.md)</div>
+<div class="intake">거래처에서 주문서가 매주 20장쯤 온다. 주문서는 모두 같은 양식이다.&#xA;주문서 파일을 한곳에 모은다. 지금 쓰는 프로그램에 이 기능이 있는지는 확인해 보지 않았다.&#xA;&#xA;주문서를 한 장씩 AI에게 주고 품목과 수량을 뽑게 한다. 매번 AI를 쓴다.&#xA;뽑은 품목·수량을 품목별로 더해서 주간 보고서를 만들고 보낸다.&#xA;&#xA;AI가 뽑은 값이 사람이 읽은 값과 같은지 확인하고 싶다.</div>
+<div class="label">단계 흐름</div>
+<ol class="flow"><li>주문서 파일 모으기 <span class="badge b2">② 규칙 SW</span></li><li>주문서 양식 읽기 <span class="badge b2">② 규칙 SW</span></li><li>품목·수량 집계 <span class="badge b2">② 규칙 SW</span></li><li>주간 보고서 만들기 <span class="badge b2">② 규칙 SW</span></li></ol>
+<div class="label">입력 SHA-256</div>
+<ul class="hashes"><li><code>answers.yaml</code> <span class="mono hash">5875c7be4fafcb2a1810e4e973b324778828d49d2cebbb20babed55ad1311546</span></li><li><code>candidate/orders.csv</code> <span class="mono hash">ffff6618b9bb14346e9bd6893547f0df7395770c9848ea09891949e5879e7bdd</span></li><li><code>case.yaml</code> <span class="mono hash">9660f3cb0f9ce1e5faea096c50fc5be9a3af64a0614ecd91949ed9fe27dde381</span></li><li><code>intake.md</code> <span class="mono hash">d17d834b2051afee4650d49addefc51bacb66fbe37c67249816de45cf71b2def</span></li><li><code>reference/orders.csv</code> <span class="mono hash">6e332198c66d243687603ed69414b160f334d56e60e7c82a98284109700d47ab</span></li></ul>
+<div class="label">결과 파일 SHA-256</div>
+<ul class="hashes"><li><code>classification.json</code> <span class="mono hash">e5f1a350b35ba1690024c081476494d3b9c36af6d265f46b754e59e9df262014</span></li><li><code>metrics.json</code> <span class="mono hash">6dd5b7c6868ed30a3b55ac6d9cece82062fd36900ba015b6c1ff98959c7b1afc</span></li><li><code>judgment.json</code> <span class="mono hash">06fbce369498d930718c692f388c542a5c6c6106bbc183237e5cf2711feff5d3</span></li></ul>
+<p class="foot">이 파일은 scorecard.json과 같은 결과 객체에서 만들었다. 인쇄하면 PDF가 된다.</p>
+</div>
+</section>
+</div>
+</body>
+</html>

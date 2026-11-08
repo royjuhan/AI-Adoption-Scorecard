@@ -63,7 +63,7 @@ public class CliHelpTests
     [Fact]
     public void Command_table_options_are_the_accepted_options()
     {
-        string[] all = ["--answers", "--out", "--json"];
+        string[] all = ["--answers", "--review", "--out", "--json"];
         foreach (var row in CliInput.Table(CliInput.CommandTableHeader))
         {
             var command = CliInput.Cell(row[0]);

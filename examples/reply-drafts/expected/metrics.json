@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "case": "reply-drafts",
+  "compare": {
+    "status": "measured",
+    "reason": null,
+    "key": "reply_id",
+    "reference_files": [
+      "reference/replies.csv"
+    ],
+    "candidate_files": [
+      "candidate/replies.csv"
+    ],
+    "counts": {
+      "reference": 12,
+      "candidate": 12,
+      "match": 10,
+      "mismatch": 2,
+      "missing": 0,
+      "extra": 0,
+      "within": 0
+    },
+    "accuracy_pct": 83.3,
+    "missing_rate_pct": 0.0,
+    "fields": [],
+    "checklist": {
+      "text": "reply",
+      "entries": [
+        {
+          "item": "ticket",
+          "column": "ticket",
+          "phrases": [],
+          "required": 12,
+          "found": 11,
+          "absent": 1
+        },
+        {
+          "item": "action",
+          "column": "action",
+          "phrases": [],
+          "required": 12,
+          "found": 11,
+          "absent": 1
+        },
+        {
+          "item": "closing",
+          "column": null,
+          "phrases": [
+            "감사합니다",
+            "고맙습니다"
+          ],
+          "required": 12,
+          "found": 12,
+          "absent": 0
+        }
+      ]
+    },
+    "items": [
+      {
+        "key": "d03",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/replies.csv",
+          "line": 4
+        },
+        "candidate": {
+          "file": "candidate/replies.csv",
+          "line": 2
+        },
+        "differences": [],
+        "missing_items": [
+          "action"
+        ]
+      },
+      {
+        "key": "d12",
+        "status": "mismatch",
+        "reference": {
+          "file": "reference/replies.csv",
+          "line": 13
+        },
+        "candidate": {
+          "file": "candidate/replies.csv",
+          "line": 7
+        },
+        "differences": [],
+        "missing_items": [
+          "ticket"
+        ]
+      }
+    ]
+  },
+  "scores": {
+    "sheet_files": [
+      "scores/sheet.csv"
+    ],
+    "sources_files": [
+      "scores/sources.csv"
+    ],
+    "min": 1,
+    "max": 5,
+    "items": 12,
+    "raters": [
+      "p1",
+      "p2",
+      "p3"
+    ],
+    "ratings": 72,
+    "blind": {
+      "status": "kept",
+      "findings": []
+    },
+    "sources": [
+      {
+        "source": "ai",
+        "results": 12,
+        "ratings": 36,
+        "sum": 139,
+        "mean": 3.86,
+        "distribution": [
+          {
+            "score": 1,
+            "count": 0
+          },
+          {
+            "score": 2,
+            "count": 2
+          },
+          {
+            "score": 3,
+            "count": 7
+          },
+          {
+            "score": 4,
+            "count": 21
+          },
+          {
+            "score": 5,
+            "count": 6
+          }
+        ]
+      },
+      {
+        "source": "human",
+        "results": 12,
+        "ratings": 36,
+        "sum": 151,
+        "mean": 4.19,
+        "distribution": [
+          {
+            "score": 1,
+            "count": 0
+          },
+          {
+            "score": 2,
+            "count": 0
+          },
+          {
+            "score": 3,
+            "count": 10
+          },
+          {
+            "score": 4,
+            "count": 9
+          },
+          {
+            "score": 5,
+            "count": 17
+          }
+        ]
+      }
+    ],
+    "paired": {
+      "better": 3,
+      "same": 0,
+      "worse": 9
+    },
+    "by_rater": [
+      {
+        "rater": "p1",
+        "ai_ratings": 12,
+        "ai_mean": 4.00,
+        "human_ratings": 12,
+        "human_mean": 4.25
+      },
+      {
+        "rater": "p2",
+        "ai_ratings": 12,
+        "ai_mean": 3.92,
+        "human_ratings": 12,
+        "human_mean": 4.33
+      },
+      {
+        "rater": "p3",
+        "ai_ratings": 12,
+        "ai_mean": 3.67,
+        "human_ratings": 12,
+        "human_mean": 4.00
+      }
+    ]
+  }
+}

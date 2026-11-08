@@ -5,6 +5,7 @@ using Scorecard.Core.Synthetic;
 using Scorecard.Tests.CaseSchema;
 using Scorecard.Tests.Classification;
 using Scorecard.Tests.Structure;
+using Scorecard.Tests.TextCheck;
 
 namespace Scorecard.Tests.Synthetic;
 
@@ -92,7 +93,9 @@ public class ExamplePatternTests
         var root = RepoRoot.Combine(ClassificationInput.ExamplesRelativePath);
         var scanned = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Select(RepoRoot.ToRelative).ToHashSet(StringComparer.Ordinal);
         var planned = SyntheticSpec.Files().Select(f => SyntheticInput.ExampleRelative(f.Example, f.File))
-            .Concat(ClassificationInput.Examples.SelectMany(e => SyntheticInput.ClassificationFiles.Select(f => SyntheticInput.ExampleRelative(e, f))));
+            .Concat(ClassificationInput.Examples.SelectMany(e => SyntheticInput.ClassificationFiles.Select(f => SyntheticInput.ExampleRelative(e, f))))
+            // T-014: reply-drafts 파일(text-check.md 7.1 표)도 검사 대상에 있는지 본다. 대상을 더한 것이다.
+            .Concat(TextCheckSpec.ExampleFiles().Select(f => SyntheticInput.ExampleRelative(TextCheckSpec.Example, f)));
         Assert.All(planned, f => Assert.Contains(f, scanned));
 
         var hits = Scan(Patterns(), root, RepoRoot.FullPath);

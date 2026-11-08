@@ -3,6 +3,7 @@ using System.Text;
 using Scorecard.Tests.CaseSchema;
 using Scorecard.Tests.Classification;
 using Scorecard.Tests.Structure;
+using Scorecard.Tests.TextCheck;
 
 namespace Scorecard.Tests.Synthetic;
 
@@ -83,7 +84,24 @@ public class ExampleFileTests
         Assert.Equal(expected, actual);
     }
 
-    // examples/ 바로 아래는 .gitattributes(T-004)와 예제 폴더 3개뿐이다.
+    // T-014(text-check.md 7.1): 5번째 예제 reply-drafts의 계획 = text-check 7.1 예제 파일 표(scores/ 두 파일 포함).
+    // 위 테스트의 계획(synthetic-examples 7.1 표)에는 이 예제가 없다(text-check 11절). 대상을 더한 것이다.
+    [Theory]
+    [MemberData(nameof(TextCheckExampleNames))]
+    public void Text_check_example_folder_has_exactly_the_planned_files(string example)
+    {
+        var root = SyntheticInput.ExampleDirectory(example);
+        var actual = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(root, f).Replace(Path.DirectorySeparatorChar, '/'))
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(TextCheckSpec.ExampleFiles().Order(StringComparer.Ordinal), actual);
+    }
+
+    public static TheoryData<string> TextCheckExampleNames => new(ClassificationInput.TextCheckExamples);
+
+    // examples/ 바로 아래는 .gitattributes(T-004)와 예제 폴더뿐이다.
+    // T-014: 예제 폴더 목록을 예제 4종 + reply-drafts(ClassificationInput.AllExamples)로 늘린다. 대상을 더한 것이다.
     [Fact]
     public void Examples_root_has_only_gitattributes_and_example_folders()
     {
@@ -91,7 +109,7 @@ public class ExampleFileTests
 
         Assert.Equal([".gitattributes"], Directory.EnumerateFiles(root).Select(f => Path.GetFileName(f)));
         Assert.Equal(
-            ClassificationInput.Examples.Order(StringComparer.Ordinal),
+            ClassificationInput.AllExamples.Order(StringComparer.Ordinal),
             Directory.EnumerateDirectories(root).Select(d => Path.GetFileName(d)).Order(StringComparer.Ordinal));
         Assert.Empty(Directory.EnumerateFiles(root, ".gitkeep", SearchOption.AllDirectories));
     }

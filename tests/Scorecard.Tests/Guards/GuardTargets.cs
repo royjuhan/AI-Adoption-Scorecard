@@ -24,6 +24,9 @@ namespace Scorecard.Tests.Guards;
 // T-011 판정(judgment.md 4.12, 잠정 결정 11): 정상 표본 case-valid를 등록한다(새 샘플 없음). 판정 오류 표본은 없다.
 // 어댑터는 CaseParser.ParseDirectory → CompareEngine.CompareDirectory → JudgmentEngine.Judge(시간·사람 입력 null) →
 // JudgmentJson.Render 결과를 출력 폴더의 judgment.json 한 파일로 쓴다. 문장에 숫자가 들어가므로 R4(문화권)가 본다.
+// T-014 문장 결과 검증(text-check.md 4.6): 정상 표본 text-check-valid(= 예제 reply-drafts 파일, 새 샘플)를 등록한다.
+// 어댑터는 CaseParser.ParseDirectory → CompareEngine.CompareDirectory → JudgmentEngine.Judge(시간·사람 입력 null) 결과를
+// 출력 폴더의 metrics.json, judgment.json 두 파일로 쓴다. 한글 문장·평균 글이 들어가므로 R4(문화권)가 본다.
 // 새 Core 처리 기능을 만들면 이 목록에 더한다.
 internal static class GuardTargets
 {
@@ -38,6 +41,7 @@ internal static class GuardTargets
         new("compare-case-valid", "case-valid", CompareToFile),
         new("compare-invalid", "compare-invalid", CompareToFile),
         new("judge-case-valid", "case-valid", JudgeToFile),
+        new("text-check-case-valid", "text-check-valid", TextCheckToFiles),
     ];
 
     // T-006 대조 어댑터의 오류 출력 파일(metrics.md 4.10).
@@ -117,6 +121,16 @@ internal static class GuardTargets
         var definition = CaseParser.ParseDirectory(input).Case ?? throw new InvalidOperationException("판정 대상 표본이 파싱되지 않는다.");
         var metrics = CompareEngine.CompareDirectory(input, definition).Metrics ?? throw new InvalidOperationException("판정 대상 표본이 대조되지 않는다.");
         Directory.CreateDirectory(output);
+        File.WriteAllBytes(Path.Combine(output, JudgmentJson.FileName), JudgmentJson.Render(JudgmentEngine.Judge(definition, metrics)));
+    }
+
+    // T-014(text-check.md 4.6). 정상 표본만 쓴다. 파싱·대조 오류면 판정할 것이 없으므로 예외를 던진다(G2·G3가 차이로 적는다).
+    private static void TextCheckToFiles(string input, string output)
+    {
+        var definition = CaseParser.ParseDirectory(input).Case ?? throw new InvalidOperationException("문장 결과 표본이 파싱되지 않는다.");
+        var metrics = CompareEngine.CompareDirectory(input, definition).Metrics ?? throw new InvalidOperationException("문장 결과 표본이 대조되지 않는다.");
+        Directory.CreateDirectory(output);
+        File.WriteAllBytes(Path.Combine(output, MetricsJson.FileName), MetricsJson.Render(metrics));
         File.WriteAllBytes(Path.Combine(output, JudgmentJson.FileName), JudgmentJson.Render(JudgmentEngine.Judge(definition, metrics)));
     }
 

@@ -72,6 +72,7 @@ public class GuardTargetAdapterTests
     // 이 목록도 같이 고쳐야 한다. 그래서 목록이 줄면 regression-guard가 잡는다.
     // basic이 없다 + case-valid가 있다 + 샘플 폴더가 있다(T-006 승인 질문 18)도 그대로 본다.
     // T-011(judgment.md 4.12, 잠정 결정 11): judge-case-valid=case-valid 한 쌍을 더한다. 새 샘플이 없어 샘플 목록은 그대로다.
+    // T-014(text-check.md 4.6): text-check-case-valid=text-check-valid 한 쌍과 새 샘플 text-check-valid를 더한다(대상을 더함, 축소 아님).
     [Fact]
     public void Real_targets_use_case_samples_not_basic()
     {
@@ -86,12 +87,13 @@ public class GuardTargetAdapterTests
                 "compare-case-valid=case-valid",
                 "compare-invalid=compare-invalid",
                 "judge-case-valid=case-valid",
+                "text-check-case-valid=text-check-valid",
             ],
             pairs);
 
         var samples = GuardTargets.All.Select(t => t.Sample).Distinct().Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(["case-invalid", "case-valid", "compare-invalid"], samples);
+        Assert.Equal(["case-invalid", "case-valid", "compare-invalid", "text-check-valid"], samples);
         Assert.DoesNotContain("basic", samples);
         Assert.Contains("case-valid", samples);
         Assert.All(samples, s => Assert.True(Directory.Exists(GuardWorkspace.SamplePath(s)), $"샘플 폴더가 없다: {s}"));

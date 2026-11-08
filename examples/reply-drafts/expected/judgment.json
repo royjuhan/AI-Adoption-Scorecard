@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case": "reply-drafts",
+  "verdict": "conditional",
+  "rule": "FOCUS",
+  "reason": "정확도·누락률은 문턱을 충족하나 불일치 2건이 모두 topic = 환불인 행이므로 조건부.",
+  "thresholds": {
+    "accuracy_min": 80,
+    "missing_max": 5,
+    "time_must_drop": false,
+    "score_gap_max": 0.5
+  },
+  "defaults": [],
+  "checks": [
+    {
+      "rule": "ACCURACY",
+      "result": "met",
+      "reason": "정확도 83.3%(10/12)가 문턱 80% 이상이다."
+    },
+    {
+      "rule": "MISSING",
+      "result": "met",
+      "reason": "누락률 0.0%(0/12)가 문턱 5% 이하다."
+    },
+    {
+      "rule": "UNEXPLAINED",
+      "result": "not_reviewed",
+      "reason": "검토할 항목 2건(불일치 2건)이 설명되는지 사람이 아직 보지 않았다."
+    },
+    {
+      "rule": "TIME",
+      "result": "off",
+      "reason": "시간 조건을 쓰지 않는다(time_must_drop: false)."
+    },
+    {
+      "rule": "FOCUS",
+      "result": "found",
+      "reason": "불일치 2건이 모두 topic = 환불인 행이다(환불 5행 중 2행, 다른 값 7행 중 0행)."
+    },
+    {
+      "rule": "SCORE",
+      "result": "met",
+      "reason": "AI 결과 평균 3.86점(36개)이 사람 결과 평균 4.19점(36개)보다 0.5점 넘게 낮지 않다."
+    }
+  ],
+  "todo": [
+    {
+      "key": "review_items",
+      "text": "검토할 항목 2건(불일치 2건)을 보고 설명이 되는지 적는다."
+    }
+  ]
+}

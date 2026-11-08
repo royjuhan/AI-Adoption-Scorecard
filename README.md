@@ -23,6 +23,7 @@ TBD (M4: single `scorecard.exe`, win-x64).
 
 `dotnet run --project src/Scorecard.Cli -- check examples/table-compare --json` compares and judges the example (results in `examples/table-compare/out/`).
 Commands: `start`, `open`, `check`, `build`. No prompts; `--json` prints one JSON document. See `docs/spec/json-output.md`.
+Sample scorecard: [docs/samples/scorecard-table-compare.html](docs/samples/scorecard-table-compare.html).
 
 ## Cases
 

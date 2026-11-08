@@ -25,6 +25,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 - 진행 중: M2-4 build 번들(T-021). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22), M2-1(#23), M2-2(#24, #27), M2-3(#28)은 끝났다.
 - 다음: v0.1.0-alpha 태그(ADR 0010 B-12).
+- 릴리스 v0.1.0-alpha 준비: `CHANGELOG.md`, ADR 0015(win-x64 exe SHA-256 `123340a4…`, 네트워크·프로세스 검사 없음), 샘플 스코어카드 `docs/samples/`. 태그는 머지 뒤 리드. G2 비공개 사례 1건 로컬 실행은 juhan 실제 PC 몫으로 남음.
 - 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.

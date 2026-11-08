@@ -1,10 +1,16 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "signoff-final",
   "steps": [
     {
       "number": 1,
       "name": "기록 파일 열기·정리",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -24,6 +30,12 @@
     {
       "number": 2,
       "name": "기준 구간 고르기(안정 기록)",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -43,6 +55,12 @@
     {
       "number": 3,
       "name": "기준 구간 고르기(흔들린 기록)",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -68,6 +86,12 @@
     {
       "number": 4,
       "name": "구간 값 계산·옮기기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -87,6 +111,12 @@
     {
       "number": 5,
       "name": "보고서 양식 채우기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -106,6 +136,12 @@
     {
       "number": 6,
       "name": "결과 해석 문장 쓰기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q2"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -131,6 +167,12 @@
     {
       "number": 7,
       "name": "최종 확인·서명·제출",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

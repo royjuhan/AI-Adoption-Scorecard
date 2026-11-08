@@ -662,16 +662,22 @@ p3,d11,b24,4
 
 ### 7.4 expected
 
-`examples/reply-drafts/expected/classification.json` (SHA-256 `7ede39aafd1785287aed52b21ecbf9b26d48a6ee7584663bad6ea7e52fbaaba0`, 1,853바이트):
+`examples/reply-drafts/expected/classification.json` (SHA-256 `1afc62bde367be829223ca10fc6a0b21a4e196c0caf91962c66f463d5ebec16e`, 2,247바이트):
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case": "reply-drafts",
   "steps": [
     {
       "number": 1,
       "name": "문의 접수 기록",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -691,6 +697,12 @@ p3,d11,b24,4
     {
       "number": 2,
       "name": "답변 초안 쓰기",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],
@@ -716,6 +728,12 @@ p3,d11,b24,4
     {
       "number": 3,
       "name": "답변 확인·발송",
+      "source": "rule",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
       "defaults": [
         "minutes_per_item"
       ],

@@ -18,8 +18,8 @@
   },
   "conclusion": {
     "keep": "4단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 2곳은 그대로 둔다.",
-    "first_check": "1단계 회신 받아 모으기: 지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.",
-    "undecided": "추정·기본값에 기댄 판단 2단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.",
+    "first_check": "2단계 빈칸·단위 검사: 현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
+    "undecided": "추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.",
     "end_state": "업무 구조 검토 완료. 지금 제출할 것 없음."
   },
   "task_summary": {
@@ -62,14 +62,14 @@
     "changed": 0,
     "saving": "time_needed",
     "stated": {
-      "steps": 2,
-      "software": 0,
+      "steps": 3,
+      "software": 1,
       "ai_assist": 1,
       "ai_overuse": 0
     },
     "tentative": {
-      "steps": 2,
-      "software": 2,
+      "steps": 1,
+      "software": 1,
       "ai_assist": 0,
       "ai_overuse": 0
     },
@@ -179,7 +179,7 @@
         "assignee": null,
         "reason": null
       },
-      "tentative": true,
+      "tentative": false,
       "now": "사람이 손으로 한다.",
       "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
       "check": "현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
@@ -306,12 +306,12 @@
     }
   ],
   "proposal": {
-    "step": 1,
-    "name": "회신 받아 모으기",
-    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다.",
-    "check": "지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.",
-    "effect": "절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다. 이 단계의 판단은 추정·기본값에 기대고 있어 확인하면 바뀔 수 있다.",
-    "tentative": true
+    "step": 2,
+    "name": "빈칸·단위 검사",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다.",
+    "check": "현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
+    "effect": "절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.",
+    "tentative": false
   },
   "verification": {
     "status": "not_checked",
@@ -370,7 +370,7 @@
     {
       "group": "improve",
       "key": "first_check",
-      "step": 1,
+      "step": 2,
       "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
     },
     {
@@ -412,8 +412,8 @@
     {
       "group": "implementer",
       "key": "build_command",
-      "step": 1,
-      "text": "만들기로 정하면 scorecard build ai-actions --step 1 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
+      "step": 2,
+      "text": "만들기로 정하면 scorecard build ai-actions --step 2 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
     }
   ],
   "stated_numbers": [

@@ -35,11 +35,14 @@
 - `CaseApiShapeTests`: 공개 형식 목록에 `CaseNotes`, `CaseTaskSummary`, `SelfCheckItem`, `StepAction`, `StepAiDetail`을 더했다. 더함, 축소 아님.
 - `ReportInput`(도우미): 표본 하나(`ai-judgment`)를 표본 목록(`ai-judgment`, `ai-actions`)으로 넓혔다. 표본 폴더 파일을 모두 복사한다.
 - 데이터 report.md 5절 오류 표에 `confirmed_in` 행을 더했다. 기존 행 그대로.
+- 채점 1회 뒤: 데이터 report.md 4.1 표의 `ai-actions` 행을 `2 | 0 | 2 | 1 | 예` → `2 | 1 | 1 | 2 | 아니오`로 고쳤다(AI 단계 `tentative` 정의 변경, report.md 12.3). 골든 `ai-actions` 두 파일을 다시 썼다(diff: 셈·제안 단계·결론 두 줄·추정 표시 하나만). `Tentative_table_matches_golden` 코드는 그대로.
 
 ## 새 테스트
 
 - `CaseSchema/CaseSkillFieldTests`(장면 표, 블록, 표본), `Classification/AiDetailTests`(쓰는 순서, 분류 불변, 없으면 키 없음), `Report/SkillOutputTests`(셈 표, 합, 추정 이동, 상태·결론, 대화 확인, 담당자 확인 문장, 할 일 묶음, 모두 확인, 가상 줄, 화면 코드 없음, 입력 시간, 문턱 숨김), `Structure/SkillOutputRulesTests`(규칙 번호·이름, 수용 규칙, 스킬 본문, 표본 self_check).
+- 채점 1회 뒤: `Report/SkillOutputTests`에 추정·기본값 담당자 확인은 유지할 것이 아님(2개), AI 단계 tentative 새 정의, answers 상태 ≠ used일 때 tentative.
 
 ## 채점 (지시문 8.2)
 
 - 대기. 리드가 새 reviewer로 돌린 뒤 사례마다 R1~R5 통과/실패를 적는다.
+- 1회(새 reviewer): 5건 모두 실패. R5 ×5, R2 ×3(01, 22, 31), R1 ×2(01, 22). 고친 것: `end_state`는 `check` 없이 끝나면 늘 적고 마지막 줄(질문은 그 앞), 동작 `stated`는 말 그대로만(붙인 방법은 `inferred`로 나눔), ③ "묶이는지 확인되지 않았다" 문장, 자기 검사에 질문·`open_questions`와 단정 문장 맞대기, 고른 단계가 없으면 확인 파일 없이 `open`, `gate_note`가 보이는 조건과 보내기 순서. Core: 추정·기본값 표시가 붙은 담당자 확인은 `keep`이 아니라 `undecided`, AI 단계 `tentative`는 추정 답 또는 담당을 받치는 말한 동작이 없을 때(answers ≠ used면 stated 아닌 동작이 있을 때). R5 본문을 채점 표에 맞췄다.

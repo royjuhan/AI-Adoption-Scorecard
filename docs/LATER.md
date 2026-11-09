@@ -70,13 +70,15 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - oracle이 스킬 선택 항목(case-schema 4.15)을 읽지 않는다. 예제에 없어 지금은 영향이 없다. 예제에 넣으면 같이 고친다(ADR 0016 결정 4).
 - 수용 채점(공개 사례 5건, 새 reviewer)과 `docs/cases-public/review-01.md`는 이 PR 밖(카드 T-022 8·9).
 - 동작 목록을 늘 쓰는 schema 3(ADR 0016 대안 A)은 고르지 않았다(juhan 2026-11-09 07:19).
-- 리뷰 지적(막지 않음): AI 판단 단계의 `tentative`가 answers.yaml `inferred`에 기대서, answers 상태가 `used`가 아니면 추정 단계도 `stated`로 센다.
+- 리뷰 지적(막지 않음): AI 판단 단계의 `tentative`가 answers.yaml `inferred`에 기대서, answers 상태가 `used`가 아니면 추정 단계도 `stated`로 센다. → 채점 1회 뒤 고침(report.md 12.3).
 - 리뷰 지적: 스킬이 `review.yaml`을 케이스(입력) 폴더에 쓴다. "출력은 새 폴더에"와 같이 볼 것.
 - 리뷰 지적: HTML "판단이 갈린 단계" 문장을 Cli가 잇는다. Core `Opinions[].Text`를 쓰도록 옮길 것.
 - 리뷰 지적: `confirmed_in` 빈 값 오류가 데이터 5절 오류 표에 있는지 확인.
 - 화면에 찍는 경로가 구분자를 섞는다(`C:\work\my-case/out/...`). 출력 경로 표시를 OS 구분자로 맞출 것.
 - #30 리뷰 지적: CHANGELOG 시간 판정 문구, `docs/samples/` HTML 동기화 테스트 없음, README 설치 줄 "TBD", ADR 0015의 B-12 문구.
 - 한 단계에 두 활동이 있을 때 건수를 따로 세는 칸이 결과 객체에 없다. 지금은 `reason` 글로만 쓴다.
+- 채점 1회: intake가 이미 서명 단계를 말해도 서명 단계 질문이 질문 3개 가운데 한 자리를 쓴다. 줄이려면 ADR 0003 "한 번 묻는다"를 다시 해석해야 해서 하지 않았다.
+- 채점 1회: case-31에서 핵심 질문 "필수 칸을 비우면 제출이 막히나"를 묻지 않았다(추천이 바뀌는 질문을 놓침).
 
 ## T-014의 남은 일
 

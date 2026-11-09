@@ -230,11 +230,11 @@ public static class ScorecardBuilder
             _ => new StepReview(ReportRules.ReviewChanged, review.Assignee, review.Reason),
         };
 
-        // 4.12 확인하면 바뀔 수 있음: 규칙 트리 단계는 근거 문장에 기본값·추정 표시가 있으면(트리가 읽은 답),
-        // AI 판단 단계는 추정 답이 있거나 동작 출처가 stated가 아닌 것이 있으면.
+        // 12.3 확인하면 바뀔 수 있음: 규칙 트리 단계는 근거 문장에 기본값·추정 표시가 있으면(트리가 읽은 답),
+        // AI 판단 단계는 AiTentative.
         var tentative = s.Source == StepClassifier.SourceAi
-            ? inferred.Count > 0 || (detail?.Actions.Any(a => a.Source != ActionStated) ?? false)
-            : main.Reason.Contains(ClassificationRules.DefaultMark, StringComparison.Ordinal) || main.Reason.Contains(ClassificationRules.InferredMark, StringComparison.Ordinal);
+            ? AiTentative(main.Assignee, inferred, detail?.Actions ?? [], answer is not null)
+            : HasMark(main.Reason);
 
         return new ScorecardStep(
             s.Number,
@@ -260,6 +260,32 @@ public static class ScorecardBuilder
             detail?.Actions ?? [],
             detail?.GateNote);
     }
+
+    // AI 판단 단계(12.3): 추정 답이 있으면 참. 동작이 있으면, 출처 stated이고 proposed가 단계 담당과 같은 동작이 없을 때 참.
+    // 답 파일을 못 쓰면(answers ≠ used) 추정 답을 알 수 없으니 stated가 아닌 동작이 하나라도 있으면 참. 동작이 없으면 추정 답만 본다.
+    private static bool AiTentative(string assignee, IReadOnlyList<string> inferred, IReadOnlyList<StepAction> actions, bool answersUsed)
+    {
+        if (inferred.Count > 0)
+        {
+            return true;
+        }
+
+        if (actions.Count == 0)
+        {
+            return false;
+        }
+
+        if (!answersUsed && actions.Any(a => a.Source != ActionStated))
+        {
+            return true;
+        }
+
+        return !actions.Any(a => a.Source == ActionStated && a.Proposed == assignee);
+    }
+
+    // 근거 문장 끝에 기본값·추정 표시가 있다(classification.md 4.6·4.12).
+    private static bool HasMark(string reason) =>
+        reason.Contains(ClassificationRules.DefaultMark, StringComparison.Ordinal) || reason.Contains(ClassificationRules.InferredMark, StringComparison.Ordinal);
 
     private static string NowText(string? actor, bool inferred)
     {
@@ -439,10 +465,13 @@ public static class ScorecardBuilder
             keep.Add(ReportRules.KeepExistingText.Replace("{steps}", ReportRules.StepList(existing), StringComparison.Ordinal));
         }
 
-        var checks = gates.Count(g => g.Kind != ReportRules.GateSignoff);
-        if (checks > 0)
+        // 담당자 확인(서명 단계 빼고). 엔진 문장에 기본값·추정 표시가 있으면 유지할 것이 아니라 아직 판단하지 않은 것이다(12.2).
+        var checks = gates.Where(g => g.Kind != ReportRules.GateSignoff).ToArray();
+        var firmChecks = checks.Count(g => !HasMark(g.Reason));
+        var tentativeChecks = checks.Length - firmChecks;
+        if (firmChecks > 0)
         {
-            keep.Add(ReportRules.KeepGatesText.Replace("{n}", N(checks), StringComparison.Ordinal));
+            keep.Add(ReportRules.KeepGatesText.Replace("{n}", N(firmChecks), StringComparison.Ordinal));
         }
 
         var first = proposal is not null
@@ -454,6 +483,11 @@ public static class ScorecardBuilder
         if (summary.Tentative.Steps > 0)
         {
             undecided.Add(ReportRules.UndecidedTentativeText.Replace("{n}", N(summary.Tentative.Steps), StringComparison.Ordinal));
+        }
+
+        if (tentativeChecks > 0)
+        {
+            undecided.Add(ReportRules.UndecidedGatesText.Replace("{n}", N(tentativeChecks), StringComparison.Ordinal));
         }
 
         if (questions.Count > 0)

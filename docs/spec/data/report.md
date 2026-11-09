@@ -76,7 +76,7 @@
 | `reply-drafts` | 1 | 1 | 0 | 1 | 아니오 |
 | `signoff-final` | 5 | 5 | 0 | 3 | 아니오 |
 | `ai-judgment` | 3 | 2 | 1 | 2 | 아니오 |
-| `ai-actions` | 2 | 0 | 2 | 1 | 예 |
+| `ai-actions` | 2 | 1 | 1 | 2 | 아니오 |
 
 ### 4.4 제안
 

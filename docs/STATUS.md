@@ -78,6 +78,7 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 | 2026-11-09 | T-022 | 4 결과 객체 판 | scorecard.json `schema_version` 1 → 2. 골든은 tests TestData라 expected migration 아님 | T-022 |
 | 2026-11-09 | T-022 | 5 대화 확인 기록 | 확인 파일 최상위 `confirmed_in: conversation`(선택). 다른 값은 `enum` 오류. 스킬이 고른 단계만 적는다 | T-022 |
 | 2026-11-09 | T-022 | 6 수용 채점 | 공개 사례 5건(1, 20, 22, 31, 48)을 새 reviewer가 R1~R5로 채점. 리드가 PR 밖에서 돌린다. `review-01.md`는 juhan 입력 뒤 | T-022 |
+| 2026-11-09 | T-022 | 7 채점 1회 뒤 셈 | AI 단계 `tentative`: 추정 답이 있거나, 동작이 있는데 담당을 받치는 말한 동작(`stated`, `proposed` = 담당)이 없을 때. answers ≠ used면 stated 아닌 동작이 있을 때. 추정·기본값 표시가 붙은 담당자 확인은 `keep`이 아니라 `undecided`. 대안(동작 하나라도 추정이면 tentative)은 R6과 부딪혀 말한 것만이 늘 0이 됐다 | T-022 |
 | 2026-11-08 | T-021 M2-4 | 1 예/아니오/나중에 | exe는 묻지 않는다. 예 = `build <case> --step <번호>`, 아니오·나중에 = `--step` 없이 끝(추천만, 아무것도 안 씀, 종료 0). `--json`은 `proposal`·`candidates` | T-021 |
 | 2026-11-08 | T-021 M2-4 | 2 번들 자리 | `<출력 폴더>/build-request/`(기본 `<케이스>/out/build-request/`). 지시문 3.6의 `cases/<case>/build-request/`를 M2-1 출력 폴더 규칙에 맞춤. 케이스 폴더 입력은 건드리지 않는다 | T-021 |
 | 2026-11-08 | T-021 M2-4 | 3 사람 확인 방법 | build가 출력 폴더에 `export-check.md` 초안을 쓰고, 사람이 마지막 줄 `확인한 사람:` 뒤에 적고 다시 돌린다. 확인 줄 값을 비운 글이 지금 초안(번들 SHA-256 포함)과 같아야 한다. 스킬·AI는 적지 않는다(ADR 0004 질문 15). `--confirm` 파일 옵션은 두지 않는다(가장 단순) | T-021 |

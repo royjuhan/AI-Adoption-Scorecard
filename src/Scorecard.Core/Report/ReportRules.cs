@@ -130,6 +130,7 @@ internal static class ReportRules
     public const string FirstCheckText = "{n}단계 {name}: {check}";
     public const string FirstCheckNoneText = "먼저 확인할 것이 없다.";
     public const string UndecidedTentativeText = "추정·기본값에 기댄 판단 {n}단계(확인하면 바뀔 수 있음).";
+    public const string UndecidedGatesText = "추정·기본값에 기댄 담당자 확인 {n}곳(확인하면 바뀔 수 있음).";
     public const string UndecidedQuestionsText = "확인 질문 {n}개가 남았다.";
     public const string UndecidedTestText = "실제 자료 시험은 진행하지 않았다.";
     public const string UndecidedSavingText = "절감 효과는 계산하지 않았다.";

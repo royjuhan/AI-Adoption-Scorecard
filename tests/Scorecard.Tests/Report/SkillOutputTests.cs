@@ -90,6 +90,97 @@ public partial class SkillOutputTests
         Assert.Contains("가정: 처리 주기", doc.RootElement.GetProperty("steps")[0].GetProperty("assumptions")[0].GetString(), StringComparison.Ordinal);
     }
 
+    // 채점 1회 뒤(T-022): 추정 답에 기댄 담당자 확인은 유지할 것에 세지 않고 아직 판단하지 않은 것에 센다(report.md 12.2).
+    [Fact]
+    public void Inferred_gate_is_undecided_not_kept()
+    {
+        using var work = ReportInput.Workspace(ReportInput.ActionsSample);
+        var answers = Path.Combine(work.Case, "answers.yaml");
+        File.WriteAllText(answers, File.ReadAllText(answers).Replace(
+            "minutes_per_item: 15, failure_impact: external, existing_feature: no, human_signoff: no}\n",
+            "minutes_per_item: 15, failure_impact: external, existing_feature: no, human_signoff: no}\n    inferred: [failure_impact]\n",
+            StringComparison.Ordinal));
+
+        var (open, _) = ReportInput.Produce(work, ReportInput.ActionsSample);
+
+        Assert.Equal(0, open.Exit);
+        using var doc = JsonDocument.Parse(open.Stdout);
+        var gate = doc.RootElement.GetProperty("gates").EnumerateArray().Single(g => g.GetProperty("kind").GetString() == "human_gate");
+        Assert.EndsWith("(AI 추정, 확인 필요)", gate.GetProperty("reason").GetString(), StringComparison.Ordinal);
+        var conclusion = doc.RootElement.GetProperty("conclusion");
+        Assert.Equal("4단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 1곳은 그대로 둔다.", conclusion.GetProperty("keep").GetString());
+        Assert.Contains("추정·기본값에 기댄 담당자 확인 1곳(확인하면 바뀔 수 있음).", conclusion.GetProperty("undecided").GetString(), StringComparison.Ordinal);
+    }
+
+    // 기본값에 기댄 담당자 확인도 같다. 둘 다 추정·기본값이면 유지할 것에 담당자 확인이 없다.
+    [Fact]
+    public void Defaulted_and_inferred_gates_are_not_kept()
+    {
+        using var work = ReportInput.Workspace(ReportInput.ActionsSample);
+        var answers = Path.Combine(work.Case, "answers.yaml");
+        File.WriteAllText(answers, File.ReadAllText(answers)
+            .Replace("{input_kind: fixed_form, rule_expressible: partial, frequency: weekly, batch_size: 10, exception_rate: 25,", "{input_kind: fixed_form, frequency: weekly, batch_size: 10, exception_rate: 25,", StringComparison.Ordinal)
+            .Replace(
+                "minutes_per_item: 15, failure_impact: external, existing_feature: no, human_signoff: no}\n",
+                "minutes_per_item: 15, failure_impact: external, existing_feature: no, human_signoff: no}\n    inferred: [failure_impact]\n",
+                StringComparison.Ordinal));
+
+        var (open, _) = ReportInput.Produce(work, ReportInput.ActionsSample);
+
+        Assert.Equal(0, open.Exit);
+        using var doc = JsonDocument.Parse(open.Stdout);
+        var review = doc.RootElement.GetProperty("gates").EnumerateArray().Single(g => g.GetProperty("kind").GetString() == "exception_review");
+        Assert.EndsWith("(기본값 사용, 확인 필요)", review.GetProperty("reason").GetString(), StringComparison.Ordinal);
+        var conclusion = doc.RootElement.GetProperty("conclusion");
+        Assert.Equal("4단계는 사람이 판단하는 일로 지금처럼 둔다.", conclusion.GetProperty("keep").GetString());
+        Assert.Contains("추정·기본값에 기댄 담당자 확인 2곳(확인하면 바뀔 수 있음).", conclusion.GetProperty("undecided").GetString(), StringComparison.Ordinal);
+    }
+
+    // 채점 1회 뒤(T-022): AI 판단 단계는 말한 동작이 단계 담당을 받치면 추정 동작이 섞여도 말한 것만에 든다.
+    // 받치는 말한 동작이 없으면 확인하면 바뀔 수 있음이다(report.md 12.3).
+    [Fact]
+    public void Ai_step_is_tentative_only_without_a_stated_action_for_its_assignee()
+    {
+        using var golden = GoldenJson(ReportInput.ActionsSample);
+        var steps = golden.RootElement.GetProperty("steps");
+        Assert.Contains(steps[1].GetProperty("actions").EnumerateArray(), a => a.GetProperty("source").GetString() == "inferred");
+        Assert.False(steps[1].GetProperty("tentative").GetBoolean());
+
+        using var work = ReportInput.Workspace(ReportInput.ActionsSample);
+        var answers = Path.Combine(work.Case, "answers.yaml");
+        File.WriteAllText(answers, File.ReadAllText(answers)
+            .Replace("{action: 빈칸 찾기, who_now: human, proposed: ②, source: stated}", "{action: 빈칸 찾기, who_now: human, proposed: ②, source: inferred}", StringComparison.Ordinal)
+            .Replace("{action: 단위가 허용 목록에 있는지 보기, who_now: human, proposed: ②, source: stated}", "{action: 단위가 허용 목록에 있는지 보기, who_now: human, proposed: ④, source: stated}", StringComparison.Ordinal));
+
+        var (open, _) = ReportInput.Produce(work, ReportInput.ActionsSample);
+
+        Assert.Equal(0, open.Exit);
+        using var doc = JsonDocument.Parse(open.Stdout);
+        Assert.True(doc.RootElement.GetProperty("steps")[1].GetProperty("tentative").GetBoolean());
+        Assert.False(doc.RootElement.GetProperty("steps")[2].GetProperty("tentative").GetBoolean());
+    }
+
+    // 답 파일을 못 쓰면(answers ≠ used) 추정 답을 모르니 stated가 아닌 동작이 있는 AI 단계는 확인하면 바뀔 수 있음이다.
+    [Fact]
+    public void Ai_step_with_unstated_action_is_tentative_when_answers_are_not_used()
+    {
+        using var work = ReportInput.Workspace(ReportInput.ActionsSample);
+        var output = work.PathOf("o");
+        var answers = Path.Combine(work.Case, "answers.yaml");
+        Assert.Equal(0, CliInput.Run("start", work.Case, "--answers", answers, "--out", output, "--json").Exit);
+        File.Delete(answers);
+
+        var open = CliInput.Run("open", work.Case, "--out", output, "--json");
+
+        Assert.Equal(0, open.Exit);
+        using var doc = JsonDocument.Parse(open.Stdout);
+        Assert.Equal("missing", doc.RootElement.GetProperty("answers").GetString());
+        var steps = doc.RootElement.GetProperty("steps");
+        Assert.Equal(
+            [true, true, false, false],
+            steps.EnumerateArray().Select(s => s.GetProperty("tentative").GetBoolean()));
+    }
+
     // 상태 네 줄과 결론: 답 파일 메모가 있으면 AI 초안·가상 자료·대화 확인, 없으면 규칙 트리·모름.
     [Fact]
     public void Status_and_conclusion_follow_case_notes()

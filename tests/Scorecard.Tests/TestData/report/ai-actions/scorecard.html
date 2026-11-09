@@ -166,8 +166,8 @@ h1{font-size:19px}
 <ul class="status"><li><span class="k">자료 성격</span>가상 시나리오</li><li><span class="k">업무 분류</span>설명 기반 초안</li><li><span class="k">담당자 확인</span>3/4 확인됨(대화에서 확인됨 포함)</li><li><span class="k">실제 성능 시험</span>진행하지 않음</li></ul>
 <div class="conclusion">
 <div class="line"><span class="k">유지할 것</span><span>4단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 2곳은 그대로 둔다.</span></div>
-<div class="line"><span class="k">먼저 확인할 것</span><span>1단계 회신 받아 모으기: 지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.</span></div>
-<div class="line"><span class="k">아직 판단하지 않은 것</span><span>추정·기본값에 기댄 판단 2단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.</span></div>
+<div class="line"><span class="k">먼저 확인할 것</span><span>2단계 빈칸·단위 검사: 현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?</span></div>
+<div class="line"><span class="k">아직 판단하지 않은 것</span><span>추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.</span></div>
 <div class="label">확인하면 바뀔 수 있음</div>
 <ul class="questions"><li>현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?</li></ul>
 <p class="end">업무 구조 검토 완료. 지금 제출할 것 없음.</p>
@@ -175,8 +175,8 @@ h1{font-size:19px}
 <div class="tiles">
 <div class="tile">
 <div class="q">규칙 자동화를 검토할 단계(단계 수 기준)</div>
-<div class="big">0<small>/ 4단계</small></div>
-<div class="sub">확인하면 바뀔 수 있음 2단계</div>
+<div class="big">1<small>/ 4단계</small></div>
+<div class="sub">확인하면 바뀔 수 있음 1단계</div>
 <div class="stack" aria-label="담당 구성"><span class="b2-fill" style="flex:2"></span><span class="b3-fill" style="flex:1"></span><span class="b4-fill" style="flex:1"></span></div>
 <div class="legend"><span><i class="b2-fill"></i>규칙 자동화 검토 2</span><span><i class="b3-fill"></i>AI 초안 &#x2B; 담당자 확인 1</span><span><i class="b4-fill"></i>담당자 직접 처리 1</span></div>
 </div>
@@ -226,7 +226,7 @@ h1{font-size:19px}
 <div class="title"><span class="num">2</span><span class="name">빈칸·단위 검사</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
 <div class="cols">
 <div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
-<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">빈칸·숫자 형식·허용 단위는 규칙으로 검사할 수 있다. 보고 기간·범위가 원본 뜻과 맞는지는 규칙으로 안 된다.</div><div class="tent">확인하면 바뀔 수 있음</div></div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">빈칸·숫자 형식·허용 단위는 규칙으로 검사할 수 있다. 보고 기간·범위가 원본 뜻과 맞는지는 규칙으로 안 된다.</div></div>
 <div class="cell"><div class="lbl">바꿔야 할 것</div>규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.</div>
 <div class="cell"><div class="lbl">확인할 것</div>현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?</div>
 </div>
@@ -282,10 +282,10 @@ h1{font-size:19px}
 <aside class="side">
 <div class="card prop" id="zone-3">
 <div class="k">먼저 확인할 것</div>
-<h3>1단계 회신 받아 모으기</h3>
+<h3>2단계 빈칸·단위 검사</h3>
 <ol class="flow3"><li>기존 기능으로 되는지 확인</li><li>안 되면 새로 만들지 판단</li><li>만들기로 하면 의뢰서</li></ol>
-<p>절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다. 이 단계의 판단은 추정·기본값에 기대고 있어 확인하면 바뀔 수 있다.</p>
-<details><summary>고른 규칙과 만들기로 정한 뒤(구현 담당자 안내)</summary><p>② 단계 가운데 아직 사람이 하는 첫 단계다.</p><p class="cmd"><code>scorecard build ai-actions --step 1</code></p></details>
+<p>절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.</p>
+<details><summary>고른 규칙과 만들기로 정한 뒤(구현 담당자 안내)</summary><p>② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다.</p><p class="cmd"><code>scorecard build ai-actions --step 2</code></p></details>
 </div>
 <div class="card info" id="zone-5">
 <div class="k">담당자 확인</div>
@@ -315,7 +315,7 @@ h1{font-size:19px}
 <div class="label">실제 효과까지 검증하려면(선택)</div>
 <ol><li>실제 효과까지 보려면 사람이 만든 결과와 AI 적용 결과를 한 벌씩 준비해 비교한다.</li><li>실제 검증 때 무엇을 오류로 셀지 먼저 정한다.</li><li>개선 전후를 비교하려면 단계별 건당 시간을 잰다: 2, 4단계.</li></ol>
 <details><summary>구현·검증 담당자 안내</summary>
-<ol><li>기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다.</li><li>단계 확인 결과는 확인 파일(--review)로 open에 넣는다.</li><li>만들기로 정하면 scorecard build ai-actions --step 1 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다.</li></ol>
+<ol><li>기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다.</li><li>단계 확인 결과는 확인 파일(--review)로 open에 넣는다.</li><li>만들기로 정하면 scorecard build ai-actions --step 2 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다.</li></ol>
 </details>
 </div>
 </section>

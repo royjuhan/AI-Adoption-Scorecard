@@ -11,6 +11,9 @@ public static class ReviewParser
     public const string Keep = "keep";
     public const string Change = "change";
 
+    // T-022: 최상위 선택 키 confirmed_in의 값. 스킬이 대화에서 확인받아 쓴 파일이다(report.md 5절).
+    public const string ConfirmedInConversation = "conversation";
+
     // 바꾸기에 쓸 수 있는 담당(classification.md 4.13). 비교 값은 Core 분류와 같다.
     public static readonly IReadOnlyList<string> Assignees = ["①", "②", "②M", "③", "④"];
 
@@ -18,6 +21,13 @@ public static class ReviewParser
 
     // content를 읽는다. stepNumbers는 classification.json의 단계 번호다. 그 밖의 번호는 range 오류다.
     public static (IReadOnlyList<ReviewEntry>? Entries, IReadOnlyList<CaseError> Errors) Parse(byte[] content, string sourceName, IReadOnlyCollection<int> stepNumbers)
+    {
+        var (file, errors) = ParseFile(content, sourceName, stepNumbers);
+        return (file?.Entries, errors);
+    }
+
+    // Parse와 같고 최상위 confirmed_in(없으면 null)도 돌려준다.
+    public static (ReviewFile? File, IReadOnlyList<CaseError> Errors) ParseFile(byte[] content, string sourceName, IReadOnlyCollection<int> stepNumbers)
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(sourceName);
@@ -27,28 +37,41 @@ public static class ReviewParser
         var text = CaseParser.Decode(content, errors);
         var root = text is null ? null : YamlTree.Read(text, errors);
         var entries = new List<ReviewEntry>();
+        string? confirmedIn = null;
         if (root is not null)
         {
-            ReadRoot(root, errors, stepNumbers, entries);
+            confirmedIn = ReadRoot(root, errors, stepNumbers, entries);
         }
 
-        return errors.Count == 0 ? (entries.OrderBy(e => e.Number).ToArray(), []) : (null, errors.Sorted());
+        return errors.Count == 0 ? (new ReviewFile(entries.OrderBy(e => e.Number).ToArray(), confirmedIn), []) : (null, errors.Sorted());
     }
 
-    private static void ReadRoot(YamlNode root, ErrorSink errors, IReadOnlyCollection<int> stepNumbers, List<ReviewEntry> entries)
+    private static string? ReadRoot(YamlNode root, ErrorSink errors, IReadOnlyCollection<int> stepNumbers, List<ReviewEntry> entries)
     {
         if (root is not YamlMapping mapping)
         {
             errors.Add(root.Line, root.Column, ErrorCodes.Type, string.Empty, "매핑이어야 한다");
-            return;
+            return null;
         }
 
         YamlNode? steps = null;
+        string? confirmedIn = null;
         foreach (var entry in mapping.Entries)
         {
             if (entry.Key.Value == "steps")
             {
                 steps = entry.Value;
+            }
+            else if (entry.Key.Value == "confirmed_in")
+            {
+                if (entry.Value is YamlScalar { IsNull: false } value && value.Value == ConfirmedInConversation)
+                {
+                    confirmedIn = value.Value;
+                }
+                else
+                {
+                    errors.Add(entry.Value.Line, entry.Value.Column, ErrorCodes.Enum, "confirmed_in", "conversation이어야 한다");
+                }
             }
             else
             {
@@ -59,13 +82,13 @@ public static class ReviewParser
         if (steps is null)
         {
             errors.Add(mapping.Line, mapping.Column, ErrorCodes.Required, "steps", "필수 키가 없다");
-            return;
+            return confirmedIn;
         }
 
         if (steps is not YamlSequence sequence)
         {
             errors.Add(steps.Line, steps.Column, ErrorCodes.Type, "steps", "목록이어야 한다");
-            return;
+            return confirmedIn;
         }
 
         var seen = new Dictionary<int, string>();
@@ -87,6 +110,8 @@ public static class ReviewParser
             seen[item.Entry.Number] = path;
             entries.Add(item.Entry);
         }
+
+        return confirmedIn;
     }
 
     private static (ReviewEntry Entry, int Line, int Column)? ReadEntry(YamlNode node, string path, ErrorSink errors, IReadOnlyCollection<int> stepNumbers)

@@ -8,7 +8,8 @@ namespace Scorecard.Core.Classification;
 // Utf8JsonWriter로 속성 순서를 직접 정한다. 리플렉션 직렬화는 쓰지 않는다.
 // 들여쓰기 2칸, 줄바꿈 "\n", UnsafeRelaxedJsonEscaping, UTF-8(BOM 없음), 마지막 } 뒤에 "\n" 하나.
 // 첫 키는 schema_version(정수, ADR 0004 결정 2). schema 2(ADR 0013): 단계마다 source·rule_opinion·differs.
-// 경로·입력 해시·Used·Inferred는 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장뿐이다.
+// 경로·입력 해시·Used·Inferred는 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장, AI 선택 항목 글뿐이다.
+// T-022: AI 선택 항목(actions, now, change, check, gate_note)은 적은 것만 rows 뒤에 쓴다. 없으면 키도 없다(schema 2 그대로, ADR 0016).
 public static class ClassificationJson
 {
     public const string FileName = "classification.json";
@@ -74,7 +75,40 @@ public static class ClassificationJson
         }
 
         w.WriteEndArray();
+        if (step.Detail is { } d)
+        {
+            WriteDetail(w, d);
+        }
+
         w.WriteEndObject();
+    }
+
+    // AI 선택 항목. 적은 것만 쓴다. 순서: actions, now, change, check, gate_note.
+    private static void WriteDetail(Utf8JsonWriter w, Cases.StepAiDetail d)
+    {
+        if (d.Actions.Count > 0)
+        {
+            w.WriteStartArray("actions");
+            foreach (var a in d.Actions)
+            {
+                w.WriteStartObject();
+                w.WriteString("action", a.Action);
+                w.WriteString("who_now", a.WhoNow);
+                w.WriteString("proposed", a.Proposed);
+                w.WriteString("source", a.Source);
+                w.WriteEndObject();
+            }
+
+            w.WriteEndArray();
+        }
+
+        foreach (var (name, value) in new[] { ("now", d.Now), ("change", d.Change), ("check", d.Check), ("gate_note", d.GateNote) })
+        {
+            if (value is not null)
+            {
+                w.WriteString(name, value);
+            }
+        }
     }
 
     private static void WriteStrings(Utf8JsonWriter w, string name, IReadOnlyList<string> values)

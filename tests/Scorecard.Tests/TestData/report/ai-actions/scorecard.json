@@ -1,0 +1,474 @@
+{
+  "schema_version": 2,
+  "command": "open",
+  "files": [
+    "scorecard.json",
+    "scorecard.html"
+  ],
+  "case": "ai-actions",
+  "task": "합성 설문 회신을 모아 빈칸·단위를 보고 확인 요청을 보낸 뒤 원본과 대조해 승인한다",
+  "scenario": "virtual",
+  "status": {
+    "material": "virtual",
+    "classification": "ai_draft",
+    "confirmed": 3,
+    "steps": 4,
+    "confirmed_in": "conversation",
+    "test": "not_checked"
+  },
+  "conclusion": {
+    "keep": "4단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 2곳은 그대로 둔다.",
+    "first_check": "2단계 빈칸·단위 검사: 현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
+    "undecided": "추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.",
+    "end_state": "업무 구조 검토 완료. 지금 제출할 것 없음."
+  },
+  "task_summary": {
+    "scale": "연 1회, 집중 기간 10주, 주 10건 안팎",
+    "current": "담당자 한 명이 메일로 받아 손으로 정리한다",
+    "exception_rate": "열 건 가운데 두세 건은 다시 묻는다",
+    "delivery": "승인한 자료를 분석 담당에게 넘긴다"
+  },
+  "intake": "# 합성 예시. 실제 업무·값 없음. 가상 시나리오.\n\n해마다 한 번, 집중 기간 10주 동안 협력 업체 설문 회신을 받는다. 주 10건쯤 온다.\n담당자가 메일을 열어 첨부를 내려받고, 빈칸과 단위를 본다.\n틀린 곳이 있으면 업체에 다시 물어본다. 예외 한 건을 처리하는 데 15분쯤 걸린다.\n고친 자료를 원본과 대조해 승인하고 분석 담당에게 넘긴다. 검증 자료 없이 구조만 봐 달라.",
+  "answers": "used",
+  "summary": {
+    "steps": 4,
+    "software": 2,
+    "assignees": [
+      {
+        "assignee": "①",
+        "count": 0
+      },
+      {
+        "assignee": "②",
+        "count": 2
+      },
+      {
+        "assignee": "②M",
+        "count": 0
+      },
+      {
+        "assignee": "③",
+        "count": 1
+      },
+      {
+        "assignee": "④",
+        "count": 1
+      }
+    ],
+    "differs": 0,
+    "ai_assist": 1,
+    "ai_overuse": 0,
+    "kept": 3,
+    "changed": 0,
+    "saving": "time_needed",
+    "stated": {
+      "steps": 3,
+      "software": 1,
+      "ai_assist": 1,
+      "ai_overuse": 0
+    },
+    "tentative": {
+      "steps": 1,
+      "software": 1,
+      "ai_assist": 0,
+      "ai_overuse": 0
+    },
+    "minutes": [
+      {
+        "step": 1,
+        "minutes": 2
+      },
+      {
+        "step": 3,
+        "minutes": 15
+      }
+    ]
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "회신 받아 모으기",
+      "source": "ai",
+      "assignee": "②",
+      "rule": "AI",
+      "reason": "메일을 열고 첨부를 내려받아 업체별로 모으는 동작은 모두 규칙으로 할 수 있다.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [],
+      "inferred": [
+        "frequency"
+      ],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "kept",
+        "assignee": null,
+        "reason": null
+      },
+      "tentative": true,
+      "now": "담당자가 메일을 하나씩 열어 첨부를 내려받는다.",
+      "change": "받은 회신을 업체별로 모으고 빠진 업체 목록을 내는 규칙을 둔다.",
+      "check": "지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.",
+      "assumptions": [
+        "가정: 처리 주기 주 1회"
+      ],
+      "actions": [
+        {
+          "action": "회신 메일 열기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "첨부 내려받기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "업체별 폴더에 넣기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "inferred"
+        },
+        {
+          "action": "빠진 업체 찾기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "inferred"
+        }
+      ],
+      "gate_note": null
+    },
+    {
+      "number": 2,
+      "name": "빈칸·단위 검사",
+      "source": "ai",
+      "assignee": "②",
+      "rule": "AI",
+      "reason": "빈칸·숫자 형식·허용 단위는 규칙으로 검사할 수 있다. 보고 기간·범위가 원본 뜻과 맞는지는 규칙으로 안 된다.",
+      "rule_opinion": {
+        "assignee": "②",
+        "rule": "ELSE"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "exception_review",
+          "assignee": "④",
+          "rule": "PARTIAL",
+          "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+        }
+      ],
+      "review": {
+        "status": "kept",
+        "assignee": null,
+        "reason": null
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
+      "assumptions": [],
+      "actions": [
+        {
+          "action": "빈칸 찾기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "단위가 허용 목록에 있는지 보기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "보고 기간이 원본 뜻과 맞는지 보기",
+          "who_now": "human",
+          "proposed": "④",
+          "source": "inferred"
+        }
+      ],
+      "gate_note": null
+    },
+    {
+      "number": 3,
+      "name": "확인 요청 쓰기",
+      "source": "ai",
+      "assignee": "③",
+      "rule": "AI",
+      "reason": "사유 네 가지(수치 불일치·기간 누락·단위 누락·범위 불명확)는 양식에 값을 넣으면 되고, 묶이지 않는 복합 건만 AI 초안이 필요하다.",
+      "rule_opinion": {
+        "assignee": "③",
+        "rule": "Q3"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [],
+      "inferred": [],
+      "checks": [],
+      "ai_overuse_candidate": false,
+      "extra": [
+        {
+          "kind": "human_gate",
+          "assignee": "④",
+          "rule": "GATE",
+          "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+        }
+      ],
+      "review": {
+        "status": "kept",
+        "assignee": null,
+        "reason": null
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "AI 초안을 쓰고 담당자가 확인한다. 자동 승인은 하지 않는다.",
+      "check": "AI 초안을 누가 언제 확인하는지 정한다.",
+      "assumptions": [],
+      "actions": [
+        {
+          "action": "사유 고르기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "양식에 값 넣기",
+          "who_now": "human",
+          "proposed": "②",
+          "source": "stated"
+        },
+        {
+          "action": "복합 건 초안 쓰기",
+          "who_now": "human",
+          "proposed": "③",
+          "source": "stated"
+        },
+        {
+          "action": "보내기 전 읽기",
+          "who_now": "human",
+          "proposed": "④",
+          "source": "stated"
+        }
+      ],
+      "gate_note": "보내기 전에 담당자가 초안을 읽고 고친다. 4단계 원본 대조 때 함께 본다."
+    },
+    {
+      "number": 4,
+      "name": "원본 대조·최종 승인",
+      "source": "ai",
+      "assignee": "④",
+      "rule": "AI",
+      "reason": "수정 자료 재검토와 전체 최종 승인 두 활동이 있다. 둘 다 담당자가 판단한다.",
+      "rule_opinion": {
+        "assignee": "④",
+        "rule": "SIGNOFF"
+      },
+      "differs": false,
+      "current_actor": "human",
+      "defaults": [
+        "minutes_per_item"
+      ],
+      "inferred": [],
+      "checks": [
+        "measure_minutes_per_item"
+      ],
+      "ai_overuse_candidate": false,
+      "extra": [],
+      "review": {
+        "status": "pending",
+        "assignee": null,
+        "reason": null
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "바꾸지 않는다. 사람이 판단한다.",
+      "check": "없음.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
+    }
+  ],
+  "proposal": {
+    "step": 2,
+    "name": "빈칸·단위 검사",
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다.",
+    "check": "현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?",
+    "effect": "절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.",
+    "tentative": false
+  },
+  "verification": {
+    "status": "not_checked",
+    "reason": null,
+    "counts": null,
+    "accuracy_pct": null,
+    "missing_rate_pct": null,
+    "verdict": null,
+    "verdict_rule": null,
+    "verdict_reason": null,
+    "thresholds": null,
+    "time": null,
+    "checks": [],
+    "items": [],
+    "items_hidden": 0
+  },
+  "gates": [
+    {
+      "step": 2,
+      "name": "빈칸·단위 검사",
+      "kind": "exception_review",
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.",
+      "text": "규칙으로 판단이 안 되는 예외 건은 담당자가 검토한다."
+    },
+    {
+      "step": 3,
+      "name": "확인 요청 쓰기",
+      "kind": "human_gate",
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "보내기 전에 담당자가 초안을 읽고 고친다. 4단계 원본 대조 때 함께 본다."
+    },
+    {
+      "step": 4,
+      "name": "원본 대조·최종 승인",
+      "kind": "signoff",
+      "reason": "수정 자료 재검토와 전체 최종 승인 두 활동이 있다. 둘 다 담당자가 판단한다.",
+      "text": "담당자가 최종 확인·서명한다."
+    }
+  ],
+  "risks": [
+    {
+      "key": "ai_assist",
+      "step": 3,
+      "text": "3단계 확인 요청 쓰기: AI 초안이 틀릴 수 있다. 자동 승인하지 않고 담당자가 확인해 잡는다."
+    }
+  ],
+  "opinions": [],
+  "candidates": [],
+  "todo": [
+    {
+      "group": "now",
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계마다 맞는지 확인한다(맞음/바꾸기): 4단계."
+    },
+    {
+      "group": "improve",
+      "key": "first_check",
+      "step": 2,
+      "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
+    },
+    {
+      "group": "improve",
+      "key": "confirm_inferred",
+      "step": 0,
+      "text": "AI가 가정한 답을 확인한다: 1단계 처리 주기."
+    },
+    {
+      "group": "verify",
+      "key": "run_check",
+      "step": 0,
+      "text": "실제 효과까지 보려면 사람이 만든 결과와 AI 적용 결과를 한 벌씩 준비해 비교한다."
+    },
+    {
+      "group": "verify",
+      "key": "define_errors",
+      "step": 0,
+      "text": "실제 검증 때 무엇을 오류로 셀지 먼저 정한다."
+    },
+    {
+      "group": "verify",
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "개선 전후를 비교하려면 단계별 건당 시간을 잰다: 2, 4단계."
+    },
+    {
+      "group": "implementer",
+      "key": "check_command",
+      "step": 0,
+      "text": "기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다."
+    },
+    {
+      "group": "implementer",
+      "key": "review_file",
+      "step": 0,
+      "text": "단계 확인 결과는 확인 파일(--review)로 open에 넣는다."
+    },
+    {
+      "group": "implementer",
+      "key": "build_command",
+      "step": 2,
+      "text": "만들기로 정하면 scorecard build ai-actions --step 2 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
+    }
+  ],
+  "stated_numbers": [
+    "연 1회, 집중 기간 10주",
+    "주 10건",
+    "예외 1건 처리에 15분(예외 1건 전체 기준, 한 단계의 시간이 아님)"
+  ],
+  "open_questions": [
+    "현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?"
+  ],
+  "self_check": [
+    {
+      "rule": "R1 출처 없는 단정 0건",
+      "result": "pass",
+      "note": null
+    },
+    {
+      "rule": "R2 집계는 stated만",
+      "result": "pass",
+      "note": null
+    },
+    {
+      "rule": "R3 ①은 손이 안 가는 경우만",
+      "result": "pass",
+      "note": "① 단계 없음"
+    },
+    {
+      "rule": "R4 추천 문장에 이유",
+      "result": "pass",
+      "note": null
+    },
+    {
+      "rule": "R5 종료점 문장",
+      "result": "pass",
+      "note": null
+    }
+  ],
+  "inputs": [
+    {
+      "path": "answers.yaml",
+      "sha256": "d765989e6b24efedf428a390ab7000d6cd424ffafa5829aa53ae6238d062af9e"
+    },
+    {
+      "path": "intake.md",
+      "sha256": "752faacb38da8095e410317cd8f6452583a1ba87015ee1367382bae42ae911a4"
+    }
+  ],
+  "results": [
+    {
+      "path": "classification.json",
+      "sha256": "5ee7abd666ad213e52716623723dbddfb0c4ad550d05d0cff881bea8105bfcb7"
+    }
+  ],
+  "review": {
+    "path": "review.yaml",
+    "sha256": "f326655d7b46faa7230efe9f9c159258f5e8f20e83fced607ca0ad425546b5f8"
+  }
+}

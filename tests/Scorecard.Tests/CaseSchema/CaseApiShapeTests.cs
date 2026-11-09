@@ -13,20 +13,25 @@ public class CaseApiShapeTests
     // 4.12의 공개 타입 전부. 트리·검사 코드는 internal이어야 한다.
     private static readonly string[] PublicTypes =
     [
-        // T-014(text-check.md)
+        // T-014(text-check.md). T-022(4.15): CaseNotes, CaseTaskSummary, SelfCheckItem, StepAction, StepAiDetail를 더했다.
         "Answer`1",
         "CaseChecklist",
         "CaseDefinition",
         "CaseError",
         "CaseInputs",
+        "CaseNotes",
         "CaseParseResult",
         "CaseParser",
         "CaseScores",
         "CaseStep",
+        "CaseTaskSummary",
         "CaseThresholds",
         "ChecklistItem",
         "CompareField",
+        "SelfCheckItem",
+        "StepAction",
         "StepAi",
+        "StepAiDetail",
         "StepAnswers",
     ];
 

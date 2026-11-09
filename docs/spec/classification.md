@@ -32,7 +32,8 @@
 - 속성 순서는 블록과 같다. 단계 속성은 `number`, `name`, `source`, `rule_opinion`, `differs`, `defaults`, `checks`, `ai_overuse_candidate`, `rows` 순이다. 단계 순서는 `case.yaml` 순서, 행 순서는 4.3이다.
 - `source`, `rule_opinion`, `differs`의 뜻은 4.13이다.
 - `rule`이 근거 키다. 트리가 읽은 답(`Used`)과 추정 답 키(`Inferred`)는 JSON에 쓰지 않는다. 추정 표시는 `reason` 끝에만 나타난다.
-- 경로를 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장(AI 근거는 쓴 글 그대로)뿐이다.
+- 경로를 쓰지 않는다. 문자열은 케이스 이름, 단계 이름, 고정 값, 근거 문장(AI 근거는 쓴 글 그대로), AI 선택 항목 글뿐이다.
+- AI 선택 항목(T-022, ADR 0016): `ai`에 `actions`·`now`·`change`·`check`·`gate_note`(`case-schema.md` 4.15)를 적은 단계만 `rows` 뒤에 그 키를 쓴다. 적은 것만, 이 순서로 쓴다. 표는 데이터 3.2 둘째 표. 분류(행·규칙 의견·`differs`)에 쓰지 않는다. 선택 속성을 더한 것이라 `schema_version`은 2 그대로다(ADR 0008 결정 1). 공개 예제에는 `ai`가 없어 바이트가 같다.
 - 단계 수(지시문 12절)는 모든 단계의 `rows` 원소 수 합이다. AI 판단은 `SIGNOFF` 단계에서만 행 수를 바꿀 수 있다(4.13 규칙 5).
 
 ### 3.3 바이트 규칙

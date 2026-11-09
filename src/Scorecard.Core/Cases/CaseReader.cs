@@ -35,12 +35,17 @@ internal sealed class CaseReader(ErrorSink errors)
     // 각 매핑에 쓸 수 있는 키. 4.3·4.4·4.5 표 순서다.
     // checklist·scores는 문장 결과 검증의 두 길이다(text-check.md 4.1, T-014).
     private static readonly string[] RootKeys =
-        ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "checklist", "scores", "thresholds"];
+        ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "checklist", "scores", "thresholds",
+            "scenario", "summary", "stated_numbers", "self_check", "open_questions", "end_state"];
 
     // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
     // ai는 AI가 적은 단계 담당과 근거다(스펙 4.14, ADR 0013).
     private static readonly string[] StepKeys = ["name", "answers", "inferred", "ai"];
-    private static readonly string[] AiKeys = ["assignee", "reason"];
+    // T-022(4.15): actions·now·change·check·gate_note는 선택 키다. 스킬이 쓰고 Core는 옮기기만 한다.
+    private static readonly string[] AiKeys = ["assignee", "reason", "actions", "now", "change", "check", "gate_note"];
+    private static readonly string[] ActionKeys = ["action", "who_now", "proposed", "source"];
+    private static readonly string[] SummaryKeys = ["scale", "current", "exception_rate", "delivery"];
+    private static readonly string[] SelfCheckKeys = ["rule", "result", "note"];
     // group은 선택 키다(스펙 10.1, T-012).
     private static readonly string[] InputKeys = ["reference", "candidate", "key", "group"];
     private static readonly string[] CompareKeys = ["field", "tolerance", "tolerance_pct"];
@@ -77,9 +82,10 @@ internal sealed class CaseReader(ErrorSink errors)
         var checklist = ReadChecklist(fields, inputs, compare);
         var scores = ReadScores(fields);
         var thresholds = ReadThresholds(fields);
+        var notes = ReadNotes(fields);
         return name is null || task is null
             ? null
-            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds, checklist, scores);
+            : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds, checklist, scores, notes);
     }
 
     private IReadOnlyList<CaseStep> ReadSteps(Dictionary<string, YamlNode> fields, YamlMapping parent)
@@ -259,7 +265,203 @@ internal sealed class CaseReader(ErrorSink errors)
         }
 
         var reason = RequiredString(fields, map, "reason", YamlTree.ChildPath(path, "reason"));
-        return assignee is null || reason is null ? null : new StepAi(assignee, reason);
+        var detail = ReadAiDetail(fields, path);
+        return assignee is null || reason is null ? null : new StepAi(assignee, reason, detail);
+    }
+
+    // 4.15 ai 선택 항목. 하나도 없으면 null. 문장은 저장만 한다(앞뒤 공백 유지). 비면 required.
+    private StepAiDetail? ReadAiDetail(Dictionary<string, YamlNode> fields, string path)
+    {
+        var actions = ReadActions(fields, path);
+        var now = OptionalText(fields, "now", YamlTree.ChildPath(path, "now"));
+        var change = OptionalText(fields, "change", YamlTree.ChildPath(path, "change"));
+        var check = OptionalText(fields, "check", YamlTree.ChildPath(path, "check"));
+        var gateNote = OptionalText(fields, "gate_note", YamlTree.ChildPath(path, "gate_note"));
+        return actions.Count == 0 && now is null && change is null && check is null && gateNote is null
+            ? null
+            : new StepAiDetail(actions, now, change, check, gateNote);
+    }
+
+    // 4.15 actions: 동작 목록. 원소는 매핑이고 네 키(action, who_now, proposed, source)가 모두 필수다.
+    // 빈 목록은 required. who_now·proposed·source는 선택지 밖이면 enum.
+    private List<StepAction> ReadActions(Dictionary<string, YamlNode> fields, string aiPath)
+    {
+        var actions = new List<StepAction>();
+        if (!TryGetPresent(fields, "actions", out var node))
+        {
+            return actions;
+        }
+
+        var path = YamlTree.ChildPath(aiPath, "actions");
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, path, MustBeList);
+            return actions;
+        }
+
+        if (sequence.Items.Count == 0)
+        {
+            Add(sequence, ErrorCode.Required, path, "동작이 1개 이상 있어야 한다");
+        }
+
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var itemPath = YamlTree.ItemPath(path, i + 1);
+            if (sequence.Items[i] is not YamlMapping item)
+            {
+                TypeError(sequence.Items[i], itemPath, MustBeMapping);
+                continue;
+            }
+
+            var f = Fields(item, ActionKeys, itemPath);
+            var action = RequiredString(f, item, "action", YamlTree.ChildPath(itemPath, "action"));
+            var whoNow = RequiredChoice(f, item, "who_now", itemPath, StepQuestions.ActionWhoNow);
+            var proposed = RequiredChoice(f, item, "proposed", itemPath, StepQuestions.AiAssignees);
+            var source = RequiredChoice(f, item, "source", itemPath, StepQuestions.ActionSources);
+            if (action is not null && whoNow is not null && proposed is not null && source is not null)
+            {
+                actions.Add(new StepAction(action, whoNow, proposed, source));
+            }
+        }
+
+        return actions;
+    }
+
+    // 4.15 케이스 메모. 여섯 키 중 하나도 없으면 null.
+    private CaseNotes? ReadNotes(Dictionary<string, YamlNode> fields)
+    {
+        var scenario = TryGetPresent(fields, "scenario", out var scenarioNode) ? Choice(scenarioNode, "scenario", StepQuestions.Scenarios) : null;
+        var summary = ReadSummary(fields);
+        var stated = TextList(fields, "stated_numbers");
+        var selfCheck = ReadSelfCheck(fields);
+        var questions = TextList(fields, "open_questions");
+        var endState = OptionalText(fields, "end_state", "end_state");
+        var present = new[] { "scenario", "summary", "stated_numbers", "self_check", "open_questions", "end_state" }.Any(k => TryGetPresent(fields, k, out _));
+        return present ? new CaseNotes(scenario, summary, stated, selfCheck, questions, endState) : null;
+    }
+
+    private CaseTaskSummary? ReadSummary(Dictionary<string, YamlNode> fields)
+    {
+        if (!TryGetPresent(fields, "summary", out var node))
+        {
+            return null;
+        }
+
+        if (node is not YamlMapping map)
+        {
+            TypeError(node, "summary", MustBeMapping);
+            return null;
+        }
+
+        var f = Fields(map, SummaryKeys, "summary");
+        return new CaseTaskSummary(
+            OptionalText(f, "scale", "summary.scale"),
+            OptionalText(f, "current", "summary.current"),
+            OptionalText(f, "exception_rate", "summary.exception_rate"),
+            OptionalText(f, "delivery", "summary.delivery"));
+    }
+
+    private List<SelfCheckItem> ReadSelfCheck(Dictionary<string, YamlNode> fields)
+    {
+        var items = new List<SelfCheckItem>();
+        if (!TryGetPresent(fields, "self_check", out var node))
+        {
+            return items;
+        }
+
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, "self_check", MustBeList);
+            return items;
+        }
+
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var itemPath = YamlTree.ItemPath("self_check", i + 1);
+            if (sequence.Items[i] is not YamlMapping item)
+            {
+                TypeError(sequence.Items[i], itemPath, MustBeMapping);
+                continue;
+            }
+
+            var f = Fields(item, SelfCheckKeys, itemPath);
+            var rule = RequiredString(f, item, "rule", YamlTree.ChildPath(itemPath, "rule"));
+            var result = RequiredChoice(f, item, "result", itemPath, StepQuestions.SelfCheckResults);
+            var note = OptionalText(f, "note", YamlTree.ChildPath(itemPath, "note"));
+            if (rule is not null && result is not null)
+            {
+                items.Add(new SelfCheckItem(rule, result, note));
+            }
+        }
+
+        return items;
+    }
+
+    // 문자열 목록. 목록이 아니면 type, 원소가 비면 required, 원소가 모음이면 type. 원소는 저장만 한다.
+    private List<string> TextList(Dictionary<string, YamlNode> fields, string key)
+    {
+        var values = new List<string>();
+        if (!TryGetPresent(fields, key, out var node))
+        {
+            return values;
+        }
+
+        if (node is not YamlSequence sequence)
+        {
+            TypeError(node, key, MustBeList);
+            return values;
+        }
+
+        for (var i = 0; i < sequence.Items.Count; i++)
+        {
+            var itemPath = YamlTree.ItemPath(key, i + 1);
+            var value = ScalarText(sequence.Items[i], itemPath);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                if (sequence.Items[i] is YamlScalar)
+                {
+                    Add(sequence.Items[i], ErrorCode.Required, itemPath, EmptyValue);
+                }
+
+                continue;
+            }
+
+            values.Add(value);
+        }
+
+        return values;
+    }
+
+    // 선택 문자열. 없거나 null이면 null. 있는데 비면(""·공백뿐) required. 저장만 한다.
+    private string? OptionalText(Dictionary<string, YamlNode> fields, string key, string path)
+    {
+        if (!TryGetPresent(fields, key, out var node))
+        {
+            return null;
+        }
+
+        var value = ScalarText(node, path);
+        if (value is not null && string.IsNullOrWhiteSpace(value))
+        {
+            Add(node, ErrorCode.Required, path, EmptyValue);
+            return null;
+        }
+
+        return value;
+    }
+
+    // 필수 열거. 없거나 비면 required(RequiredString), 선택지 밖이면 enum.
+    private string? RequiredChoice(Dictionary<string, YamlNode> fields, YamlMapping parent, string key, string parentPath, string[] choices)
+    {
+        var path = YamlTree.ChildPath(parentPath, key);
+        var value = RequiredString(fields, parent, key, path);
+        if (value is null || choices.Contains(value, StringComparer.Ordinal))
+        {
+            return value;
+        }
+
+        Add(fields[key], ErrorCode.Enum, path, $"선택지 밖의 값 '{value}'. 가능한 값: {string.Join(", ", choices)}");
+        return null;
     }
 
     // inferred에 적은 답에 IsInferred를 단다. 값과 IsDefault는 그대로다.

@@ -47,6 +47,12 @@ internal static class StepQuestions
 
     // 단계 항목 ai의 담당 선택지(스펙 4.14, ADR 0013). 서수 비교다. ②M은 학습 모델(결정론)이다.
     public static readonly string[] AiAssignees = ["①", "②", "②M", "③", "④"];
+
+    // T-022 선택 항목의 선택지(case-schema.md 4.15). 서수 비교다.
+    public static readonly string[] ActionWhoNow = ["human", "program", "ai_each_time", "mixed", "unknown"];
+    public static readonly string[] ActionSources = ["stated", "inferred", "default"];
+    public static readonly string[] Scenarios = ["virtual", "real"];
+    public static readonly string[] SelfCheckResults = ["pass", "fail"];
 }
 
 // 열거 질문. 선택지는 서수(대소문자 구분)로 비교한다.

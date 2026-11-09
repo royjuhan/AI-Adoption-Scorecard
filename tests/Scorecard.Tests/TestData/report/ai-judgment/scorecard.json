@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "open",
   "files": [
     "scorecard.json",
@@ -7,6 +7,22 @@
   ],
   "case": "ai-judgment",
   "task": "합성 문의를 접수해 유형을 고르고 답변을 써서 사람이 확인해 보낸다",
+  "scenario": null,
+  "status": {
+    "material": "unknown",
+    "classification": "ai_draft",
+    "confirmed": 3,
+    "steps": 5,
+    "confirmed_in": null,
+    "test": "not_checked"
+  },
+  "conclusion": {
+    "keep": "3, 5단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 3곳은 그대로 둔다.",
+    "first_check": "2단계 유형 고르기: 기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "undecided": "추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.",
+    "end_state": null
+  },
+  "task_summary": null,
   "intake": null,
   "answers": "used",
   "summary": {
@@ -39,7 +55,37 @@
     "ai_overuse": 1,
     "kept": 2,
     "changed": 1,
-    "saving": "time_needed"
+    "saving": "time_needed",
+    "stated": {
+      "steps": 4,
+      "software": 2,
+      "ai_assist": 0,
+      "ai_overuse": 1
+    },
+    "tentative": {
+      "steps": 1,
+      "software": 1,
+      "ai_assist": 0,
+      "ai_overuse": 0
+    },
+    "minutes": [
+      {
+        "step": 1,
+        "minutes": 1
+      },
+      {
+        "step": 2,
+        "minutes": 2
+      },
+      {
+        "step": 3,
+        "minutes": 6
+      },
+      {
+        "step": 5,
+        "minutes": 2
+      }
+    ]
   },
   "steps": [
     {
@@ -64,7 +110,14 @@
         "status": "kept",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 2,
@@ -101,7 +154,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "매번 AI에 맡긴다.",
+      "change": "미리 학습해 고정한 모델로 처리할 수 있는지 검토한다. 실행 때 AI를 부르지 않는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 3,
@@ -132,7 +192,14 @@
         "status": "changed",
         "assignee": "③",
         "reason": "초안은 AI가 쓰고 담당자가 고쳐 보낸다"
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "바꾸지 않는다. 사람이 판단한다.",
+      "check": "없음.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 4,
@@ -161,7 +228,16 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": true,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [
+        "말하지 않아 기본값: 기존 기능이 있나 모름"
+      ],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 5,
@@ -185,13 +261,23 @@
         "status": "kept",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "바꾸지 않는다. 사람이 판단한다.",
+      "check": "없음.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     }
   ],
   "proposal": {
     "step": 2,
     "name": "유형 고르기",
-    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다. 애매한 건은 사람 검토로 남긴다."
+    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다. 애매한 건은 사람 검토로 남긴다.",
+    "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "effect": "지금 매번 AI에 맡기는 일이 규칙으로 되면 실행 때 AI가 필요 없다. 절감 효과는 아직 계산하지 않았다.",
+    "tentative": false
   },
   "verification": {
     "status": "not_checked",
@@ -213,66 +299,111 @@
       "step": 2,
       "name": "유형 고르기",
       "kind": "exception_review",
-      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.",
+      "text": "규칙으로 판단이 안 되는 예외 건은 담당자가 검토한다."
     },
     {
       "step": 2,
       "name": "유형 고르기",
       "kind": "human_gate",
-      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "이 단계 결과를 다음으로 넘기기 전에 담당자가 확인한다."
     },
     {
       "step": 3,
       "name": "답변 초안 쓰기",
       "kind": "human_gate",
-      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "이 단계 결과를 다음으로 넘기기 전에 담당자가 확인한다."
     },
     {
       "step": 5,
       "name": "최종 확인·발송",
       "kind": "signoff",
-      "reason": "사람이 읽고 서명해 보낸다."
+      "reason": "사람이 읽고 서명해 보낸다.",
+      "text": "담당자가 최종 확인·서명한다."
     }
   ],
   "risks": [
     {
-      "key": "ai_overuse",
-      "step": 2,
-      "text": "2단계 유형 고르기: 지금 매번 AI에 맡기지만 규칙 SW로 된다(AI 과잉 후보)."
-    },
+      "key": "review_changed",
+      "step": 3,
+      "text": "3단계 답변 초안 쓰기: 확인에서 담당을 바꿨다(담당자 직접 처리 → AI 초안 + 담당자 확인). 셈·제안·판정은 다시 계산하지 않아 바뀐 담당이 반영되지 않았다."
+    }
+  ],
+  "opinions": [
     {
       "key": "differs",
       "step": 3,
-      "text": "3단계 답변 초안 쓰기: AI 판단 ④와 규칙 의견 ③이 다르다."
-    },
+      "text": "3단계 답변 초안 쓰기: 담당자 직접 처리 권장. 이유: 문의마다 사정이 달라 담당자가 직접 쓴다."
+    }
+  ],
+  "candidates": [
     {
-      "key": "review_changed",
-      "step": 3,
-      "text": "3단계 답변 초안 쓰기: 사람이 ④를 ③로 바꿨다. 분류·판정은 다시 계산하지 않았다."
+      "key": "ai_overuse",
+      "step": 2,
+      "text": "2단계 유형 고르기: 지금 매번 AI에 맡긴다. 규칙으로 할 수 있는지 검토할 후보다."
     }
   ],
   "todo": [
     {
-      "key": "run_check",
-      "step": 0,
-      "text": "기준·결과 자료를 넣고 scorecard check를 돌려 검증 결과를 채운다."
-    },
-    {
-      "key": "measure_minutes_per_item",
-      "step": 0,
-      "text": "건당 시간(minutes_per_item)을 잰다: 4단계."
-    },
-    {
-      "key": "confirm_defaults",
-      "step": 0,
-      "text": "기본값을 쓴 답을 확인한다: 4단계 existing_feature."
-    },
-    {
+      "group": "now",
       "key": "review_steps",
       "step": 0,
-      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 2, 4단계. 확인 파일을 --review로 넣는다."
+      "text": "단계마다 맞는지 확인한다(맞음/바꾸기): 2, 4단계."
+    },
+    {
+      "group": "improve",
+      "key": "first_check",
+      "step": 2,
+      "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
+    },
+    {
+      "group": "improve",
+      "key": "confirm_defaults",
+      "step": 0,
+      "text": "말하지 않아 기본값으로 둔 답을 확인한다: 4단계 기존 기능이 있나."
+    },
+    {
+      "group": "verify",
+      "key": "run_check",
+      "step": 0,
+      "text": "실제 효과까지 보려면 사람이 만든 결과와 AI 적용 결과를 한 벌씩 준비해 비교한다."
+    },
+    {
+      "group": "verify",
+      "key": "define_errors",
+      "step": 0,
+      "text": "실제 검증 때 무엇을 오류로 셀지 먼저 정한다."
+    },
+    {
+      "group": "verify",
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "개선 전후를 비교하려면 단계별 건당 시간을 잰다: 4단계."
+    },
+    {
+      "group": "implementer",
+      "key": "check_command",
+      "step": 0,
+      "text": "기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다."
+    },
+    {
+      "group": "implementer",
+      "key": "review_file",
+      "step": 0,
+      "text": "단계 확인 결과는 확인 파일(--review)로 open에 넣는다."
+    },
+    {
+      "group": "implementer",
+      "key": "build_command",
+      "step": 2,
+      "text": "만들기로 정하면 scorecard build ai-judgment --step 2 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
     }
   ],
+  "stated_numbers": [],
+  "open_questions": [],
+  "self_check": [],
   "inputs": [
     {
       "path": "answers.yaml",

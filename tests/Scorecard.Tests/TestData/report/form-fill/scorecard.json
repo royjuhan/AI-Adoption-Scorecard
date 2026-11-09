@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "open",
   "files": [
     "scorecard.json",
@@ -7,6 +7,22 @@
   ],
   "case": "form-fill",
   "task": "고정 양식 주문서를 받아 품목·수량을 집계하고 주간 보고서를 만든다",
+  "scenario": null,
+  "status": {
+    "material": "unknown",
+    "classification": "rule_tree",
+    "confirmed": 0,
+    "steps": 4,
+    "confirmed_in": null,
+    "test": "measured"
+  },
+  "conclusion": {
+    "keep": "담당자 확인 1곳은 그대로 둔다.",
+    "first_check": "2단계 주문서 양식 읽기: 기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "undecided": "추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 절감 효과는 계산하지 않았다.",
+    "end_state": null
+  },
+  "task_summary": null,
   "intake": "거래처에서 주문서가 매주 20장쯤 온다. 주문서는 모두 같은 양식이다.\n주문서 파일을 한곳에 모은다. 지금 쓰는 프로그램에 이 기능이 있는지는 확인해 보지 않았다.\n\n주문서를 한 장씩 AI에게 주고 품목과 수량을 뽑게 한다. 매번 AI를 쓴다.\n뽑은 품목·수량을 품목별로 더해서 주간 보고서를 만들고 보낸다.\n\nAI가 뽑은 값이 사람이 읽은 값과 같은지 확인하고 싶다.",
   "answers": "used",
   "summary": {
@@ -39,7 +55,20 @@
     "ai_overuse": 1,
     "kept": 0,
     "changed": 0,
-    "saving": "time_needed"
+    "saving": "time_needed",
+    "stated": {
+      "steps": 3,
+      "software": 3,
+      "ai_assist": 0,
+      "ai_overuse": 1
+    },
+    "tentative": {
+      "steps": 1,
+      "software": 1,
+      "ai_assist": 0,
+      "ai_overuse": 0
+    },
+    "minutes": []
   },
   "steps": [
     {
@@ -69,7 +98,16 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": true,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [
+        "말하지 않아 기본값: 기존 기능이 있나 모름"
+      ],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 2,
@@ -97,7 +135,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "매번 AI에 맡긴다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 3,
@@ -125,7 +170,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 4,
@@ -160,13 +212,23 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     }
   ],
   "proposal": {
     "step": 2,
     "name": "주문서 양식 읽기",
-    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다."
+    "reason": "AI 과잉 후보다. 지금 매번 AI에 맡기지만 규칙으로 된다.",
+    "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "effect": "지금 매번 AI에 맡기는 일이 규칙으로 되면 실행 때 AI가 필요 없다. 절감 효과는 아직 계산하지 않았다.",
+    "tentative": false
   },
   "verification": {
     "status": "measured",
@@ -230,33 +292,60 @@
       "step": 4,
       "name": "주간 보고서 만들기",
       "kind": "human_gate",
-      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "이 단계 결과를 다음으로 넘기기 전에 담당자가 확인한다."
     }
   ],
-  "risks": [
+  "risks": [],
+  "opinions": [],
+  "candidates": [
     {
       "key": "ai_overuse",
       "step": 2,
-      "text": "2단계 주문서 양식 읽기: 지금 매번 AI에 맡기지만 규칙 SW로 된다(AI 과잉 후보)."
+      "text": "2단계 주문서 양식 읽기: 지금 매번 AI에 맡긴다. 규칙으로 할 수 있는지 검토할 후보다."
     }
   ],
   "todo": [
     {
-      "key": "measure_minutes_per_item",
-      "step": 0,
-      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4단계."
-    },
-    {
-      "key": "confirm_defaults",
-      "step": 0,
-      "text": "기본값을 쓴 답을 확인한다: 1단계 existing_feature."
-    },
-    {
+      "group": "now",
       "key": "review_steps",
       "step": 0,
-      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4단계. 확인 파일을 --review로 넣는다."
+      "text": "단계마다 맞는지 확인한다(맞음/바꾸기): 1, 2, 3, 4단계."
+    },
+    {
+      "group": "improve",
+      "key": "first_check",
+      "step": 2,
+      "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
+    },
+    {
+      "group": "improve",
+      "key": "confirm_defaults",
+      "step": 0,
+      "text": "말하지 않아 기본값으로 둔 답을 확인한다: 1단계 기존 기능이 있나."
+    },
+    {
+      "group": "verify",
+      "key": "measure_minutes_per_item",
+      "step": 0,
+      "text": "개선 전후를 비교하려면 단계별 건당 시간을 잰다: 1, 2, 3, 4단계."
+    },
+    {
+      "group": "implementer",
+      "key": "review_file",
+      "step": 0,
+      "text": "단계 확인 결과는 확인 파일(--review)로 open에 넣는다."
+    },
+    {
+      "group": "implementer",
+      "key": "build_command",
+      "step": 2,
+      "text": "만들기로 정하면 scorecard build form-fill --step 2 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
     }
   ],
+  "stated_numbers": [],
+  "open_questions": [],
+  "self_check": [],
   "inputs": [
     {
       "path": "answers.yaml",

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "open",
   "files": [
     "scorecard.json",
@@ -7,6 +7,22 @@
   ],
   "case": "reply-drafts",
   "task": "문의 메일에 AI가 답변 초안을 쓰고 사람이 고쳐 보낸다",
+  "scenario": null,
+  "status": {
+    "material": "unknown",
+    "classification": "rule_tree",
+    "confirmed": 0,
+    "steps": 3,
+    "confirmed_in": null,
+    "test": "measured"
+  },
+  "conclusion": {
+    "keep": "3단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 1곳은 그대로 둔다.",
+    "first_check": "1단계 문의 접수 기록: 기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "undecided": "절감 효과는 계산하지 않았다.",
+    "end_state": null
+  },
+  "task_summary": null,
   "intake": "문의 메일에 답변을 쓴다. 하루 12통쯤 온다.\n지금은 AI가 답변 초안을 쓰고 사람이 고쳐서 보낸다.\n\n답변에는 문의 번호와 처리 안내가 꼭 들어가야 한다. 끝인사도 있어야 한다.\n정답 표가 없어 결과를 표처럼 대조할 수 없다.\n\n그래서 메일마다 꼭 들어갈 항목을 표로 적었다.\n같은 메일에 사람이 쓴 답변과 AI 답변을 섞어 가림 키를 붙였다. 세 사람이 누가 썼는지 모른 채 1~5점으로 매겼다.",
   "answers": "used",
   "summary": {
@@ -39,7 +55,20 @@
     "ai_overuse": 0,
     "kept": 0,
     "changed": 0,
-    "saving": "time_needed"
+    "saving": "time_needed",
+    "stated": {
+      "steps": 3,
+      "software": 1,
+      "ai_assist": 1,
+      "ai_overuse": 0
+    },
+    "tentative": {
+      "steps": 0,
+      "software": 0,
+      "ai_assist": 0,
+      "ai_overuse": 0
+    },
+    "minutes": []
   },
   "steps": [
     {
@@ -68,7 +97,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 2,
@@ -103,7 +139,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "매번 AI에 맡긴다.",
+      "change": "AI 초안을 쓰고 담당자가 확인한다. 자동 승인은 하지 않는다.",
+      "check": "AI 초안을 누가 언제 확인하는지 정한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 3,
@@ -131,13 +174,23 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "바꾸지 않는다. 사람이 판단한다.",
+      "check": "없음.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     }
   ],
   "proposal": {
     "step": 1,
     "name": "문의 접수 기록",
-    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다."
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다.",
+    "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "effect": "절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.",
+    "tentative": false
   },
   "verification": {
     "status": "measured",
@@ -218,20 +271,22 @@
       "step": 2,
       "name": "답변 초안 쓰기",
       "kind": "human_gate",
-      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "이 단계 결과를 다음으로 넘기기 전에 담당자가 확인한다."
     },
     {
       "step": 3,
       "name": "답변 확인·발송",
       "kind": "signoff",
-      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.",
+      "text": "담당자가 최종 확인·서명한다."
     }
   ],
   "risks": [
     {
       "key": "ai_assist",
       "step": 2,
-      "text": "2단계 답변 초안 쓰기: 실행 시 AI 보조다. 자동 승인하지 않고 사람이 확인한다."
+      "text": "2단계 답변 초안 쓰기: AI 초안이 틀릴 수 있다. 자동 승인하지 않고 담당자가 확인해 잡는다."
     },
     {
       "key": "verdict",
@@ -239,23 +294,49 @@
       "text": "검증 판정이 조건부다. 정확도·누락률은 문턱을 충족하나 불일치 2건이 모두 topic = 환불인 행이므로 조건부."
     }
   ],
+  "opinions": [],
+  "candidates": [],
   "todo": [
     {
+      "group": "now",
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계마다 맞는지 확인한다(맞음/바꾸기): 1, 2, 3단계."
+    },
+    {
+      "group": "improve",
+      "key": "first_check",
+      "step": 1,
+      "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
+    },
+    {
+      "group": "verify",
       "key": "review_items",
       "step": 0,
       "text": "검토할 항목 2건(불일치 2건)을 보고 설명이 되는지 적는다."
     },
     {
+      "group": "verify",
       "key": "measure_minutes_per_item",
       "step": 0,
-      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3단계."
+      "text": "개선 전후를 비교하려면 단계별 건당 시간을 잰다: 1, 2, 3단계."
     },
     {
-      "key": "review_steps",
+      "group": "implementer",
+      "key": "review_file",
       "step": 0,
-      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3단계. 확인 파일을 --review로 넣는다."
+      "text": "단계 확인 결과는 확인 파일(--review)로 open에 넣는다."
+    },
+    {
+      "group": "implementer",
+      "key": "build_command",
+      "step": 1,
+      "text": "만들기로 정하면 scorecard build reply-drafts --step 1 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
     }
   ],
+  "stated_numbers": [],
+  "open_questions": [],
+  "self_check": [],
   "inputs": [
     {
       "path": "answers.yaml",

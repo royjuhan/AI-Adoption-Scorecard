@@ -34,6 +34,10 @@ public static class ScorecardJson
             Strings(w, "files", files);
             w.WriteString("case", result.Case);
             NullableString(w, "task", result.Task);
+            NullableString(w, "scenario", result.Scenario);
+            Status(w, result.Status);
+            Conclusion(w, result.Conclusion);
+            TaskSummary(w, result.TaskSummary);
             NullableString(w, "intake", result.Intake);
             w.WriteString("answers", result.Answers);
             Summary(w, result.Summary);
@@ -50,6 +54,9 @@ public static class ScorecardJson
                 w.WriteNumber("step", p.Step);
                 w.WriteString("name", p.Name);
                 w.WriteString("reason", p.Reason);
+                w.WriteString("check", p.Check);
+                w.WriteString("effect", p.Effect);
+                w.WriteBoolean("tentative", p.Tentative);
                 w.WriteEndObject();
             }
             else
@@ -66,12 +73,39 @@ public static class ScorecardJson
                 w.WriteString("name", g.Name);
                 w.WriteString("kind", g.Kind);
                 w.WriteString("reason", g.Reason);
+                w.WriteString("text", g.Text);
                 w.WriteEndObject();
             }
 
             w.WriteEndArray();
             Notes(w, "risks", result.Risks);
-            Notes(w, "todo", result.Todo);
+            Notes(w, "opinions", result.Opinions);
+            Notes(w, "candidates", result.Candidates);
+            w.WriteStartArray("todo");
+            foreach (var t in result.Todo)
+            {
+                w.WriteStartObject();
+                w.WriteString("group", t.Group);
+                w.WriteString("key", t.Key);
+                w.WriteNumber("step", t.Step);
+                w.WriteString("text", t.Text);
+                w.WriteEndObject();
+            }
+
+            w.WriteEndArray();
+            Strings(w, "stated_numbers", result.StatedNumbers);
+            Strings(w, "open_questions", result.OpenQuestions);
+            w.WriteStartArray("self_check");
+            foreach (var c in result.SelfCheck)
+            {
+                w.WriteStartObject();
+                w.WriteString("rule", c.Rule);
+                w.WriteString("result", c.Result);
+                NullableString(w, "note", c.Note);
+                w.WriteEndObject();
+            }
+
+            w.WriteEndArray();
             Hashes(w, "inputs", result.Inputs);
             Hashes(w, "results", result.Results);
             if (result.Review is { } review)
@@ -114,6 +148,66 @@ public static class ScorecardJson
         w.WriteNumber("kept", s.Kept);
         w.WriteNumber("changed", s.Changed);
         w.WriteString("saving", s.Saving);
+        Counts(w, "stated", s.Stated);
+        Counts(w, "tentative", s.Tentative);
+        w.WriteStartArray("minutes");
+        foreach (var m in s.Minutes)
+        {
+            w.WriteStartObject();
+            w.WriteNumber("step", m.Step);
+            w.WriteNumber("minutes", m.Minutes);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        w.WriteEndObject();
+    }
+
+    private static void Counts(Utf8JsonWriter w, string name, SummaryCounts c)
+    {
+        w.WriteStartObject(name);
+        w.WriteNumber("steps", c.Steps);
+        w.WriteNumber("software", c.Software);
+        w.WriteNumber("ai_assist", c.AiAssist);
+        w.WriteNumber("ai_overuse", c.AiOveruse);
+        w.WriteEndObject();
+    }
+
+    private static void Status(Utf8JsonWriter w, ScorecardStatus s)
+    {
+        w.WriteStartObject("status");
+        w.WriteString("material", s.Material);
+        w.WriteString("classification", s.Classification);
+        w.WriteNumber("confirmed", s.Confirmed);
+        w.WriteNumber("steps", s.Steps);
+        NullableString(w, "confirmed_in", s.ConfirmedIn);
+        w.WriteString("test", s.Test);
+        w.WriteEndObject();
+    }
+
+    private static void Conclusion(Utf8JsonWriter w, ScorecardConclusion c)
+    {
+        w.WriteStartObject("conclusion");
+        w.WriteString("keep", c.Keep);
+        w.WriteString("first_check", c.FirstCheck);
+        w.WriteString("undecided", c.Undecided);
+        NullableString(w, "end_state", c.EndState);
+        w.WriteEndObject();
+    }
+
+    private static void TaskSummary(Utf8JsonWriter w, Cases.CaseTaskSummary? s)
+    {
+        if (s is null)
+        {
+            w.WriteNull("task_summary");
+            return;
+        }
+
+        w.WriteStartObject("task_summary");
+        NullableString(w, "scale", s.Scale);
+        NullableString(w, "current", s.Current);
+        NullableString(w, "exception_rate", s.ExceptionRate);
+        NullableString(w, "delivery", s.Delivery);
         w.WriteEndObject();
     }
 
@@ -153,6 +247,24 @@ public static class ScorecardJson
         NullableString(w, "assignee", s.Review.Assignee);
         NullableString(w, "reason", s.Review.Reason);
         w.WriteEndObject();
+        w.WriteBoolean("tentative", s.Tentative);
+        w.WriteString("now", s.Now);
+        w.WriteString("change", s.Change);
+        w.WriteString("check", s.Check);
+        Strings(w, "assumptions", s.Assumptions);
+        w.WriteStartArray("actions");
+        foreach (var a in s.Actions)
+        {
+            w.WriteStartObject();
+            w.WriteString("action", a.Action);
+            w.WriteString("who_now", a.WhoNow);
+            w.WriteString("proposed", a.Proposed);
+            w.WriteString("source", a.Source);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        NullableString(w, "gate_note", s.GateNote);
         w.WriteEndObject();
     }
 

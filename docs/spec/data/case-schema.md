@@ -23,6 +23,12 @@
 | `inputs` | 매핑 | 아니오 | null | 4.5 |
 | `compare` | 목록 | 아니오 | 빈 목록 | 4.5 |
 | `thresholds` | 매핑 | 아니오 | 세 값 모두 null | 4.5 |
+| `scenario` | 열거 | 아니오 | null | T-022. `virtual` / `real`. 스킬이 적는다. 4.15 |
+| `summary` | 매핑 | 아니오 | null | T-022. 업무 요약 네 줄 `scale`·`current`·`exception_rate`·`delivery`(문자열, 모두 선택). 4.15 |
+| `stated_numbers` | 문자열 목록 | 아니오 | 빈 목록 | T-022. 사용자가 준 숫자 문장 그대로. 4.15 |
+| `self_check` | 목록 | 아니오 | 빈 목록 | T-022. 스킬 자기 검사 `{rule, result, note}`(result는 pass 또는 fail). 4.15 |
+| `open_questions` | 문자열 목록 | 아니오 | 빈 목록 | T-022. 확인하면 바뀔 수 있는 질문. 4.15 |
+| `end_state` | 문자열 | 아니오 | null | T-022. 끝맺는 문장. 4.15 |
 
 ### 4.4 단계와 답 10개
 
@@ -31,7 +37,7 @@
 | `name` | 문자열 | 예 | 케이스 안에서 서수 비교로 중복 금지(`duplicate`). 유니코드 정규화는 하지 않는다. NFC `가`와 NFD `가`는 다른 이름이다 [P:nfc-nfd] |
 | `answers` | 매핑 | 아니오 | 없거나 null이면 10개 모두 기본값 |
 | `inferred` | 문자열 목록 | 아니오 | T-008. AI가 추정한 답의 키. 원소는 아래 `answers` 표의 키이고, 그 답은 `answers`에 값이 있어야 한다. 없거나 null이면 추정 답이 없다. 4.13 |
-| `ai` | 매핑 | 아니오 | M2-2. AI가 적은 단계 담당(`assignee`: ① ② ②M ③ ④)과 근거(`reason`). 둘 다 필수. 없거나 null이면 AI 판단이 없다. 4.14 |
+| `ai` | 매핑 | 아니오 | M2-2. AI가 적은 단계 담당(`assignee`: ① ② ②M ③ ④)과 근거(`reason`). 둘 다 필수. 없거나 null이면 AI 판단이 없다. 4.14. T-022 선택 키 `actions`·`now`·`change`·`check`·`gate_note`는 4.15 |
 
 | 키 | 질문 | 형식 | 선택지·범위 | 기본값 |
 | --- | --- | --- | --- | --- |
@@ -173,10 +179,19 @@ public sealed record CaseError(string Source, int Line, int Column, string Code,
 public sealed record CaseDefinition(
     string Name, string Task, string? Before, string? After, string? AiUsage,
     IReadOnlyList<CaseStep> Steps, CaseInputs? Inputs,
-    IReadOnlyList<CompareField> Compare, CaseThresholds Thresholds);
+    IReadOnlyList<CompareField> Compare, CaseThresholds Thresholds,
+    CaseChecklist? Checklist = null, CaseScores? Scores = null, CaseNotes? Notes = null);   // Notes는 T-022(4.15)
 
 public sealed record CaseStep(int Number, string Name, StepAnswers Answers, StepAi? Ai = null);   // Number는 1부터. Ai는 M2-2(4.14)
-public sealed record StepAi(string Assignee, string Reason);
+public sealed record StepAi(string Assignee, string Reason, StepAiDetail? Detail = null);       // Detail은 T-022(4.15)
+
+// T-022(4.15). 스킬이 적고 Core는 옮기기만 한다.
+public sealed record StepAiDetail(IReadOnlyList<StepAction> Actions, string? Now, string? Change, string? Check, string? GateNote);
+public sealed record StepAction(string Action, string WhoNow, string Proposed, string Source);
+public sealed record CaseNotes(string? Scenario, CaseTaskSummary? Summary, IReadOnlyList<string> StatedNumbers,
+    IReadOnlyList<SelfCheckItem> SelfCheck, IReadOnlyList<string> OpenQuestions, string? EndState);
+public sealed record CaseTaskSummary(string? Scale, string? Current, string? ExceptionRate, string? Delivery);
+public sealed record SelfCheckItem(string Rule, string Result, string? Note);
 
 // T-008: 10번째 HumanSignoff. 위치 매개변수라 기존 9인자 생성은 컴파일되지 않는다.
 public sealed record StepAnswers(
@@ -234,6 +249,70 @@ steps:
 | `ai: {assignee: [②], reason: 근거}` | `type` | `steps[1].ai.assignee` | `스칼라 값이어야 한다` |
 | `ai: {assignee: ②, reason: [근거]}` | `type` | `steps[1].ai.reason` | `스칼라 값이어야 한다` |
 | `ai: {assignee: ②, reason: 근거, note: 메모}` | `unknown-field` | `steps[1].ai.note` | `알 수 없는 필드다` |
+
+### 4.15 스킬 선택 항목 (T-022)
+
+```yaml
+scenario: virtual
+summary: {scale: 연 1회 집중 기간 10주, current: 담당자가 메일로 받아 정리한다}
+stated_numbers: [주 10건, 예외 1건 처리에 15분]
+self_check: [{rule: R1 출처 없는 단정 0건, result: pass}]
+open_questions: [필수 칸을 비우면 제출이 막히나요?]
+end_state: 업무 구조 검토 완료. 지금 제출할 것 없음.
+steps:
+  - name: 회신 모으기
+    answers: {human_signoff: no}
+    ai:
+      assignee: ②
+      reason: 메일을 열고 첨부를 모으는 동작은 규칙으로 할 수 있다.
+      actions:
+        - {action: 첨부 내려받기, who_now: human, proposed: ②, source: stated}
+      now: 담당자가 메일을 하나씩 연다.
+      change: 회신을 업체별로 모으는 규칙을 둔다.
+      check: 메일 도구에 모으기 기능이 있는지 본다.
+      gate_note: 보내기 전에 담당자가 읽는다.
+```
+
+| 선택 항목 | 형식 | 규칙 |
+| --- | --- | --- |
+| `ai.actions` | 목록 | 원소는 매핑 `{action, who_now, proposed, source}`. 넷 다 필수. `who_now`: human / program / ai_each_time / mixed / unknown. `proposed`: ① ② ②M ③ ④. `source`: stated / inferred / default. 빈 목록은 `required` |
+| `ai.now`, `ai.change`, `ai.check`, `ai.gate_note` | 문자열 | 선택. 비면(`""`·공백뿐) `required`. 저장만 |
+| `summary.*` | 문자열 | 선택. 비면 `required`. 저장만 |
+| `stated_numbers`, `open_questions` | 문자열 목록 | 원소가 비면 `required`. 저장만 |
+| `self_check` | 목록 | 원소는 매핑 `{rule, result, note}`. `rule`·`result` 필수, `result`: pass / fail |
+
+장면. `ai:`로 시작하면 단계 하나(`steps[1]`)의 `ai` 값이고, 아니면 최상위 줄 하나를 더한다. 코드가 `—`이면 오류가 아니고 결과 칸은 `Detail`(ai 선택 항목)·`Notes`(케이스 메모)가 있는지다.
+
+| T-022 장면 | 코드 | 경로 | 결과·메시지 |
+| --- | --- | --- | --- |
+| `ai: {assignee: ②, reason: r, now: 손으로 한다}` | — | — | `Detail 있음` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: human, proposed: ②, source: stated}]}` | — | — | `Detail 있음` |
+| `ai: {assignee: ③, reason: r, gate_note: 보내기 전에 읽는다}` | — | — | `Detail 있음` |
+| `ai: {assignee: ②, reason: r, now: ~}` | — | — | `Detail 없음` |
+| `ai: {assignee: ②, reason: r, actions: []}` | `required` | `steps[1].ai.actions` | `동작이 1개 이상 있어야 한다` |
+| `ai: {assignee: ②, reason: r, actions: 열기}` | `type` | `steps[1].ai.actions` | `목록이어야 한다` |
+| `ai: {assignee: ②, reason: r, actions: [열기]}` | `type` | `steps[1].ai.actions[1]` | `매핑이어야 한다` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: robot, proposed: ②, source: stated}]}` | `enum` | `steps[1].ai.actions[1].who_now` | `선택지 밖의 값 'robot'. 가능한 값: human, program, ai_each_time, mixed, unknown` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: human, proposed: ⑤, source: stated}]}` | `enum` | `steps[1].ai.actions[1].proposed` | `선택지 밖의 값 '⑤'. 가능한 값: ①, ②, ②M, ③, ④` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: human, proposed: ②, source: guess}]}` | `enum` | `steps[1].ai.actions[1].source` | `선택지 밖의 값 'guess'. 가능한 값: stated, inferred, default` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: human, proposed: ②}]}` | `required` | `steps[1].ai.actions[1].source` | `필수 필드가 없다` |
+| `ai: {assignee: ②, reason: r, actions: [{action: 열기, who_now: human, proposed: ②, source: stated, note: x}]}` | `unknown-field` | `steps[1].ai.actions[1].note` | `알 수 없는 필드다` |
+| `ai: {assignee: ②, reason: r, gate_note: ""}` | `required` | `steps[1].ai.gate_note` | `값이 비어 있다` |
+| `ai: {assignee: ②, reason: r, check: [a]}` | `type` | `steps[1].ai.check` | `스칼라 값이어야 한다` |
+| `scenario: virtual` | — | — | `Notes 있음` |
+| `scenario: demo` | `enum` | `scenario` | `선택지 밖의 값 'demo'. 가능한 값: virtual, real` |
+| `summary: {scale: 주 10건}` | — | — | `Notes 있음` |
+| `summary: {size: 10}` | `unknown-field` | `summary.size` | `알 수 없는 필드다` |
+| `summary: 주 10건` | `type` | `summary` | `매핑이어야 한다` |
+| `stated_numbers: [주 10건, 15분]` | — | — | `Notes 있음` |
+| `stated_numbers: 주 10건` | `type` | `stated_numbers` | `목록이어야 한다` |
+| `stated_numbers: [""]` | `required` | `stated_numbers[1]` | `값이 비어 있다` |
+| `open_questions: [막히나요]` | — | — | `Notes 있음` |
+| `self_check: [{rule: R1, result: pass}]` | — | — | `Notes 있음` |
+| `self_check: [{rule: R1, result: ok}]` | `enum` | `self_check[1].result` | `선택지 밖의 값 'ok'. 가능한 값: pass, fail` |
+| `self_check: [{result: pass}]` | `required` | `self_check[1].rule` | `필수 필드가 없다` |
+| `end_state: 업무 구조 검토 완료` | — | — | `Notes 있음` |
+| `end_state: ""` | `required` | `end_state` | `값이 비어 있다` |
 
 ## 5. 예외
 

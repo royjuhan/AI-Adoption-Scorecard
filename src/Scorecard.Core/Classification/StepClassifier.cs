@@ -68,7 +68,8 @@ public static class StepClassifier
             inferred,
             Checks(a),
             IsOveruseCandidate(a, first),
-            rows.ToArray());
+            rows.ToArray(),
+            ai?.Detail);
     }
 
     // 결정 트리의 잎 하나. Used는 잎을 정할 때 읽은 답이다(4.6 표).

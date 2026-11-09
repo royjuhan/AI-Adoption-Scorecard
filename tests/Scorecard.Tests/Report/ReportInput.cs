@@ -22,13 +22,20 @@ internal static class ReportInput
     // 공개 예제 5종 + AI 판단 표본(확인 파일 포함).
     public const string AiSample = "ai-judgment";
 
-    public static TheoryData<string> GoldenNames => new([.. Classification.ClassificationInput.AllExamples, AiSample]);
+    // T-022 표본: 동작 목록·네 칸 문장·담당자 확인 메모·케이스 메모(가상 시나리오), 대화에서 확인한 확인 파일.
+    public const string ActionsSample = "ai-actions";
+
+    public static readonly string[] Samples = [AiSample, ActionsSample];
+
+    public static TheoryData<string> GoldenNames => new([.. Classification.ClassificationInput.AllExamples, .. Samples]);
 
     public static string GoldenPath(string name, string file) => RepoRoot.Combine("tests/Scorecard.Tests/TestData/report/" + name + "/" + file);
 
     public static string AiAnswers => RepoRoot.Combine("tests/Scorecard.Tests/TestData/classification/ai-judgment/answers.yaml");
 
     public static string AiReview => GoldenPath(AiSample, "review.yaml");
+
+    public static string SampleFolder(string name) => RepoRoot.Combine("tests/Scorecard.Tests/TestData/classification/" + name);
 
     public static IReadOnlyList<string[]> Table(string header) => SpecDocument.Table(SpecPath, header);
 
@@ -39,7 +46,7 @@ internal static class ReportInput
         var output = work.PathOf("o");
         var answers = Path.Combine(work.Case, "answers.yaml");
         Assert.Equal(0, CliInput.Run("start", work.Case, "--answers", answers, "--out", output, "--json").Exit);
-        if (name != AiSample)
+        if (!Samples.Contains(name))
         {
             Assert.Equal(0, CliInput.Run("check", work.Case, "--out", output, "--json").Exit);
         }
@@ -48,10 +55,10 @@ internal static class ReportInput
         return (open, output);
     }
 
-    // 예제 사본 또는 AI 표본 케이스 폴더(답 파일 하나).
+    // 예제 사본 또는 표본 케이스 폴더(TestData/classification/<표본>/의 파일: 답 파일, 있으면 intake.md).
     public static CliWorkspace Workspace(string name)
     {
-        if (name != AiSample)
+        if (!Samples.Contains(name))
         {
             return CliWorkspace.Create(name);
         }
@@ -59,9 +66,14 @@ internal static class ReportInput
         var work = CliWorkspace.Create("mixed-exceptions");
         Directory.Delete(work.Case, recursive: true);
         Directory.CreateDirectory(work.Case);
-        File.Copy(AiAnswers, Path.Combine(work.Case, "answers.yaml"));
+        foreach (var file in Directory.GetFiles(SampleFolder(name)))
+        {
+            File.Copy(file, Path.Combine(work.Case, Path.GetFileName(file)));
+        }
+
         return work;
     }
 
-    public static string[] OpenExtra(string name) => name == AiSample ? ["--review", AiReview] : [];
+    // 표본은 TestData/report/<표본>/review.yaml을 확인 파일로 넣는다.
+    public static string[] OpenExtra(string name) => Samples.Contains(name) ? ["--review", GoldenPath(name, "review.yaml")] : [];
 }

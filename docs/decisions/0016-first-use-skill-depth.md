@@ -14,7 +14,7 @@
 ## 결정
 
 1. **스킬 선택 항목을 Core가 받아 옮긴다.** 단계 `ai`에 `actions [{action, who_now, proposed, source}]`, `now`, `change`, `check`, `gate_note`. 케이스 최상위에 `scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`. 모두 선택이다(case-schema.md 4.15). 분류 트리·대조·판정은 이 값을 보지 않는다.
-2. **classification.json은 schema 2 그대로다.** 단계 `actions`·`now`·`change`·`check`·`gate_note`는 그 단계에 값이 있을 때만 `rows` 뒤에 쓴다. 받던 입력에서 속성을 빼거나 뜻을 바꾸지 않으므로 ADR 0008 결정 1의 올림 조건이 아니다. 공개 예제에는 `ai`가 없어(classification.md 7절) `examples/**/expected/**`는 바이트까지 그대로다. expected migration이 없다.
+2. **classification.json은 schema 2 그대로다.** 단계 `actions`·`now`·`change`·`check`·`gate_note`는 그 단계에 값이 있을 때만 `rows` 뒤에 쓴다. 받던 입력에서 속성을 빼거나 뜻을 바꾸지 않으므로 ADR 0008 결정 1의 올림 조건이 아니다. 첫 태그(v0.1.0-alpha) 뒤라 ADR 0008 "남은 위험"의 다시 보기 대상이지만, juhan이 대안 A를 알고 지금 방식을 골랐다(2026-11-09 07:19). 공개 예제에는 `ai`가 없어(classification.md 7절) `examples/**/expected/**`는 바이트까지 그대로다. expected migration이 없다.
 3. **스코어카드 결과 객체(scorecard.json)는 schema 1 → 2.** 최상위 키 순서와 묶음(상태, 결론, 업무 요약, 판단이 갈린 단계·개선 후보 분리, 할 일 묶음)이 바뀌었다. 골든은 tests TestData뿐이라 expected migration이 아니다(report.md 9절).
 4. **oracle은 바꾸지 않는다.** oracle은 공개 예제만 돌리고 예제에 새 키가 없다. oracle이 새 키를 읽는 일은 LATER다.
 5. **셈 규칙.** 단계가 추정·기본값에 기대면(`inferred`가 있거나 동작 출처가 `stated`가 아니거나, 규칙 단계 문장에 기본값·추정 표시) `tentative`다. `summary.stated`는 아닌 단계만, `summary.tentative`는 그런 단계만 센다. 제안은 `tentative`가 아닌 단계를 먼저 고른다(report.md 12.3). Core `ScorecardBuilder`가 한다.

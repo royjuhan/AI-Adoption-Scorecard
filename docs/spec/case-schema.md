@@ -146,7 +146,7 @@
 
 ### 4.15 스킬 선택 항목 (T-022)
 
-- 상태: 추천안 채택(ADR 0016, juhan 확인 대기). Core 파서가 받는다. oracle은 받지 않는다(공개 예제에 없다, ADR 0016 결정 4).
+- 상태: 추천안 채택(ADR 0016, juhan 확인 2026-11-09). Core 파서가 받는다. oracle은 받지 않는다(공개 예제에 없다, ADR 0016 결정 4).
 - 스킬 `/scorecard`가 적는다. Core는 분류·대조·판정에 쓰지 않고 그대로 옮긴다. 스코어카드의 "확인하면 바뀔 수 있음" 셈만 `actions[].source`를 본다(report.md 12.3).
 - 단계 `ai`의 선택 키: `actions`(동작 목록), `now`·`change`·`check`(단계 표 세 칸), `gate_note`(담당자 확인 메모). 하나라도 있으면 `StepAi.Detail`, 없으면 null.
 - 최상위 선택 키: `scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`. 하나라도 있으면 `CaseDefinition.Notes`, 없으면 null.

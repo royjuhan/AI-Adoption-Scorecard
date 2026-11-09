@@ -46,3 +46,5 @@
 
 - 대기. 리드가 새 reviewer로 돌린 뒤 사례마다 R1~R5 통과/실패를 적는다.
 - 1회(새 reviewer): 5건 모두 실패. R5 ×5, R2 ×3(01, 22, 31), R1 ×2(01, 22). 고친 것: `end_state`는 `check` 없이 끝나면 늘 적고 마지막 줄(질문은 그 앞), 동작 `stated`는 말 그대로만(붙인 방법은 `inferred`로 나눔), ③ "묶이는지 확인되지 않았다" 문장, 자기 검사에 질문·`open_questions`와 단정 문장 맞대기, 고른 단계가 없으면 확인 파일 없이 `open`, `gate_note`가 보이는 조건과 보내기 순서. Core: 추정·기본값 표시가 붙은 담당자 확인은 `keep`이 아니라 `undecided`, AI 단계 `tentative`는 추정 답 또는 담당을 받치는 말한 동작이 없을 때(answers ≠ used면 stated 아닌 동작이 있을 때). R5 본문을 채점 표에 맞췄다.
+- 2회(다른 새 reviewer): case-01·20·22·31 통과, case-48 R1 실패(서명 단계를 물었는데 답 없이 `human_signoff: yes`·`no`를 `inferred` 없이 적음). 고친 것: SKILL 3절 3번(답이 없으면 적지 않거나 짐작이면 모든 단계 `inferred`), 4절 6번 맞대기에 답 키. case-48만 다시 돌려 서명 단계 짐작을 `inferred`로 적고 리드가 R1을 확인했다(아래 3회).
+- 3회(리드, case-48만): 세 단계 모두 `inferred`에 `human_signoff`, 3단계 근거에 "최종 서명 단계인지는 확인되지 않았다". R1 통과로 본다. 새 reviewer 채점이 아니라 리드 확인이다. 다섯 건 R1~R5 통과.

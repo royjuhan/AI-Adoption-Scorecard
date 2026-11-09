@@ -62,7 +62,8 @@ description: 사용자의 업무를 단계와 동작으로 나누고 단계마�
 ## 3. 서명 단계 묻기
 
 1. "이 업무에서 사람이 최종 확인·서명하는 단계가 어디인가요?"를 한 번만 묻는다. 없으면 없다고 받는다. 4절 질문과 같이 물어도 된다(3개 안에 센다).
-2. 그 단계는 `human_signoff: yes`, 나머지 모든 단계는 `human_signoff: no`로 적는다. 단계마다 따로 묻지 않는다(ADR 0003).
+2. 사용자가 답했으면 그 단계는 `human_signoff: yes`, 나머지 모든 단계는 `human_signoff: no`로 적는다. 단계마다 따로 묻지 않는다(ADR 0003).
+3. 답을 받지 못했으면 `human_signoff`를 적지 않는다(기본값). 설명에서 서명 단계를 짐작해 yes·no를 적었으면 모든 단계의 `inferred`에 `human_signoff`를 넣는다. 짐작이 맞는지 물었다면 답을 받기 전까지는 짐작이다.
 
 ## 4. 사용자 확인
 
@@ -74,7 +75,7 @@ description: 사용자의 업무를 단계와 동작으로 나누고 단계마�
    - 바꾸기: 새 담당(또는 답)과 이유 한 줄을 받는다. 이유는 근거(`reason`)에 반영한다.
 5. 고른 단계만 확인된 것이다(R12). "검증 자료 없이"를 "모두 맞음"으로 해석하지 않는다. 고르지 않은 단계는 확인 전으로 둔다.
 6. 자기 검사를 한다(`skill-output-rules.md` 4절). 문장마다 근거가 intake.md나 사용자가 대화에서 한 말에 있는지 본다. 없으면 출처를 `inferred`로 바꾸고 문장을 추정형으로 고친다. R1~R13을 보고 결과를 `self_check`에 적는다. R1~R5는 늘 적는다.
-   - 맞대어 본다: 물은 질문과 `open_questions`에 든 내용이 `reason`·`actions`·`now`에 단정형이나 `source: stated`로 적혀 있지 않은가. 있으면 추정형과 `inferred`로 고친다.
+   - 맞대어 본다: 물은 질문과 `open_questions`에 든 내용이 `reason`·`actions`·`now`에 단정형이나 `source: stated`로 적혀 있지 않은가. 있으면 추정형과 `inferred`로 고친다. 물은 질문이 답 키(예: 서명 단계 → `human_signoff`)와 이어지면 그 키가 `inferred`에 있거나 비어 있는지도 본다.
 
 ## 5. answers.yaml 쓰기와 start
 

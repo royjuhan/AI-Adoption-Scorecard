@@ -22,7 +22,7 @@
 
 - `ScorecardBuilder.Build`(Core, 순수 함수)가 `ScorecardResult`를 만들고 `ScorecardJson.Render`가 바이트를 만든다. 바이트 규칙은 classification.md 3.3과 같다.
 - `open --json`의 표준 출력은 `scorecard.json`과 바이트까지 같다. 봉투가 없다(ADR 0004 결정 6 규칙 5와 같은 방식). json-output.md 5.2 결과 객체의 세 키(`schema_version`, `command`, `files`)가 앞에 있고 내용이 뒤에 붙는다.
-- `schema_version`은 1이다. 새 문서라 1에서 시작한다(ADR 0008 결정 1).
+- `schema_version`은 2다. 1에서 시작했고(ADR 0008 결정 1), T-022에서 최상위 키 순서와 묶음이 바뀌어 올렸다(ADR 0016, 12절). 결과 객체는 tests TestData 골든만 있어 expected migration이 아니다.
 - 속성 표 둘은 데이터 3절이다(최상위, 단계).
 
 ## 4. 규칙
@@ -58,7 +58,7 @@
 
 ### 4.6 게이트(5구역)
 
-- 규칙 의견이 `SIGNOFF`이고 담당이 ④인 단계(AI 판단 단계 포함)는 `signoff`, 부가 행 `exception_review`·`human_gate`는 그 종류로 단계 순서대로 둔다. 문장은 근거 문장 그대로.
+- 규칙 의견이 `SIGNOFF`이고 담당이 ④인 단계(AI 판단 단계 포함)는 `signoff`, 부가 행 `exception_review`·`human_gate`는 그 종류로 단계 순서대로 둔다. `reason`은 근거 문장 그대로, `text`는 화면 문장(데이터 4.6, 12.4).
 
 ### 4.7 남는 위험(5구역)
 
@@ -66,7 +66,7 @@
 
 ### 4.8 다음 할 일(6구역)
 
-- judgment.json `todo`(그대로) → `run_check`(metrics.json 없음) → `measure_minutes_per_item` → `confirm_defaults`(`minutes_per_item` 뺌) → `confirm_inferred` → `review_steps`(확인 전 단계). 빈 항목은 넣지 않는다.
+- 묶음 순서 `now` → `improve` → `verify` → `implementer`(데이터 6절 묶음 표, 12.5). 묶음 안 키 순서는 표 순서다. judgment.json `todo`는 `verify`에 그대로 둔다. 빈 항목은 넣지 않는다.
 
 ### 4.9 입력 SHA-256(7구역)
 
@@ -136,3 +136,37 @@ steps:
 9. 검증 항목은 20개까지 보이고 나머지는 수만.
 10. 골든은 tests TestData.
 11. G2·G3 대상 `cli-open-case-valid`.
+
+## 12. 첫 실사용 반영 (T-022, ADR 0016)
+
+- 지시문 0016(첫 실사용 결과)을 스킬과 HTML에 반영한다. 엔진(분류 트리·대조·판정)과 `examples/**/expected/**`는 그대로다.
+- 스킬 선택 항목(case-schema.md 4.15)은 답 파일에만 있다. 공개 예제에는 없다. 없으면 아래 값은 빈 값·null이다.
+
+### 12.1 상태 네 줄(`status`)
+
+- `material`: 답 파일 `scenario`(`virtual`, `real`), 없으면 `unknown`. `classification`: AI 판단 단계가 하나라도 있으면 `ai_draft`(설명 기반 초안), 아니면 `rule_tree`.
+- `confirmed`·`steps`: 확인 결과 `kept`+`changed` 수와 단계 수. `confirmed_in`: 확인 파일의 값. `test`: 4.5 `status`.
+- `scenario: virtual`이면 HTML 맨 위에 "가상 시나리오 기반. 실제 운영 수치·검증 결과 아님" 한 줄.
+
+### 12.2 결론 세 줄(`conclusion`)
+
+- `keep` 유지할 것(④ 단계, ① 단계, 담당자 확인 수), `first_check` 먼저 확인할 것 하나(제안 단계의 `check`), `undecided` 아직 판단하지 않은 것(추정 단계 수, 남은 질문 수, 시험·절감 상태). `end_state`는 답 파일 그대로.
+
+### 12.3 말한 것만과 확인하면 바뀔 수 있음
+
+- 단계 `tentative`: AI 판단 단계는 `inferred`가 있거나 동작 하나라도 `source`가 `stated`가 아니면 참. 규칙 단계는 단계 행 문장에 기본값·추정 표시가 있으면 참.
+- `summary.stated`는 `tentative`가 거짓인 단계만, `summary.tentative`는 참인 단계만 센다. 둘을 더하면 전체다. AI 과잉 후보는 `current_actor`가 추정이어도 `tentative`로 센다.
+- 제안(4.4)은 `tentative`가 거짓인 단계를 먼저 고른다. 모두 참이면 그 가운데서 고르고 `proposal.tentative`를 참으로 두고 효과 문장 끝에 그 뜻을 붙인다. 표는 데이터 4.1.
+- 단계의 네 칸 `now`·`change`·`check`는 AI 글이 있으면 그대로, 없으면 지금 하는 쪽·담당별 문장이다. `assumptions`는 추정·기본값 답을 업무 말("가정: 처리 주기 주 1회")로 쓴다.
+
+### 12.4 담당자 확인
+
+- 화면에 "사람 게이트"를 쓰지 않는다. `gates[].text`가 화면 문장이고, `human_gate`는 단계 `ai.gate_note`(기존 확인 단계와 합치는 말, 보내기 전 확인)가 있으면 그 글이다. 엔진 행은 그대로 둔다.
+- 판단이 갈린 단계(`opinions`)와 개선 후보(`candidates`)는 남는 위험(`risks`)과 다른 카드다. 위험에는 무엇이 틀릴 수 있고 지금 어떻게 잡는가만 둔다.
+
+### 12.5 할 일과 확인
+
+- 할 일은 지금 할 일 / 개선을 진행하려면 / 실제 효과까지 검증하려면(선택), 파일 경로·명령은 구현·검증 담당자 안내(펼쳐 보기).
+- 검증 칸: 비교 자료가 없으면 "이번 실행에는 비교 자료를 넣지 않았다." 문턱은 시험했을 때만 보인다. 입력된 `minutes_per_item`(기본값 아님)은 `summary.minutes`로 절감 칸에 보인다.
+- 확인 파일 최상위 `confirmed_in: conversation`(선택)은 스킬 대화에서 확인했다는 기록이다. 단계 상태 글자가 "대화에서 확인됨"이다. 다른 값은 `enum` 오류(데이터 5절).
+- 분류 코드·근거 키·파일·해시·schema는 `<details>` 펼쳐 보기 안에만 둔다.

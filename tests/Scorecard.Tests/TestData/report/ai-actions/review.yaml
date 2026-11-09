@@ -1,0 +1,6 @@
+# 합성 확인 파일. 실제 업무·값 없음. 스킬이 대화에서 확인받아 쓴 모양(confirmed_in: conversation).
+confirmed_in: conversation
+steps:
+  - {number: 1, answer: keep}
+  - {number: 2, answer: keep}
+  - {number: 3, answer: keep}

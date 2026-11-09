@@ -116,37 +116,61 @@ public static class ScorecardBuilder
         }
 
         var reviews = new Dictionary<int, ReviewEntry>();
+        string? confirmedIn = null;
         if (sources.Review is { } reviewFile)
         {
-            var (entries, reviewErrors) = ReviewParser.Parse(reviewFile.Content, reviewFile.Path, classification.Steps.Select(s => s.Number).ToArray());
-            if (entries is null)
+            var (file, reviewErrors) = ReviewParser.ParseFile(reviewFile.Content, reviewFile.Path, classification.Steps.Select(s => s.Number).ToArray());
+            if (file is null)
             {
                 return new ScorecardBuildResult(null, reviewErrors);
             }
 
-            foreach (var entry in entries)
+            confirmedIn = file.ConfirmedIn;
+            foreach (var entry in file.Entries)
             {
                 reviews[entry.Number] = entry;
             }
         }
 
-        var (answersStatus, answers, task) = ReadAnswers(sources.Inputs, classification);
-        task ??= Find(sources.Inputs, CaseParser.FileName) is { } caseBytes ? CaseParser.Parse(caseBytes, CaseParser.FileName).Case?.Task : null;
+        var (answersStatus, answers, task, answerNotes) = ReadAnswers(sources.Inputs, classification);
+        var caseDefinition = Find(sources.Inputs, CaseParser.FileName) is { } caseBytes ? CaseParser.Parse(caseBytes, CaseParser.FileName).Case : null;
+        task ??= caseDefinition?.Task;
+        var notes = answerNotes ?? caseDefinition?.Notes;
         var intake = Find(sources.Inputs, ReportRules.IntakeFile) is { } intakeBytes ? Text(intakeBytes) : null;
 
         var steps = classification.Steps.Select((s, i) => Step(s, answers?[i], reviews.GetValueOrDefault(s.Number))).ToArray();
+        var summary = Summary(steps, answers);
+        var proposal = Proposal(steps);
+        var verification = Verification(metrics, judgment);
+        var gates = Gates(steps);
+        var questions = notes?.OpenQuestions ?? [];
         var scorecard = new ScorecardResult(
             classification.Case,
             task,
+            notes?.Scenario,
+            new ScorecardStatus(
+                notes?.Scenario ?? ReportRules.MaterialUnknown,
+                steps.Any(s => s.Source == StepClassifier.SourceAi) ? ReportRules.ClassificationAiDraft : ReportRules.ClassificationRuleTree,
+                summary.Kept + summary.Changed,
+                summary.Steps,
+                confirmedIn,
+                verification.Status),
+            Conclusion(steps, summary, proposal, gates, questions, verification, notes?.EndState),
+            notes?.Summary,
             intake,
             answersStatus,
-            Summary(steps),
+            summary,
             steps,
-            Proposal(steps),
-            Verification(metrics, judgment),
-            Gates(steps),
+            proposal,
+            verification,
+            gates,
             Risks(steps, judgment),
-            Todo(steps, metrics, judgment),
+            Opinions(steps),
+            Candidates(steps),
+            Todo(classification.Case, steps, metrics, judgment, proposal, verification),
+            notes?.StatedNumbers ?? [],
+            questions,
+            notes?.SelfCheck ?? [],
             sources.Inputs.GroupBy(f => f.Path, StringComparer.Ordinal).Select(g => Hash(g.First())).OrderBy(h => h.Path, StringComparer.Ordinal).ToArray(),
             ResultFiles.Select(n => sources.Results.FirstOrDefault(f => f.Path == n)).OfType<SourceFile>().Select(Hash).ToArray(),
             sources.Review is { } r ? Hash(r) : null);
@@ -161,30 +185,35 @@ public static class ScorecardBuilder
     }
 
     // answers.yaml이 classification.json과 같은 단계(수·번호·이름)면 단계마다 답을 쓴다(4.3).
-    private static (string Status, StepAnswerView[]? Answers, string? Task) ReadAnswers(IReadOnlyList<SourceFile> inputs, ClassificationResult classification)
+    // 케이스 메모(scenario 등, 4.13)는 파일을 읽을 수 있으면 단계가 달라도 쓴다(가상 시나리오 표시가 빠지지 않게).
+    private static (string Status, StepAnswerView[]? Answers, string? Task, CaseNotes? Notes) ReadAnswers(IReadOnlyList<SourceFile> inputs, ClassificationResult classification)
     {
         if (Find(inputs, ReportRules.AnswersFile) is not { } bytes)
         {
-            return (ReportRules.AnswersMissing, null, null);
+            return (ReportRules.AnswersMissing, null, null, null);
         }
 
         if (CaseParser.Parse(bytes, ReportRules.AnswersFile).Case is not { } definition)
         {
-            return (ReportRules.AnswersInvalid, null, null);
+            return (ReportRules.AnswersInvalid, null, null, null);
         }
 
         var same = definition.Steps.Count == classification.Steps.Count
             && definition.Steps.Zip(classification.Steps).All(p => p.First.Number == p.Second.Number && p.First.Name == p.Second.Name);
         if (!same)
         {
-            return (ReportRules.AnswersMismatch, null, null);
+            return (ReportRules.AnswersMismatch, null, null, definition.Notes);
         }
 
         // 지금 하는 쪽은 메모리 분류에 없어 답에서 읽는다. 추정 키는 분류기의 Inferred(case-schema 4.4 순서)다.
         var classified = StepClassifier.Classify(definition).Steps
-            .Zip(definition.Steps, (c, d) => new StepAnswerView(c.Inferred, d.Answers.CurrentActor.IsDefault ? null : d.Answers.CurrentActor.Value))
+            .Zip(definition.Steps, (c, d) => new StepAnswerView(
+                c.Inferred,
+                d.Answers.CurrentActor.IsDefault ? null : d.Answers.CurrentActor.Value,
+                d.Answers.MinutesPerItem is { IsDefault: false, Value: { } minutes } ? minutes : null,
+                d.Answers))
             .ToArray();
-        return (ReportRules.AnswersUsed, classified, definition.Task);
+        return (ReportRules.AnswersUsed, classified, definition.Task, definition.Notes);
     }
 
     // answer: 답에서 읽은 추정 키와 지금 하는 쪽(기본값이면 null).
@@ -192,12 +221,21 @@ public static class ScorecardBuilder
     {
         var main = s.Rows[0];
         var actor = answer?.Actor;
+        var inferred = answer?.Inferred ?? [];
+        var detail = s.Detail;
         var reviewed = review switch
         {
             null => new StepReview(ReportRules.ReviewPending, null, null),
             { Answer: ReviewParser.Keep } => new StepReview(ReportRules.ReviewKept, null, review.Reason),
             _ => new StepReview(ReportRules.ReviewChanged, review.Assignee, review.Reason),
         };
+
+        // 4.12 확인하면 바뀔 수 있음: 규칙 트리 단계는 근거 문장에 기본값·추정 표시가 있으면(트리가 읽은 답),
+        // AI 판단 단계는 추정 답이 있거나 동작 출처가 stated가 아닌 것이 있으면.
+        var tentative = s.Source == StepClassifier.SourceAi
+            ? inferred.Count > 0 || (detail?.Actions.Any(a => a.Source != ActionStated) ?? false)
+            : main.Reason.Contains(ClassificationRules.DefaultMark, StringComparison.Ordinal) || main.Reason.Contains(ClassificationRules.InferredMark, StringComparison.Ordinal);
+
         return new ScorecardStep(
             s.Number,
             s.Name,
@@ -209,30 +247,116 @@ public static class ScorecardBuilder
             s.Differs,
             actor,
             s.Defaults,
-            answer?.Inferred ?? [],
+            inferred,
             s.Checks,
             s.AiOveruseCandidate,
             s.Rows.Skip(1).Select(r => new ScorecardRow(r.Kind, r.Assignee, r.Rule, r.Reason)).ToArray(),
-            reviewed);
+            reviewed,
+            tentative,
+            detail?.Now ?? NowText(actor, inferred.Contains(StepQuestions.CurrentActor.Key)),
+            detail?.Change ?? Lookup(ReportRules.ChangeTexts, main.Assignee),
+            detail?.Check ?? Lookup(ReportRules.CheckTexts, main.Assignee),
+            Assumptions(inferred, s.Defaults, answer?.Answers),
+            detail?.Actions ?? [],
+            detail?.GateNote);
     }
 
-    private static ScorecardSummary Summary(IReadOnlyList<ScorecardStep> steps) => new(
-        steps.Count,
-        steps.Count(s => ReportRules.SoftwareAssignees.Contains(s.Assignee)),
-        ReportRules.AssigneeOrder.Select(a => new AssigneeCount(a, steps.Count(s => s.Assignee == a))).ToArray(),
-        steps.Count(s => s.Differs),
-        steps.Count(s => s.Assignee == "③"),
-        steps.Count(s => s.AiOveruseCandidate),
-        steps.Count(s => s.Review.Status == ReportRules.ReviewKept),
-        steps.Count(s => s.Review.Status == ReportRules.ReviewChanged),
-        ReportRules.SavingTimeNeeded);
+    private static string NowText(string? actor, bool inferred)
+    {
+        if (actor is null)
+        {
+            return ReportRules.NowUnknownText;
+        }
 
-    // 먼저 만들 ② 단계(4.4): ②·②M 단계 가운데 지금 하는 쪽 순서(ProposalOrder), 같으면 번호가 작은 것.
+        var (_, name, text) = ReportRules.Actors.FirstOrDefault(a => a.Actor == actor);
+        return inferred ? ReportRules.NowInferredText.Replace("{actor}", name ?? actor, StringComparison.Ordinal) : text ?? actor;
+    }
+
+    private static string Lookup((string Assignee, string Text)[] table, string assignee) =>
+        table.FirstOrDefault(t => t.Assignee == assignee).Text ?? string.Empty;
+
+    // 가정한 내용(4.12): 추정 답(값은 답 파일), 그다음 기본값 답(값은 기본값). 건당 시간 기본값(null)은 뺀다(측정 할 일이 따로 있다).
+    private static string[] Assumptions(IReadOnlyList<string> inferred, IReadOnlyList<string> defaults, StepAnswers? answers)
+    {
+        var lines = new List<string>();
+        if (answers is not null)
+        {
+            lines.AddRange(inferred.Select(k => Words(ReportRules.AssumedText, k, AnswerValue(answers, k))));
+        }
+
+        lines.AddRange(defaults.Where(k => k != ReportRules.MinutesPerItem).Select(k => Words(ReportRules.DefaultedText, k, DefaultValue(k))));
+        return lines.ToArray();
+    }
+
+    private static string Words(string template, string key, string value) =>
+        template.Replace("{label}", ReportRules.AnswerLabel(key), StringComparison.Ordinal)
+            .Replace("{value}", ReportRules.AnswerValue(key, value), StringComparison.Ordinal);
+
+    // 답 값의 글자(숫자는 InvariantCulture). 키는 StepQuestions.Keys 가운데 하나다.
+    private static string AnswerValue(StepAnswers a, string key) => key switch
+    {
+        "input_kind" => a.InputKind.Value,
+        "rule_expressible" => a.RuleExpressible.Value,
+        "frequency" => a.Frequency.Value,
+        "batch_size" => a.BatchSize.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "exception_rate" => a.ExceptionRate.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "current_actor" => a.CurrentActor.Value,
+        "minutes_per_item" => a.MinutesPerItem.Value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+        "failure_impact" => a.FailureImpact.Value,
+        "existing_feature" => a.ExistingFeature.Value,
+        _ => a.HumanSignoff.Value,
+    };
+
+    // 기본값(case-schema 4.4 표, StepQuestions).
+    private static string DefaultValue(string key) => key switch
+    {
+        "input_kind" => StepQuestions.InputKind.Default,
+        "rule_expressible" => StepQuestions.RuleExpressible.Default,
+        "frequency" => StepQuestions.Frequency.Default,
+        "batch_size" => StepQuestions.BatchSize.Default.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "exception_rate" => StepQuestions.ExceptionRate.Default.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "current_actor" => StepQuestions.CurrentActor.Default,
+        "failure_impact" => StepQuestions.FailureImpact.Default,
+        "existing_feature" => StepQuestions.ExistingFeature.Default,
+        _ => StepQuestions.HumanSignoff.Default,
+    };
+
+    // 요약(4.1). Stated·Tentative는 단계의 Tentative로 나눈다. AI 과잉 후보는 지금 하는 쪽이 추정이어도 Tentative다.
+    private static ScorecardSummary Summary(IReadOnlyList<ScorecardStep> steps, StepAnswerView[]? answers)
+    {
+        SummaryCounts Count(Func<ScorecardStep, bool> side, Func<ScorecardStep, bool> overuseSide) => new(
+            steps.Count(side),
+            steps.Count(s => side(s) && ReportRules.SoftwareAssignees.Contains(s.Assignee)),
+            steps.Count(s => side(s) && s.Assignee == "③"),
+            steps.Count(s => s.AiOveruseCandidate && overuseSide(s)));
+
+        return new ScorecardSummary(
+            steps.Count,
+            steps.Count(s => ReportRules.SoftwareAssignees.Contains(s.Assignee)),
+            ReportRules.AssigneeOrder.Select(a => new AssigneeCount(a, steps.Count(s => s.Assignee == a))).ToArray(),
+            steps.Count(s => s.Differs),
+            steps.Count(s => s.Assignee == "③"),
+            steps.Count(s => s.AiOveruseCandidate),
+            steps.Count(s => s.Review.Status == ReportRules.ReviewKept),
+            steps.Count(s => s.Review.Status == ReportRules.ReviewChanged),
+            ReportRules.SavingTimeNeeded,
+            Count(s => !s.Tentative, s => !OveruseTentative(s)),
+            Count(s => s.Tentative, OveruseTentative),
+            steps.Zip(answers ?? new StepAnswerView?[steps.Count])
+                .Where(p => p.Second?.Minutes is not null)
+                .Select(p => new StepMinutes(p.First.Number, p.Second!.Minutes!.Value))
+                .ToArray());
+    }
+
+    private static bool OveruseTentative(ScorecardStep s) => s.Tentative || s.Inferred.Contains(StepQuestions.CurrentActor.Key);
+
+    // 먼저 확인할 ② 단계(4.4): ②·②M 단계 가운데 확인하면 바뀔 수 없는 단계 먼저, 지금 하는 쪽 순서(ProposalOrder), 같으면 번호가 작은 것.
     private static ScorecardProposal? Proposal(IReadOnlyList<ScorecardStep> steps)
     {
         var pick = steps
             .Where(s => ReportRules.SoftwareAssignees.Contains(s.Assignee))
-            .OrderBy(s => Rank(s.CurrentActor))
+            .OrderBy(s => s.Tentative ? 1 : 0)
+            .ThenBy(s => Rank(s.CurrentActor))
             .ThenBy(s => s.Number)
             .FirstOrDefault();
         if (pick is null)
@@ -247,7 +371,13 @@ public static class ScorecardBuilder
             text += ReportRules.ProposalExceptionTail;
         }
 
-        return new ScorecardProposal(pick.Number, pick.Name, text);
+        var effect = pick.CurrentActor == ReportRules.ProposalOrder[0].Actor && !OveruseTentative(pick) ? ReportRules.ProposalEffectOveruse : ReportRules.ProposalEffect;
+        if (pick.Tentative)
+        {
+            effect += ReportRules.ProposalTentativeTail;
+        }
+
+        return new ScorecardProposal(pick.Number, pick.Name, text, pick.Check, effect, pick.Tentative);
     }
 
     private static int Rank(string? actor)
@@ -275,29 +405,81 @@ public static class ScorecardBuilder
             Math.Max(0, items.Count - ReportRules.ItemLimit));
     }
 
-    // 사람 게이트(4.6): 서명 단계(규칙 의견 SIGNOFF이고 담당 ④, AI 판단 단계 포함), 예외 검토 행, 사람 게이트 행. 단계 순서, 단계 안은 행 순서.
+    // 담당자 확인(4.6): 서명 단계(규칙 의견 SIGNOFF이고 담당 ④, AI 판단 단계 포함), 예외 검토 행, 사람 게이트 행. 단계 순서, 단계 안은 행 순서.
+    // 화면 문장(Text): 사람 게이트 행은 그 단계 AI 판단의 gate_note, 없으면 종류마다 정한 문장(T-022, 지시문 4.1·4.4).
     private static ScorecardGate[] Gates(IReadOnlyList<ScorecardStep> steps) =>
         steps.SelectMany(s =>
-            (s.RuleOpinion.Rule == "SIGNOFF" && s.Assignee == "④" ? [new ScorecardGate(s.Number, s.Name, ReportRules.GateSignoff, s.Reason)] : Array.Empty<ScorecardGate>())
-            .Concat(s.Extra.Select(r => new ScorecardGate(s.Number, s.Name, r.Kind, r.Reason))))
+            (s.RuleOpinion.Rule == "SIGNOFF" && s.Assignee == "④" ? [Gate(s, ReportRules.GateSignoff, s.Reason)] : Array.Empty<ScorecardGate>())
+            .Concat(s.Extra.Select(r => Gate(s, r.Kind, r.Reason))))
         .ToArray();
 
-    // 남는 위험(4.7). 단계 순서로 다름 → AI 과잉 → AI 보조 → 확인에서 바꿈, 끝에 판정.
+    private static ScorecardGate Gate(ScorecardStep s, string kind, string reason)
+    {
+        var text = kind == StepClassifier.KindHumanGate && s.GateNote is { } note
+            ? note
+            : ReportRules.GateTexts.FirstOrDefault(g => g.Kind == kind).Text ?? reason;
+        return new ScorecardGate(s.Number, s.Name, kind, reason, text);
+    }
+
+    // 결론 세 줄(4.11).
+    private static ScorecardConclusion Conclusion(
+        IReadOnlyList<ScorecardStep> steps, ScorecardSummary summary, ScorecardProposal? proposal, IReadOnlyList<ScorecardGate> gates,
+        IReadOnlyList<string> questions, ScorecardVerification verification, string? endState)
+    {
+        var keep = new List<string>();
+        var human = steps.Where(s => s.Assignee == "④").Select(s => s.Number).ToArray();
+        if (human.Length > 0)
+        {
+            keep.Add(ReportRules.KeepHumanText.Replace("{steps}", ReportRules.StepList(human), StringComparison.Ordinal));
+        }
+
+        var existing = steps.Where(s => s.Assignee == "①").Select(s => s.Number).ToArray();
+        if (existing.Length > 0)
+        {
+            keep.Add(ReportRules.KeepExistingText.Replace("{steps}", ReportRules.StepList(existing), StringComparison.Ordinal));
+        }
+
+        var checks = gates.Count(g => g.Kind != ReportRules.GateSignoff);
+        if (checks > 0)
+        {
+            keep.Add(ReportRules.KeepGatesText.Replace("{n}", N(checks), StringComparison.Ordinal));
+        }
+
+        var first = proposal is not null
+            ? ReportRules.FirstCheckText.Replace("{n}", N(proposal.Step), StringComparison.Ordinal)
+                .Replace("{name}", proposal.Name, StringComparison.Ordinal).Replace("{check}", proposal.Check, StringComparison.Ordinal)
+            : questions.Count > 0 ? questions[0] : ReportRules.FirstCheckNoneText;
+
+        var undecided = new List<string>();
+        if (summary.Tentative.Steps > 0)
+        {
+            undecided.Add(ReportRules.UndecidedTentativeText.Replace("{n}", N(summary.Tentative.Steps), StringComparison.Ordinal));
+        }
+
+        if (questions.Count > 0)
+        {
+            undecided.Add(ReportRules.UndecidedQuestionsText.Replace("{n}", N(questions.Count), StringComparison.Ordinal));
+        }
+
+        if (verification.Status != MeasuredStatus)
+        {
+            undecided.Add(ReportRules.UndecidedTestText);
+        }
+
+        undecided.Add(ReportRules.UndecidedSavingText);
+        return new ScorecardConclusion(
+            keep.Count > 0 ? string.Join(" ", keep) : ReportRules.KeepNoneText,
+            first,
+            string.Join(" ", undecided),
+            endState);
+    }
+
+    // 남는 위험(4.7). 무엇이 틀릴 수 있고 어떻게 잡는가만. 단계 순서로 AI 보조 → 확인에서 바꿈, 끝에 판정.
     private static ScorecardNote[] Risks(IReadOnlyList<ScorecardStep> steps, JudgmentResult? judgment)
     {
         var notes = new List<ScorecardNote>();
         foreach (var s in steps)
         {
-            if (s.Differs)
-            {
-                notes.Add(new(ReportRules.RiskDiffers, s.Number, Fill(ReportRules.RiskDiffersText, s, ("{a}", s.Assignee), ("{r}", s.RuleOpinion.Assignee))));
-            }
-
-            if (s.AiOveruseCandidate)
-            {
-                notes.Add(new(ReportRules.RiskOveruse, s.Number, Fill(ReportRules.RiskOveruseText, s)));
-            }
-
             if (s.Assignee == "③")
             {
                 notes.Add(new(ReportRules.RiskAiAssist, s.Number, Fill(ReportRules.RiskAiAssistText, s)));
@@ -305,7 +487,7 @@ public static class ScorecardBuilder
 
             if (s.Review.Status == ReportRules.ReviewChanged)
             {
-                notes.Add(new(ReportRules.RiskReviewChanged, s.Number, Fill(ReportRules.RiskReviewChangedText, s, ("{old}", s.Assignee), ("{new}", s.Review.Assignee!))));
+                notes.Add(new(ReportRules.RiskReviewChanged, s.Number, Fill(ReportRules.RiskReviewChangedText, s, ("{old}", ReportRules.AssigneeName(s.Assignee)), ("{new}", ReportRules.AssigneeName(s.Review.Assignee!)))));
             }
         }
 
@@ -317,47 +499,87 @@ public static class ScorecardBuilder
         return notes.ToArray();
     }
 
-    // 다음 할 일(4.8): judgment todo 그대로 → check 안 돌림 → 건당 시간 → 기본값 → 추정 → 확인 전 단계.
-    private static ScorecardNote[] Todo(IReadOnlyList<ScorecardStep> steps, MetricsView? metrics, JudgmentResult? judgment)
+    // 의견 차이(4.7): AI 판단과 규칙 의견이 다른 단계. 추천 결론과 이유를 먼저 쓴다.
+    private static ScorecardNote[] Opinions(IReadOnlyList<ScorecardStep> steps) =>
+        steps.Where(s => s.Differs)
+            .Select(s => new ScorecardNote(ReportRules.OpinionDiffers, s.Number, Fill(ReportRules.OpinionText, s, ("{a}", ReportRules.AssigneeName(s.Assignee)), ("{reason}", s.Reason))))
+            .ToArray();
+
+    // 개선 후보(4.7): AI 과잉 후보. 지금 하는 쪽이 추정이면 추정형 문장.
+    private static ScorecardNote[] Candidates(IReadOnlyList<ScorecardStep> steps) =>
+        steps.Where(s => s.AiOveruseCandidate)
+            .Select(s => new ScorecardNote(ReportRules.CandidateOveruse, s.Number, Fill(OveruseTentative(s) ? ReportRules.CandidateOveruseTentativeText : ReportRules.CandidateOveruseText, s)))
+            .ToArray();
+
+    // 다음 할 일(4.8): 묶음 순서 now → improve → verify → implementer. 묶음 안은 아래 순서.
+    private static ScorecardTodo[] Todo(
+        string caseName, IReadOnlyList<ScorecardStep> steps, MetricsView? metrics, JudgmentResult? judgment, ScorecardProposal? proposal, ScorecardVerification verification)
     {
-        var notes = new List<ScorecardNote>();
-        notes.AddRange((judgment?.Todo ?? []).Select(t => new ScorecardNote(t.Key, 0, t.Text)));
-        if (metrics is null)
+        var notes = new List<ScorecardTodo>();
+        var pending = steps.Where(s => s.Review.Status == ReportRules.ReviewPending).Select(s => s.Number).ToArray();
+        if (pending.Length > 0)
         {
-            notes.Add(new(ReportRules.TodoRunCheck, 0, ReportRules.TodoRunCheckText));
+            notes.Add(new(ReportRules.TodoNow, ReportRules.TodoReviewSteps, 0, ReportRules.TodoReviewStepsText.Replace("{steps}", ReportRules.StepList(pending), StringComparison.Ordinal)));
         }
 
-        var measure = steps.Where(s => s.Checks.Contains(MeasureCheck)).Select(s => s.Number).ToArray();
-        if (measure.Length > 0)
+        if (proposal is not null)
         {
-            notes.Add(new(ReportRules.TodoMeasureMinutes, 0, ReportRules.TodoMeasureMinutesText.Replace("{steps}", ReportRules.StepList(measure), StringComparison.Ordinal)));
-        }
-
-        var defaults = KeyList(steps, s => s.Defaults.Where(k => k != ReportRules.MinutesPerItem).ToArray());
-        if (defaults.Length > 0)
-        {
-            notes.Add(new(ReportRules.TodoConfirmDefaults, 0, ReportRules.TodoConfirmDefaultsText.Replace("{list}", defaults, StringComparison.Ordinal)));
+            notes.Add(new(ReportRules.TodoImprove, ReportRules.TodoFirstCheck, proposal.Step, ReportRules.TodoFirstCheckText));
         }
 
         var inferred = KeyList(steps, s => s.Inferred);
         if (inferred.Length > 0)
         {
-            notes.Add(new(ReportRules.TodoConfirmInferred, 0, ReportRules.TodoConfirmInferredText.Replace("{list}", inferred, StringComparison.Ordinal)));
+            notes.Add(new(ReportRules.TodoImprove, ReportRules.TodoConfirmInferred, 0, ReportRules.TodoConfirmInferredText.Replace("{list}", inferred, StringComparison.Ordinal)));
         }
 
-        var pending = steps.Where(s => s.Review.Status == ReportRules.ReviewPending).Select(s => s.Number).ToArray();
+        var defaults = KeyList(steps, s => s.Defaults.Where(k => k != ReportRules.MinutesPerItem).ToArray());
+        if (defaults.Length > 0)
+        {
+            notes.Add(new(ReportRules.TodoImprove, ReportRules.TodoConfirmDefaults, 0, ReportRules.TodoConfirmDefaultsText.Replace("{list}", defaults, StringComparison.Ordinal)));
+        }
+
+        notes.AddRange((judgment?.Todo ?? []).Select(t => new ScorecardTodo(ReportRules.TodoVerify, t.Key, 0, t.Text)));
+        if (metrics is null)
+        {
+            notes.Add(new(ReportRules.TodoVerify, ReportRules.TodoRunCheck, 0, ReportRules.TodoRunCheckText));
+        }
+
+        if (verification.Status != MeasuredStatus)
+        {
+            notes.Add(new(ReportRules.TodoVerify, ReportRules.TodoDefineErrors, 0, ReportRules.TodoDefineErrorsText));
+        }
+
+        var measure = steps.Where(s => s.Checks.Contains(MeasureCheck)).Select(s => s.Number).ToArray();
+        if (measure.Length > 0)
+        {
+            notes.Add(new(ReportRules.TodoVerify, ReportRules.TodoMeasureMinutes, 0, ReportRules.TodoMeasureMinutesText.Replace("{steps}", ReportRules.StepList(measure), StringComparison.Ordinal)));
+        }
+
+        if (verification.Status != MeasuredStatus)
+        {
+            notes.Add(new(ReportRules.TodoImplementer, ReportRules.TodoCheckCommand, 0, ReportRules.TodoCheckCommandText));
+        }
+
         if (pending.Length > 0)
         {
-            notes.Add(new(ReportRules.TodoReviewSteps, 0, ReportRules.TodoReviewStepsText.Replace("{steps}", ReportRules.StepList(pending), StringComparison.Ordinal)));
+            notes.Add(new(ReportRules.TodoImplementer, ReportRules.TodoReviewFile, 0, ReportRules.TodoReviewFileText));
+        }
+
+        if (proposal is not null)
+        {
+            notes.Add(new(ReportRules.TodoImplementer, ReportRules.TodoBuildCommand, proposal.Step, ReportRules.TodoBuildCommandText.Replace("{n}", N(proposal.Step), StringComparison.Ordinal).Replace("{case}", caseName, StringComparison.Ordinal)));
         }
 
         return notes.ToArray();
     }
 
-    // "1단계 existing_feature; 3단계 frequency, batch_size"
+    private static string N(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // "1단계 기존 기능이 있나; 3단계 처리 주기, 한 번에 처리하는 건수"(키는 업무 말 이름으로)
     private static string KeyList(IReadOnlyList<ScorecardStep> steps, Func<ScorecardStep, IReadOnlyList<string>> keys) =>
         string.Join("; ", steps.Select(s => (s.Number, Keys: keys(s))).Where(p => p.Keys.Count > 0)
-            .Select(p => ReportRules.StepList([p.Number]) + " " + string.Join(", ", p.Keys)));
+            .Select(p => ReportRules.StepList([p.Number]) + " " + string.Join(", ", p.Keys.Select(ReportRules.AnswerLabel))));
 
     private static string Fill(string template, ScorecardStep s, params (string Key, string Value)[] more)
     {
@@ -380,8 +602,11 @@ public static class ScorecardBuilder
         }
     }
 
-    // 단계 하나의 답에서 쓰는 값.
-    private sealed record StepAnswerView(IReadOnlyList<string> Inferred, string? Actor);
+    // 단계 하나의 답에서 쓰는 값. Minutes는 사용자가 준 건당 시간(기본값이면 null).
+    private sealed record StepAnswerView(IReadOnlyList<string> Inferred, string? Actor, decimal? Minutes, StepAnswers Answers);
+
+    private const string ActionStated = "stated";
+    private const string MeasuredStatus = "measured";
 
     private const string MeasureCheck = ClassificationRules.CheckMeasureMinutesPerItem;
 

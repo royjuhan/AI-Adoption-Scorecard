@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-09 | 0016 | 첫 실사용 반영(지시문 juhan, "ADR 0011"은 이미 있어 0016). 스킬 `/scorecard` 다시 씀(`.claude/skills/scorecard/SKILL.md`: 동작 단위 판단, 출처 stated·inferred·default, 자기 검사 `docs/spec/skill-output-rules.md` R1~R13, 질문 3개, 확인 파일 `confirmed_in: conversation`). 스킬 선택 항목은 Core가 받아 옮긴다. classification.json schema 2 그대로, scorecard.json 1 → 2. 엔진·expected·oracle 그대로. 2절 8·10 그대로 | 리드(ADR 0005 결정 3), juhan 확인 대기 | T-022 |
 | 2026-11-08 | 0014 | M2-2 PR (b): 지시문 3.1·3.2·3.3·12절을 schema 2에 맞춤(`schema_version` 값은 문서마다, `existing_feature` unknown은 기본값 표시, ②M·AI 서명 게이트는 classification 4.13), 스킬 `/scorecard` 추가. 새 결정 없음(ADR 0013을 따름). 2절 8·10 그대로 | 리드(ADR 0005 결정 3) | T-019 (b) |
 | 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-08 11:39 "제안대로": 스킬 대화에서 확인, 게이트는 트리가 늘 붙임) | #24 |
 | 2026-11-08 | 0012 | sweeper: 스펙 6개를 본문(200줄 이내, 지금 동작)과 `docs/spec/data/`(테스트·oracle이 읽는 표·블록, 바이트 그대로)로 나눔. `SpecDocument` 상수 6개·`selftest.py` 경로 5개를 data로, 줄 선택 하나. 지시문 정리·`spikes/` 삭제. 가드·개수는 그대로 | juhan 지시 | sweeper PR |
@@ -23,6 +24,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
+- T-022 첫 실사용 반영(ADR 0016, juhan 확인 대기): 스킬 판단 깊이와 스코어카드 문구. 엔진·expected 그대로. 수용 채점(공개 사례 5건)은 리드가 PR 밖에서.
 - M2 끝: M2-1(#23), M2-2(#24, #27), M2-3(#28), M2-4(#29). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22)도 끝났다.
 - 다음: 이 릴리스 PR 머지 뒤 v0.1.0-alpha 태그(ADR 0010 B-12). 그다음 빈 곳 카드(T-015 빈 곳 6부터).
 - 릴리스 v0.1.0-alpha 준비: `CHANGELOG.md`, ADR 0015(win-x64 exe SHA-256 `123340a4…`, 네트워크·프로세스 검사 없음), 샘플 스코어카드 `docs/samples/`. 태그는 머지 뒤 리드. G2 비공개 사례 1건 로컬 실행은 juhan 실제 PC 몫으로 남음.
@@ -70,6 +72,12 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-09 | T-022 | 1 동작 목록 자리 | 답 파일 단계 `ai`의 선택 키(`actions`, `now`, `change`, `check`, `gate_note`). classification.json에는 그 단계에 있을 때만 쓴다. schema 2 그대로, expected 변경 없음. 대안(늘 쓰기 → schema 3 + expected migration)은 ADR 0016 대안 A, juhan 확인 대기 | T-022 |
+| 2026-11-09 | T-022 | 2 케이스 메모 자리 | 답 파일 최상위 선택 키(`scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`). 스코어카드가 그대로 옮긴다. 별도 파일은 대안 B | T-022 |
+| 2026-11-09 | T-022 | 3 셈 | 추정·기본값에 기댄 단계는 `tentative`. `summary.stated`·`summary.tentative`로 나눠 센다. 제안은 `tentative`가 아닌 단계 먼저. 기존 `summary.software` 등은 전체 셈 그대로(의뢰서 번들이 쓴다) | T-022 |
+| 2026-11-09 | T-022 | 4 결과 객체 판 | scorecard.json `schema_version` 1 → 2. 골든은 tests TestData라 expected migration 아님 | T-022 |
+| 2026-11-09 | T-022 | 5 대화 확인 기록 | 확인 파일 최상위 `confirmed_in: conversation`(선택). 다른 값은 `enum` 오류. 스킬이 고른 단계만 적는다 | T-022 |
+| 2026-11-09 | T-022 | 6 수용 채점 | 공개 사례 5건(1, 20, 22, 31, 48)을 새 reviewer가 R1~R5로 채점. 리드가 PR 밖에서 돌린다. `review-01.md`는 juhan 입력 뒤 | T-022 |
 | 2026-11-08 | T-021 M2-4 | 1 예/아니오/나중에 | exe는 묻지 않는다. 예 = `build <case> --step <번호>`, 아니오·나중에 = `--step` 없이 끝(추천만, 아무것도 안 씀, 종료 0). `--json`은 `proposal`·`candidates` | T-021 |
 | 2026-11-08 | T-021 M2-4 | 2 번들 자리 | `<출력 폴더>/build-request/`(기본 `<케이스>/out/build-request/`). 지시문 3.6의 `cases/<case>/build-request/`를 M2-1 출력 폴더 규칙에 맞춤. 케이스 폴더 입력은 건드리지 않는다 | T-021 |
 | 2026-11-08 | T-021 M2-4 | 3 사람 확인 방법 | build가 출력 폴더에 `export-check.md` 초안을 쓰고, 사람이 마지막 줄 `확인한 사람:` 뒤에 적고 다시 돌린다. 확인 줄 값을 비운 글이 지금 초안(번들 SHA-256 포함)과 같아야 한다. 스킬·AI는 적지 않는다(ADR 0004 질문 15). `--confirm` 파일 옵션은 두지 않는다(가장 단순) | T-021 |

@@ -71,8 +71,26 @@ internal static class ResultReader
             [],
             Strings(step, "checks"),
             step.GetProperty("ai_overuse_candidate").GetBoolean(),
-            Arr(step, "rows").Select(r => new ClassificationRow(Str(r, "kind"), Str(r, "assignee"), Str(r, "rule"), [], Str(r, "reason"))).ToArray());
+            Arr(step, "rows").Select(r => new ClassificationRow(Str(r, "kind"), Str(r, "assignee"), Str(r, "rule"), [], Str(r, "reason"))).ToArray(),
+            ReadDetail(step));
     }
+
+    // AI 선택 항목(classification.md 3.2, T-022). 적은 키만 있다. 하나도 없으면 null.
+    private static StepAiDetail? ReadDetail(JsonElement step)
+    {
+        StepAction[] actions = step.TryGetProperty("actions", out _)
+            ? Arr(step, "actions").Select(a => new StepAction(Str(a, "action"), Str(a, "who_now"), Str(a, "proposed"), Str(a, "source"))).ToArray()
+            : [];
+        var now = Optional(step, "now");
+        var change = Optional(step, "change");
+        var check = Optional(step, "check");
+        var gateNote = Optional(step, "gate_note");
+        return actions.Length == 0 && now is null && change is null && check is null && gateNote is null
+            ? null
+            : new StepAiDetail(actions, now, change, check, gateNote);
+    }
+
+    private static string? Optional(JsonElement e, string name) => e.TryGetProperty(name, out _) ? Str(e, name) : null;
 
     // 첫 키 schema_version이 그 파일의 지금 판과 같아야 한다. 모양이 틀리면 오류 하나.
     private static (T? Value, CaseError? Error) Read<T>(byte[] bytes, string name, int schemaVersion, Func<JsonElement, T> read)

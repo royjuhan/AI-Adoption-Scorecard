@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 도입 스코어카드 · ai-actions</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;
+--c1:#0f766e;--c1bg:#e6f6f4;--c2:#1d5bd8;--c2bg:#eaf1ff;--c2m:#0e7490;--c2mbg:#e4f5fa;--c3:#7c3aed;--c3bg:#f3edff;--c4:#b45309;--c4bg:#fff4e5;
+--good:#15803d;--goodbg:#e8f7ee;--warn:#b45309;--warnbg:#fff4e5;--bad:#c2410c;--badbg:#fff0ea;--na:#6b7280;--nabg:#f1f2f4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans CJK KR","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:14px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 28px 32px}
+header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.2px}
+.case{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin-left:8px;vertical-align:3px;color:var(--ink2)}
+.task{color:var(--ink2)}
+.banner{background:#fff7d6;color:#6b4e00;border:1px solid #f0dc8a;border-radius:8px;padding:8px 12px;font-weight:700;font-size:13px;margin:0 0 12px}
+.notice{background:var(--warnbg);color:#7a3e05;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 12px}
+.status{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.status li{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;min-width:0}
+.status .k,.conclusion .k,.brief .k{display:block;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.conclusion{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.conclusion .line{display:grid;grid-template-columns:150px minmax(0,1fr);column-gap:12px;padding:5px 0;border-bottom:1px dashed var(--line2)}
+.conclusion .line .k{font-size:13px;color:var(--ink);padding-top:1px}
+.questions{margin:2px 0 0;padding-left:18px;color:var(--ink2);font-size:13px}
+.end{margin:10px 0 0;font-weight:700}
+.tiles{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.tile .q{font-size:12.5px;color:var(--ink2);font-weight:600;margin-bottom:6px}
+.tile .big{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.tile .big small{font-size:14px;font-weight:600;color:var(--ink2);margin-left:4px}
+.tile .sub{font-size:12.5px;color:var(--ink2);margin-top:8px}
+.na{color:var(--na)}
+.big.na{font-size:20px}
+.verdict{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:5px;white-space:nowrap;letter-spacing:0}
+.v-bad{color:var(--bad);background:var(--badbg)}.v-good{color:var(--good);background:var(--goodbg)}.v-warn{color:var(--warn);background:var(--warnbg)}.v-na{color:var(--na);background:var(--nabg)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line2)}
+.stack span{display:block;height:100%}
+.legend{display:flex;gap:4px 10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.b1-fill{background:var(--c1)}.b2-fill{background:var(--c2)}.b2m-fill{background:var(--c2m)}.b3-fill{background:var(--c3)}.b4-fill{background:var(--c4)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel h2{font-size:15px;margin:0;padding:14px 16px 10px}
+.panel h2 span{font-weight:400;color:var(--ink3);font-size:12.5px;margin-left:6px}
+.steps .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:12px}
+.steps .cols.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 14px;font-size:12px;color:var(--ink3);font-weight:600}
+.steps .row{padding:11px 14px;border-bottom:1px solid var(--line2)}
+.steps .row.differs{background:#fffaf5}
+.steps .title{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-bottom:6px}
+.steps .num{color:var(--ink3);font-variant-numeric:tabular-nums}
+.steps .name{font-weight:700}
+.steps .state{margin-left:auto;font-size:12px}
+.steps .cell{font-size:13px;color:var(--ink2);min-width:0}
+.steps .cell .lbl{display:none;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.steps .why{margin-top:4px}
+.steps .tent{margin-top:4px;font-size:12px;color:var(--warn);font-weight:600}
+.assume{margin:4px 0 0;padding-left:16px;font-size:12px}
+.ok{color:var(--good)}.chg{color:var(--c4);font-weight:600}.pending{color:var(--ink3)}
+details{margin-top:6px;font-size:12.5px;color:var(--ink2)}
+summary{cursor:pointer;color:var(--ink3);font-size:12px}
+.more{margin-top:6px;padding:8px 10px;background:#fafbfc;border-radius:8px}
+.acts{margin-bottom:8px}
+.act{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);column-gap:8px;padding:4px 0;border-bottom:1px solid var(--line2)}
+.act>div{min-width:0}
+.act.head{font-weight:700;color:var(--ink3)}
+.codes{display:flex;flex-wrap:wrap;gap:4px}
+.extra{margin-top:6px}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px}
+.b1{color:var(--c1);background:var(--c1bg)}.b2{color:var(--c2);background:var(--c2bg)}.b2m{color:var(--c2m);background:var(--c2mbg)}.b3{color:var(--c3);background:var(--c3bg)}.b4{color:var(--c4);background:var(--c4bg)}
+.chip{display:inline-block;font-size:11.5px;color:var(--ink2);background:var(--nabg);border-radius:5px;padding:1px 6px;font-weight:400}
+.chip.ai{color:var(--c3);background:var(--c3bg)}
+.chip.diff{color:var(--bad);background:var(--badbg);font-weight:700}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card.prop{border:2px solid var(--c2)}
+.card .k{font-size:11.5px;font-weight:700;color:var(--c2);letter-spacing:.2px;margin-bottom:4px}
+.card.info .k{color:var(--c4)}
+.card .k.sep{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{margin:0 0 8px;color:var(--ink2);font-size:13px}
+.card .cmd{font-size:12px;margin:6px 0 0}
+.card ul,.flow3{margin:4px 0 0;padding-left:16px;color:var(--ink2);font-size:12.5px}
+.flow3{margin-bottom:8px}
+.card li{margin-bottom:3px}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:#f3f4f6;border-radius:4px;padding:1px 5px;color:#333;overflow-wrap:anywhere}
+.verify,.todo,.overview{margin-top:16px}
+.vbody{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:0 16px 16px}
+.vbody>div{min-width:0}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:2px}
+.cnt{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.cnt b{display:block;font-size:20px;line-height:1.2}
+.cnt span{font-size:11.5px;color:var(--ink2)}
+.cnt.bad b{color:var(--bad)}.cnt.warn b{color:var(--warn)}.cnt.na b{color:var(--na)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;background:var(--line2)}
+.bar span{display:block;height:100%}
+.fill-good{background:#7fb07f}.fill-bad{background:#e07a52}.fill-warn{background:#e0a93f}.fill-na{background:#b8bcc4}
+.note{font-size:12px;color:var(--ink2);margin-top:6px}
+.pattern{margin-top:12px;border-radius:8px;background:var(--warnbg);color:#7a3e05;font-size:12.5px;padding:9px 11px}
+.pattern .verdict{vertical-align:0}
+.checks{margin:10px 0 0;padding-left:0;list-style:none;font-size:12.5px;color:var(--ink2)}
+.checks li{margin-bottom:5px}
+.diffs .d{display:grid;grid-template-columns:64px 120px minmax(0,1fr) 84px;column-gap:10px;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:12.5px;align-items:center}
+.diffs .d>div{min-width:0}
+.diffs .d.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3);font-weight:600}
+.diffs .res{text-align:right}
+.diffs .res .verdict{margin:0;vertical-align:0}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.arrow{color:var(--ink3);margin:0 4px}
+.todo ol{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.todo li{margin-bottom:4px}
+.pad{padding:0 16px 16px}
+.label{font-size:12px;font-weight:700;color:var(--ink3);margin:10px 0 4px}
+.brief{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px;color:var(--ink2)}
+.brief.nums{grid-template-columns:minmax(0,1fr)}
+.intake{white-space:pre-wrap;color:var(--ink2);font-size:13px;background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-top:6px}
+.flow{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.flow li{margin-bottom:3px}
+.hashes{margin:0;padding-left:0;list-style:none;font-size:12px;color:var(--ink2)}
+.hashes li{margin-bottom:4px}
+.hash{word-break:break-all;font-size:11.5px;color:var(--ink3)}
+.foot{font-size:11.5px;color:var(--ink3);margin:12px 0 0}
+@media (max-width:1040px){
+.grid{grid-template-columns:minmax(0,1fr)}
+.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
+.tiles,.status{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vbody{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+.wrap{padding:16px 16px 24px}
+h1{font-size:19px}
+.case{margin-left:0}
+.tile{padding:12px 14px}
+.tile .big{font-size:24px}
+.conclusion .line{grid-template-columns:minmax(0,1fr)}
+.steps .cols.head{display:none}
+.steps .cols{grid-template-columns:minmax(0,1fr);row-gap:8px}
+.steps .cell .lbl{display:block}
+.steps .state{margin-left:0;width:100%}
+.act{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.act.head{display:none}
+.brief{grid-template-columns:minmax(0,1fr)}
+.diffs .d.head{display:none}
+.diffs .d{grid-template-columns:64px minmax(0,1fr) auto;grid-template-areas:"key field res" "key vals res";row-gap:2px}
+.diffs .d .key{grid-area:key}
+.diffs .d .field{grid-area:field}
+.diffs .d .vals{grid-area:vals}
+.diffs .d .res{grid-area:res}
+}
+@media (max-width:420px){
+.tiles,.status{grid-template-columns:minmax(0,1fr);gap:8px}
+.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{body{background:#fff}.wrap{max-width:none}details{display:block}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>AI 도입 스코어카드 <span class="case">ai-actions</span></h1>
+<div class="task">합성 설문 회신을 모아 빈칸·단위를 보고 확인 요청을 보낸 뒤 원본과 대조해 승인한다</div>
+</header>
+<p class="banner">가상 시나리오 기반. 실제 운영 수치·검증 결과 아님</p>
+<section id="zone-1">
+<ul class="status"><li><span class="k">자료 성격</span>가상 시나리오</li><li><span class="k">업무 분류</span>설명 기반 초안</li><li><span class="k">담당자 확인</span>3/4 확인됨(대화에서 확인됨 포함)</li><li><span class="k">실제 성능 시험</span>진행하지 않음</li></ul>
+<div class="conclusion">
+<div class="line"><span class="k">유지할 것</span><span>4단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 2곳은 그대로 둔다.</span></div>
+<div class="line"><span class="k">먼저 확인할 것</span><span>1단계 회신 받아 모으기: 지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.</span></div>
+<div class="line"><span class="k">아직 판단하지 않은 것</span><span>추정·기본값에 기댄 판단 2단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.</span></div>
+<div class="label">확인하면 바뀔 수 있음</div>
+<ul class="questions"><li>현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?</li></ul>
+<p class="end">업무 구조 검토 완료. 지금 제출할 것 없음.</p>
+</div>
+<div class="tiles">
+<div class="tile">
+<div class="q">규칙 자동화를 검토할 단계(단계 수 기준)</div>
+<div class="big">0<small>/ 4단계</small></div>
+<div class="sub">확인하면 바뀔 수 있음 2단계</div>
+<div class="stack" aria-label="담당 구성"><span class="b2-fill" style="flex:2"></span><span class="b3-fill" style="flex:1"></span><span class="b4-fill" style="flex:1"></span></div>
+<div class="legend"><span><i class="b2-fill"></i>규칙 자동화 검토 2</span><span><i class="b3-fill"></i>AI 초안 &#x2B; 담당자 확인 1</span><span><i class="b4-fill"></i>담당자 직접 처리 1</span></div>
+</div>
+<div class="tile">
+<div class="q">실제 자료 시험</div>
+<div class="big"><span class="na">진행하지 않음</span></div>
+<div class="sub">이번 실행에는 비교 자료를 넣지 않았다.</div>
+</div>
+<div class="tile">
+<div class="q">절감 효과</div>
+<div class="big na">아직 계산하지 않음</div>
+<div class="sub">입력된 시간: 1단계 건당 2분 · 3단계 건당 15분. 개선 전후 비교에 필요한 단계별 시간은 아직 없어 절감은 계산하지 않았다.</div>
+</div>
+<div class="tile">
+<div class="q">AI 활용 유지 제안</div>
+<div class="big">1<small>단계</small></div>
+<div class="sub">실행 때 AI 초안을 쓰고 담당자가 확인하는 단계.</div>
+</div>
+</div>
+</section>
+<div class="grid">
+<section class="panel" id="zone-2">
+<h2>단계별 판단</h2>
+<div class="steps">
+<div class="cols head"><div>지금 하는 방식</div><div>추천</div><div>바꿔야 할 것</div><div>확인할 것</div></div>
+<div class="row">
+<div class="title"><span class="num">1</span><span class="name">회신 받아 모으기</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>담당자가 메일을 하나씩 열어 첨부를 내려받는다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">메일을 열고 첨부를 내려받아 업체별로 모으는 동작은 모두 규칙으로 할 수 있다.</div><div class="tent">확인하면 바뀔 수 있음</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>받은 회신을 업체별로 모으고 빠진 업체 목록을 내는 규칙을 둔다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>지금 쓰는 메일·설문 도구에 회신 모으기 기능이 있는지 본다.<ul class="assume"><li>가정: 처리 주기 주 1회</li></ul></div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>회신 메일 열기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>첨부 내려받기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>업체별 폴더에 넣기</div><div>사람</div><div>② 규칙 SW</div><div>AI 추정</div></div>
+<div class="act"><div>빠진 업체 찾기</div><div>사람</div><div>② 규칙 SW</div><div>AI 추정</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">② 규칙 SW AI</span> <span class="chip">규칙 의견 ② ELSE</span> <span class="chip mark ai">AI 추정 frequency</span></div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">2</span><span class="name">빈칸·단위 검사</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">빈칸·숫자 형식·허용 단위는 규칙으로 검사할 수 있다. 보고 기간·범위가 원본 뜻과 맞는지는 규칙으로 안 된다.</div><div class="tent">확인하면 바뀔 수 있음</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>현재 설문에서 필수 칸을 비우거나 잘못된 단위를 넣으면 제출이 막히나요?</div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>빈칸 찾기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>단위가 허용 목록에 있는지 보기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>보고 기간이 원본 뜻과 맞는지 보기</div><div>사람</div><div>④ 사람</div><div>AI 추정</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">② 규칙 SW AI</span> <span class="chip">규칙 의견 ② ELSE</span> <span class="chip mark">기본값 minutes_per_item</span></div>
+<div class="extra"><span class="chip">④ PARTIAL</span> 예외 건 담당자 검토: 판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.</div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">3</span><span class="name">확인 요청 쓰기</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b3">AI 초안 &#x2B; 담당자 확인</span><div class="why">사유 네 가지(수치 불일치·기간 누락·단위 누락·범위 불명확)는 양식에 값을 넣으면 되고, 묶이지 않는 복합 건만 AI 초안이 필요하다.</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>AI 초안을 쓰고 담당자가 확인한다. 자동 승인은 하지 않는다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>AI 초안을 누가 언제 확인하는지 정한다.</div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>사유 고르기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>양식에 값 넣기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>복합 건 초안 쓰기</div><div>사람</div><div>③ AI 보조</div><div>사용자가 말함</div></div>
+<div class="act"><div>보내기 전 읽기</div><div>사람</div><div>④ 사람</div><div>사용자가 말함</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">③ AI 보조 AI</span> <span class="chip">규칙 의견 ③ Q3</span></div>
+<div class="extra"><span class="chip">④ GATE</span> 담당자 확인: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">4</span><span class="name">원본 대조·최종 승인</span><span class="state"><span class="pending">확인 전</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b4">담당자 직접 처리</span><div class="why">수정 자료 재검토와 전체 최종 승인 두 활동이 있다. 둘 다 담당자가 판단한다.</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>바꾸지 않는다. 사람이 판단한다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>없음.</div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">④ 사람 AI</span> <span class="chip">규칙 의견 ④ SIGNOFF</span> <span class="chip mark">기본값 minutes_per_item</span></div>
+</div>
+</details>
+</div>
+</div>
+</section>
+<aside class="side">
+<div class="card prop" id="zone-3">
+<div class="k">먼저 확인할 것</div>
+<h3>1단계 회신 받아 모으기</h3>
+<ol class="flow3"><li>기존 기능으로 되는지 확인</li><li>안 되면 새로 만들지 판단</li><li>만들기로 하면 의뢰서</li></ol>
+<p>절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다. 이 단계의 판단은 추정·기본값에 기대고 있어 확인하면 바뀔 수 있다.</p>
+<details><summary>고른 규칙과 만들기로 정한 뒤(구현 담당자 안내)</summary><p>② 단계 가운데 아직 사람이 하는 첫 단계다.</p><p class="cmd"><code>scorecard build ai-actions --step 1</code></p></details>
+</div>
+<div class="card info" id="zone-5">
+<div class="k">담당자 확인</div>
+<ul><li><b>2단계</b> 예외 건 담당자 검토: 규칙으로 판단이 안 되는 예외 건은 담당자가 검토한다.<details><summary>엔진 문장</summary>판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.</details></li><li><b>3단계</b> 담당자 확인: 보내기 전에 담당자가 초안을 읽고 고친다. 4단계 원본 대조 때 함께 본다.<details><summary>엔진 문장</summary>틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</details></li><li><b>4단계</b> 담당자 서명: 담당자가 최종 확인·서명한다.<details><summary>엔진 문장</summary>수정 자료 재검토와 전체 최종 승인 두 활동이 있다. 둘 다 담당자가 판단한다.</details></li></ul>
+<div class="k sep">남는 위험</div>
+<ul class="risks"><li>3단계 확인 요청 쓰기: AI 초안이 틀릴 수 있다. 자동 승인하지 않고 담당자가 확인해 잡는다.</li></ul>
+</div>
+</aside>
+</div>
+<section class="panel verify" id="zone-4">
+<h2>실제 자료 시험</h2>
+<div class="vbody">
+<div>
+<p class="note">이번 실행에는 비교 자료를 넣지 않았다. 실제 검증 때 무엇을 오류로 셀지 먼저 정한다.</p>
+</div>
+<div class="diffs">
+</div>
+</div>
+</section>
+<section class="panel todo" id="zone-6">
+<h2>다음 할 일</h2>
+<div class="pad">
+<div class="label">지금 할 일</div>
+<ol><li>단계마다 맞는지 확인한다(맞음/바꾸기): 4단계.</li></ol>
+<div class="label">개선을 진행하려면</div>
+<ol><li>먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다.</li><li>AI가 가정한 답을 확인한다: 1단계 처리 주기.</li></ol>
+<div class="label">실제 효과까지 검증하려면(선택)</div>
+<ol><li>실제 효과까지 보려면 사람이 만든 결과와 AI 적용 결과를 한 벌씩 준비해 비교한다.</li><li>실제 검증 때 무엇을 오류로 셀지 먼저 정한다.</li><li>개선 전후를 비교하려면 단계별 건당 시간을 잰다: 2, 4단계.</li></ol>
+<details><summary>구현·검증 담당자 안내</summary>
+<ol><li>기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다.</li><li>단계 확인 결과는 확인 파일(--review)로 open에 넣는다.</li><li>만들기로 정하면 scorecard build ai-actions --step 1 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다.</li></ol>
+</details>
+</div>
+</section>
+<section class="panel overview" id="zone-7">
+<h2>업무 요약과 입력 기록</h2>
+<div class="pad">
+<ul class="brief"><li><span class="k">규모</span>연 1회, 집중 기간 10주, 주 10건 안팎</li><li><span class="k">현재 처리</span>담당자 한 명이 메일로 받아 손으로 정리한다</li><li><span class="k">예외율</span>열 건 가운데 두세 건은 다시 묻는다</li><li><span class="k">결과 전달</span>승인한 자료를 분석 담당에게 넘긴다</li></ul>
+<div class="label">사용자가 준 숫자(그대로)</div>
+<ul class="brief nums"><li>연 1회, 집중 기간 10주</li><li>주 10건</li><li>예외 1건 처리에 15분(예외 1건 전체 기준, 한 단계의 시간이 아님)</li></ul>
+<details><summary>입력 원문 보기</summary>
+<div class="intake"># 합성 예시. 실제 업무·값 없음. 가상 시나리오.&#xA;&#xA;해마다 한 번, 집중 기간 10주 동안 협력 업체 설문 회신을 받는다. 주 10건쯤 온다.&#xA;담당자가 메일을 열어 첨부를 내려받고, 빈칸과 단위를 본다.&#xA;틀린 곳이 있으면 업체에 다시 물어본다. 예외 한 건을 처리하는 데 15분쯤 걸린다.&#xA;고친 자료를 원본과 대조해 승인하고 분석 담당에게 넘긴다. 검증 자료 없이 구조만 봐 달라.</div>
+</details>
+<div class="label">단계 흐름</div>
+<ol class="flow"><li>회신 받아 모으기 <span class="badge b2">규칙 자동화 검토</span></li><li>빈칸·단위 검사 <span class="badge b2">규칙 자동화 검토</span></li><li>확인 요청 쓰기 <span class="badge b3">AI 초안 &#x2B; 담당자 확인</span></li><li>원본 대조·최종 승인 <span class="badge b4">담당자 직접 처리</span></li></ol>
+<details><summary>파일·해시·schema 펼쳐 보기</summary>
+<div class="label">스킬 자기 검사</div>
+<ul class="hashes"><li><code>R1 출처 없는 단정 0건</code> 통과</li><li><code>R2 집계는 stated만</code> 통과</li><li><code>R3 ①은 손이 안 가는 경우만</code> 통과 · ① 단계 없음</li><li><code>R4 추천 문장에 이유</code> 통과</li><li><code>R5 종료점 문장</code> 통과</li></ul>
+<div class="label">입력 SHA-256</div>
+<ul class="hashes"><li><code>answers.yaml</code> <span class="mono hash">d765989e6b24efedf428a390ab7000d6cd424ffafa5829aa53ae6238d062af9e</span></li><li><code>intake.md</code> <span class="mono hash">752faacb38da8095e410317cd8f6452583a1ba87015ee1367382bae42ae911a4</span></li></ul>
+<div class="label">결과 파일 SHA-256</div>
+<ul class="hashes"><li><code>classification.json</code> <span class="mono hash">5ee7abd666ad213e52716623723dbddfb0c4ad550d05d0cff881bea8105bfcb7</span></li></ul>
+<div class="label">확인 파일 SHA-256</div>
+<ul class="hashes"><li><code>review.yaml</code> <span class="mono hash">f326655d7b46faa7230efe9f9c159258f5e8f20e83fced607ca0ad425546b5f8</span></li></ul>
+<p class="foot">scorecard.json schema 2. 같은 입력이면 같은 결과. 숫자는 Scorecard.Core가 냈다. 이 파일은 scorecard.json과 같은 결과 객체에서 만들었다. 인쇄하면 PDF가 된다.</p>
+</details>
+</div>
+</section>
+</div>
+</body>
+</html>

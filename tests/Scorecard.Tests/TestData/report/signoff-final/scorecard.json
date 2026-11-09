@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "open",
   "files": [
     "scorecard.json",
@@ -7,6 +7,22 @@
   ],
   "case": "signoff-final",
   "task": "기록 파일에서 기준 구간을 골라 값을 내고, 보고서를 써서 사람이 서명해 제출한다",
+  "scenario": null,
+  "status": {
+    "material": "unknown",
+    "classification": "rule_tree",
+    "confirmed": 0,
+    "steps": 7,
+    "confirmed_in": null,
+    "test": "measured"
+  },
+  "conclusion": {
+    "keep": "7단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 2곳은 그대로 둔다.",
+    "first_check": "3단계 기준 구간 고르기(흔들린 기록): 기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "undecided": "절감 효과는 계산하지 않았다.",
+    "end_state": null
+  },
+  "task_summary": null,
   "intake": "매주 기록 파일이 20개쯤 들어온다. 파일을 열어 필요 없는 줄을 지우고 정리한다.\n파일마다 값이 안정된 기준 구간을 하나 고른다. 구간의 시작과 끝을 적고, 그 구간의 평균값을 낸다.\n정리, 안정된 기록의 구간 고르기, 값 계산, 보고서 채우기는 지금 직접 만든 매크로가 한다. 쓰는 프로그램에는 이 기능이 없다.\n\n20개 중 6개쯤은 기록이 흔들린다. 이런 파일은 사람이 직접 구간을 고른다. 그중 절반쯤은 어디를 골라야 할지 애매하다.\n\n보고서에는 결과가 무슨 뜻인지 해석 문장을 쓴다. 해석하는 기준은 글로 정리되어 있지 않다. 보고서는 밖으로 나가므로 틀리면 곤란하다.\n마지막에 담당자가 보고서를 확인하고 서명해서 제출한다. 서명은 사람이 책임진다.\n\n같은 기록 파일을 AI에게 주고 구간과 평균값을 받아 본 결과가 있다. 사람이 고른 값과 맞는지 비교하고 싶다.",
   "answers": "used",
   "summary": {
@@ -39,7 +55,20 @@
     "ai_overuse": 0,
     "kept": 0,
     "changed": 0,
-    "saving": "time_needed"
+    "saving": "time_needed",
+    "stated": {
+      "steps": 7,
+      "software": 5,
+      "ai_assist": 1,
+      "ai_overuse": 0
+    },
+    "tentative": {
+      "steps": 0,
+      "software": 0,
+      "ai_assist": 0,
+      "ai_overuse": 0
+    },
+    "minutes": []
   },
   "steps": [
     {
@@ -68,7 +97,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "프로그램이 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 2,
@@ -96,7 +132,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "프로그램이 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 3,
@@ -131,7 +174,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 4,
@@ -159,7 +209,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "프로그램이 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 5,
@@ -187,7 +244,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "프로그램이 한다.",
+      "change": "규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.",
+      "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 6,
@@ -222,7 +286,14 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "AI 초안을 쓰고 담당자가 확인한다. 자동 승인은 하지 않는다.",
+      "check": "AI 초안을 누가 언제 확인하는지 정한다.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     },
     {
       "number": 7,
@@ -250,13 +321,23 @@
         "status": "pending",
         "assignee": null,
         "reason": null
-      }
+      },
+      "tentative": false,
+      "now": "사람이 손으로 한다.",
+      "change": "바꾸지 않는다. 사람이 판단한다.",
+      "check": "없음.",
+      "assumptions": [],
+      "actions": [],
+      "gate_note": null
     }
   ],
   "proposal": {
     "step": 3,
     "name": "기준 구간 고르기(흔들린 기록)",
-    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다."
+    "reason": "② 단계 가운데 아직 사람이 하는 첫 단계다. 애매한 건은 사람 검토로 남긴다.",
+    "check": "기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.",
+    "effect": "절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.",
+    "tentative": false
   },
   "verification": {
     "status": "measured",
@@ -391,26 +472,29 @@
       "step": 3,
       "name": "기준 구간 고르기(흔들린 기록)",
       "kind": "exception_review",
-      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다."
+      "reason": "판단 기준을 일부만 글로 쓸 수 있으므로(partial) 예외 건은 사람이 검토한다.",
+      "text": "규칙으로 판단이 안 되는 예외 건은 담당자가 검토한다."
     },
     {
       "step": 6,
       "name": "결과 해석 문장 쓰기",
       "kind": "human_gate",
-      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다."
+      "reason": "틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.",
+      "text": "이 단계 결과를 다음으로 넘기기 전에 담당자가 확인한다."
     },
     {
       "step": 7,
       "name": "최종 확인·서명·제출",
       "kind": "signoff",
-      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류."
+      "reason": "사람이 최종 확인·서명하는 단계이므로(yes) 사람이 하는 것으로 분류.",
+      "text": "담당자가 최종 확인·서명한다."
     }
   ],
   "risks": [
     {
       "key": "ai_assist",
       "step": 6,
-      "text": "6단계 결과 해석 문장 쓰기: 실행 시 AI 보조다. 자동 승인하지 않고 사람이 확인한다."
+      "text": "6단계 결과 해석 문장 쓰기: AI 초안이 틀릴 수 있다. 자동 승인하지 않고 담당자가 확인해 잡는다."
     },
     {
       "key": "verdict",
@@ -418,23 +502,49 @@
       "text": "검증 판정이 보류다. 정확도 80.0%가 문턱 95%에 못 미치므로 보류."
     }
   ],
+  "opinions": [],
+  "candidates": [],
   "todo": [
     {
+      "group": "now",
+      "key": "review_steps",
+      "step": 0,
+      "text": "단계마다 맞는지 확인한다(맞음/바꾸기): 1, 2, 3, 4, 5, 6, 7단계."
+    },
+    {
+      "group": "improve",
+      "key": "first_check",
+      "step": 3,
+      "text": "먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다."
+    },
+    {
+      "group": "verify",
       "key": "review_items",
       "step": 0,
       "text": "검토할 항목 5건(불일치 4건, 추가 행 1건)을 보고 설명이 되는지 적는다."
     },
     {
+      "group": "verify",
       "key": "measure_minutes_per_item",
       "step": 0,
-      "text": "건당 시간(minutes_per_item)을 잰다: 1, 2, 3, 4, 5, 6, 7단계."
+      "text": "개선 전후를 비교하려면 단계별 건당 시간을 잰다: 1, 2, 3, 4, 5, 6, 7단계."
     },
     {
-      "key": "review_steps",
+      "group": "implementer",
+      "key": "review_file",
       "step": 0,
-      "text": "단계 확인(맞음/바꾸기)이 아직 없다: 1, 2, 3, 4, 5, 6, 7단계. 확인 파일을 --review로 넣는다."
+      "text": "단계 확인 결과는 확인 파일(--review)로 open에 넣는다."
+    },
+    {
+      "group": "implementer",
+      "key": "build_command",
+      "step": 3,
+      "text": "만들기로 정하면 scorecard build signoff-final --step 3 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다."
     }
   ],
+  "stated_numbers": [],
+  "open_questions": [],
+  "self_check": [],
   "inputs": [
     {
       "path": "answers.yaml",

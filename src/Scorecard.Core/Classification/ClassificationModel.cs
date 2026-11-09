@@ -13,6 +13,7 @@ public sealed record ClassificationResult(string Case, IReadOnlyList<StepClassif
 // Inferred: 답 10개 중 IsInferred인 키(같은 순서, 4.12). classification.json에는 쓰지 않는다(3.2).
 // Checks: 확인 항목 키(4.7 표 순서).
 // AiOveruseCandidate: current_actor가 ai_each_time이고 Rows[0] 담당의 비교 값이 ②(4.8).
+// Detail: AI 판단의 선택 항목(동작 목록·네 칸 문장·담당자 확인 메모, T-022). 분류에 쓰지 않고 그대로 옮긴다(3.2, 4.14).
 public sealed record StepClassification(
     int Number,
     string Name,
@@ -23,7 +24,8 @@ public sealed record StepClassification(
     IReadOnlyList<string> Inferred,
     IReadOnlyList<string> Checks,
     bool AiOveruseCandidate,
-    IReadOnlyList<ClassificationRow> Rows);
+    IReadOnlyList<ClassificationRow> Rows,
+    Cases.StepAiDetail? Detail = null);
 
 // 규칙 의견. 트리 step 행의 담당(①~④)과 근거 키(SIGNOFF, Q1~Q4, ELSE).
 public sealed record RuleOpinion(string Assignee, string Rule);

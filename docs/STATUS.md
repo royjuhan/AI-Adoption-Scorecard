@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-10 | 0017 | 릴리스 내려받기: `.github/workflows/release.yml`(릴리스 발행 때 태그 커밋 빌드·테스트 뒤 win-x64 zip·SHA-256을 릴리스에 붙임, `contents: write`), 묶음 파일 `tools/release/`, 다음 판 v0.2.0-alpha(v0.1.0-alpha 태그는 만들지 않음), 샘플 HTML을 지금 골든으로. 2절 8·10 그대로 | juhan 요청(2026-11-10), 방식은 리드(ADR 0005 결정 3) | T-023 |
 | 2026-11-09 | 0016 | 첫 실사용 반영(지시문 juhan, "ADR 0011"은 이미 있어 0016). 스킬 `/scorecard` 다시 씀(`.claude/skills/scorecard/SKILL.md`: 동작 단위 판단, 출처 stated·inferred·default, 자기 검사 `docs/spec/skill-output-rules.md` R1~R13, 질문 3개, 확인 파일 `confirmed_in: conversation`). 스킬 선택 항목은 Core가 받아 옮긴다. classification.json schema 2 그대로, scorecard.json 1 → 2. 엔진·expected·oracle 그대로. 2절 8·10 그대로 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-09 07:19, 결정 카드 "AI 판단 단계에만 붙이기": 결정 1 그대로) | T-022 |
 | 2026-11-08 | 0014 | M2-2 PR (b): 지시문 3.1·3.2·3.3·12절을 schema 2에 맞춤(`schema_version` 값은 문서마다, `existing_feature` unknown은 기본값 표시, ②M·AI 서명 게이트는 classification 4.13), 스킬 `/scorecard` 추가. 새 결정 없음(ADR 0013을 따름). 2절 8·10 그대로 | 리드(ADR 0005 결정 3) | T-019 (b) |
 | 2026-11-08 | 0013 | classification.json schema 2(단계마다 `source`·`rule_opinion`·`differs`, AI 판단 `ai: {assignee, reason}`, ②M, `confirm_existing_feature` 삭제, schema_version 1 → 2). M2-2를 두 PR로(ADR 0010 B-12 예외). oracle `classify.py` 판 둘을 expected `schema_version`으로 고르고 PR (b) 뒤 지운다. 가드를 약하게 하지 않는다 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-08 11:39 "제안대로": 스킬 대화에서 확인, 게이트는 트리가 늘 붙임) | #24 |
@@ -26,7 +27,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 - T-022 첫 실사용 반영(ADR 0016, juhan 확인): 스킬 판단 깊이와 스코어카드 문구. 엔진·expected 그대로. 수용 채점(공개 사례 5건)은 리드가 PR 밖에서.
 - M2 끝: M2-1(#23), M2-2(#24, #27), M2-3(#28), M2-4(#29). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22)도 끝났다.
-- 다음: 이 릴리스 PR 머지 뒤 v0.1.0-alpha 태그(ADR 0010 B-12). 그다음 빈 곳 카드(T-015 빈 곳 6부터).
+- T-023 릴리스 내려받기(ADR 0017): 머지 뒤 juhan이 웹 화면에서 v0.2.0-alpha 릴리스를 발행하면 워크플로가 zip을 붙인다. v0.1.0-alpha 태그는 만들지 않는다.
+- 다음: 빈 곳 카드(T-015 빈 곳 6부터).
 - 릴리스 v0.1.0-alpha 준비: `CHANGELOG.md`, ADR 0015(win-x64 exe SHA-256 `123340a4…`, 네트워크·프로세스 검사 없음), 샘플 스코어카드 `docs/samples/`. 태그는 머지 뒤 리드. G2 비공개 사례 1건 로컬 실행은 juhan 실제 PC 몫으로 남음.
 - 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
@@ -62,6 +64,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-019a M2-2 schema 2 스펙·oracle | #24 | 2026-11-08 | 2084 | 해당 없음(src 변경 없음) | ADR 0013, juhan 확인(사용자 확인은 스킬 대화, 게이트는 트리). 리뷰 막는 지적 1(SIGNOFF+AI 비④ 게이트) 고침 |
 | T-019b M2-2 Core·expected·스킬 | #27 | 2026-11-08 | 2153 | 바뀐 Core 파일 합계 91.85%(base 91.38%) | ADR 0014. 민감 경로 전체 diff 리뷰 막는 지적 없음. #25·#26은 브랜치 기록·커밋 범위로 regression-guard에 걸려 닫고 다시 엶 |
 | T-020 M2-3 HTML 스코어카드 | #28 | 2026-11-08 | 2198 | CI mutation 녹색(바뀐 파일 base 이상) | 리뷰 1회 막는 지적 없음(AI 서명 단계 게이트 표시 하나는 고침). 민감 경로 tools/html-check 전체 diff 리뷰 막는 지적 없음. Windows CRLF 원본에서 CSS 줄바꿈 고침 |
+| T-022 첫 실사용 반영 | #31 | 2026-11-09 | 2336 | CI mutation 녹색, lead_check 로컬 measured | ADR 0016. 새 reviewer 전체 diff 리뷰 2회(채점 뒤 바뀐 부분 포함) 막는 지적 없음. 수용 채점 공개 사례 5건(카드 "채점") |
 | T-021 M2-4 build 의뢰서 번들 | #29 | 2026-11-08 | 2246 | CI mutation 녹색(바뀐 파일 base 이상) | 리뷰 1회 막는 지적 없음. 서명 값 검사(이메일·경로, 보이는 글자) 보강. M2 끝 |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.

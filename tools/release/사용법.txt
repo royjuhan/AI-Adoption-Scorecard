@@ -1,0 +1,17 @@
+AI 도입 스코어카드
+
+1. 이 폴더의 "1-예제-돌려보기.bat"을 더블클릭한다.
+   예제(table-compare)를 try 폴더에 복사해 분류 -> 대조·판정 -> 스코어카드 -> 만들 단계 추천까지 돌리고,
+   결과 스코어카드(try\table-compare\out\scorecard.html)를 브라우저로 연다.
+
+2. 제작 의뢰서 번들 만들기(선택). 이 폴더에서 PowerShell을 열고:
+   .\scorecard.exe build try\table-compare --step 1
+   -> try\table-compare\out\export-check.md 초안이 생긴다(이때는 "사람 확인이 없다"로 끝난다).
+   메모장으로 열어 마지막 줄 "확인한 사람:" 뒤에 이름을 적고 저장한 뒤 같은 명령을 다시 돌린다.
+   -> try\table-compare\out\build-request\ 폴더가 생긴다.
+
+3. 다른 예제: examples 폴더의 form-fill, mixed-exceptions, signoff-final, reply-drafts.
+   bat 파일 안의 table-compare를 바꾸면 된다.
+
+주의: 실제 회사 자료는 공개 저장소에 올리지 않는다. 이 폴더 안에서만 쓴다.
+Windows가 "PC 보호" 창을 띄우면 "추가 정보" -> "실행"을 누른다(서명하지 않은 exe라서).

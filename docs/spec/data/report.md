@@ -62,6 +62,18 @@
 | `actions` | 객체 배열 | AI `actions` 그대로: `action`, `who_now`, `proposed`, `source`. 없으면 `[]` |
 | `gate_note` | 문자열 또는 null | AI `gate_note` 그대로 |
 
+있을 때만 쓰는 최상위 속성(T-024, 13절). 답 파일에 역할 배분 메모가 있을 때만 `self_check` 뒤에 쓴다. 없으면 키가 없다.
+
+| 있을 때만 속성 | 형식 | 뜻 |
+| --- | --- | --- |
+| `allocation` | 객체 | 답 파일 그대로: `purpose`, `done_when`(문자열 또는 null), `facts`, `assumptions`(문자열 배열), `tools`(`name`, `steps`, `function`, `input`, `process`, `output`, `reduces`, `exceptions`, `existing`, `new`, `burden`), `transitions`(`step`, `from`, `to`, `condition`, `evidence`) |
+
+있을 때만 쓰는 단계 속성. AI 판단에 역할 배분이 있을 때만 `gate_note` 뒤에 쓴다.
+
+| 있을 때만 단계 속성 | 형식 | 뜻 |
+| --- | --- | --- |
+| `allocation` | 객체 | AI 판단 그대로: `roles`(`human`, `ai`, `software`, 없는 역할은 null. 적지 않았으면 `roles`가 null), `judgment`, `execution`, `accountability`, `basis`, `varies`(문자열 또는 null) |
+
 ## 4. 규칙
 
 ### 4.1 확인하면 바뀔 수 있음
@@ -77,6 +89,7 @@
 | `signoff-final` | 5 | 5 | 0 | 3 | 아니오 |
 | `ai-judgment` | 3 | 2 | 1 | 2 | 아니오 |
 | `ai-actions` | 2 | 1 | 1 | 2 | 아니오 |
+| `ai-roles` | 2 | 2 | 0 | 1 | 아니오 |
 
 ### 4.4 제안
 
@@ -136,6 +149,14 @@
 | 5 게이트·위험 | `zone-5` | 담당자 확인(화면 문장, 펼쳐 보기에 엔진 문장)과 남는 위험. 판단이 갈린 단계·개선 후보는 다른 카드 | `gates`, `risks`, `opinions`, `candidates` |
 | 6 다음 할 일 | `zone-6` | 지금 할 일 / 개선을 진행하려면 / 실제 효과까지 검증하려면(선택). 펼쳐 보기: 구현·검증 담당자 안내 | `todo` |
 | 7 개요·입력 기록 | `zone-7` | 업무 요약 네 줄, 사용자가 준 숫자, 입력 원문 보기(접음), 단계 흐름. 펼쳐 보기: 자기 검사, 입력·결과·확인 파일 SHA-256, schema | `task_summary`, `stated_numbers`, `intake`, `steps`, `self_check`, `inputs`, `results`, `review` |
+
+역할 배분 구역(T-024, 13절). 답 파일에 그 메모가 있을 때만 보인다. 일곱 구역 표에 들지 않는다. 화면 순서: 업무 이해는 1구역 뒤, 개선 제안은 2·3·5구역 뒤 4구역 앞, 역할 전환 조건은 4구역 뒤 6구역 앞. 단계별 세 역할은 2구역 단계마다 네 칸 아래에 둔다.
+
+| 역할 배분 구역 | id | 내용 | 결과 객체 |
+| --- | --- | --- | --- |
+| 업무 이해 | `role-understanding` | 목적, 완료 조건, 확인된 사실, 가정(확인 필요) | `allocation.purpose`, `done_when`, `facts`, `assumptions` |
+| 개선 제안 | `role-tools` | 도구마다 대상 단계, 기능, 입력, 처리, 결과, 줄어드는 작업, 다시 넘길 예외, 기존 기능으로 해결, 새로 개발, 비용·부담 검토 | `allocation.tools` |
+| 검증 방법과 역할 전환 조건 | `role-transitions` | 검증은 실제 자료 시험(check)으로 한다는 줄, 전환마다 단계·지금 담당 → 바뀔 담당·바꾸는 조건·필요한 근거 | `allocation.transitions` |
 
 할 일 묶음(4.8).
 

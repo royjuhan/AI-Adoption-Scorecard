@@ -14,7 +14,9 @@ public class CaseApiShapeTests
     private static readonly string[] PublicTypes =
     [
         // T-014(text-check.md). T-022(4.15): CaseNotes, CaseTaskSummary, SelfCheckItem, StepAction, StepAiDetail를 더했다.
+        // T-024(4.16): CaseAllocation, RoleTool, RoleTransition, StepAllocation, StepRoles를 더했다.
         "Answer`1",
+        "CaseAllocation",
         "CaseChecklist",
         "CaseDefinition",
         "CaseError",
@@ -28,11 +30,15 @@ public class CaseApiShapeTests
         "CaseThresholds",
         "ChecklistItem",
         "CompareField",
+        "RoleTool",
+        "RoleTransition",
         "SelfCheckItem",
         "StepAction",
         "StepAi",
         "StepAiDetail",
+        "StepAllocation",
         "StepAnswers",
+        "StepRoles",
     ];
 
     [Fact]

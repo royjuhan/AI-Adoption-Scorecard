@@ -153,6 +153,16 @@
 - 형식·선택지는 데이터 4.15 표, 오류는 4.9 표 그대로(`type`, `required`, `enum`, `unknown-field`). 장면 표는 데이터 4.15.
 - 문장은 저장만 한다(앞뒤 공백 유지). 사용자가 준 숫자는 바꾸지 않는다(지시문 0016 2.4).
 
+### 4.16 역할 배분 선택 항목 (T-024)
+
+- 상태: 추천안 채택(ADR 0018, juhan 확인 2026-11-10 07:41). Core 파서가 받는다. oracle은 받지 않는다(공개 예제에 없다).
+- 스킬 `/scorecard`가 juhan 지시(2026-11-10, 인간·AI·소프트웨어 역할 배분 기준)에 따라 적는다. Core는 분류·대조·판정·셈에 쓰지 않고 그대로 옮긴다.
+- 단계 `ai`의 선택 키: `roles`(`human`·`ai`·`software`, 세 역할), `judgment`(판단), `execution`(실행), `accountability`(책임 인수 지점), `basis`(배분 근거), `varies`(달라지는 것). 하나라도 있으면 `StepAiDetail.Allocation`, 없으면 null. 이것만 있어도 `Detail`이 있다.
+- 최상위 선택 키: `purpose`(목적), `done_when`(완료 조건), `facts`(확인된 사실), `assumptions`(가정), `tools`(도구 제안), `transitions`(역할 전환 조건). 하나라도 있으면 `CaseNotes.Allocation`, 이것만 있어도 `Notes`가 있다.
+- 세 역할은 억지로 채우지 않는다. 없는 역할은 적지 않거나 빈 글로 둔다. 셋 다 없으면 `required`다.
+- `tools[].steps`·`transitions[].step`은 그 파일에 있는 단계 번호다(`range`). 전환의 `from`·`to`는 담당 다섯 가운데 하나이고 서로 다르다(`conflict`).
+- 형식·장면 표는 데이터 4.16. 오류 코드는 4.9 표 그대로다.
+
 ## 5. 예외
 
 - 경우별 결과는 데이터 5절 표.

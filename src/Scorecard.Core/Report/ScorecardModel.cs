@@ -9,6 +9,7 @@ namespace Scorecard.Core.Report;
 // 숫자·판정·문장은 모두 Core가 채운다. HTML은 표시만 한다.
 // schema 2(T-022, ADR 0016): Scenario·Status·Conclusion·TaskSummary, 의견 차이(Opinions)·개선 후보(Candidates)를 위험에서 나눔,
 // 할 일 묶음(Todo.Group), 사용자가 준 숫자·확인 질문·자기 검사를 더했다.
+// T-024(ADR 0018): Allocation은 답 파일의 역할 배분 메모(업무 이해·도구 제안·역할 전환 조건) 그대로다. 없으면 null이고 scorecard.json에 키가 없다.
 public sealed record ScorecardResult(
     string Case,
     string? Task,
@@ -32,7 +33,8 @@ public sealed record ScorecardResult(
     IReadOnlyList<Cases.SelfCheckItem> SelfCheck,
     IReadOnlyList<FileHash> Inputs,
     IReadOnlyList<FileHash> Results,
-    FileHash? Review);
+    FileHash? Review,
+    Cases.CaseAllocation? Allocation = null);
 
 // 상태 네 줄(report.md 4.10). Material: virtual, real, unknown(적지 않음). Classification: ai_draft(AI 판단 단계가 있음), rule_tree.
 // Confirmed: 확인된 단계 수(맞음+바꿈), Steps: 전체 단계 수. ConfirmedIn: 확인 파일의 confirmed_in(없으면 null). Test: verification.status.
@@ -73,6 +75,7 @@ public sealed record AssigneeCount(string Assignee, int Count);
 // CurrentActor·Inferred는 케이스 폴더 answers.yaml에서 읽는다. 쓸 수 없으면 null·빈 목록이다(report.md 4.3).
 // T-022: Tentative는 판단이 추정·기본값에 기대는가(4.12). Now·Change·Check는 단계 표 네 칸 중 세 칸(AI 선택 항목 또는 Core 문장).
 // Assumptions는 가정한 내용(업무 말). Actions·GateNote는 AI 선택 항목 그대로다.
+// Allocation(T-024)은 AI 판단의 역할 배분(세 역할, 판단·실행·책임, 배분 근거) 그대로다. 없으면 null이고 키가 없다.
 public sealed record ScorecardStep(
     int Number,
     string Name,
@@ -95,7 +98,8 @@ public sealed record ScorecardStep(
     string Check,
     IReadOnlyList<string> Assumptions,
     IReadOnlyList<Cases.StepAction> Actions,
-    string? GateNote);
+    string? GateNote,
+    Cases.StepAllocation? Allocation = null);
 
 public sealed record ScorecardRow(string Kind, string Assignee, string Rule, string Reason);
 

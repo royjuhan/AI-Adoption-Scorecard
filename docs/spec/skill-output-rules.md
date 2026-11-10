@@ -1,20 +1,21 @@
 # skill-output-rules (스킬 출력 자기 검사 규칙)
 
-- 상태: 추천안 채택(ADR 0016, juhan 확인 대기). 작업 카드 `docs/tasks/T-022-first-use-skill-depth.md`.
-- 근거: 지시문 0016(첫 실사용 supplier-carbon-survey 결과와 독립 검토). 1·2·3·4·5·7절이 스킬, 6절이 HTML이다.
+- 상태: 추천안 채택(ADR 0016, juhan 확인 2026-11-09). R14~R21은 ADR 0018(juhan 확인 2026-11-10 07:41). 작업 카드 `docs/tasks/T-022-first-use-skill-depth.md`, `docs/tasks/T-024-role-allocation-criteria.md`.
+- 근거: 지시문 0016(첫 실사용 supplier-carbon-survey 결과와 독립 검토), juhan 지시 2026-11-10(인간·AI·소프트웨어 역할 배분 기준, R14~R21).
 - 채점 표는 `docs/spec/data/skill-output-rules.md`(절 번호가 같다). 테스트가 규칙 번호를 읽는다.
 - 스킬 `/scorecard`(`.claude/skills/scorecard/SKILL.md`)는 결과를 내기 전에 이 규칙을 모두 본다. 엔진(분류 트리·대조·판정)은 이 규칙을 모른다.
 
 ## 1. 범위
 
-- 스킬이 쓰는 글: 단계 `ai`(`reason`, `actions`, `now`, `change`, `check`, `gate_note`), 케이스 메모(`scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`), 확인 파일(`confirmed_in`), 대화에서 하는 말.
+- 스킬이 쓰는 글: 단계 `ai`(`reason`, `actions`, `now`, `change`, `check`, `gate_note`, `roles`, `judgment`, `execution`, `accountability`, `basis`, `varies`), 케이스 메모(`scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`, `purpose`, `done_when`, `facts`, `assumptions`, `tools`, `transitions`), 확인 파일(`confirmed_in`), 대화에서 하는 말.
 - 범위 밖: 숫자·판정(엔진 JSON 값만 옮긴다, CLAUDE.md 절대 원칙 4), HTML 배치(report.md 12절).
 - 스킬 출력은 AI라 골든 테스트가 안 된다. 대신 사람이 아닌 새 reviewer가 이 규칙으로 채점한다(6절).
 
 ## 2. 판단 기준 한 줄
 
-- "이 단계에서 사람 손이 가는 동작이 무엇이고, 그중 규칙으로 할 수 있는 것은 무엇인가."
-- 분류 코드를 고르는 일이 아니라 이 질문에 답하는 일이다.
+- "이 단계에서 무엇을 판단하고, 무엇을 실행하고, 누가 책임을 인수하는가. 그중 규칙으로 할 수 있는 것은 무엇인가."
+- 분류 코드를 고르는 일이 아니라 이 질문에 답하는 일이다. 업무 이름만 보고 역할을 정하지 않는다.
+- 세 역할: 소프트웨어(입력·규칙·결과를 명시해 반복 실행: ②, 고정 모델 ②M, 이미 손 없이 돌면 ①), AI(맥락·의도·예외 해석: ③), 인간(책임 인수, 의사·가치·관계·신뢰: ④).
 
 ## 3. 규칙
 
@@ -101,11 +102,52 @@
 - 가상 시나리오나 연습 입력이면 `scenario: virtual`을 적는다. 스코어카드 맨 위에 "가상 시나리오 기반. 실제 운영 수치·검증 결과 아님"이 붙는다.
 - 사용자가 자기 업무라고 하면 `real`, 모르면 적지 않는다.
 
+### R14 판단·실행·책임을 나눈다
+
+- AI 판단 단계마다 `judgment`(판단), `execution`(실행과 누가), `accountability`(책임 인수 지점)를 따로 쓴다. 책임 지점이 없으면 없다고 쓰고 잘못되면 어디서 드러나는지 쓴다.
+- 한 단계에 AI가 판단하고 소프트웨어가 실행하고 인간이 승인하는 구성을 `roles`로 나눈다. 단계 담당은 중심 역할 하나다.
+
+### R15 책임만으로 사람에게 준비·실행을 주지 않는다
+
+- 책임이 사람에게 있다는 이유로 자료 모으기·요약·목록·기록까지 `human`에 두지 않는다.
+- `human`에는 사람이 직접 결정하는 지점(승인, 약속, 이해관계 조정)만 쓴다. 준비는 `ai`·`software`에 지원 범위로 쓴다.
+
+### R16 배분 근거는 다섯 질문으로
+
+- `basis`는 다섯 질문에 답한다: 무엇이 달라지나, 입력값인가 맥락 해석인가(`varies`), 무엇을 규칙으로 쓸 수 있나, 어디에 사람의 의사·책임이 필요한가, 결과를 누가 어떻게 확인하나.
+- 입력값만 달라지고 처리 규칙이 같으면 소프트웨어다. 반복돼도 매번 맥락 해석이 필요하면 AI 역할이 남는다.
+
+### R17 도구 제안은 열한 칸을 채운다
+
+- `tools`마다 `name`, `steps`, `function`, `input`, `process`, `output`, `reduces`, `exceptions`, `existing`, `new`, `burden`을 쓴다(파서가 빈 칸을 막는다).
+- `exceptions`는 AI·사람에게 다시 넘길 조건이다. `existing`은 기존 기능으로 해결할 범위, `new`는 새로 개발할 범위다.
+- `burden`은 개발·유지보수 비용과 호출·결과 확인 부담을 보고 실제로 일이 줄어드는지 쓴다. 재지 않았으면 재지 않았다고 쓴다.
+
+### R18 역할 전환은 근거를 적는다
+
+- `transitions`마다 바꾸는 조건(`condition`)과 필요한 사례·검증 결과·운영 데이터(`evidence`)를 쓴다.
+- AI의 자신감만으로 맡기는 범위를 넓히지 않는다. "AI가 잘할 것이다"는 근거가 아니다.
+
+### R19 측정 없는 점수·절감률 0건
+
+- 점수, 절감률, 퍼센트, 시간 절약은 엔진 JSON이나 `stated_numbers`에 있을 때만 쓴다.
+- `tools`·`transitions`·`basis`·대화에 만든 숫자를 쓰지 않는다. 효과는 "재지 않았다"와 검증 방법으로 쓴다.
+
+### R20 세 역할을 억지로 채우지 않는다
+
+- 근거가 있는 역할만 `roles`에 적는다. 없는 역할은 비운다. 화면에 "역할 없음"으로 보인다.
+- 모든 단계에 인간·AI·소프트웨어를 하나씩 넣지 않는다.
+
+### R21 업무 이해는 사실과 가정을 나눈다
+
+- `purpose`(목적)와 `done_when`(완료 조건)을 쓴다.
+- `facts`에는 사용자가 말한 것만, `assumptions`에는 AI가 짐작한 것을 "확인되지 않았다"로 쓴다. 결론을 바꿀 가정은 질문(R11)으로 묻는다.
+
 ## 4. 자기 검사 기록 (`self_check`)
 
-- 스킬은 `answers.yaml`을 쓰기 직전에 R1~R13을 본다. 실패가 있으면 고친 뒤 다시 본다.
+- 스킬은 `answers.yaml`을 쓰기 직전에 R1~R21을 본다. 실패가 있으면 고친 뒤 다시 본다.
 - 맞대어 본다: 물은 질문과 `open_questions`의 내용이 `reason`·`actions`·`now`에 단정형이나 `source: stated`로 적혀 있으면 R1 실패다. 추정형과 `inferred`로 고친다.
-- 결과를 `self_check`에 규칙마다 한 줄 적는다: `{rule: R1 출처 없는 단정 0건, result: pass}`. 수용 규칙 R1~R5는 늘 적고, R6~R13은 실패했거나 `note`가 있을 때만 적어도 된다. 고칠 수 없는 실패는 `result: fail`과 `note`(무엇이 남았나)로 남긴다.
+- 결과를 `self_check`에 규칙마다 한 줄 적는다: `{rule: R1 출처 없는 단정 0건, result: pass}`. 수용 규칙 R1~R5는 늘 적고, R6~R21은 실패했거나 `note`가 있을 때만 적어도 된다. 고칠 수 없는 실패는 `result: fail`과 `note`(무엇이 남았나)로 남긴다.
 - 규칙 이름은 데이터 3절 채점 표의 "규칙" 칸 그대로다. 스코어카드 7구역 펼쳐 보기에 보인다.
 
 ## 5. 엔진과의 경계
@@ -116,6 +158,7 @@
 ## 6. 채점 (지시문 8.2)
 
 - `docs/cases-public/answers/`의 사례 5건(case-01, case-20, case-22, case-31, case-48)을 스킬에 넣는다.
-- 카드를 본 적 없는 새 reviewer가 데이터 채점 표로 사례마다 R1~R5 통과/실패를 매긴다. R6~R13은 지적만 적는다.
+- 카드를 본 적 없는 새 reviewer가 데이터 채점 표로 사례마다 R1~R5 통과/실패를 매긴다. R6~R21은 지적만 적는다.
+- R14~R21은 수용 기준이 아니다(T-024). 다음 채점에서 지적으로 모은다. 한 번 채점해 실패 기준이 흔들리지 않으면 R14·R19부터 수용으로 올린다(ADR 0018 결정 5).
 - 실패가 하나라도 있으면 스킬 본문을 고치고 그 사례를 다시 넣는다. 다섯 사례 모두 R1~R5 통과가 M2-2 수용 기준이다.
 - 채점 결과는 카드 T-022에 적는다. 첫 실사용 입력과 독립 검토 지적은 `docs/cases-public/review-01.md`(가상 시나리오 표시)로 남긴다.

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 도입 스코어카드 · ai-roles</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;
+--c1:#0f766e;--c1bg:#e6f6f4;--c2:#1d5bd8;--c2bg:#eaf1ff;--c2m:#0e7490;--c2mbg:#e4f5fa;--c3:#7c3aed;--c3bg:#f3edff;--c4:#b45309;--c4bg:#fff4e5;
+--good:#15803d;--goodbg:#e8f7ee;--warn:#b45309;--warnbg:#fff4e5;--bad:#c2410c;--badbg:#fff0ea;--na:#6b7280;--nabg:#f1f2f4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans CJK KR","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:14px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 28px 32px}
+header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.2px}
+.case{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin-left:8px;vertical-align:3px;color:var(--ink2)}
+.task{color:var(--ink2)}
+.banner{background:#fff7d6;color:#6b4e00;border:1px solid #f0dc8a;border-radius:8px;padding:8px 12px;font-weight:700;font-size:13px;margin:0 0 12px}
+.notice{background:var(--warnbg);color:#7a3e05;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 12px}
+.status{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.status li{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;min-width:0}
+.status .k,.conclusion .k,.brief .k{display:block;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.conclusion{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.conclusion .line{display:grid;grid-template-columns:150px minmax(0,1fr);column-gap:12px;padding:5px 0;border-bottom:1px dashed var(--line2)}
+.conclusion .line .k{font-size:13px;color:var(--ink);padding-top:1px}
+.questions{margin:2px 0 0;padding-left:18px;color:var(--ink2);font-size:13px}
+.end{margin:10px 0 0;font-weight:700}
+.tiles{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.tile .q{font-size:12.5px;color:var(--ink2);font-weight:600;margin-bottom:6px}
+.tile .big{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.tile .big small{font-size:14px;font-weight:600;color:var(--ink2);margin-left:4px}
+.tile .sub{font-size:12.5px;color:var(--ink2);margin-top:8px}
+.na{color:var(--na)}
+.big.na{font-size:20px}
+.verdict{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:5px;white-space:nowrap;letter-spacing:0}
+.v-bad{color:var(--bad);background:var(--badbg)}.v-good{color:var(--good);background:var(--goodbg)}.v-warn{color:var(--warn);background:var(--warnbg)}.v-na{color:var(--na);background:var(--nabg)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;background:var(--line2)}
+.stack span{display:block;height:100%}
+.legend{display:flex;gap:4px 10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.b1-fill{background:var(--c1)}.b2-fill{background:var(--c2)}.b2m-fill{background:var(--c2m)}.b3-fill{background:var(--c3)}.b4-fill{background:var(--c4)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel h2{font-size:15px;margin:0;padding:14px 16px 10px}
+.panel h2 span{font-weight:400;color:var(--ink3);font-size:12.5px;margin-left:6px}
+.steps .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:12px}
+.steps .cols.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 14px;font-size:12px;color:var(--ink3);font-weight:600}
+.steps .row{padding:11px 14px;border-bottom:1px solid var(--line2)}
+.steps .row.differs{background:#fffaf5}
+.steps .title{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-bottom:6px}
+.steps .num{color:var(--ink3);font-variant-numeric:tabular-nums}
+.steps .name{font-weight:700}
+.steps .state{margin-left:auto;font-size:12px}
+.steps .cell{font-size:13px;color:var(--ink2);min-width:0}
+.steps .cell .lbl{display:none;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.steps .why{margin-top:4px}
+.steps .tent{margin-top:4px;font-size:12px;color:var(--warn);font-weight:600}
+.assume{margin:4px 0 0;padding-left:16px;font-size:12px}
+.ok{color:var(--good)}.chg{color:var(--c4);font-weight:600}.pending{color:var(--ink3)}
+details{margin-top:6px;font-size:12.5px;color:var(--ink2)}
+summary{cursor:pointer;color:var(--ink3);font-size:12px}
+.more{margin-top:6px;padding:8px 10px;background:#fafbfc;border-radius:8px}
+.acts{margin-bottom:8px}
+.act{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);column-gap:8px;padding:4px 0;border-bottom:1px solid var(--line2)}
+.act>div{min-width:0}
+.act.head{font-weight:700;color:var(--ink3)}
+.codes{display:flex;flex-wrap:wrap;gap:4px}
+.extra{margin-top:6px}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px}
+.b1{color:var(--c1);background:var(--c1bg)}.b2{color:var(--c2);background:var(--c2bg)}.b2m{color:var(--c2m);background:var(--c2mbg)}.b3{color:var(--c3);background:var(--c3bg)}.b4{color:var(--c4);background:var(--c4bg)}
+.chip{display:inline-block;font-size:11.5px;color:var(--ink2);background:var(--nabg);border-radius:5px;padding:1px 6px;font-weight:400}
+.chip.ai{color:var(--c3);background:var(--c3bg)}
+.chip.diff{color:var(--bad);background:var(--badbg);font-weight:700}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card.prop{border:2px solid var(--c2)}
+.card .k{font-size:11.5px;font-weight:700;color:var(--c2);letter-spacing:.2px;margin-bottom:4px}
+.card.info .k{color:var(--c4)}
+.card .k.sep{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{margin:0 0 8px;color:var(--ink2);font-size:13px}
+.card .cmd{font-size:12px;margin:6px 0 0}
+.card ul,.flow3{margin:4px 0 0;padding-left:16px;color:var(--ink2);font-size:12.5px}
+.flow3{margin-bottom:8px}
+.card li{margin-bottom:3px}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:#f3f4f6;border-radius:4px;padding:1px 5px;color:#333;overflow-wrap:anywhere}
+.verify,.todo,.overview{margin-top:16px}
+.vbody{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:0 16px 16px}
+.vbody>div{min-width:0}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:2px}
+.cnt{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.cnt b{display:block;font-size:20px;line-height:1.2}
+.cnt span{font-size:11.5px;color:var(--ink2)}
+.cnt.bad b{color:var(--bad)}.cnt.warn b{color:var(--warn)}.cnt.na b{color:var(--na)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;background:var(--line2)}
+.bar span{display:block;height:100%}
+.fill-good{background:#7fb07f}.fill-bad{background:#e07a52}.fill-warn{background:#e0a93f}.fill-na{background:#b8bcc4}
+.note{font-size:12px;color:var(--ink2);margin-top:6px}
+.pattern{margin-top:12px;border-radius:8px;background:var(--warnbg);color:#7a3e05;font-size:12.5px;padding:9px 11px}
+.pattern .verdict{vertical-align:0}
+.checks{margin:10px 0 0;padding-left:0;list-style:none;font-size:12.5px;color:var(--ink2)}
+.checks li{margin-bottom:5px}
+.diffs .d{display:grid;grid-template-columns:64px 120px minmax(0,1fr) 84px;column-gap:10px;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:12.5px;align-items:center}
+.diffs .d>div{min-width:0}
+.diffs .d.head{background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3);font-weight:600}
+.diffs .res{text-align:right}
+.diffs .res .verdict{margin:0;vertical-align:0}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.arrow{color:var(--ink3);margin:0 4px}
+.todo ol{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.todo li{margin-bottom:4px}
+.pad{padding:0 16px 16px}
+.label{font-size:12px;font-weight:700;color:var(--ink3);margin:10px 0 4px}
+.brief{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px;color:var(--ink2)}
+.brief.nums{grid-template-columns:minmax(0,1fr)}
+.intake{white-space:pre-wrap;color:var(--ink2);font-size:13px;background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-top:6px}
+.flow{margin:0;padding-left:20px;color:var(--ink2);font-size:13px}
+.flow li{margin-bottom:3px}
+.hashes{margin:0;padding-left:0;list-style:none;font-size:12px;color:var(--ink2)}
+.hashes li{margin-bottom:4px}
+.hash{word-break:break-all;font-size:11.5px;color:var(--ink3)}
+.foot{font-size:11.5px;color:var(--ink3);margin:12px 0 0}
+@media (max-width:1040px){
+.grid{grid-template-columns:minmax(0,1fr)}
+.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
+.tiles,.status{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vbody{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+.wrap{padding:16px 16px 24px}
+h1{font-size:19px}
+.case{margin-left:0}
+.tile{padding:12px 14px}
+.tile .big{font-size:24px}
+.conclusion .line{grid-template-columns:minmax(0,1fr)}
+.steps .cols.head{display:none}
+.steps .cols{grid-template-columns:minmax(0,1fr);row-gap:8px}
+.steps .cell .lbl{display:block}
+.steps .state{margin-left:0;width:100%}
+.act{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.act.head{display:none}
+.brief{grid-template-columns:minmax(0,1fr)}
+.diffs .d.head{display:none}
+.diffs .d{grid-template-columns:64px minmax(0,1fr) auto;grid-template-areas:"key field res" "key vals res";row-gap:2px}
+.diffs .d .key{grid-area:key}
+.diffs .d .field{grid-area:field}
+.diffs .d .vals{grid-area:vals}
+.diffs .d .res{grid-area:res}
+}
+@media (max-width:420px){
+.tiles,.status{grid-template-columns:minmax(0,1fr);gap:8px}
+.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{body{background:#fff}.wrap{max-width:none}details{display:block}}
+.und{margin:0 0 16px}
+.tools,.trans{margin-top:16px}
+.fa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fa>div{min-width:0}
+.fa ul,.trs{margin:0;padding-left:18px;color:var(--ink2);font-size:13px}
+.alloc{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2)}
+.roles3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px;font-size:13px;color:var(--ink2)}
+.roles3>div{min-width:0}
+.rl{display:block;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.none{color:var(--na)}
+.jea{margin-top:6px;font-size:12.5px;color:var(--ink2)}
+.jea>div{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:8px;padding:2px 0}
+.jea .k{font-weight:700;color:var(--ink3)}
+.toolgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px;padding:0 16px 16px}
+.tool{border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.tool h3{font-size:14px;margin:0 0 4px}
+.tool .for{font-size:12px;color:var(--ink3);margin-bottom:6px}
+.tl{display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:8px;font-size:12.5px;color:var(--ink2);padding:3px 0;border-bottom:1px dashed var(--line2)}
+.tl>span{min-width:0}
+.tl .k{font-weight:700;color:var(--ink3)}
+.trs li{margin-bottom:10px}
+@media (max-width:760px){
+.roles3,.fa{grid-template-columns:minmax(0,1fr);row-gap:6px}
+.jea>div,.tl{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>AI 도입 스코어카드 <span class="case">ai-roles</span></h1>
+<div class="task">합성 고객 문의 메일에 이전 기록을 붙여 답을 쓰고, 약속이 걸린 답은 승인한 뒤 보내고 기록한다</div>
+</header>
+<p class="banner">가상 시나리오 기반. 실제 운영 수치·검증 결과 아님</p>
+<section id="zone-1">
+<ul class="status"><li><span class="k">자료 성격</span>가상 시나리오</li><li><span class="k">업무 분류</span>설명 기반 초안</li><li><span class="k">담당자 확인</span>2/4 확인됨(대화에서 확인됨 포함)</li><li><span class="k">실제 성능 시험</span>진행하지 않음</li></ul>
+<div class="conclusion">
+<div class="line"><span class="k">유지할 것</span><span>3단계는 사람이 판단하는 일로 지금처럼 둔다. 담당자 확인 1곳은 그대로 둔다.</span></div>
+<div class="line"><span class="k">먼저 확인할 것</span><span>1단계 문의 모으기와 기록 붙이기: 기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.</span></div>
+<div class="line"><span class="k">아직 판단하지 않은 것</span><span>추정·기본값에 기댄 판단 1단계(확인하면 바뀔 수 있음). 확인 질문 1개가 남았다. 실제 자료 시험은 진행하지 않았다. 절감 효과는 계산하지 않았다.</span></div>
+<div class="label">확인하면 바뀔 수 있음</div>
+<ul class="questions"><li>자주 오는 문의(배송 조회 같은 것)는 몇 가지 양식으로 묶이나요?</li></ul>
+<p class="end">업무 구조 검토 완료. 지금 제출할 것 없음.</p>
+</div>
+<div class="tiles">
+<div class="tile">
+<div class="q">규칙 자동화를 검토할 단계(단계 수 기준)</div>
+<div class="big">2<small>/ 4단계</small></div>
+<div class="stack" aria-label="담당 구성"><span class="b2-fill" style="flex:2"></span><span class="b3-fill" style="flex:1"></span><span class="b4-fill" style="flex:1"></span></div>
+<div class="legend"><span><i class="b2-fill"></i>규칙 자동화 검토 2</span><span><i class="b3-fill"></i>AI 초안 &#x2B; 담당자 확인 1</span><span><i class="b4-fill"></i>담당자 직접 처리 1</span></div>
+</div>
+<div class="tile">
+<div class="q">실제 자료 시험</div>
+<div class="big"><span class="na">진행하지 않음</span></div>
+<div class="sub">이번 실행에는 비교 자료를 넣지 않았다.</div>
+</div>
+<div class="tile">
+<div class="q">절감 효과</div>
+<div class="big na">아직 계산하지 않음</div>
+<div class="sub">개선 전후 비교에 필요한 단계별 시간은 아직 없어 절감은 계산하지 않았다.</div>
+</div>
+<div class="tile">
+<div class="q">AI 활용 유지 제안</div>
+<div class="big">0<small>단계</small></div>
+<div class="sub">실행 때 AI 초안을 쓰고 담당자가 확인하는 단계. 확인하면 바뀔 수 있음 1단계.</div>
+</div>
+</div>
+</section>
+<section class="panel und" id="role-understanding">
+<h2>업무 이해</h2>
+<div class="pad">
+<ul class="brief"><li><span class="k">목적</span>고객 문의에 정책에 맞는 답을 빠짐없이 보내고, 약속이 걸린 답은 담당자 책임으로 보낸다.</li><li><span class="k">완료 조건</span>모든 문의에 답이 나가고 이력에 남는다. 약속이 걸린 답에는 담당자 승인 기록이 있다.</li></ul>
+<div class="fa">
+<div><div class="label">확인된 사실</div><ul><li>고객 문의 메일이 하루 30건쯤 온다.</li><li>담당자가 메일을 열고 이전 문의와 주문 기록을 찾아 답을 쓴다.</li><li>환불·일정 약속이 걸린 답은 담당자가 정한다.</li></ul></div>
+<div><div class="label">가정(확인 필요)</div><ul><li>자주 오는 문의가 몇 가지 양식으로 묶이는지는 확인되지 않았다.</li><li>메일 도구에서 고객 기록을 바로 찾을 수 있는지는 확인되지 않았다.</li></ul></div>
+</div>
+</div>
+</section>
+<div class="grid">
+<section class="panel" id="zone-2">
+<h2>단계별 판단</h2>
+<div class="steps">
+<div class="cols head"><div>지금 하는 방식</div><div>추천</div><div>바꿔야 할 것</div><div>확인할 것</div></div>
+<div class="row differs">
+<div class="title"><span class="num">1</span><span class="name">문의 모으기와 기록 붙이기</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">메일을 모으고 고객 번호로 이전 기록을 찾아 붙이는 일은 규칙으로 할 수 있다. 고객 번호가 없는 메일을 누구 것으로 볼지는 규칙으로 안 된다.</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.<ul class="assume"><li>말하지 않아 기본값: 예외 비율 20%</li></ul></div>
+</div>
+<div class="alloc">
+<div class="roles3"><div><span class="rl">인간</span><span class="none">역할 없음</span></div><div><span class="rl">AI</span>고객 번호가 없는 메일의 고객 추정(2단계에서 담당자가 함께 확인)</div><div><span class="rl">소프트웨어</span>새 문의 모으기, 고객 번호로 기록 조회, 문의마다 기록 붙이기</div></div>
+<div class="jea"><div><span class="k">판단</span><span>어느 고객의 문의인가.</span></div><div><span class="k">실행</span><span>모으기·조회·붙이기는 소프트웨어가 한다.</span></div><div><span class="k">책임</span><span>이 단계에서 책임을 인수하는 지점은 없다. 잘못 붙인 기록은 2단계 초안을 볼 때 드러난다.</span></div><div><span class="k">달라지는 것</span><span>입력값(메일·고객 번호)이 달라진다. 맥락 해석은 고객 번호가 없을 때만 필요하다.</span></div><div><span class="k">배분 근거</span><span>메일 내용과 고객 번호는 매번 달라도 조회 규칙은 같다. 붙인 기록 수와 못 찾은 메일 목록으로 결과를 확인한다.</span></div></div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>메일 열기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>이전 문의와 주문 기록 찾기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>고객 번호가 없는 메일의 고객 찾기</div><div>사람</div><div>③ AI 보조</div><div>AI 추정</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">② 규칙 SW AI</span> <span class="chip">규칙 의견 ③ Q3</span> <span class="chip diff">규칙 의견과 다름</span> <span class="chip mark">기본값 exception_rate, minutes_per_item</span></div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">2</span><span class="name">의도 해석과 답변 초안</span><span class="state"><span class="pending">확인 전</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b3">AI 초안 &#x2B; 담당자 확인</span><div class="why">문의 의도와 예외는 건마다 맥락을 읽어야 해 AI 초안 &#x2B; 담당자 확인이다. 자주 오는 문의가 묶이는지 확인되지 않았다. 묶이면 양식(규칙), 안 묶이는 건만 AI 초안이다.</div><div class="tent">확인하면 바뀔 수 있음</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>AI 초안을 쓰고 담당자가 확인한다. 자동 승인은 하지 않는다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>AI 초안을 누가 언제 확인하는지 정한다.<ul class="assume"><li>가정: 판단 기준을 글로 쓸 수 있나 일부만</li><li>말하지 않아 기본값: 예외 비율 20%</li></ul></div>
+</div>
+<div class="alloc">
+<div class="roles3"><div><span class="rl">인간</span><span class="none">역할 없음</span></div><div><span class="rl">AI</span>문의 의도 해석, 맞는 정책 고르기, 답변 초안 쓰기</div><div><span class="rl">소프트웨어</span>정책 문서·답변 양식 불러오기, 초안 저장</div></div>
+<div class="jea"><div><span class="k">판단</span><span>문의가 무엇을 묻는가, 어떤 정책이 맞는가, 약속이 걸리는가.</span></div><div><span class="k">실행</span><span>AI가 초안을 쓰고 소프트웨어가 양식에 넣어 저장한다. 약속이 걸린 초안은 3단계로 넘긴다.</span></div><div><span class="k">책임</span><span>초안에서는 책임을 인수하지 않는다. 약속이 걸린 답은 3단계에서 담당자가 승인한다.</span></div><div><span class="k">달라지는 것</span><span>맥락 해석(문의 의도, 예외 사정)이 달라진다.</span></div><div><span class="k">배분 근거</span><span>의도와 예외는 맥락 해석이 매번 필요하다. 정책 문서 찾기는 규칙으로 된다. 초안이 맞는지는 담당자가 3단계와 보내기 전 확인에서 본다.</span></div></div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>문의 읽기</div><div>사람</div><div>③ AI 보조</div><div>사용자가 말함</div></div>
+<div class="act"><div>답 쓰기</div><div>사람</div><div>③ AI 보조</div><div>사용자가 말함</div></div>
+<div class="act"><div>정책 문서 찾기</div><div>사람</div><div>② 규칙 SW</div><div>AI 추정</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">③ AI 보조 AI</span> <span class="chip">규칙 의견 ③ Q3</span> <span class="chip mark">기본값 exception_rate, minutes_per_item</span> <span class="chip mark ai">AI 추정 rule_expressible</span></div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">3</span><span class="name">약속이 걸린 답 승인</span><span class="state"><span class="ok">대화에서 확인됨</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b4">담당자 직접 처리</span><div class="why">환불·일정 약속은 고객과의 관계와 신뢰가 걸린 결정이라 담당자가 정한다. 준비(요약·목록)는 AI와 소프트웨어가 하고 담당자는 승인만 한다.</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>바꾸지 않는다. 사람이 판단한다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>없음.<ul class="assume"><li>말하지 않아 기본값: 예외 비율 20%</li></ul></div>
+</div>
+<div class="alloc">
+<div class="roles3"><div><span class="rl">인간</span>환불·일정·예외 약속을 할지 정하고 승인한다</div><div><span class="rl">AI</span>약속 내용과 근거(고객 기록, 정책 조항) 요약</div><div><span class="rl">소프트웨어</span>승인 대기 목록과 승인 기록</div></div>
+<div class="jea"><div><span class="k">판단</span><span>이 약속을 할 것인가.</span></div><div><span class="k">실행</span><span>승인과 기록은 소프트웨어가 한다.</span></div><div><span class="k">책임</span><span>담당자가 승인으로 약속의 책임을 인수한다.</span></div><div><span class="k">달라지는 것</span><span>사정과 관계(고객 상황, 예외 요청)가 달라진다.</span></div><div><span class="k">배분 근거</span><span>약속은 사람의 의사와 책임이 직접 들어가야 한다. 요약과 목록은 담당자의 준비 일을 줄일 뿐 결정을 대신하지 않는다.</span></div></div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>약속할지 정하기</div><div>사람</div><div>④ 사람</div><div>사용자가 말함</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">④ 사람 AI</span> <span class="chip">규칙 의견 ④ SIGNOFF</span> <span class="chip mark">기본값 exception_rate, minutes_per_item</span></div>
+</div>
+</details>
+</div>
+<div class="row">
+<div class="title"><span class="num">4</span><span class="name">보내기와 이력 저장</span><span class="state"><span class="pending">확인 전</span></span></div>
+<div class="cols">
+<div class="cell"><div class="lbl">지금 하는 방식</div>사람이 손으로 한다.</div>
+<div class="cell"><div class="lbl">추천</div><span class="badge b2">규칙 자동화 검토</span><div class="why">승인된 답만 보내고 기록하는 일은 정해진 조건이라 규칙으로 할 수 있다. 받는 사람이 기록과 다를 때 어떻게 할지는 규칙으로 안 되어 담당자에게 넘긴다.</div></div>
+<div class="cell"><div class="lbl">바꿔야 할 것</div>규칙으로 검사·처리할 수 있는지 검토한다. 규칙으로 안 되는 부분은 따로 적는다.</div>
+<div class="cell"><div class="lbl">확인할 것</div>기존 기능·설정으로 되는지 먼저 확인한다. 안 되면 새로 만들지 판단한다.<ul class="assume"><li>말하지 않아 기본값: 예외 비율 20%</li></ul></div>
+</div>
+<div class="alloc">
+<div class="roles3"><div><span class="rl">인간</span><span class="none">역할 없음</span></div><div><span class="rl">AI</span><span class="none">역할 없음</span></div><div><span class="rl">소프트웨어</span>승인된 답만 보내기, 보낸 내용·시각·승인자 기록, 실패 알림</div></div>
+<div class="jea"><div><span class="k">판단</span><span>보낼 조건(승인됨)은 정해져 있다.</span></div><div><span class="k">실행</span><span>보내기와 기록은 소프트웨어가 한다.</span></div><div><span class="k">책임</span><span>책임은 3단계 승인에서 인수했다. 발송 실패는 담당자에게 넘긴다.</span></div><div><span class="k">달라지는 것</span><span>입력값(답 내용·받는 사람)만 달라진다.</span></div><div><span class="k">배분 근거</span><span>보낼 답은 매번 달라도 보내는 규칙은 같다. 이력 한 줄과 실패 알림으로 결과를 확인한다.</span></div></div>
+</div>
+<details><summary>펼쳐 보기</summary>
+<div class="more">
+<div class="acts"><div class="act head"><div>동작</div><div>지금</div><div>추천</div><div>출처</div></div>
+<div class="act"><div>답 보내기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+<div class="act"><div>기록 남기기</div><div>사람</div><div>② 규칙 SW</div><div>사용자가 말함</div></div>
+</div>
+<div class="codes"><span class="chip ai">AI 판단</span> <span class="chip">② 규칙 SW AI</span> <span class="chip">규칙 의견 ② ELSE</span> <span class="chip mark">기본값 exception_rate, minutes_per_item</span></div>
+<div class="extra"><span class="chip">④ GATE</span> 담당자 확인: 틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</div>
+</div>
+</details>
+</div>
+</div>
+</section>
+<aside class="side">
+<div class="card prop" id="zone-3">
+<div class="k">먼저 확인할 것</div>
+<h3>1단계 문의 모으기와 기록 붙이기</h3>
+<ol class="flow3"><li>기존 기능으로 되는지 확인</li><li>안 되면 새로 만들지 판단</li><li>만들기로 하면 의뢰서</li></ol>
+<p>절감 효과가 가장 크다고 확인된 건 아니다. 기존 설정으로 해결될 가능성이 있어 비용을 들이기 전에 먼저 확인할 항목으로 골랐다.</p>
+<details><summary>고른 규칙과 만들기로 정한 뒤(구현 담당자 안내)</summary><p>② 단계 가운데 아직 사람이 하는 첫 단계다.</p><p class="cmd"><code>scorecard build ai-roles --step 1</code></p></details>
+</div>
+<div class="card info" id="zone-5">
+<div class="k">담당자 확인</div>
+<ul><li><b>3단계</b> 담당자 서명: 담당자가 최종 확인·서명한다.<details><summary>엔진 문장</summary>환불·일정 약속은 고객과의 관계와 신뢰가 걸린 결정이라 담당자가 정한다. 준비(요약·목록)는 AI와 소프트웨어가 하고 담당자는 승인만 한다.</details></li><li><b>4단계</b> 담당자 확인: 3단계 승인 때 받는 사람과 첨부를 함께 본다. 승인되지 않은 답은 보내지 않는다.<details><summary>엔진 문장</summary>틀리면 외부에 영향이 있으므로(external) 이 단계 뒤에 사람 게이트를 둔다.</details></li></ul>
+<div class="k sep">남는 위험</div>
+<ul class="risks"><li>2단계 의도 해석과 답변 초안: AI 초안이 틀릴 수 있다. 자동 승인하지 않고 담당자가 확인해 잡는다.</li></ul>
+</div>
+<div class="card">
+<div class="k">판단이 갈린 단계</div>
+<ul><li><b>1단계 문의 모으기와 기록 붙이기</b>: <span class="badge b2">규칙 자동화 검토</span> 권장. 이유는 단계 표 추천 칸.<details><summary>의견 차이</summary>AI 판단 ②, 규칙 트리 의견 ③ Q3</details></li></ul>
+</div>
+</aside>
+</div>
+<section class="panel tools" id="role-tools">
+<h2>개선 제안<span>AI·사람의 작업을 줄일 도구</span></h2>
+<div class="toolgrid">
+<div class="tool">
+<h3>문의 모으기·기록 조회 도구</h3>
+<div class="for">대상 1·2단계</div>
+<div class="tl"><span class="k">기능</span><span>새 문의를 모으고 고객 번호로 이전 문의·주문 기록을 찾아 문의에 붙인다.</span></div>
+<div class="tl"><span class="k">입력</span><span>메일함 접근 설정과 고객 번호 형식(담당자가 정한다).</span></div>
+<div class="tl"><span class="k">처리</span><span>새 메일 모으기 → 정해진 형식으로 고객 번호 찾기 → 기록 조회 → 문의 묶음 저장.</span></div>
+<div class="tl"><span class="k">결과</span><span>문의마다 원문, 고객 기록, 고객 번호를 못 찾은 메일 목록.</span></div>
+<div class="tl"><span class="k">줄어드는 작업</span><span>AI가 매번 메일을 열고 기록을 찾는 조회·조작, 담당자가 손으로 기록을 붙이는 일.</span></div>
+<div class="tl"><span class="k">다시 넘길 예외</span><span>고객 번호가 없거나 둘 이상인 메일은 AI 판단으로 넘기고, 담당자가 2단계 초안을 볼 때 함께 확인한다.</span></div>
+<div class="tl"><span class="k">기존 기능으로 해결</span><span>메일 도구의 분류·전달 규칙으로 모으기까지 되는지 먼저 본다.</span></div>
+<div class="tl"><span class="k">새로 개발</span><span>고객 번호 찾기와 기록 조회 연결.</span></div>
+<div class="tl"><span class="k">비용·부담 검토</span><span>메일과 기록 시스템을 잇는 유지보수가 든다. 호출은 문의마다 한 번이다. 실제로 일이 줄어드는지는 재지 않았다.</span></div>
+</div>
+<div class="tool">
+<h3>발송·이력 저장 도구</h3>
+<div class="for">대상 4단계</div>
+<div class="tl"><span class="k">기능</span><span>승인된 답만 보내고 보낸 내용·시각·승인자를 기록한다.</span></div>
+<div class="tl"><span class="k">입력</span><span>3단계에서 승인된 답과 받는 사람.</span></div>
+<div class="tl"><span class="k">처리</span><span>승인 여부 확인 → 보내기 → 이력 저장 → 실패하면 담당자에게 알림.</span></div>
+<div class="tl"><span class="k">결과</span><span>발송 결과와 이력 한 줄.</span></div>
+<div class="tl"><span class="k">줄어드는 작업</span><span>담당자가 답을 복사해 보내고 따로 기록하는 일.</span></div>
+<div class="tl"><span class="k">다시 넘길 예외</span><span>발송이 실패하거나 받는 사람 주소가 고객 기록과 다르면 담당자에게 넘긴다.</span></div>
+<div class="tl"><span class="k">기존 기능으로 해결</span><span>메일 도구의 보내기와 보낸 편지함.</span></div>
+<div class="tl"><span class="k">새로 개발</span><span>승인 기록 확인과 이력 저장 연결.</span></div>
+<div class="tl"><span class="k">비용·부담 검토</span><span>승인 기록과 발송을 잇는 작은 규칙이다. 유지보수 부담은 확인되지 않았다.</span></div>
+</div>
+</div>
+</section>
+<section class="panel verify" id="zone-4">
+<h2>실제 자료 시험</h2>
+<div class="vbody">
+<div>
+<p class="note">이번 실행에는 비교 자료를 넣지 않았다. 실제 검증 때 무엇을 오류로 셀지 먼저 정한다.</p>
+</div>
+<div class="diffs">
+</div>
+</div>
+</section>
+<section class="panel trans" id="role-transitions">
+<h2>검증 방법과 역할 전환 조건</h2>
+<div class="pad">
+<p class="note">제안이 효과적인지는 실제 자료 시험(check)으로 확인한다. 역할은 아래 근거가 모인 뒤에만 바꾼다. AI의 자신감만으로 맡기는 범위를 넓히지 않는다.</p>
+<ol class="trs"><li><b>2단계 의도 해석과 답변 초안</b> <span class="badge b3">AI 초안 &#x2B; 담당자 확인</span> <span class="arrow">→</span> <span class="badge b2">규칙 자동화 검토</span><div class="tl"><span class="k">바꾸는 조건</span><span>자주 오는 문의가 몇 가지 양식으로 묶이고, 양식 답을 담당자가 거의 고치지 않는다.</span></div><div class="tl"><span class="k">필요한 근거</span><span>문의 유형별 표본, 담당자 수정 기록, 양식 답과 담당자 답을 대조한 check 결과.</span></div></li><li><b>1단계 문의 모으기와 기록 붙이기</b> <span class="badge b2">규칙 자동화 검토</span> <span class="arrow">→</span> <span class="badge b3">AI 초안 &#x2B; 담당자 확인</span><div class="tl"><span class="k">바꾸는 조건</span><span>고객 번호가 없는 메일이 늘어 규칙으로 고객을 찾지 못하는 건이 많아진다.</span></div><div class="tl"><span class="k">필요한 근거</span><span>규칙으로 붙이지 못한 메일 수와 그 사유 기록(운영 데이터).</span></div></li></ol>
+</div>
+</section>
+<section class="panel todo" id="zone-6">
+<h2>다음 할 일</h2>
+<div class="pad">
+<div class="label">지금 할 일</div>
+<ol><li>단계마다 맞는지 확인한다(맞음/바꾸기): 2, 4단계.</li></ol>
+<div class="label">개선을 진행하려면</div>
+<ol><li>먼저 확인할 것부터 본다. 기존 기능으로 되면 끝, 안 되면 새로 만들지 판단하고, 만들기로 하면 의뢰서를 낸다.</li><li>AI가 가정한 답을 확인한다: 2단계 판단 기준을 글로 쓸 수 있나.</li><li>말하지 않아 기본값으로 둔 답을 확인한다: 1단계 예외 비율; 2단계 예외 비율; 3단계 예외 비율; 4단계 예외 비율.</li></ol>
+<div class="label">실제 효과까지 검증하려면(선택)</div>
+<ol><li>실제 효과까지 보려면 사람이 만든 결과와 AI 적용 결과를 한 벌씩 준비해 비교한다.</li><li>실제 검증 때 무엇을 오류로 셀지 먼저 정한다.</li><li>개선 전후를 비교하려면 단계별 건당 시간을 잰다: 1, 2, 3, 4단계.</li></ol>
+<details><summary>구현·검증 담당자 안내</summary>
+<ol><li>기준 자료(사람이 만든 결과)는 reference/, 결과 자료(AI 적용 후)는 candidate/에 넣고 case.yaml에 inputs·compare·thresholds를 적은 뒤 scorecard check를 돌린다.</li><li>단계 확인 결과는 확인 파일(--review)로 open에 넣는다.</li><li>만들기로 정하면 scorecard build ai-roles --step 1 명령으로 의뢰서 번들을 쓴다. 내보내기 전에 export-check.md에 사람이 확인을 적는다.</li></ol>
+</details>
+</div>
+</section>
+<section class="panel overview" id="zone-7">
+<h2>업무 요약과 입력 기록</h2>
+<div class="pad">
+<ul class="brief"><li><span class="k">규모</span>하루 30건쯤</li><li><span class="k">현재 처리</span>담당자가 메일을 열고 이전 기록을 찾아 답을 쓴다</li><li><span class="k">결과 전달</span>고객에게 메일로 답하고 따로 기록을 남긴다</li></ul>
+<div class="label">사용자가 준 숫자(그대로)</div>
+<ul class="brief nums"><li>하루 30건쯤</li></ul>
+<details><summary>입력 원문 보기</summary>
+<div class="intake"># 합성 예시. 실제 업무·값 없음. 가상 시나리오.&#xA;&#xA;고객 문의 메일이 하루 30건쯤 온다. 담당자가 메일을 열고 이전 문의와 주문 기록을 찾아 답을 쓴다.&#xA;환불이나 일정 약속이 걸린 답은 담당자가 정한다. 보낸 뒤에는 따로 기록을 남긴다.&#xA;검증 자료 없이 구조만 봐 달라.</div>
+</details>
+<div class="label">단계 흐름</div>
+<ol class="flow"><li>문의 모으기와 기록 붙이기 <span class="badge b2">규칙 자동화 검토</span></li><li>의도 해석과 답변 초안 <span class="badge b3">AI 초안 &#x2B; 담당자 확인</span></li><li>약속이 걸린 답 승인 <span class="badge b4">담당자 직접 처리</span></li><li>보내기와 이력 저장 <span class="badge b2">규칙 자동화 검토</span></li></ol>
+<details><summary>파일·해시·schema 펼쳐 보기</summary>
+<div class="label">스킬 자기 검사</div>
+<ul class="hashes"><li><code>R1 출처 없는 단정 0건</code> 통과</li><li><code>R2 집계는 stated만</code> 통과</li><li><code>R3 ①은 손이 안 가는 경우만</code> 통과 · ① 단계 없음</li><li><code>R4 추천 문장에 이유</code> 통과</li><li><code>R5 종료점 문장</code> 통과</li></ul>
+<div class="label">입력 SHA-256</div>
+<ul class="hashes"><li><code>answers.yaml</code> <span class="mono hash">90b47bfce2bff58397cbe23ef7a0c2191a08b90cfe6af2ea70c48576aac23f09</span></li><li><code>intake.md</code> <span class="mono hash">d48f9709880f6b9a6167e92dd949475aaca3f7cfe4a1e9e4953e377f2789b9b1</span></li></ul>
+<div class="label">결과 파일 SHA-256</div>
+<ul class="hashes"><li><code>classification.json</code> <span class="mono hash">d1334cf63d591ca1168c7aa921ee83dc7b72c7dd1ba7991041c5cddf30cebd42</span></li></ul>
+<div class="label">확인 파일 SHA-256</div>
+<ul class="hashes"><li><code>review.yaml</code> <span class="mono hash">1260bf808c0093981555f3f68fe3842c880bfb7a13ab7728381da0137b710b9a</span></li></ul>
+<p class="foot">scorecard.json schema 2. 같은 입력이면 같은 결과. 숫자는 Scorecard.Core가 냈다. 이 파일은 scorecard.json과 같은 결과 객체에서 만들었다. 인쇄하면 PDF가 된다.</p>
+</details>
+</div>
+</section>
+</div>
+</body>
+</html>

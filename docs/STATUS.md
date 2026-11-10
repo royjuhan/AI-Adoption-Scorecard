@@ -6,6 +6,7 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 | 날짜 | ADR | 바뀐 것 | 결정한 사람 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-10 | 0018 | 역할 배분 기준(juhan 지시 2026-11-10 07:39). 스킬 `/scorecard` 다시 씀(`.claude/skills/scorecard/SKILL.md`: 판단·실행·책임, 인간·AI·소프트웨어 세 역할, 다섯 질문, 도구 제안 열한 칸, 역할 전환 조건과 근거, 네 부분 출력, 측정 없는 점수·절감률 금지), 자기 검사 R14~R21(수용은 R1~R5 그대로). 답 파일 선택 키 case-schema 4.16. classification.json·scorecard.json schema 2 그대로(있을 때만 쓰는 키). 분류 트리·엔진·expected·oracle 그대로. 2절 8·10 그대로 | 리드(ADR 0005 결정 3), 범위는 juhan 확인(2026-11-10 07:41, 결정 카드 "스킬과 스코어카드에만 적용") | T-024 |
 | 2026-11-10 | 0017 | 릴리스 내려받기: `.github/workflows/release.yml`(릴리스 발행 때 태그 커밋 빌드·테스트 뒤 win-x64 zip·SHA-256을 릴리스에 붙임, `contents: write`), 묶음 파일 `tools/release/`, 다음 판 v0.2.0-alpha(v0.1.0-alpha 태그는 만들지 않음), 샘플 HTML을 지금 골든으로. 2절 8·10 그대로 | juhan 요청(2026-11-10), 방식은 리드(ADR 0005 결정 3) | T-023 |
 | 2026-11-09 | 0016 | 첫 실사용 반영(지시문 juhan, "ADR 0011"은 이미 있어 0016). 스킬 `/scorecard` 다시 씀(`.claude/skills/scorecard/SKILL.md`: 동작 단위 판단, 출처 stated·inferred·default, 자기 검사 `docs/spec/skill-output-rules.md` R1~R13, 질문 3개, 확인 파일 `confirmed_in: conversation`). 스킬 선택 항목은 Core가 받아 옮긴다. classification.json schema 2 그대로, scorecard.json 1 → 2. 엔진·expected·oracle 그대로. 2절 8·10 그대로 | 리드(ADR 0005 결정 3), juhan 확인(2026-11-09 07:19, 결정 카드 "AI 판단 단계에만 붙이기": 결정 1 그대로) | T-022 |
 | 2026-11-08 | 0014 | M2-2 PR (b): 지시문 3.1·3.2·3.3·12절을 schema 2에 맞춤(`schema_version` 값은 문서마다, `existing_feature` unknown은 기본값 표시, ②M·AI 서명 게이트는 classification 4.13), 스킬 `/scorecard` 추가. 새 결정 없음(ADR 0013을 따름). 2절 8·10 그대로 | 리드(ADR 0005 결정 3) | T-019 (b) |
@@ -25,11 +26,12 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 
 ## 지금
 
+- T-024 역할 배분 기준(ADR 0018, 범위 juhan 확인 2026-11-10 07:41): 스킬과 스코어카드만. 분류 트리·엔진·expected·oracle 그대로. 새 규칙 R14~R21은 다음 채점에서 지적으로 모은다.
 - T-022 첫 실사용 반영(ADR 0016, juhan 확인): 스킬 판단 깊이와 스코어카드 문구. 엔진·expected 그대로. 수용 채점(공개 사례 5건)은 리드가 PR 밖에서.
 - M2 끝: M2-1(#23), M2-2(#24, #27), M2-3(#28), M2-4(#29). ADR 0010(#20), lead_check 재사용(#21), sweeper(#22)도 끝났다.
 - T-023 릴리스 내려받기(ADR 0017): 머지 뒤 juhan이 웹 화면에서 v0.2.0-alpha 릴리스를 발행하면 워크플로가 zip을 붙인다. v0.1.0-alpha 태그는 만들지 않는다.
 - 다음: 빈 곳 카드(T-015 빈 곳 6부터).
-- 릴리스 v0.1.0-alpha 준비: `CHANGELOG.md`, ADR 0015(win-x64 exe SHA-256 `123340a4…`, 네트워크·프로세스 검사 없음), 샘플 스코어카드 `docs/samples/`. 태그는 머지 뒤 리드. G2 비공개 사례 1건 로컬 실행은 juhan 실제 PC 몫으로 남음.
+- 릴리스 v0.1.0-alpha 기록(#30): `CHANGELOG.md`, ADR 0015, 샘플 스코어카드 `docs/samples/`. 태그는 만들지 않는다(ADR 0017 결정 4, 다음 판 v0.2.0-alpha). G2 비공개 사례 1건 로컬 실행은 juhan 실제 PC 몫으로 남음.
 - 브랜치: 오래 쓴 브랜치에는 squash 전 커밋이 남아 regression-guard가 옛 expected 변경을 다시 잡는다. PR마다 main에서 새 브랜치를 낸다(juhan 결정 2026-11-08 12:14).
 - 빈 곳 카드(잠정 결정 cases-public 행의 순서)는 M2 뒤다(ADR 0010 B-7). 미룬 일은 `docs/LATER.md`.
 - 보류: T-015 빈 곳 6 혼동행렬(PR #19 닫음, 작업은 커밋 `5b21280`, 막는 지적 B1과 추천안은 `docs/LATER.md`). M2 뒤에 다시 연다.
@@ -64,8 +66,8 @@ ADR 0005(완전 자동 진행 모드)에 따라 리드가 머지할 때마다 �
 | T-019a M2-2 schema 2 스펙·oracle | #24 | 2026-11-08 | 2084 | 해당 없음(src 변경 없음) | ADR 0013, juhan 확인(사용자 확인은 스킬 대화, 게이트는 트리). 리뷰 막는 지적 1(SIGNOFF+AI 비④ 게이트) 고침 |
 | T-019b M2-2 Core·expected·스킬 | #27 | 2026-11-08 | 2153 | 바뀐 Core 파일 합계 91.85%(base 91.38%) | ADR 0014. 민감 경로 전체 diff 리뷰 막는 지적 없음. #25·#26은 브랜치 기록·커밋 범위로 regression-guard에 걸려 닫고 다시 엶 |
 | T-020 M2-3 HTML 스코어카드 | #28 | 2026-11-08 | 2198 | CI mutation 녹색(바뀐 파일 base 이상) | 리뷰 1회 막는 지적 없음(AI 서명 단계 게이트 표시 하나는 고침). 민감 경로 tools/html-check 전체 diff 리뷰 막는 지적 없음. Windows CRLF 원본에서 CSS 줄바꿈 고침 |
-| T-022 첫 실사용 반영 | #31 | 2026-11-09 | 2336 | CI mutation 녹색, lead_check 로컬 measured | ADR 0016. 새 reviewer 전체 diff 리뷰 2회(채점 뒤 바뀐 부분 포함) 막는 지적 없음. 수용 채점 공개 사례 5건(카드 "채점") |
 | T-021 M2-4 build 의뢰서 번들 | #29 | 2026-11-08 | 2246 | CI mutation 녹색(바뀐 파일 base 이상) | 리뷰 1회 막는 지적 없음. 서명 값 검사(이메일·경로, 보이는 글자) 보강. M2 끝 |
+| T-022 첫 실사용 반영 | #31 | 2026-11-09 | 2336 | CI mutation 녹색, lead_check 로컬 measured | ADR 0016. 새 reviewer 전체 diff 리뷰 2회(채점 뒤 바뀐 부분 포함) 막는 지적 없음. 수용 채점 공개 사례 5건(카드 "채점") |
 
 mutation 점수는 T-010의 `mutation` 잡부터 잰다.
 
@@ -75,6 +77,12 @@ T-010 뒤 카드부터 쓴다. 한 줄에 하나. 뒤집으면 "PR" 칸의 PR부
 
 | 날짜 | 카드 | 질문 | 채택한 추천안 | PR |
 | --- | --- | --- | --- | --- |
+| 2026-11-10 | T-024 | 1 범위 | 스킬과 스코어카드만. 분류 트리·엔진·`examples/**/expected/**`·oracle 그대로. 대안 B(트리 질문도 바꿈 → schema 3 + expected migration + oracle)는 ADR 0018 대안. juhan 확인(2026-11-10 07:41) | T-024 |
+| 2026-11-10 | T-024 | 2 역할 대응 | 소프트웨어 = ②(고정 모델 ②M), AI = ③, 인간 = ④, ①은 지금 손 없이 돌 때만. 단계 담당은 중심 역할 하나, 나머지는 `roles`. "기존 기능으로 해결할 범위"는 도구 `existing`과 단계 `check` | T-024 |
+| 2026-11-10 | T-024 | 3 입력 자리 | 답 파일 선택 키(case-schema 4.16). 도구 제안 열한 칸 모두 필수(`burden`은 지시 4절 끝 비용·부담 검토라 리드가 더함). 전환 `from`·`to`는 담당 다섯, 서로 다름 | T-024 |
+| 2026-11-10 | T-024 | 4 판 번호 | classification.json·scorecard.json 모두 schema 2 그대로. 있을 때만 키를 쓴다(ADR 0016 결정 2 방식). 기존 골든·expected 바이트 그대로 | T-024 |
+| 2026-11-10 | T-024 | 5 수용 규칙 | R1~R5 그대로. R14~R21은 다음 채점에서 지적으로 모은 뒤 R14·R19부터 올린다. 지금 올리면 검증 안 된 채점 기준으로 T-022 채점을 다시 돌려야 한다 | T-024 |
+| 2026-11-10 | T-024 | 6 HTML 자리 | 메모가 있을 때만 업무 이해(1구역 뒤), 단계별 세 역할(2구역 단계마다 네 칸 아래), 개선 제안(4구역 앞), 역할 전환 조건(4구역 뒤)과 그 CSS. 일곱 구역 그대로. 없는 역할은 "역할 없음" | T-024 |
 | 2026-11-09 | T-022 | 1 동작 목록 자리 | 답 파일 단계 `ai`의 선택 키(`actions`, `now`, `change`, `check`, `gate_note`). classification.json에는 그 단계에 있을 때만 쓴다. schema 2 그대로, expected 변경 없음. 대안(늘 쓰기 → schema 3 + expected migration)은 ADR 0016 대안 A. juhan이 지금 방식을 골랐다(2026-11-09 07:19) | T-022 |
 | 2026-11-09 | T-022 | 2 케이스 메모 자리 | 답 파일 최상위 선택 키(`scenario`, `summary`, `stated_numbers`, `self_check`, `open_questions`, `end_state`). 스코어카드가 그대로 옮긴다. 별도 파일은 대안 B | T-022 |
 | 2026-11-09 | T-022 | 3 셈 | 추정·기본값에 기댄 단계는 `tentative`. `summary.stated`·`summary.tentative`로 나눠 센다. 제안은 `tentative`가 아닌 단계 먼저. 기존 `summary.software` 등은 전체 셈 그대로(의뢰서 번들이 쓴다) | T-022 |

@@ -15,7 +15,7 @@
 
 ## 설치
 
-미정 (M4: 단일 `scorecard.exe`, win-x64).
+[Releases](https://github.com/royjuhan/AI-Adoption-Scorecard/releases)에서 zip을 받는다(win-x64, `scorecard.exe`와 예제). 압축을 풀고 `1-예제-돌려보기.bat`을 더블클릭한다. 자세한 것은 안의 `사용법.txt`.
 
 ## 5분 예제
 

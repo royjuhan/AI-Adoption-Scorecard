@@ -17,7 +17,7 @@ AI에 보내면 안 되는 자료는 넣지 마세요. 구조만 설명해도 �
 
 ## Install
 
-TBD (M4: single `scorecard.exe`, win-x64).
+Download the zip from [Releases](https://github.com/royjuhan/AI-Adoption-Scorecard/releases) (win-x64, `scorecard.exe` + examples). Unzip and double-click `1-예제-돌려보기.bat`. See `사용법.txt` inside.
 
 ## 5-minute example
 

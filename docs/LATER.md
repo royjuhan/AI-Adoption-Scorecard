@@ -81,6 +81,13 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - 채점 1회: intake가 이미 서명 단계를 말해도 서명 단계 질문이 질문 3개 가운데 한 자리를 쓴다. 줄이려면 ADR 0003 "한 번 묻는다"를 다시 해석해야 해서 하지 않았다.
 - 채점 1회: case-31에서 핵심 질문 "필수 칸을 비우면 제출이 막히나"를 묻지 않았다(추천이 바뀌는 질문을 놓침).
 
+- #31 리뷰(막지 않음): report.md 4.7 남는 위험 순서에 아직 `differs`·`ai_overuse`가 있다(코드는 `opinions`·`candidates`로 옮김, 12.4).
+- #31 리뷰: report.md 4.4 제안 규칙에 "tentative가 아닌 단계 먼저"가 없다(12.3에만). ADR 0016 결정 5가 옛 tentative 규칙(바뀐 규칙은 STATUS T-022 7행).
+- #31 리뷰: `skill-output-rules.md` 상태 줄 "juhan 확인 대기" → "juhan 확인".
+- #31 리뷰: SKILL.md(확인 전 answers.yaml 금지)와 R12·6.1(고른 단계가 없어도 진행)이 모호하다.
+- #31 리뷰: check 뒤 open을 다시 부르면 answers.yaml의 `end_state`가 판정 옆에 남는다(`ScorecardBuilder`). check 뒤 지우라는 안내가 없다.
+- #31 리뷰: answers.yaml이 없고 동작도 없는 AI 단계가 "말한 것만"에 든다. 결론 `undecided`에 판정 보류·조건부 말이 없다.
+
 ## T-014의 남은 일
 
 - `docs/tasks/T-014-text-result-check.md` "남은 일" 1~4. 요지: `case-schema.md` 표 옮기기, 지시문 12절 `reply-drafts` 행과 제목 "4종", 출처 표를 끝까지 못 읽었을 때 `blind` 검사 안 함(기록), -0 처리(기록).

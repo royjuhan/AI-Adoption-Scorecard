@@ -8,7 +8,7 @@ namespace Scorecard.Core.Cases;
 // 트리를 스키마 순서대로 걷는다(스펙 4.3~4.6). 필드마다 형식·필수 여부를 보고 오류를 모은다.
 // 찾는 순서는 4.3 표 순서다. 같은 위치의 오류는 이 순서로 나온다(스펙 4.9).
 // 숫자는 정규식으로 모양을 본 뒤 InvariantCulture로 읽는다. 이름 비교는 서수다.
-internal sealed class CaseReader(ErrorSink errors)
+internal sealed partial class CaseReader(ErrorSink errors)
 {
     private const int MaxNameLength = 64;
     private const decimal PercentMin = 0m;
@@ -36,13 +36,16 @@ internal sealed class CaseReader(ErrorSink errors)
     // checklist·scores는 문장 결과 검증의 두 길이다(text-check.md 4.1, T-014).
     private static readonly string[] RootKeys =
         ["name", "task", "before", "after", "ai_usage", "steps", "inputs", "compare", "checklist", "scores", "thresholds",
-            "scenario", "summary", "stated_numbers", "self_check", "open_questions", "end_state"];
+            "scenario", "summary", "stated_numbers", "self_check", "open_questions", "end_state",
+            "purpose", "done_when", "facts", "assumptions", "tools", "transitions"];
 
     // inferred는 AI가 추정한 답의 키 목록이다(스펙 4.13, ADR 0004 결정 2).
     // ai는 AI가 적은 단계 담당과 근거다(스펙 4.14, ADR 0013).
     private static readonly string[] StepKeys = ["name", "answers", "inferred", "ai"];
     // T-022(4.15): actions·now·change·check·gate_note는 선택 키다. 스킬이 쓰고 Core는 옮기기만 한다.
-    private static readonly string[] AiKeys = ["assignee", "reason", "actions", "now", "change", "check", "gate_note"];
+    // T-024(4.16): roles·judgment·execution·accountability·basis·varies도 선택 키다.
+    private static readonly string[] AiKeys =
+        ["assignee", "reason", "actions", "now", "change", "check", "gate_note", "roles", "judgment", "execution", "accountability", "basis", "varies"];
     private static readonly string[] ActionKeys = ["action", "who_now", "proposed", "source"];
     private static readonly string[] SummaryKeys = ["scale", "current", "exception_rate", "delivery"];
     private static readonly string[] SelfCheckKeys = ["rule", "result", "note"];
@@ -82,7 +85,7 @@ internal sealed class CaseReader(ErrorSink errors)
         var checklist = ReadChecklist(fields, inputs, compare);
         var scores = ReadScores(fields);
         var thresholds = ReadThresholds(fields);
-        var notes = ReadNotes(fields);
+        var notes = ReadNotes(fields, steps.Count);
         return name is null || task is null
             ? null
             : new CaseDefinition(name, task, before, after, aiUsage, steps, inputs.Inputs, compare, thresholds, checklist, scores, notes);
@@ -277,9 +280,10 @@ internal sealed class CaseReader(ErrorSink errors)
         var change = OptionalText(fields, "change", YamlTree.ChildPath(path, "change"));
         var check = OptionalText(fields, "check", YamlTree.ChildPath(path, "check"));
         var gateNote = OptionalText(fields, "gate_note", YamlTree.ChildPath(path, "gate_note"));
-        return actions.Count == 0 && now is null && change is null && check is null && gateNote is null
+        var allocation = ReadStepAllocation(fields, path);
+        return actions.Count == 0 && now is null && change is null && check is null && gateNote is null && allocation is null
             ? null
-            : new StepAiDetail(actions, now, change, check, gateNote);
+            : new StepAiDetail(actions, now, change, check, gateNote, allocation);
     }
 
     // 4.15 actions: 동작 목록. 원소는 매핑이고 네 키(action, who_now, proposed, source)가 모두 필수다.
@@ -327,8 +331,8 @@ internal sealed class CaseReader(ErrorSink errors)
         return actions;
     }
 
-    // 4.15 케이스 메모. 여섯 키 중 하나도 없으면 null.
-    private CaseNotes? ReadNotes(Dictionary<string, YamlNode> fields)
+    // 4.15 케이스 메모. 여섯 키 중 하나도 없으면 null. 4.16 역할 배분 메모만 있어도 Notes가 있다.
+    private CaseNotes? ReadNotes(Dictionary<string, YamlNode> fields, int stepCount)
     {
         var scenario = TryGetPresent(fields, "scenario", out var scenarioNode) ? Choice(scenarioNode, "scenario", StepQuestions.Scenarios) : null;
         var summary = ReadSummary(fields);
@@ -336,8 +340,9 @@ internal sealed class CaseReader(ErrorSink errors)
         var selfCheck = ReadSelfCheck(fields);
         var questions = TextList(fields, "open_questions");
         var endState = OptionalText(fields, "end_state", "end_state");
+        var allocation = ReadCaseAllocation(fields, stepCount);
         var present = new[] { "scenario", "summary", "stated_numbers", "self_check", "open_questions", "end_state" }.Any(k => TryGetPresent(fields, k, out _));
-        return present ? new CaseNotes(scenario, summary, stated, selfCheck, questions, endState) : null;
+        return present || allocation is not null ? new CaseNotes(scenario, summary, stated, selfCheck, questions, endState, allocation) : null;
     }
 
     private CaseTaskSummary? ReadSummary(Dictionary<string, YamlNode> fields)

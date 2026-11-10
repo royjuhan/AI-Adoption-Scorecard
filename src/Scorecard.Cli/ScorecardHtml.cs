@@ -13,6 +13,8 @@ namespace Scorecard.Cli;
 // 외부 파일·스크립트·글꼴·그림이 없다. 시각·난수가 없다. 줄바꿈은 LF, UTF-8(BOM 없음).
 // T-022(지시문 0016 3·4·5·6절): 기본 화면은 업무 말만 쓴다. 분류 코드·근거 키·파일·해시·schema는 <details> 펼쳐 보기 안에 둔다.
 // 첫 화면은 상태 네 줄 → 결론 세 줄 → 네 칸 요약. 왼쪽 표와 오른쪽 카드에 같은 문장을 두지 않는다.
+// T-024(ADR 0018): 역할 배분 메모가 있을 때만 업무 이해·단계별 세 역할·개선 제안·역할 전환 조건 구역과 그 CSS를 더한다.
+// 없으면 바이트가 T-022와 같다.
 internal static class ScorecardHtml
 {
     public const string FileName = "scorecard.html";
@@ -125,6 +127,7 @@ internal static class ScorecardHtml
     private const string NoCompareFields = "비교할 열을 아직 정하지 않았다.";
     private const string NoSaving = "개선 전후 비교에 필요한 단계별 시간은 아직 없어 절감은 계산하지 않았다.";
     private const string DefineErrors = "실제 검증 때 무엇을 오류로 셀지 먼저 정한다.";
+    private const string TransitionNote = "제안이 효과적인지는 실제 자료 시험(check)으로 확인한다. 역할은 아래 근거가 모인 뒤에만 바꾼다. AI의 자신감만으로 맡기는 범위를 넓히지 않는다.";
 
     public static byte[] Render(ScorecardResult r)
     {
@@ -133,10 +136,12 @@ internal static class ScorecardHtml
         h.Append("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n");
         h.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         h.Append("<title>AI 도입 스코어카드 · ").Append(E(r.Case)).Append("</title>\n");
-        h.Append("<style>\n").Append(CssLf).Append("</style>\n</head>\n<body>\n<div class=\"wrap\">\n");
+        var roles = r.Allocation is not null || r.Steps.Any(s => s.Allocation is not null);
+        h.Append("<style>\n").Append(CssLf).Append(roles ? RolesCssLf : string.Empty).Append("</style>\n</head>\n<body>\n<div class=\"wrap\">\n");
 
         Header(h, r);
         Summary(h, r);
+        Understanding(h, r);
         h.Append("<div class=\"grid\">\n");
         Steps(h, r);
         h.Append("<aside class=\"side\">\n");
@@ -144,7 +149,9 @@ internal static class ScorecardHtml
         Gates(h, r);
         Opinions(h, r);
         h.Append("</aside>\n</div>\n");
+        Tools(h, r);
         Verification(h, r);
+        Transitions(h, r);
         Todo(h, r);
         Overview(h, r);
         h.Append("</div>\n</body>\n</html>\n");
@@ -300,11 +307,143 @@ internal static class ScorecardHtml
 
             Cell(h, "확인할 것", check);
             h.Append("</div>\n");
+            StepRoles(h, s);
             StepDetails(h, s);
             h.Append("</div>\n");
         }
 
         h.Append("</div>\n</section>\n");
+    }
+
+    // 업무 이해(T-024): 목적·완료 조건, 확인된 사실과 가정을 나눠 보인다. 적은 것만.
+    private static void Understanding(StringBuilder h, ScorecardResult r)
+    {
+        if (r.Allocation is not { } a || (a.Purpose is null && a.DoneWhen is null && a.Facts.Count == 0 && a.Assumptions.Count == 0))
+        {
+            return;
+        }
+
+        h.Append("<section class=\"panel und\" id=\"role-understanding\">\n<h2>업무 이해</h2>\n<div class=\"pad\">\n");
+        if (a.Purpose is not null || a.DoneWhen is not null)
+        {
+            h.Append("<ul class=\"brief\">");
+            Brief(h, "목적", a.Purpose);
+            Brief(h, "완료 조건", a.DoneWhen);
+            h.Append("</ul>\n");
+        }
+
+        h.Append("<div class=\"fa\">\n");
+        FactList(h, "확인된 사실", a.Facts);
+        FactList(h, "가정(확인 필요)", a.Assumptions);
+        h.Append("</div>\n</div>\n</section>\n");
+    }
+
+    private static void FactList(StringBuilder h, string label, IReadOnlyList<string> items)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        h.Append("<div><div class=\"label\">").Append(label).Append("</div><ul>");
+        foreach (var item in items)
+        {
+            h.Append("<li>").Append(E(item)).Append("</li>");
+        }
+
+        h.Append("</ul></div>\n");
+    }
+
+    // 단계의 세 역할(인간·AI·소프트웨어)과 판단·실행·책임, 달라지는 것, 배분 근거(T-024). 역할이 없으면 "역할 없음".
+    private static void StepRoles(StringBuilder h, ScorecardStep s)
+    {
+        if (s.Allocation is not { } a)
+        {
+            return;
+        }
+
+        h.Append("<div class=\"alloc\">\n");
+        if (a.Roles is { } roles)
+        {
+            h.Append("<div class=\"roles3\">");
+            Role(h, "인간", roles.Human);
+            Role(h, "AI", roles.Ai);
+            Role(h, "소프트웨어", roles.Software);
+            h.Append("</div>\n");
+        }
+
+        var lines = new[] { ("판단", a.Judgment), ("실행", a.Execution), ("책임", a.Accountability), ("달라지는 것", a.Varies), ("배분 근거", a.Basis) }
+            .Where(x => x.Item2 is not null)
+            .ToArray();
+        if (lines.Length > 0)
+        {
+            h.Append("<div class=\"jea\">");
+            foreach (var (label, text) in lines)
+            {
+                h.Append("<div><span class=\"k\">").Append(label).Append("</span><span>").Append(E(text!)).Append("</span></div>");
+            }
+
+            h.Append("</div>\n");
+        }
+
+        h.Append("</div>\n");
+    }
+
+    private static void Role(StringBuilder h, string label, string? text) =>
+        h.Append("<div><span class=\"rl\">").Append(label).Append("</span>")
+            .Append(text is null ? "<span class=\"none\">역할 없음</span>" : E(text)).Append("</div>");
+
+    // 개선 제안(T-024): AI·사람의 작업을 줄일 도구. 칸은 답 파일 그대로다(점수·절감률 없음).
+    private static void Tools(StringBuilder h, ScorecardResult r)
+    {
+        if (r.Allocation is not { Tools.Count: > 0 } a)
+        {
+            return;
+        }
+
+        h.Append("<section class=\"panel tools\" id=\"role-tools\">\n<h2>개선 제안<span>AI·사람의 작업을 줄일 도구</span></h2>\n<div class=\"toolgrid\">\n");
+        foreach (var t in a.Tools)
+        {
+            h.Append("<div class=\"tool\">\n<h3>").Append(E(t.Name)).Append("</h3>\n<div class=\"for\">대상 ")
+                .Append(string.Join("·", t.Steps.Select(I))).Append("단계</div>\n");
+            ToolLine(h, "기능", t.Function);
+            ToolLine(h, "입력", t.Input);
+            ToolLine(h, "처리", t.Process);
+            ToolLine(h, "결과", t.Output);
+            ToolLine(h, "줄어드는 작업", t.Reduces);
+            ToolLine(h, "다시 넘길 예외", t.Exceptions);
+            ToolLine(h, "기존 기능으로 해결", t.Existing);
+            ToolLine(h, "새로 개발", t.New);
+            ToolLine(h, "비용·부담 검토", t.Burden);
+            h.Append("</div>\n");
+        }
+
+        h.Append("</div>\n</section>\n");
+    }
+
+    private static void ToolLine(StringBuilder h, string label, string text) =>
+        h.Append("<div class=\"tl\"><span class=\"k\">").Append(label).Append("</span><span>").Append(E(text)).Append("</span></div>\n");
+
+    // 검증 방법과 역할 전환 조건(T-024): 바꾸는 조건과 필요한 근거. 근거가 모이기 전에는 바꾸지 않는다.
+    private static void Transitions(StringBuilder h, ScorecardResult r)
+    {
+        if (r.Allocation is not { Transitions.Count: > 0 } a)
+        {
+            return;
+        }
+
+        h.Append("<section class=\"panel trans\" id=\"role-transitions\">\n<h2>검증 방법과 역할 전환 조건</h2>\n<div class=\"pad\">\n");
+        h.Append("<p class=\"note\">").Append(TransitionNote).Append("</p>\n<ol class=\"trs\">");
+        foreach (var t in a.Transitions)
+        {
+            var name = r.Steps.FirstOrDefault(s => s.Number == t.Step)?.Name;
+            h.Append("<li><b>").Append(I(t.Step)).Append("단계").Append(name is null ? string.Empty : " " + E(name)).Append("</b> ")
+                .Append(Badge(t.From)).Append(" <span class=\"arrow\">→</span> ").Append(Badge(t.To));
+            h.Append("<div class=\"tl\"><span class=\"k\">바꾸는 조건</span><span>").Append(E(t.Condition)).Append("</span></div>");
+            h.Append("<div class=\"tl\"><span class=\"k\">필요한 근거</span><span>").Append(E(t.Evidence)).Append("</span></div></li>");
+        }
+
+        h.Append("</ol>\n</div>\n</section>\n");
     }
 
     private static void Cell(StringBuilder h, string label, string html) =>
@@ -724,6 +863,38 @@ internal static class ScorecardHtml
     // 시안(M2-스코어카드-시안.html)의 스타일. 390·900·1236px에서 가로 스크롤이 없게 한다.
     // 원본 줄바꿈(Windows 체크아웃의 CRLF)과 상관없이 LF로 쓴다(결정론).
     private static readonly string CssLf = Css.ReplaceLineEndings("\n");
+
+    private static readonly string RolesCssLf = RolesCss.ReplaceLineEndings("\n");
+
+    // T-024 역할 배분 구역. 메모가 있을 때만 붙는다. 390·900·1236px에서 가로 스크롤이 없게 한다.
+    private const string RolesCss = """
+.und{margin:0 0 16px}
+.tools,.trans{margin-top:16px}
+.fa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fa>div{min-width:0}
+.fa ul,.trs{margin:0;padding-left:18px;color:var(--ink2);font-size:13px}
+.alloc{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2)}
+.roles3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px;font-size:13px;color:var(--ink2)}
+.roles3>div{min-width:0}
+.rl{display:block;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.none{color:var(--na)}
+.jea{margin-top:6px;font-size:12.5px;color:var(--ink2)}
+.jea>div{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:8px;padding:2px 0}
+.jea .k{font-weight:700;color:var(--ink3)}
+.toolgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px;padding:0 16px 16px}
+.tool{border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.tool h3{font-size:14px;margin:0 0 4px}
+.tool .for{font-size:12px;color:var(--ink3);margin-bottom:6px}
+.tl{display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:8px;font-size:12.5px;color:var(--ink2);padding:3px 0;border-bottom:1px dashed var(--line2)}
+.tl>span{min-width:0}
+.tl .k{font-weight:700;color:var(--ink3)}
+.trs li{margin-bottom:10px}
+@media (max-width:760px){
+.roles3,.fa{grid-template-columns:minmax(0,1fr);row-gap:6px}
+.jea>div,.tl{grid-template-columns:minmax(0,1fr)}
+}
+
+""";
 
     private const string Css = """
 :root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--ink2:#4a5060;--ink3:#7a8090;--line:#e3e6eb;--line2:#eef0f3;

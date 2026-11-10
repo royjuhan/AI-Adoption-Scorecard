@@ -109,6 +109,40 @@ public static class ClassificationJson
                 w.WriteString(name, value);
             }
         }
+
+        if (d.Allocation is { } allocation)
+        {
+            WriteAllocation(w, allocation);
+        }
+    }
+
+    // 역할 배분(T-024, ADR 0018). gate_note 뒤에 적은 것만 쓴다. 순서: roles(human, ai, software), judgment, execution, accountability, basis, varies.
+    private static void WriteAllocation(Utf8JsonWriter w, Cases.StepAllocation a)
+    {
+        if (a.Roles is { } r)
+        {
+            w.WriteStartObject("roles");
+            foreach (var (name, value) in new[] { ("human", r.Human), ("ai", r.Ai), ("software", r.Software) })
+            {
+                if (value is not null)
+                {
+                    w.WriteString(name, value);
+                }
+            }
+
+            w.WriteEndObject();
+        }
+
+        foreach (var (name, value) in new[]
+                 {
+                     ("judgment", a.Judgment), ("execution", a.Execution), ("accountability", a.Accountability), ("basis", a.Basis), ("varies", a.Varies),
+                 })
+        {
+            if (value is not null)
+            {
+                w.WriteString(name, value);
+            }
+        }
     }
 
     private static void WriteStrings(Utf8JsonWriter w, string name, IReadOnlyList<string> values)

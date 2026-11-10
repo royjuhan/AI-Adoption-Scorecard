@@ -85,9 +85,26 @@ internal static class ResultReader
         var change = Optional(step, "change");
         var check = Optional(step, "check");
         var gateNote = Optional(step, "gate_note");
-        return actions.Length == 0 && now is null && change is null && check is null && gateNote is null
+        var allocation = ReadAllocation(step);
+        return actions.Length == 0 && now is null && change is null && check is null && gateNote is null && allocation is null
             ? null
-            : new StepAiDetail(actions, now, change, check, gateNote);
+            : new StepAiDetail(actions, now, change, check, gateNote, allocation);
+    }
+
+    // 역할 배분(classification.md 3.2, T-024). 적은 키만 있다. 하나도 없으면 null.
+    private static StepAllocation? ReadAllocation(JsonElement step)
+    {
+        var roles = step.TryGetProperty("roles", out var r)
+            ? new StepRoles(Optional(r, "human"), Optional(r, "ai"), Optional(r, "software"))
+            : null;
+        var judgment = Optional(step, "judgment");
+        var execution = Optional(step, "execution");
+        var accountability = Optional(step, "accountability");
+        var basis = Optional(step, "basis");
+        var varies = Optional(step, "varies");
+        return roles is null && judgment is null && execution is null && accountability is null && basis is null && varies is null
+            ? null
+            : new StepAllocation(roles, judgment, execution, accountability, basis, varies);
     }
 
     private static string? Optional(JsonElement e, string name) => e.TryGetProperty(name, out _) ? Str(e, name) : null;

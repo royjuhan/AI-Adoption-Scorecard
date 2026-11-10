@@ -173,7 +173,8 @@ public static class ScorecardBuilder
             notes?.SelfCheck ?? [],
             sources.Inputs.GroupBy(f => f.Path, StringComparer.Ordinal).Select(g => Hash(g.First())).OrderBy(h => h.Path, StringComparer.Ordinal).ToArray(),
             ResultFiles.Select(n => sources.Results.FirstOrDefault(f => f.Path == n)).OfType<SourceFile>().Select(Hash).ToArray(),
-            sources.Review is { } r ? Hash(r) : null);
+            sources.Review is { } r ? Hash(r) : null,
+            notes?.Allocation);
         return new ScorecardBuildResult(scorecard, []);
     }
 
@@ -258,7 +259,8 @@ public static class ScorecardBuilder
             detail?.Check ?? Lookup(ReportRules.CheckTexts, main.Assignee),
             Assumptions(inferred, s.Defaults, answer?.Answers),
             detail?.Actions ?? [],
-            detail?.GateNote);
+            detail?.GateNote,
+            detail?.Allocation);
     }
 
     // AI 판단 단계(12.3): 추정 답이 있으면 참. 동작이 있으면, 출처 stated이고 proposed가 단계 담당과 같은 동작이 없을 때 참.

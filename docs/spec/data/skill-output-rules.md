@@ -21,3 +21,11 @@
 | R11 질문은 추천이 바뀌는 것만 3개까지 | 아니오 | 4개 이상, 코드로 고르게 함 | 대화, `open_questions` |
 | R12 확인 기록은 실제로 확인한 것만 | 아니오 | 고르지 않은 단계를 `keep`으로 적음, 고른 단계가 없는데 확인 파일을 씀 | 확인 파일 |
 | R13 자료 성격을 적는다 | 아니오 | 가상 입력인데 `scenario`가 없음 | `scenario` |
+| R14 판단·실행·책임을 나눈다 | 아니오 | AI 판단 단계에 `judgment`·`execution`·`accountability`가 없음, 셋이 같은 말 | `ai.judgment`, `ai.execution`, `ai.accountability`, `ai.roles` |
+| R15 책임만으로 사람에게 준비·실행을 주지 않는다 | 아니오 | 모으기·요약·목록·기록 같은 준비·실행을 책임 때문에 `human`이나 ④로 둠 | `ai.roles.human`, `ai.assignee` |
+| R16 배분 근거는 다섯 질문으로 | 아니오 | `basis`가 없거나 결론만 있음, `varies`가 입력값인지 맥락 해석인지 말하지 않음 | `ai.basis`, `ai.varies` |
+| R17 도구 제안은 열한 칸을 채운다 | 아니오 | 예외 조건·기존 기능 범위·부담 검토가 비었거나 "없음"만 있음, 일이 줄어드는지 보지 않음 | `tools` |
+| R18 역할 전환은 근거를 적는다 | 아니오 | `evidence`가 사례·검증 결과·운영 데이터가 아님, AI 자신감을 근거로 씀 | `transitions` |
+| R19 측정 없는 점수·절감률 0건 | 아니오 | 엔진 JSON·`stated_numbers`에 없는 점수·절감률·퍼센트·절약 시간 | `tools`, `transitions`, `basis`, 대화 |
+| R20 세 역할을 억지로 채우지 않는다 | 아니오 | 근거 없는 역할을 채움, 모든 단계에 세 역할이 다 있음 | `ai.roles` |
+| R21 업무 이해는 사실과 가정을 나눈다 | 아니오 | `facts`에 추정이 섞임, 목적·완료 조건이 없음 | `purpose`, `done_when`, `facts`, `assumptions` |

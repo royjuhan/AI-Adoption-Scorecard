@@ -25,7 +25,10 @@ internal static class ReportInput
     // T-022 표본: 동작 목록·네 칸 문장·담당자 확인 메모·케이스 메모(가상 시나리오), 대화에서 확인한 확인 파일.
     public const string ActionsSample = "ai-actions";
 
-    public static readonly string[] Samples = [AiSample, ActionsSample];
+    // T-024 표본: 세 역할·판단·실행·책임·배분 근거, 업무 이해·도구 제안·역할 전환 조건(가상 시나리오, 메일 답변 업무).
+    public const string RolesSample = "ai-roles";
+
+    public static readonly string[] Samples = [AiSample, ActionsSample, RolesSample];
 
     public static TheoryData<string> GoldenNames => new([.. Classification.ClassificationInput.AllExamples, .. Samples]);
 

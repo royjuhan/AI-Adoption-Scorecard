@@ -106,6 +106,11 @@ public static class ScorecardJson
             }
 
             w.WriteEndArray();
+            if (result.Allocation is { } allocation)
+            {
+                CaseAllocation(w, allocation);
+            }
+
             Hashes(w, "inputs", result.Inputs);
             Hashes(w, "results", result.Results);
             if (result.Review is { } review)
@@ -265,6 +270,85 @@ public static class ScorecardJson
 
         w.WriteEndArray();
         NullableString(w, "gate_note", s.GateNote);
+        if (s.Allocation is { } allocation)
+        {
+            StepAllocation(w, allocation);
+        }
+
+        w.WriteEndObject();
+    }
+
+    // 단계 역할 배분(T-024, 데이터 3절 "있을 때만" 표). 있을 때만 gate_note 뒤에 쓴다. 안의 키는 늘 있다(없으면 null).
+    private static void StepAllocation(Utf8JsonWriter w, Cases.StepAllocation a)
+    {
+        w.WriteStartObject("allocation");
+        if (a.Roles is { } r)
+        {
+            w.WriteStartObject("roles");
+            NullableString(w, "human", r.Human);
+            NullableString(w, "ai", r.Ai);
+            NullableString(w, "software", r.Software);
+            w.WriteEndObject();
+        }
+        else
+        {
+            w.WriteNull("roles");
+        }
+
+        NullableString(w, "judgment", a.Judgment);
+        NullableString(w, "execution", a.Execution);
+        NullableString(w, "accountability", a.Accountability);
+        NullableString(w, "basis", a.Basis);
+        NullableString(w, "varies", a.Varies);
+        w.WriteEndObject();
+    }
+
+    // 케이스 역할 배분 메모(T-024). 있을 때만 self_check 뒤에 쓴다. 답 파일 그대로다.
+    private static void CaseAllocation(Utf8JsonWriter w, Cases.CaseAllocation a)
+    {
+        w.WriteStartObject("allocation");
+        NullableString(w, "purpose", a.Purpose);
+        NullableString(w, "done_when", a.DoneWhen);
+        Strings(w, "facts", a.Facts);
+        Strings(w, "assumptions", a.Assumptions);
+        w.WriteStartArray("tools");
+        foreach (var t in a.Tools)
+        {
+            w.WriteStartObject();
+            w.WriteString("name", t.Name);
+            w.WriteStartArray("steps");
+            foreach (var n in t.Steps)
+            {
+                w.WriteNumberValue(n);
+            }
+
+            w.WriteEndArray();
+            w.WriteString("function", t.Function);
+            w.WriteString("input", t.Input);
+            w.WriteString("process", t.Process);
+            w.WriteString("output", t.Output);
+            w.WriteString("reduces", t.Reduces);
+            w.WriteString("exceptions", t.Exceptions);
+            w.WriteString("existing", t.Existing);
+            w.WriteString("new", t.New);
+            w.WriteString("burden", t.Burden);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        w.WriteStartArray("transitions");
+        foreach (var t in a.Transitions)
+        {
+            w.WriteStartObject();
+            w.WriteNumber("step", t.Step);
+            w.WriteString("from", t.From);
+            w.WriteString("to", t.To);
+            w.WriteString("condition", t.Condition);
+            w.WriteString("evidence", t.Evidence);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
         w.WriteEndObject();
     }
 

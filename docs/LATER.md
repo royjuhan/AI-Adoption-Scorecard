@@ -86,7 +86,27 @@ ADR 0010 B-8·9에 따라 미룬 일을 모은다. 리뷰의 막지 않는 지�
 - #31 리뷰: `skill-output-rules.md` 상태 줄 "juhan 확인 대기" → "juhan 확인".
 - #31 리뷰: SKILL.md(확인 전 answers.yaml 금지)와 R12·6.1(고른 단계가 없어도 진행)이 모호하다.
 - #31 리뷰: check 뒤 open을 다시 부르면 answers.yaml의 `end_state`가 판정 옆에 남는다(`ScorecardBuilder`). check 뒤 지우라는 안내가 없다.
-- #31 리뷰: answers.yaml이 없고 동작도 없는 AI 단계가 "말한 것만"에 든다. 결론 `undecided`에 판정 보류·조건부 말이 없다.
+- #31 리뷰: answers.yaml이 없고 동작도 없는 AI 단계가 "말한 것만"에 든다.
+- #31 리뷰: 결론 `undecided`에 판정 보류·조건부 말이 없다(signoff-final `hold`).
+- T-024에서 고친 #31 지적: `skill-output-rules.md` 상태 줄("juhan 확인"으로), SKILL.md 지킬 것의 확인 전 쓰기 문장(고른 단계가 없으면 모두 확인 전으로 쓰고 부른다), check 뒤 `end_state` 지우기 안내(SKILL.md 7절 7번). Core가 `end_state`를 판정 옆에 남기는 동작은 그대로다.
+
+## T-023(릴리스 내려받기)에서 미룬 것
+
+- #32 리뷰(막지 않음): `release.yml` checkout에 `persist-credentials: false`를 두면 더 안전하다.
+- #32 리뷰: 태그에 `/`가 들어가면 zip 경로가 깨진다(지금 규칙 vX.Y.Z에서는 없음).
+- #32 리뷰: bat이 try 폴더를 경고 없이 지운다. `사용법.txt`에 한 줄.
+- #32 리뷰: 내려받은 zip의 bat에도 보안 경고가 뜰 수 있다. `사용법.txt`에 적기.
+- #32 리뷰: 첫 발행 뒤 zip 안 한글 파일명이 Explorer에서 바르게 보이는지 확인.
+- T-024에서 고친 #32 지적: STATUS "지금"의 v0.1.0-alpha 태그 줄(ADR 0017 결정 4와 맞춤), 머지된 카드 표의 T-022 행 순서.
+
+## T-024(역할 배분 기준)에서 미룬 것
+
+- 수용 규칙 올리기: R14(판단·실행·책임)·R19(측정 없는 점수·절감률 0건)를 다음 채점 뒤 수용으로(ADR 0018 결정 5). 공개 사례 5건을 새 스킬로 다시 넣는 채점은 리드가 PR 밖에서.
+- 분류 트리 질문을 역할 배분 기준에 맞추는 일(ADR 0018 대안 B: schema 3, expected migration, oracle 새 판). juhan이 고르지 않았다(2026-11-10 07:41).
+- 의뢰서 번들(`build`)에 도구 제안(`tools`)과 역할 전환 조건을 넣는 일. 지금은 스코어카드에만 보인다.
+- 단계 담당(`ai.assignee`)과 `roles`가 어긋나도(담당 ④인데 `human` 없음 등) Core가 알리지 않는다. 경고로 알릴지.
+- oracle이 역할 배분 키(case-schema 4.16)를 읽지 않는다. 공개 예제에 없어 지금은 영향이 없다.
+- 도구 제안이 단계 표의 "먼저 확인할 것"(`proposal`)과 따로 보인다. 같은 단계를 가리키면 한 카드로 묶을지.
 
 ## T-014의 남은 일
 

@@ -314,6 +314,71 @@ steps:
 | `end_state: 업무 구조 검토 완료` | — | — | `Notes 있음` |
 | `end_state: ""` | `required` | `end_state` | `값이 비어 있다` |
 
+### 4.16 역할 배분 선택 항목 (T-024)
+
+```yaml
+purpose: 고객 문의에 답을 빠짐없이 보낸다.
+done_when: 모든 문의에 답이 나가고 이력에 남는다.
+facts: [하루 30건쯤 온다]
+assumptions: [자주 오는 문의가 묶이는지 확인되지 않았다]
+tools:
+  - {name: 기록 조회 도구, steps: [1], function: 기록을 찾아 붙인다, input: 고객 번호 형식, process: 조회 → 저장, output: 붙인 기록, reduces: AI의 조회 반복, exceptions: 번호가 없으면 AI로 넘긴다, existing: 메일 분류 규칙, new: 조회 연결, burden: 연결 유지보수}
+transitions:
+  - {step: 1, from: ②, to: ③, condition: 번호 없는 메일이 늘어난다, evidence: 붙이지 못한 메일 수와 사유}
+steps:
+  - name: 기록 붙이기
+    answers: {human_signoff: no}
+    ai:
+      assignee: ②
+      reason: 조회 규칙은 같다.
+      roles: {software: 기록 조회와 붙이기, ai: 번호 없는 메일의 고객 추정}
+      judgment: 어느 고객의 문의인가.
+      execution: 소프트웨어가 붙인다.
+      accountability: 이 단계에는 없다.
+      basis: 입력은 달라도 규칙은 같다.
+      varies: 입력값이 달라진다.
+```
+
+| 선택 항목 | 형식 | 규칙 |
+| --- | --- | --- |
+| `ai.roles` | 매핑 | 키 `human`, `ai`, `software`. 값은 문자열. 없거나 null이거나 빈 글이면 그 역할은 없다. 셋 다 없으면 `required` |
+| `ai.judgment`, `ai.execution`, `ai.accountability`, `ai.basis`, `ai.varies` | 문자열 | 선택. 비면 `required`. 저장만 |
+| `purpose`, `done_when` | 문자열 | 선택. 비면 `required`. 저장만 |
+| `facts`, `assumptions` | 문자열 목록 | 원소가 비면 `required`. 저장만 |
+| `tools` | 목록 | 원소는 매핑. 열한 키 `name`, `steps`, `function`, `input`, `process`, `output`, `reduces`, `exceptions`, `existing`, `new`, `burden` 모두 필수. `steps`는 있는 단계 번호 목록(1개 이상, 같은 번호 두 번 없음). 빈 목록은 `required` |
+| `transitions` | 목록 | 원소는 매핑. `step`(있는 단계), `from`·`to`(① ② ②M ③ ④, 서로 다름), `condition`, `evidence` 모두 필수. 빈 목록은 `required` |
+
+장면. 단계 둘(`s`, `u`)인 케이스에 넣는다. `ai:`로 시작하면 첫 단계(`steps[1]`)의 `ai` 값이고, 아니면 최상위 줄 하나를 더한다. 코드가 `—`이면 오류가 아니고 결과 칸은 단계 `Allocation`·케이스 `Allocation`이 있는지다.
+
+| T-024 장면 | 코드 | 경로 | 결과·메시지 |
+| --- | --- | --- | --- |
+| `ai: {assignee: ②, reason: r, roles: {software: 조회}}` | — | — | `단계 Allocation 있음` |
+| `ai: {assignee: ②, reason: r, roles: {human: "", software: 조회}}` | — | — | `단계 Allocation 있음` |
+| `ai: {assignee: ②, reason: r, basis: 규칙이 같다}` | — | — | `단계 Allocation 있음` |
+| `ai: {assignee: ②, reason: r, roles: {}}` | `required` | `steps[1].ai.roles` | `역할이 1개 이상 있어야 한다` |
+| `ai: {assignee: ②, reason: r, roles: 조회}` | `type` | `steps[1].ai.roles` | `매핑이어야 한다` |
+| `ai: {assignee: ②, reason: r, roles: {ai: 추정, robot: x}}` | `unknown-field` | `steps[1].ai.roles.robot` | `알 수 없는 필드다` |
+| `ai: {assignee: ②, reason: r, judgment: ""}` | `required` | `steps[1].ai.judgment` | `값이 비어 있다` |
+| `ai: {assignee: ②, reason: r, varies: [a]}` | `type` | `steps[1].ai.varies` | `스칼라 값이어야 한다` |
+| `purpose: 답을 빠짐없이 보낸다` | — | — | `케이스 Allocation 있음` |
+| `facts: [하루 30건]` | — | — | `케이스 Allocation 있음` |
+| `facts: 하루 30건` | `type` | `facts` | `목록이어야 한다` |
+| `done_when: ""` | `required` | `done_when` | `값이 비어 있다` |
+| `tools: [{name: n, steps: [1, 2], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w, burden: b}]` | — | — | `케이스 Allocation 있음` |
+| `tools: [{name: n, steps: [1], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w}]` | `required` | `tools[1].burden` | `필수 필드가 없다` |
+| `tools: [{name: n, steps: [3], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w, burden: b}]` | `range` | `tools[1].steps[1]` | `없는 단계다: 3` |
+| `tools: [{name: n, steps: [1, 1], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w, burden: b}]` | `duplicate` | `tools[1].steps[2]` | `같은 단계가 두 번 나온다: 1` |
+| `tools: [{name: n, steps: [], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w, burden: b}]` | `required` | `tools[1].steps` | `단계가 1개 이상 있어야 한다` |
+| `tools: [{name: n, steps: [1], function: f, input: i, process: p, output: o, reduces: r, exceptions: e, existing: x, new: w, burden: b, score: 9}]` | `unknown-field` | `tools[1].score` | `알 수 없는 필드다` |
+| `tools: []` | `required` | `tools` | `항목이 1개 이상 있어야 한다` |
+| `tools: [도구]` | `type` | `tools[1]` | `매핑이어야 한다` |
+| `transitions: [{step: 2, from: ③, to: ②, condition: c, evidence: e}]` | — | — | `케이스 Allocation 있음` |
+| `transitions: [{step: 2, from: ③, to: ③, condition: c, evidence: e}]` | `conflict` | `transitions[1].to` | `from과 to가 같다` |
+| `transitions: [{step: 2, from: ③, to: ⑤, condition: c, evidence: e}]` | `enum` | `transitions[1].to` | `선택지 밖의 값 '⑤'. 가능한 값: ①, ②, ②M, ③, ④` |
+| `transitions: [{step: 2, from: ③, to: ②, condition: c}]` | `required` | `transitions[1].evidence` | `필수 필드가 없다` |
+| `transitions: [{step: 0, from: ③, to: ②, condition: c, evidence: e}]` | `range` | `transitions[1].step` | `없는 단계다: 0` |
+| `transitions: [{step: two, from: ③, to: ②, condition: c, evidence: e}]` | `format` | `transitions[1].step` | `정수가 아니다: two` |
+
 ## 5. 예외
 
 | 상황 | 결과 | 근거 |

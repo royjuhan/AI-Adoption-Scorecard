@@ -10,8 +10,8 @@ Find out which parts of a job should be done by people, by AI, or by plain softw
 
 1. You describe a job in your own words. An AI assistant (the `/scorecard` skill for Claude Code) splits it into steps.
 2. Each step gets an owner, with a reason: ① existing feature, ② rule-based software (②M: a fixed, pre-trained model), ③ AI at run time, ④ human. A rule engine writes its own "rule opinion" next to each AI call, and the scorecard flags where they differ.
-3. If AI is already in use, the engine measures three things with real data: is it accurate, did time drop, was AI needed. Every number comes from the engine, never from the AI.
-4. You get a scorecard (one HTML page) and, if you say yes, a build-request bundle for the steps worth turning into software.
+3. If AI is already in use, the engine compares its results with a human-made reference: accuracy and missing rate. It also flags steps where AI may not be needed. Measuring time saved is not available yet. Every number comes from the engine, never from the AI.
+4. You get a scorecard (one HTML page) and, after you confirm, a build-request bundle for the steps worth turning into software.
 
 AI에 보내면 안 되는 자료는 넣지 마세요. 구조만 설명해도 분류는 됩니다.
 
@@ -32,7 +32,7 @@ Sample scorecard: [docs/samples/scorecard-table-compare.html](docs/samples/score
 
 ## How it is built
 
-- .NET 10. Same input, same version → byte-identical output.
+- .NET 10. Same input, same version → byte-identical engine output.
 - Input files are read only. Every scorecard records the SHA-256 of what it read.
 - Specs live in `docs/spec/`, decisions in `docs/decisions/`.
 - All examples are synthetic. No real company data goes into this repository.
